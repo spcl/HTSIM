@@ -62,4 +62,19 @@ We currently provide several plotting files but the main is:
 
 - ```performance_complete.py``` will generate a plot with some overall results including RTT, CWND, NACK, ECN, Queue sizes over time.
 
-Please check the files for more command line options that can be used with both. It is also possible that some Python libraries will need to be installed
+Please check the files for more command line options that can be used with both. It is also possible that some Python libraries will need to be installed.
+
+## Example
+
+If we want to run a 8:1 incast with SMaRTT with 4MiB messages, we would do the following steps:
+
+- First run the program by using the following command (please note we are using default parameters of SMaRTT for the run) 
+```
+../sim/datacenter/htsim_uec_entry_modern -o uec_entry -k 1 -algorithm delayB -nodes 1024 -q 4452000 -strat ecmp_host_random2_ecn -number_entropies 256 -kmin 20 -kmax 80 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite  -hop_latency 700 -reuse_entropy 1 -goal incast_1024_8_4194304.bin -x_gain 2 -y_gain 2.5 -w_gain 2 -z_gain 0.8  -collect_data 1 > out.tmp
+```
+
+- Run the plotting by using ```performance_complete.py```
+
+- A broswer should open showing the following plot:
+![](plotting/Sample.png)
+
