@@ -106,7 +106,7 @@ void initializeLoggingFolders() {
 
     // Setup Paths and initialize folders
     std::string desiredRootDirectoryName =
-            "TestRepo"; // Change this to the desired folder name.
+            "HTSIM"; // Change this to the desired folder name.
     std::filesystem::path rootPath = findRootPath(desiredRootDirectoryName);
 
     if (!rootPath.empty()) {
