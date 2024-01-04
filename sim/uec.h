@@ -9,6 +9,7 @@
 #include "config.h"
 #include "eventlist.h"
 #include "fairpullqueue.h"
+#include "generic_pacer.h"
 //#include "datacenter/logsim-interface.h"
 #include "network.h"
 #include "trigger.h"
@@ -98,6 +99,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     std::size_t getEcnInTargetRtt();
 
     int choose_route();
+    inline simtime_picosec pacing_delay_f() const { return pacing_delay; }
     int next_route();
 
     void set_traffic_logger(TrafficLogger *pktlogger);
@@ -105,6 +107,10 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static void set_alogirthm(std::string value) { algorithm_type = value; }
     static void set_fast_drop(bool value) { use_fast_drop = value; }
     static void set_fast_drop_rtt(int value) { fast_drop_rtt = value; }
+    static void set_use_pacing(int value) { use_pacing = value; }
+    static void set_pacing_delay(simtime_picosec value) {
+        pacing_delay = value * 1000;
+    }
 
     static void set_explicit_rtt(int value) { explicit_base_rtt = value; }
     static void set_explicit_bdp(int value) { explicit_bdp = value; }
@@ -159,6 +165,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     }
 
     virtual void rtx_timer_hook(simtime_picosec now, simtime_picosec period);
+    void send_paced();
 
     Trigger *_end_trigger = 0;
     // should really be private, but loggers want to see:
@@ -191,6 +198,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     uint64_t next_window_end = 0;
     bool update_next_window = true;
     bool _start_timer_window = true;
+    bool _paced_packet = false;
     bool stop_decrease = false;
     bool fast_drop = false;
     int ignore_for = 0;
@@ -245,6 +253,8 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static double buffer_drop;
     static bool stop_after_quick;
     static RouteStrategy _route_strategy;
+    static bool use_pacing;
+    static simtime_picosec pacing_delay;
     bool first_quick_adapt = false;
 
   private:
@@ -310,6 +320,8 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     vector<int16_t> _avoid_score; // keeps path scores
     vector<bool> _bad_path;       // keeps path scores
 
+    GenericPacer *generic_pacer = NULL;
+    simtime_picosec pacer_start_time = 0;
     PacketFlow _flow;
 
     string _nodename;

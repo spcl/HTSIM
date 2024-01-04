@@ -17,6 +17,8 @@ std::string UecSrc::queue_type = "composite";
 std::string UecSrc::algorithm_type = "standard_trimming";
 bool UecSrc::use_fast_drop = false;
 int UecSrc::fast_drop_rtt = 1;
+bool UecSrc::use_pacing = false;
+simtime_picosec UecSrc::pacing_delay = 0;
 bool UecSrc::do_jitter = false;
 bool UecSrc::do_exponential_gain = false;
 bool UecSrc::use_fast_increase = false;
@@ -562,7 +564,7 @@ void UecSrc::quick_adapt(bool trimmed) {
                      (eventlist().now() - previous_window_end + _base_rtt));
 
             // Update window and ignore count
-            _cwnd = max((double)(saved_acked_bytes * 1.5),
+            _cwnd = max((double)(saved_acked_bytes * bonus_drop),
                         (double)_mss); // 1.5 is the amount of target_rtt over
                                        // base_rtt. Simplified here for this
                                        // code share.
@@ -579,6 +581,28 @@ void UecSrc::quick_adapt(bool trimmed) {
             // we move to much smaller windows.
             x_gain = min(initial_x_gain,
                          (_queue_size / 5.0) / (_mss * ((double)_bdp / _cwnd)));
+
+            // Go into pacing mode after QuickAdapt
+            if (use_pacing && generic_pacer == NULL) {
+                generic_pacer = new GenericPacer(eventlist(), *this);
+                pacer_start_time = eventlist().now();
+            }
+
+            // Print
+            printf("Using Fast Drop2 - Flow %d@%d%d, Ecn %d, CWND %d, Saved "
+                   "Acked %d (dropping to %f - bonus1  %f -> %f and %f) - "
+                   "Previous "
+                   "Window %lu - Next "
+                   "Window %lu// "
+                   "Time "
+                   "%lu\n",
+                   from, to, tag, 1, _cwnd, saved_acked_bytes,
+                   max((double)(saved_acked_bytes * bonus_drop),
+                       saved_acked_bytes * bonus_drop + _mss),
+                   bonus_drop, (saved_acked_bytes * bonus_drop),
+                   (saved_acked_bytes * bonus_drop + _mss),
+                   previous_window_end / 1000, next_window_end / 1000,
+                   eventlist().now() / 1000);
         }
     }
 }
@@ -2032,8 +2056,22 @@ void UecSrc::map_entropies() {
     printf("\n");
 }
 
+void UecSrc::send_paced() {
+    _paced_packet = true;
+    printf("Sending a paced packet at %lu - Pacer Start %lu - Pacer End %lu\n",
+           GLOBAL_TIME / 1000, pacer_start_time / 1000,
+           (pacer_start_time + (uint64_t)(_base_rtt * 1.5)) / 1000);
+    send_packets();
+}
+
 void UecSrc::send_packets() {
     //_list_cwd.push_back(std::make_pair(eventlist().now() / 1000, _cwnd));
+
+    if (pacer_start_time + (_base_rtt * 1.5) > eventlist().now() &&
+        generic_pacer != NULL) {
+        // use_pacing = false;
+    }
+
     if (_rtx_pending) {
         retransmit_packet();
     }
@@ -2048,6 +2086,18 @@ void UecSrc::send_packets() {
         if (pause_send && stop_after_quick) {
             break;
         }
+
+        // Check pacer and set timeout
+
+        if (!_paced_packet && use_pacing) {
+            if (generic_pacer != NULL && !generic_pacer->is_pending()) {
+                generic_pacer->schedule_send(pacing_delay);
+                return;
+            } else if (generic_pacer != NULL) {
+                return;
+            }
+        }
+
         uint64_t data_seq = 0;
 
         // create packet
@@ -2094,6 +2144,10 @@ void UecSrc::send_packets() {
                 SentPacket(eventlist().now() + service_time + _rto, p->seqno(),
                            false, false, false));
 
+        if (generic_pacer != NULL && use_pacing) {
+            generic_pacer->just_sent();
+            _paced_packet = false;
+        }
         if (_rtx_timeout == timeInf) {
             update_rtx_time();
         }
@@ -2278,9 +2332,19 @@ void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
 bool UecSrc::resend_packet(std::size_t idx) {
 
     if (get_unacked() >= _cwnd || (pause_send && stop_after_quick)) {
-        // printf("This si FALSE\n");
         return false;
     }
+
+    // Check pacer and set timeout
+    if (!_paced_packet && use_pacing) {
+        if (generic_pacer != NULL && !generic_pacer->is_pending()) {
+            generic_pacer->schedule_send(pacing_delay);
+            return false;
+        } else if (generic_pacer != NULL) {
+            return false;
+        }
+    }
+
     assert(!_sent_packets[idx].acked);
 
     // this will cause retransmission not only of the offending
@@ -2317,6 +2381,10 @@ bool UecSrc::resend_packet(std::size_t idx) {
     _sent_packets[idx].timer = eventlist().now() + service_time + _rto;
     _sent_packets[idx].timedOut = false;
     update_rtx_time();
+    if (generic_pacer != NULL) {
+        generic_pacer->just_sent();
+        _paced_packet = false;
+    }
     return true;
 }
 

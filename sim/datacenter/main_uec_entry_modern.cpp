@@ -94,6 +94,7 @@ int main(int argc, char **argv) {
     linkspeed_bps linkspeed = speedFromMbps((double)HOST_NIC);
     simtime_picosec hop_latency = timeFromNs((uint32_t)RTT);
     simtime_picosec switch_latency = timeFromNs((uint32_t)0);
+    simtime_picosec pacing_delay = 1000;
     int packet_size = 2048;
     int kmin = -1;
     int kmax = -1;
@@ -138,6 +139,7 @@ int main(int argc, char **argv) {
     double quickadapt_lossless_rtt = 2.0;
     int reaction_delay = 1;
     bool stop_after_quick = false;
+    bool use_pacing = false;
     int precision_ts = 1;
     int once_per_rtt = 0;
     bool use_mixed = false;
@@ -268,6 +270,14 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-ignore_ecn_data")) {
             ignore_ecn_data = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-pacing_delay")) {
+            pacing_delay = atoi(argv[i + 1]);
+            UecSrc::set_pacing_delay(pacing_delay);
+            i++;
+        } else if (!strcmp(argv[i], "-use_pacing")) {
+            use_pacing = atoi(argv[i + 1]);
+            UecSrc::set_use_pacing(use_pacing);
             i++;
         } else if (!strcmp(argv[i], "-fast_drop")) {
             UecSrc::set_fast_drop(atoi(argv[i + 1]));
@@ -563,9 +573,6 @@ int main(int argc, char **argv) {
         exit(1);
     }
 #endif
-
-    int tot_subs = 0;
-    int cnt_con = 0;
 
     lg = &logfile;
 

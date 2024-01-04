@@ -636,7 +636,7 @@ def main(args):
             go.Scatter(x=sub_df4["Time"], y=sub_df4['ECN'], mode="markers", marker_symbol="triangle-up", name="ECN Packet", marker=dict(size=5, color="yellow"), showlegend=True),
             secondary_y=False
         )
-    '''print("Sent Plot")
+    print("Sent Plot")
     # Sent
     mean_sent = df5["Time"].mean()
     df5['Sent'] = df5['Sent'].multiply(y_sent)
@@ -645,7 +645,7 @@ def main(args):
         fig.add_trace(
             go.Scatter(x=sub_df5["Time"], y=sub_df5["Sent"], mode="markers", marker_symbol="triangle-up", name="Sent Packet", marker=dict(size=5, color="green"), showlegend=True),
             secondary_y=False
-        )'''
+        )
 
     print("NACK Plot")
     # NACK
