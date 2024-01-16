@@ -28,9 +28,11 @@ class HPCCSrc : public BaseQueue, public TriggerTarget {
     friend class HPCCSink;
 
   public:
-    HPCCSrc(HPCCLogger *logger, TrafficLogger *pktlogger, EventList &eventlist, linkspeed_bps rate);
+    HPCCSrc(HPCCLogger *logger, TrafficLogger *pktlogger, EventList &eventlist,
+            linkspeed_bps rate);
 
-    virtual void connect(Route *routeout, Route *routeback, HPCCSink &sink, simtime_picosec startTime);
+    virtual void connect(Route *routeout, Route *routeback, HPCCSink &sink,
+                         simtime_picosec startTime);
     void set_dst(uint32_t dst) { _dstaddr = dst; }
     void set_traffic_logger(TrafficLogger *pktlogger);
 
@@ -38,13 +40,16 @@ class HPCCSrc : public BaseQueue, public TriggerTarget {
     void setRate(linkspeed_bps r) {
         _bitrate = r;
         _packet_spacing =
-                (simtime_picosec)((Packet::data_packet_size() + hpcc_acksize) * (pow(10.0, 12.0) * 8) / _bitrate);
+                (simtime_picosec)((Packet::data_packet_size() + hpcc_acksize) *
+                                  (pow(10.0, 12.0) * 8) / _bitrate);
         doNextEvent();
     }
 
     inline void set_flowid(flowid_t flow_id) { _flow.set_flowid(flow_id); }
 
-    void set_flowsize(uint64_t flow_size_in_bytes) { _flow_size = flow_size_in_bytes; }
+    void set_flowsize(uint64_t flow_size_in_bytes) {
+        _flow_size = flow_size_in_bytes;
+    }
 
     void set_stoptime(simtime_picosec stop_time) {
         _stop_time = stop_time;
@@ -132,7 +137,8 @@ class HPCCSrc : public BaseQueue, public TriggerTarget {
 
     inline void update_spacing() {
         _packet_spacing =
-                (simtime_picosec)((Packet::data_packet_size() + hpcc_acksize) * (pow(10.0, 12.0) * 8) / _pacing_rate);
+                (simtime_picosec)((Packet::data_packet_size() + hpcc_acksize) *
+                                  (pow(10.0, 12.0) * 8) / _pacing_rate);
     }
 
     // Housekeeping

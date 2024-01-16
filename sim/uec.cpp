@@ -586,10 +586,15 @@ void UecSrc::quick_adapt(bool trimmed) {
             if (use_pacing && generic_pacer == NULL) {
                 generic_pacer = new GenericPacer(eventlist(), *this);
                 pacer_start_time = eventlist().now();
+                pacing_delay = (4096 * 1 / (_cwnd / (_base_rtt / 1000)));
+                pacing_delay -= (4150 * 8 / 800);
+                pacing_delay = pacing_delay * 0.65;
+                printf("Setting the pacing delay to %lu\n", pacing_delay);
+                pacing_delay *= 1000;
             }
 
             // Print
-            printf("Using Fast Drop2 - Flow %d@%d%d, Ecn %d, CWND %d, Saved "
+            printf("Using Fast Drop2 - Flow %d@%d@%d, Ecn %d, CWND %d, Saved "
                    "Acked %d (dropping to %f - bonus1  %f -> %f and %f) - "
                    "Previous "
                    "Window %lu - Next "
@@ -2056,20 +2061,22 @@ void UecSrc::map_entropies() {
     printf("\n");
 }
 
-void UecSrc::send_paced() {
+void UecSrc::pacedSend() {
     _paced_packet = true;
-    printf("Sending a paced packet at %lu - Pacer Start %lu - Pacer End %lu\n",
-           GLOBAL_TIME / 1000, pacer_start_time / 1000,
-           (pacer_start_time + (uint64_t)(_base_rtt * 1.5)) / 1000);
+    /*printf("Sending a paced packet at %lu - Pacer Start %lu - Pacer End
+       %lu\n", GLOBAL_TIME / 1000, pacer_start_time / 1000, (pacer_start_time +
+       (uint64_t)(_base_rtt * 1.5)) / 1000);*/
     send_packets();
 }
 
 void UecSrc::send_packets() {
     //_list_cwd.push_back(std::make_pair(eventlist().now() / 1000, _cwnd));
 
-    if (pacer_start_time + (_base_rtt * 1.5) > eventlist().now() &&
+    if (pacer_start_time + (_base_rtt * 2) < eventlist().now() &&
         generic_pacer != NULL) {
         // use_pacing = false;
+        printf("Setting Use Pacing False, pacert stop %lu - now %lu\n",
+               (pacer_start_time + (_base_rtt * 2)), eventlist().now());
     }
 
     if (_rtx_pending) {

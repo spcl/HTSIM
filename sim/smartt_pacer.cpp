@@ -29,12 +29,13 @@ void GenericPacer::just_sent() { _last_send = eventlist().now(); }
 
 void GenericPacer::doNextEvent() {
     assert(eventlist().now() == _next_send);
-    flow->send_paced();
+    // printf("Pacer DoNextEvent\n");
+    flow->pacedSend();
 
     _last_send = eventlist().now();
 
-    if (flow->pacing_delay_f() > 0) {
-        schedule_send(flow->pacing_delay_f());
+    if (_interpacket_delay > 0) {
+        schedule_send(_interpacket_delay);
     } else {
         _interpacket_delay = 0;
         _next_send = 0;

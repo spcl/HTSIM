@@ -37,7 +37,8 @@ class MultipathTcpSink;
 
 class MultipathTcpSrc : public PacketSink, public EventSource {
   public:
-    MultipathTcpSrc(char cc_type, EventList &ev, MultipathTcpLogger *logger, int rwnd = 1000);
+    MultipathTcpSrc(char cc_type, EventList &ev, MultipathTcpLogger *logger,
+                    int rwnd = 1000);
     void addSubflow(TcpSrc *tcp);
     void receivePacket(Packet &pkt);
 
@@ -97,13 +98,16 @@ class MultipathTcpSink : public PacketSink, public EventSource {
     void receivePacket(Packet &pkt);
 
     uint64_t data_ack() { return _cumulative_ack; };
-    uint64_t cumulative_ack() { return _cumulative_ack + _received.size() * 1000; }
+    uint64_t cumulative_ack() {
+        return _cumulative_ack + _received.size() * 1000;
+    }
 
     uint32_t drops() { return 0; }
 
     void doNextEvent();
     virtual const string &nodename() { return _nodename; }
-    list<TcpAck::seq_t> _received; // list of packets above a hole, that we've received
+    list<TcpAck::seq_t>
+            _received; // list of packets above a hole, that we've received
   private:
     // Connectivity
 #ifdef DYNAMIC_RIGHT_SIZING

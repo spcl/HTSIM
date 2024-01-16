@@ -18,7 +18,6 @@
 #include "network.h"
 #include "switch.h"
 
-
 // BaseQueue is a generic queue, but doesn't actually implement any
 // queuing discipline.  Subclasses implement different queuing
 // disciplines.

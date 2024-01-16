@@ -23,10 +23,10 @@ class SwiftPacer : public EventSource {
   public:
     SwiftPacer(SwiftSrc &src, EventList &eventlist);
     bool is_pending() const { return _interpacket_delay > 0; } // are we pacing?
-    void schedule_send(simtime_picosec delay);                 // schedule a paced packet
-                                                               // "delay" picoseconds after the
-                                                               // last packet was sent
-    void cancel();                                             // cancel pacing
+    void schedule_send(simtime_picosec delay); // schedule a paced packet
+                                               // "delay" picoseconds after the
+                                               // last packet was sent
+    void cancel();                             // cancel pacing
     void just_sent(); // called when we've just sent a packet, even if it wasn't
                       // paced
     void doNextEvent();
@@ -35,18 +35,20 @@ class SwiftPacer : public EventSource {
     SwiftSrc *_src;
     simtime_picosec _interpacket_delay; // the interpacket delay, or zero if
                                         // we're not pacing
-    simtime_picosec _last_send;         // when the last packet was sent (always set,
-                                        // even when we're not pacing)
-    simtime_picosec _next_send;         // when the next scheduled packet should be sent
+    simtime_picosec _last_send; // when the last packet was sent (always set,
+                                // even when we're not pacing)
+    simtime_picosec _next_send; // when the next scheduled packet should be sent
 };
 
 class SwiftSrc : public PacketSink, public EventSource {
     friend class SwiftSink;
 
   public:
-    SwiftSrc(SwiftLogger *logger, TrafficLogger *pktlogger, EventList &eventlist);
+    SwiftSrc(SwiftLogger *logger, TrafficLogger *pktlogger,
+             EventList &eventlist);
     uint32_t get_id() { return id; }
-    virtual void connect(const Route &routeout, const Route &routeback, SwiftSink &sink, simtime_picosec startTime);
+    virtual void connect(const Route &routeout, const Route &routeback,
+                         SwiftSink &sink, simtime_picosec startTime);
     void startflow();
 
     void doNextEvent();
