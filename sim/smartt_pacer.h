@@ -1,9 +1,9 @@
 #include "config.h"
 #include "eventlist.h"
 
-class GenericPacer : public EventSource {
+class SmarttPacer : public EventSource {
   public:
-    GenericPacer(EventList &eventlist, UecSrc &flow);
+    SmarttPacer(EventList &eventlist, UecSrc &flow);
     bool is_pending() const {
         // printf("Delay Send %lu \n", _interpacket_delay);
         return _interpacket_delay > 0;

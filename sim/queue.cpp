@@ -1,5 +1,6 @@
 // -*- c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "queue.h"
+#include "bbrpacket.h"
 #include "ndppacket.h"
 #include "queue_lossless.h"
 #include "swifttrimmingpacket.h"
@@ -403,6 +404,8 @@ FairPriorityQueue::getPriority(Packet &pkt) {
     case TCPACK:
     case UECACK:
     case UECNACK:
+    case BBRACK:
+    case BBRNACK:
     case UECACK_DROP:
     case UECNACK_DROP:
     case SWIFTTRIMMINGACK:
@@ -450,6 +453,18 @@ FairPriorityQueue::getPriority(Packet &pkt) {
             prio = Q_HI;
         } else {
             UecDropPacket *uec = dynamic_cast<UecDropPacket *>(&pkt);
+            if (uec->retransmitted()) {
+                prio = Q_MID;
+            } else {
+                prio = Q_LO;
+            }
+        }
+        break;
+    case BBR:
+        if (pkt.header_only()) {
+            prio = Q_HI;
+        } else {
+            BBRPacket *uec = dynamic_cast<BBRPacket *>(&pkt);
             if (uec->retransmitted()) {
                 prio = Q_MID;
             } else {
