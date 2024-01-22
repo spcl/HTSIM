@@ -18,6 +18,7 @@ sim/datacenter/uec_entry
 /plotting/sent/*
 /sim/output/sent/*
 *.csv
+__pycache__/
 
 plotting/cwd
 plotting/uec_entry
@@ -42,3 +43,4 @@ plotting/us_to_cs
 !sim/lgs/input/incast_1024_8_4194304.bin
 !sim/lgs/input/incast_1024_100_4194304.bin
 !plotting/Sample.png
+!traffic_gen/cdf_files/*.txt
