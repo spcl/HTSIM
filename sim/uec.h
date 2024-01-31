@@ -112,6 +112,17 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
         pacing_delay = value * 1000;
     }
 
+    static void set_exp_avg_ecn(bool value) { use_exp_avg_ecn = value; }
+    static void set_exp_avg_rtt(bool value) { use_exp_avg_rtt = value; }
+
+    static void set_exp_avg_ecn_value(double value) {
+        exp_avg_ecn_value = value;
+    }
+    static void set_exp_avg_rtt_value(double value) {
+        exp_avg_rtt_value = value;
+    }
+    static void set_exp_avg_alpha(double value) { exp_avg_alpha = value; }
+
     static void set_explicit_rtt(int value) { explicit_base_rtt = value; }
     static void set_explicit_bdp(int value) { explicit_bdp = value; }
     static void set_explicit_target_rtt(int value) {
@@ -214,6 +225,10 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     double alpha_route = 0.0625;
     int current_pkt = 0;
     bool pause_send = false;
+    int total_pkt = 0;
+    int total_nack = 0;
+    uint64_t send_size = 0;
+    bool did_qa = false;
 
     // Custom Parameters
     static std::string queue_type;
@@ -237,6 +252,12 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static int explicit_target_rtt;
     static int explicit_base_rtt;
     static int explicit_bdp;
+
+    static double exp_avg_ecn_value;
+    static double exp_avg_rtt_value;
+    static bool use_exp_avg_ecn;
+    static bool use_exp_avg_rtt;
+    static double exp_avg_alpha;
 
     static double y_gain;
     static double x_gain;
@@ -323,6 +344,9 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     SmarttPacer *generic_pacer = NULL;
     simtime_picosec pacer_start_time = 0;
     PacketFlow _flow;
+
+    double exp_avg_ecn = 0;
+    double exp_avg_rtt = 0;
 
     string _nodename;
     std::function<void(const Packet &p)> f_flow_over_hook;

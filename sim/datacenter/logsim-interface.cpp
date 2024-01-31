@@ -126,6 +126,7 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
         uecSrc->from = from;
         uecSrc->to = to;
         uecSrc->tag = tag;
+        uecSrc->send_size = size;
         // printf("Setting %d %d %d\n", from, to, tag);
         std::string to_hash = std::to_string(from) + "@" + std::to_string(to) +
                               "@" + std::to_string(tag);

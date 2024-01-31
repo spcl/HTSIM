@@ -45,6 +45,11 @@ int UecSrc::once_per_rtt = 0;
 int UecSrc::explicit_target_rtt = 0;
 int UecSrc::explicit_base_rtt = 0;
 int UecSrc::explicit_bdp = 0;
+double UecSrc::exp_avg_ecn_value = 0.3;
+double UecSrc::exp_avg_rtt_value = 0.3;
+double UecSrc::exp_avg_alpha = 0.125;
+bool UecSrc::use_exp_avg_ecn = false;
+bool UecSrc::use_exp_avg_rtt = false;
 
 RouteStrategy UecSrc::_route_strategy = NOT_SET;
 RouteStrategy UecSink::_route_strategy = NOT_SET;
@@ -548,6 +553,9 @@ void UecSrc::do_fast_drop(bool ecn_or_trimmed) {
 
 void UecSrc::quick_adapt(bool trimmed) {
 
+    if (did_qa) {
+        return;
+    }
     if (eventlist().now() >= next_window_end) {
         previous_window_end = next_window_end;
         saved_acked_bytes = acked_bytes;
@@ -564,6 +572,14 @@ void UecSrc::quick_adapt(bool trimmed) {
                      (eventlist().now() - previous_window_end + _base_rtt));
 
             // Update window and ignore count
+            printf("Before Update Saved CWD is %lu \n", saved_acked_bytes);
+            if (send_size <= _bdp) {
+                // saved_acked_bytes =
+                //         saved_acked_bytes * (_bdp / (double)send_size);
+                printf("BDP %lu - Send Size %lu - Ratio %f\n", _bdp, send_size,
+                       (_bdp / (double)send_size));
+            }
+            printf("After Update Saved CWD is %lu \n", saved_acked_bytes);
             _cwnd = max((double)(saved_acked_bytes * bonus_drop),
                         (double)_mss); // 1.5 is the amount of target_rtt over
                                        // base_rtt. Simplified here for this
@@ -582,20 +598,28 @@ void UecSrc::quick_adapt(bool trimmed) {
             x_gain = min(initial_x_gain,
                          (_queue_size / 5.0) / (_mss * ((double)_bdp / _cwnd)));
 
+            did_qa = true;
+
             // Go into pacing mode after QuickAdapt
             if (use_pacing && generic_pacer == NULL) {
                 generic_pacer = new SmarttPacer(eventlist(), *this);
                 pacer_start_time = eventlist().now();
-                pacing_delay = (4096 * 1 / (_cwnd / (_base_rtt / 1000)));
+                pacing_delay =
+                        ((4096 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
                 pacing_delay -= (4150 * 8 / 800);
-                pacing_delay = pacing_delay * 0.65;
-                printf("Setting the pacing delay to %lu\n", pacing_delay);
+                pacing_delay = pacing_delay * 1;
+                printf("Setting the pacing delay %d %lu to %lu\n", _cwnd,
+                       (_base_rtt / 1000), pacing_delay);
                 pacing_delay *= 1000;
             }
 
             // Print
-            printf("Using Fast Drop2 - Flow %d@%d@%d, Ecn %d, CWND %d, Saved "
-                   "Acked %d (dropping to %f - bonus1  %f -> %f and %f) - "
+
+            printf("Total pkt %d - Total NACK %d\n", total_pkt, total_nack);
+            printf("Using Fast Drop2 - Flow %d@%d@%d, Ecn %d, CWND %d, "
+                   "Saved "
+                   "Acked %d (dropping to %f - bonus1  %f -> %f and "
+                   "%f) - "
                    "Previous "
                    "Window %lu - Next "
                    "Window %lu// "
@@ -614,7 +638,6 @@ void UecSrc::quick_adapt(bool trimmed) {
 
 void UecSrc::processNack(UecNack &pkt) {
 
-    // printf("Nack from %d - ECN 1, Path %d\n", from, pkt.pathid_echo);
     count_trimmed_in_rtt++;
     consecutive_nack++;
     trimmed_last_rtt++;
@@ -665,8 +688,6 @@ void UecSrc::processNack(UecNack &pkt) {
 }
 
 void UecSrc::simulateTrimEvent(UecAck &pkt) {
-
-    printf("Simulated Trim from %d - ECN 1, Path %d\n", from, pkt.pathid_echo);
 
     consecutive_good_medium = 0;
     // acked_bytes += _mss;
@@ -986,7 +1007,6 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
         _consecutive_no_ecn += _mss;
         _next_pathid = pkt.pathid_echo;
     } else {
-        // printf("Ack %d - ECN 1, Path %d\n", from, pkt.pathid_echo);
         _next_pathid = -1;
         ecn_last_rtt = true;
         _consecutive_no_ecn = 0;
@@ -1023,6 +1043,7 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
 
         printf("Completion Time Flow is %lu - Overall Time %lu\n",
                eventlist().now() - _flow_start_time, GLOBAL_TIME);
+            
 
         printf("Overall Completion at %lu\n", GLOBAL_TIME);
         if (_end_trigger) {
@@ -1099,7 +1120,20 @@ void UecSrc::receivePacket(Packet &pkt) {
     case UECACK:
         // fflush(stdout);
         count_received++;
+        total_pkt++;
+        if (use_pacing && generic_pacer != NULL &&
+            eventlist().now() > _base_rtt * 2) {
+            pacing_delay = ((4096 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
+            pacing_delay -= (4150 * 8 / 800);
+            printf("Setting the pacing2 delay %d %lu to %lu\n", _cwnd,
+                   (_base_rtt / 1000), pacing_delay);
+            pacing_delay *= 1000;
+            generic_pacer->cancel();
+            generic_pacer->schedule_send(pacing_delay);
+        }
+
         processAck(dynamic_cast<UecAck &>(pkt), false);
+
         /*if (pkt.pfc_just_happened) {
             printf("PFC Src Happened at %lu - %d@%d\n", GLOBAL_TIME / 1000,
                    from, pkt.id());
@@ -1115,6 +1149,7 @@ void UecSrc::receivePacket(Packet &pkt) {
     case UECNACK:
         printf("NACK %d@%d@%d\n", from, to, tag);
         // fflush(stdout);
+        total_nack++;
         if (_trimming_enabled) {
             _next_pathid = -1;
             count_received++;
@@ -1217,10 +1252,40 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
     /*printf("Eval RTT %lu vs %lu - ECN %d - Time %lu \n", rtt,
            (_base_rtt + (_mss * 8 / LINK_SPEED_MODERN * 5 * 1000)), ecn,
            GLOBAL_TIME);*/
+
+    bool can_decrease_exp_avg = false;
+    exp_avg_ecn = exp_avg_alpha * ecn + (1 - exp_avg_alpha) * exp_avg_ecn;
+
+    if (rtt > _target_rtt) {
+        exp_avg_rtt = exp_avg_alpha * 1 + (1 - exp_avg_alpha) * exp_avg_rtt;
+    } else {
+        exp_avg_rtt = exp_avg_alpha * 0 + (1 - exp_avg_alpha) * exp_avg_rtt;
+    }
+
+    // ECN Check
+    if (use_exp_avg_ecn) {
+        if (exp_avg_ecn > exp_avg_ecn_value) {
+            can_decrease_exp_avg = true;
+        }
+    } // RTT Check
+    else if (use_exp_avg_rtt) {
+        if (exp_avg_rtt > exp_avg_rtt_value) {
+            can_decrease_exp_avg = true;
+            printf("I am in here\n");
+        }
+    } else {
+        can_decrease_exp_avg = true;
+    }
+
+    /*printf("Exp Avg is %f - Threshold is %f - Use RTT %d - Use ECN %d - Alpha
+       "
+           "%f\n",
+           exp_avg_rtt, exp_avg_rtt_value, use_exp_avg_rtt, use_exp_avg_ecn,
+           exp_avg_alpha);*/
+
     if (rtt <= (_base_rtt + (_mss * 8 / LINK_SPEED_MODERN * 5 * 1000)) &&
         !ecn) {
         counter_consecutive_good_bytes += _mss;
-
     } else {
         target_window = _cwnd;
         counter_consecutive_good_bytes = 0;
@@ -1389,7 +1454,7 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
             }
 
             // Special case, decrease once per RTT
-            if (ecn && time_enough && once_per_rtt == 1) {
+            /*if (ecn && time_enough && once_per_rtt == 1) {
                 if (rtt > _target_rtt) {
                     _cwnd = _cwnd * max(0.5, 1 - 0.8 * ((rtt - _target_rtt) /
                                                         (double)rtt));
@@ -1430,7 +1495,7 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
                 t_last_decrease = eventlist().now();
                 count_skipped = 0;
                 return;
-            }
+            } */
 
             if (ecn && once_per_rtt >= 1) {
                 count_skipped++;
@@ -1464,16 +1529,11 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
                 // printf("1\n");
                 //  Case 2 Hybrid Based Decrease || RTT Decrease
             } else if (ecn && rtt > _target_rtt) {
-                if (!disable_case_3) {
+                if (can_decrease_exp_avg) {
                     _cwnd -= reaction_delay *
                              min(((w_gain *
                                    ((rtt - (double)_target_rtt) / rtt) * _mss) +
                                   _cwnd / (double)_bdp * z_gain * _mss),
-                                 (double)_mss);
-                } else {
-                    _cwnd -= reaction_delay *
-                             min((w_gain * ((rtt - (double)_target_rtt) / rtt) *
-                                  _mss),
                                  (double)_mss);
                 }
                 if (COLLECT_DATA) {
@@ -1483,7 +1543,7 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
                 // printf("2\n");
                 //  Case 3 Gentle Decrease (Window based)
             } else if (ecn && rtt < _target_rtt) {
-                if (!disable_case_3) {
+                if (can_decrease_exp_avg) {
                     reduce_cwnd(static_cast<double>(_cwnd) / _bdp * _mss *
                                 z_gain * reaction_delay);
                     if (COLLECT_DATA) {
@@ -1602,6 +1662,7 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
                 // Do nothing but fairness
                 //_cwnd += ((double)_mss * z_gain);
 
+                x_gain = (_cwnd / _mss) / 20.0;
                 _cwnd += ((double)_mss / _cwnd) * x_gain * _mss;
 
                 // printf("Increasing at %lu", GLOBAL_TIME);
@@ -1990,8 +2051,26 @@ void UecSrc::connect(Route *routeout, Route *routeback, UecSink &sink,
     _flow._name = _name;
     _sink->connect(*this, routeback);
 
-    // printf("StartTime is %lu\n", starttime);
-    eventlist().sourceIsPending(*this, starttime);
+    printf("StartTime %s is %lu\n", _name.c_str(), starttime);
+
+    if (_name == "uec_0_15") {
+        starttime = 0;
+    } else if (_name == "uec_1_15") {
+        starttime = 80000 * 2;
+    } else if (_name == "uec_2_15") {
+        starttime = 80000 * 4;
+    } else if (_name == "uec_3_15") {
+        starttime = 80000 * 6;
+    } else if (_name == "uec_4_15") {
+        starttime = 80000 * 4;
+    } else if (_name == "uec_5_15") {
+        starttime = 80000 * 5;
+    } else if (_name == "uec_6_15") {
+        starttime = 80000 * 6;
+    } else if (_name == "uec_7_15") {
+        starttime = 80000 * 7;
+    }
+    eventlist().sourceIsPending(*this, 0 * 1000);
 }
 
 void UecSrc::startflow() {
@@ -2001,13 +2080,15 @@ void UecSrc::startflow() {
     /*if (from < 512 && to >= 512) {
         _base_rtt =
                 ((5 * LINK_DELAY_MODERN) +
-                 ((PKT_SIZE_MODERN + 64) * 8 / LINK_SPEED_MODERN * _hop_count) +
+                 ((PKT_SIZE_MODERN + 64) * 8 / LINK_SPEED_MODERN *
+    _hop_count) +
                  +(5 * LINK_DELAY_MODERN) +
                  (64 * 8 / LINK_SPEED_MODERN * _hop_count) + (2 * 700000)) *
                 1000;
 
         _target_rtt =
-                _base_rtt * ((target_rtt_percentage_over_base + 1) / 100.0 + 1);
+                _base_rtt * ((target_rtt_percentage_over_base + 1) / 100.0 +
+    1);
 
         _bdp = (_base_rtt * LINK_SPEED_MODERN / 8) / 1000;
 
@@ -2016,7 +2097,8 @@ void UecSrc::startflow() {
         _consecutive_low_rtt = 0;
         target_window = _cwnd;
     }*/
-    printf("Starting Flow from %d to %d tag %d - RTT %lu - Target %lu - Time "
+    printf("Starting Flow from %d to %d tag %d - RTT %lu - Target %lu - "
+           "Time "
            "%lu\n",
            from, to, tag, _base_rtt, _target_rtt, GLOBAL_TIME / 1000);
     send_packets();
@@ -2064,20 +2146,13 @@ void UecSrc::map_entropies() {
 void UecSrc::pacedSend() {
     _paced_packet = true;
     /*printf("Sending a paced packet at %lu - Pacer Start %lu - Pacer End
-       %lu\n", GLOBAL_TIME / 1000, pacer_start_time / 1000, (pacer_start_time +
-       (uint64_t)(_base_rtt * 1.5)) / 1000);*/
+       %lu\n", GLOBAL_TIME / 1000, pacer_start_time / 1000,
+       (pacer_start_time + (uint64_t)(_base_rtt * 1.5)) / 1000);*/
     send_packets();
 }
 
 void UecSrc::send_packets() {
     //_list_cwd.push_back(std::make_pair(eventlist().now() / 1000, _cwnd));
-
-    if (pacer_start_time + (_base_rtt * 2) < eventlist().now() &&
-        generic_pacer != NULL) {
-        // use_pacing = false;
-        printf("Setting Use Pacing False, pacert stop %lu - now %lu\n",
-               (pacer_start_time + (_base_rtt * 2)), eventlist().now());
-    }
 
     if (_rtx_pending) {
         retransmit_packet();
@@ -2098,6 +2173,7 @@ void UecSrc::send_packets() {
 
         if (!_paced_packet && use_pacing) {
             if (generic_pacer != NULL && !generic_pacer->is_pending()) {
+                printf("scheduling send\n");
                 generic_pacer->schedule_send(pacing_delay);
                 return;
             } else if (generic_pacer != NULL) {
@@ -2179,7 +2255,8 @@ void UecSrc::set_paths(uint32_t no_of_paths) {
         _route_strategy != ECMP_FIB2_ECN && _route_strategy != REACTIVE_ECN &&
         _route_strategy != ECMP_RANDOM_ECN &&
         _route_strategy != ECMP_RANDOM2_ECN) {
-        cout << "Set paths uec (path_count) called with wrong route strategy "
+        cout << "Set paths uec (path_count) called with wrong route "
+                "strategy "
              << _route_strategy << endl;
         abort();
     }
@@ -2345,6 +2422,7 @@ bool UecSrc::resend_packet(std::size_t idx) {
     // Check pacer and set timeout
     if (!_paced_packet && use_pacing) {
         if (generic_pacer != NULL && !generic_pacer->is_pending()) {
+            printf("scheduling send2\n");
             generic_pacer->schedule_send(pacing_delay);
             return false;
         } else if (generic_pacer != NULL) {

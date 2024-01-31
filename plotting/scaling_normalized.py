@@ -26,8 +26,6 @@ parser.add_argument('--latency', dest='latency', type=int, help='Latency in NS',
 parser.add_argument('--name', dest='name', type=int, help='Name', default=1)
 
 
-
-
 args = parser.parse_args()
 folder = args.folder
 file_name = args.input_file

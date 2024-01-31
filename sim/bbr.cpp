@@ -995,7 +995,7 @@ void BBRSrc::receivePacket(Packet &pkt) {
         _logger->logBBR(*this, BBRLogger::BBR_RCV);
     }
     switch (pkt.type()) {
-    case UEC:
+    case BBR:
         // BTS
         if (_bts_enabled) {
             if (pkt.bounced()) {

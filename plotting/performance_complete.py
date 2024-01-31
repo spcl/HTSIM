@@ -176,7 +176,7 @@ def main(args):
         df4.reset_index(drop=True, inplace=True)
 
     # Sent data
-    colnames=['Time', 'Sent'] 
+    '''colnames=['Time', 'Sent'] 
     df5 = pd.DataFrame(columns =colnames)
     name = ['0'] * df5.shape[0]
     df5 = df5.assign(Node=name)
@@ -194,7 +194,7 @@ def main(args):
         # DownScale
         df5 = df5.iloc[::int(ratio)]
         # Reset the index of the new dataframe
-        df5.reset_index(drop=True, inplace=True)
+        df5.reset_index(drop=True, inplace=True)'''
 
     if (args.show_case):
         # Case1 Data
@@ -636,7 +636,7 @@ def main(args):
             go.Scatter(x=sub_df4["Time"], y=sub_df4['ECN'], mode="markers", marker_symbol="triangle-up", name="ECN Packet", marker=dict(size=5, color="yellow"), showlegend=True),
             secondary_y=False
         )
-    print("Sent Plot")
+    '''print("Sent Plot")
     # Sent
     mean_sent = df5["Time"].mean()
     df5['Sent'] = df5['Sent'].multiply(y_sent)
@@ -645,7 +645,7 @@ def main(args):
         fig.add_trace(
             go.Scatter(x=sub_df5["Time"], y=sub_df5["Sent"], mode="markers", marker_symbol="triangle-up", name="Sent Packet", marker=dict(size=5, color="green"), showlegend=True),
             secondary_y=False
-        )
+        )'''
 
     print("NACK Plot")
     # NACK
@@ -830,7 +830,7 @@ def main(args):
     # Set y-axes titles
     fig.update_yaxes(title_text="RTT || Queuing Latency (ns)", secondary_y=False)
     fig.update_yaxes(title_text="Congestion Window (B)", secondary_y=True)
-
+    
     now = datetime.now() # current date and time
     date_time = now.strftime("%m:%d:%Y_%H:%M:%S")
     print("Saving Plot")

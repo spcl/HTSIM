@@ -146,6 +146,11 @@ int main(int argc, char **argv) {
     int phantom_size;
     int phantom_slowdown = 10;
     bool use_phantom = false;
+    double exp_avg_ecn_value = .3;
+    double exp_avg_rtt_value = .3;
+    double exp_avg_alpha = 0.125;
+    bool use_exp_avg_ecn = false;
+    bool use_exp_avg_rtt = false;
 
     int i = 1;
     filename << "logout.dat";
@@ -404,6 +409,31 @@ int main(int argc, char **argv) {
             use_phantom = atoi(argv[i + 1]);
             printf("UsePhantomQueue: %d\n", use_phantom);
             CompositeQueue::set_use_phantom_queue(use_phantom);
+            i++;
+        } else if (!strcmp(argv[i], "-use_exp_avg_ecn")) {
+            use_exp_avg_ecn = atoi(argv[i + 1]);
+            printf("UseExpAvgEcn: %d\n", use_exp_avg_ecn);
+            UecSrc::set_exp_avg_ecn(use_exp_avg_ecn);
+            i++;
+        } else if (!strcmp(argv[i], "-use_exp_avg_rtt")) {
+            use_exp_avg_rtt = atoi(argv[i + 1]);
+            printf("UseExpAvgRtt: %d\n", use_exp_avg_rtt);
+            UecSrc::set_exp_avg_rtt(use_exp_avg_rtt);
+            i++;
+        } else if (!strcmp(argv[i], "-exp_avg_rtt_value")) {
+            exp_avg_rtt_value = std::stod(argv[i + 1]);
+            printf("UseExpAvgRttValue: %d\n", exp_avg_rtt_value);
+            UecSrc::set_exp_avg_rtt_value(exp_avg_rtt_value);
+            i++;
+        } else if (!strcmp(argv[i], "-exp_avg_ecn_value")) {
+            exp_avg_ecn_value = std::stod(argv[i + 1]);
+            printf("UseExpAvgecn_value: %d\n", exp_avg_ecn_value);
+            UecSrc::set_exp_avg_ecn_value(exp_avg_ecn_value);
+            i++;
+        } else if (!strcmp(argv[i], "-exp_avg_alpha")) {
+            exp_avg_alpha = std::stod(argv[i + 1]);
+            printf("UseExpAvgalpha: %d\n", exp_avg_alpha);
+            UecSrc::set_exp_avg_alpha(exp_avg_alpha);
             i++;
         } else if (!strcmp(argv[i], "-phantom_size")) {
             phantom_size = atoi(argv[i + 1]);
