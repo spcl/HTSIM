@@ -696,6 +696,7 @@ def main(args):
         my_title=args.name
     else:
         my_title="<b>Incast 2:1 – 1:1 FT – 800Gbps – 4KiB MTU – 128MiB Flows - LoadBalancing ON</b>"
+        my_title="Overall Timeline"
 
     # Add figure title
     fig.update_layout(title_text=my_title)

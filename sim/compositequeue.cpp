@@ -19,7 +19,7 @@ int CompositeQueue::_phantom_queue_slowdown = 10;
 CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize,
                                EventList &eventlist, QueueLogger *logger)
         : Queue(bitrate, maxsize, eventlist, logger) {
-    _ratio_high = 100;
+    _ratio_high = 2;
     _ratio_low = 1;
     _crt = 0;
     _num_headers = 0;
@@ -308,11 +308,6 @@ void CompositeQueue::receivePacket(Packet &pkt) {
         _logger->logQueue(*this, QueueLogger::PKT_ARRIVE, pkt);
     // is this a Tofino packet from the egress pipeline?
     if (!pkt.header_only()) {
-
-        /*printf("Current Queue Size %d - Max %d - Bit Rate %lu - Name %s vs "
-               "%s\n",
-               _queuesize_low, _maxsize, _bitrate, _nodename.c_str(),
-               _name.c_str());*/
         //  Queue
         if (COLLECT_DATA) {
             if (_queuesize_low != 0) {
@@ -381,6 +376,7 @@ void CompositeQueue::receivePacket(Packet &pkt) {
             pkt_p->enter_timestamp = GLOBAL_TIME;
             _enqueued_low.push(pkt_p);
 
+            // Increase PQ on data packet
             _queuesize_low += pkt.size();
             _current_queuesize_phatom += pkt.size();
             if (_current_queuesize_phatom > _phantom_queue_size) {
@@ -416,6 +412,12 @@ void CompositeQueue::receivePacket(Packet &pkt) {
                     pkt.free();
                     return;
                 }
+            }
+
+            // Increase Phantom Queue when also getting a trim
+            _current_queuesize_phatom += 4160;
+            if (_current_queuesize_phatom > _phantom_queue_size) {
+                _current_queuesize_phatom = _phantom_queue_size;
             }
 
             pkt.strip_payload();

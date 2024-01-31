@@ -597,7 +597,7 @@ void UecSrc::quick_adapt(bool trimmed) {
             // we move to much smaller windows.
             x_gain = min(initial_x_gain,
                          (_queue_size / 5.0) / (_mss * ((double)_bdp / _cwnd)));
-
+            printf("New X Gain is %f\n", x_gain);
             did_qa = true;
 
             // Go into pacing mode after QuickAdapt
@@ -605,11 +605,10 @@ void UecSrc::quick_adapt(bool trimmed) {
                 generic_pacer = new SmarttPacer(eventlist(), *this);
                 pacer_start_time = eventlist().now();
                 pacing_delay =
-                        ((4096 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
-                pacing_delay -= (4150 * 8 / 800);
-                pacing_delay = pacing_delay * 1;
-                printf("Setting the pacing delay %d %lu to %lu\n", _cwnd,
-                       (_base_rtt / 1000), pacing_delay);
+                        ((4160 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
+                pacing_delay -= (4160 * 8 / LINK_SPEED_MODERN);
+                printf("Setting the pacing delay %d %lu to %lu at %lu\n", _cwnd,
+                       (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
                 pacing_delay *= 1000;
             }
 
@@ -655,10 +654,10 @@ void UecSrc::processNack(UecNack &pkt) {
             quick_adapt(true);
         }
         if (count_received > ignore_for) {
-            reduce_cwnd(uint64_t(_mss * 0));
+            reduce_cwnd(uint64_t(_mss * 0.25));
         }
     } else {
-        reduce_cwnd(uint64_t(_mss * 0));
+        reduce_cwnd(uint64_t(_mss * 0.25));
     }
     check_limits_cwnd();
 
@@ -1043,7 +1042,6 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
 
         printf("Completion Time Flow is %lu - Overall Time %lu\n",
                eventlist().now() - _flow_start_time, GLOBAL_TIME);
-            
 
         printf("Overall Completion at %lu\n", GLOBAL_TIME);
         if (_end_trigger) {
@@ -1121,15 +1119,14 @@ void UecSrc::receivePacket(Packet &pkt) {
         // fflush(stdout);
         count_received++;
         total_pkt++;
-        if (use_pacing && generic_pacer != NULL &&
-            eventlist().now() > _base_rtt * 2) {
-            pacing_delay = ((4096 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
-            pacing_delay -= (4150 * 8 / 800);
-            printf("Setting the pacing2 delay %d %lu to %lu\n", _cwnd,
-                   (_base_rtt / 1000), pacing_delay);
-            pacing_delay *= 1000;
-            generic_pacer->cancel();
-            generic_pacer->schedule_send(pacing_delay);
+        if (use_pacing && generic_pacer != NULL && did_qa) {
+            // pacing_delay = ((4160 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
+            //  pacing_delay -= (4160 * 8 / 80);
+            printf("Setting the pacing delay update %d %lu to %lu at %lu\n",
+                   _cwnd, (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
+            // pacing_delay *= 1000;
+            //  generic_pacer->cancel();
+            // generic_pacer->schedule_send(pacing_delay);
         }
 
         processAck(dynamic_cast<UecAck &>(pkt), false);
@@ -1650,7 +1647,6 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
             } else if (ecn) {
                 if (!disable_case_3) {
                     reduce_cwnd(z_gain * _mss);
-                    printf("Decreasing at %lu", GLOBAL_TIME);
                     if (COLLECT_DATA) {
                         count_case_3.push_back(
                                 std::make_pair(eventlist().now() / 1000, 1));
@@ -2136,7 +2132,6 @@ void UecSrc::map_entropies() {
         _entropy_array.push_back(random() % _paths.size());
     }
     printf("Printing my Paths: ");
-    // //fflush(stdout);
     for (int i = 0; i < _num_entropies; i++) {
         printf("%d - ", _entropy_array[i]);
     }
@@ -2145,24 +2140,18 @@ void UecSrc::map_entropies() {
 
 void UecSrc::pacedSend() {
     _paced_packet = true;
-    /*printf("Sending a paced packet at %lu - Pacer Start %lu - Pacer End
-       %lu\n", GLOBAL_TIME / 1000, pacer_start_time / 1000,
-       (pacer_start_time + (uint64_t)(_base_rtt * 1.5)) / 1000);*/
     send_packets();
 }
 
 void UecSrc::send_packets() {
-    //_list_cwd.push_back(std::make_pair(eventlist().now() / 1000, _cwnd));
 
     if (_rtx_pending) {
         retransmit_packet();
     }
-    // printf("Sent Packet Called, %d\n", from);
     _list_unacked.push_back(std::make_pair(eventlist().now() / 1000, _unacked));
     unsigned c = _cwnd;
 
-    while ( //_last_acked + c >= _highest_sent + _mss &&
-            get_unacked() + _mss <= c && _highest_sent < _flow_size) {
+    while (get_unacked() + _mss <= c && _highest_sent < _flow_size) {
 
         // Stop sending
         if (pause_send && stop_after_quick) {
@@ -2170,7 +2159,6 @@ void UecSrc::send_packets() {
         }
 
         // Check pacer and set timeout
-
         if (!_paced_packet && use_pacing) {
             if (generic_pacer != NULL && !generic_pacer->is_pending()) {
                 printf("scheduling send\n");
@@ -2182,28 +2170,13 @@ void UecSrc::send_packets() {
         }
 
         uint64_t data_seq = 0;
-
-        // create packet
-        // printf("Dest 1 is %d\n", _dstaddr);
-        // //fflush(stdout);
         UecPacket *p = UecPacket::newpkt(_flow, *_route, _highest_sent + 1,
                                          data_seq, _mss, false, _dstaddr);
 
-        // p->set_route(*_route);
-        // int path_chosen = choose_route();
-        // printf("Path Chosen %d - Size %d\n", path_chosen,
-        // _path_ids.size()); p->set_pathid(_path_ids[path_chosen]);
-
         p->set_route(*_route);
         int crt = choose_route();
-        // crt = random() % _paths.size();
 
         p->set_pathid(_path_ids[crt]);
-
-        /*printf("From %d - CRT %d - PathID %d - Size %d\n", from, crt,
-               _path_ids[crt], _path_ids.size());
-        //fflush(stdout);*/
-
         p->from = this->from;
         p->to = this->to;
         p->tag = this->tag;
@@ -2218,7 +2191,6 @@ void UecSrc::send_packets() {
         _unacked += _mss;
 
         // Getting time until packet is really sent
-        // printf("Sent Packet, %d\n", from);
         PacketSink *sink = p->sendOn();
         HostQueue *q = dynamic_cast<HostQueue *>(sink);
         assert(q);
@@ -2422,7 +2394,6 @@ bool UecSrc::resend_packet(std::size_t idx) {
     // Check pacer and set timeout
     if (!_paced_packet && use_pacing) {
         if (generic_pacer != NULL && !generic_pacer->is_pending()) {
-            printf("scheduling send2\n");
             generic_pacer->schedule_send(pacing_delay);
             return false;
         } else if (generic_pacer != NULL) {
@@ -2436,13 +2407,6 @@ bool UecSrc::resend_packet(std::size_t idx) {
     // packet, but others close to timeout
     _rto_margin = _rtt / 2;
 
-    // if (_use_good_entropies && !_good_entropies.empty()) {
-    //     rt = _good_entropies[_next_good_entropy];
-    //     ++_next_good_entropy;
-    //     _next_good_entropy %= _good_entropies.size();
-    // } else {
-    // }
-    // Getting time until packet is really sent
     _unacked += _mss;
     UecPacket *p = UecPacket::newpkt(_flow, *_route, _sent_packets[idx].seqno,
                                      0, _mss, true, _dstaddr);
@@ -2450,7 +2414,6 @@ bool UecSrc::resend_packet(std::size_t idx) {
 
     p->set_route(*_route);
     int crt = choose_route();
-    // crt = random() % _paths.size();
 
     p->set_pathid(_path_ids[crt]);
 

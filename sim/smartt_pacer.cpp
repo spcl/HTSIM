@@ -9,8 +9,6 @@ SmarttPacer::SmarttPacer(EventList &event_list, UecSrc &flow)
 void SmarttPacer::schedule_send(simtime_picosec delay) {
     _interpacket_delay = delay;
     _next_send = _last_send + _interpacket_delay;
-    printf("Scheduling Send Pacer - Time now %lu - Next Sent %lu\n",
-           eventlist().now(), _next_send);
     if (_next_send <= eventlist().now()) {
         _next_send = eventlist().now();
         doNextEvent();
@@ -29,7 +27,6 @@ void SmarttPacer::just_sent() { _last_send = eventlist().now(); }
 
 void SmarttPacer::doNextEvent() {
     assert(eventlist().now() == _next_send);
-    // printf("Pacer DoNextEvent\n");
     flow->pacedSend();
 
     _last_send = eventlist().now();
