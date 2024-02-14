@@ -273,17 +273,17 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-gain_value_med_inc")) {
             gain_value_med_inc = std::stod(argv[i + 1]);
-            UecSrc::set_gain_value_med_inc(gain_value_med_inc);
+            // UecSrc::set_gain_value_med_inc(gain_value_med_inc);
             printf("GainValueMedIncrease: %f\n", gain_value_med_inc);
             i++;
         } else if (!strcmp(argv[i], "-jitter_value_med_inc")) {
             jitter_value_med_inc = std::stod(argv[i + 1]);
-            UecSrc::set_jitter_value_med_inc(jitter_value_med_inc);
+            // UecSrc::set_jitter_value_med_inc(jitter_value_med_inc);
             printf("JitterValue: %f\n", jitter_value_med_inc);
             i++;
         } else if (!strcmp(argv[i], "-delay_gain_value_med_inc")) {
             delay_gain_value_med_inc = std::stod(argv[i + 1]);
-            UecSrc::set_delay_gain_value_med_inc(delay_gain_value_med_inc);
+            // UecSrc::set_delay_gain_value_med_inc(delay_gain_value_med_inc);
             printf("DelayGainValue: %f\n", delay_gain_value_med_inc);
             i++;
         } else if (!strcmp(argv[i], "-target_rtt_percentage_over_base")) {
@@ -327,6 +327,10 @@ int main(int argc, char **argv) {
             bonus_drop = std::stod(argv[i + 1]);
             UecSrc::set_bonus_drop(bonus_drop);
             printf("BonusDrop: %f\n", bonus_drop);
+            i++;
+        } else if (!strcmp(argv[i], "-phantom_in_series")) {
+            CompositeQueue::set_use_phantom_in_series();
+            printf("PhantomQueueInSeries: %d\n", 1);
             i++;
         } else if (!strcmp(argv[i], "-drop_value_buffer")) {
             drop_value_buffer = std::stod(argv[i + 1]);

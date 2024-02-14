@@ -68,25 +68,18 @@ void FatTreeSwitch::receivePacket(Packet &pkt) {
 
         pkt.hop_count++;
 
-        /*printf("At %s - Hop %d - Time %lu\n", nodename().c_str(),
-           pkt.hop_count, GLOBAL_TIME);*/
+        // printf("From %d - At %s - Hop %d - Time %lu - Typr %d\n", pkt.from,
+        //        nodename().c_str(), pkt.hop_count, GLOBAL_TIME, pkt.type());
 
         if ((pkt.hop_count == 1) &&
             (pkt.type() == UEC || pkt.type() == NDP ||
              pkt.type() == SWIFTTRIMMING || pkt.type() == UEC_DROP)) {
-            pkt.set_ts(GLOBAL_TIME -
-                       (SINGLE_PKT_TRASMISSION_TIME_MODERN * 1000) -
-                       (LINK_DELAY_MODERN * 1000));
-            simtime_picosec my_time =
-                    GLOBAL_TIME - (SINGLE_PKT_TRASMISSION_TIME_MODERN * 1000) -
-                    (LINK_DELAY_MODERN * 1000);
 
-            if (precision_ts == 1) {
-                pkt.set_ts(my_time);
-            } else {
-                pkt.set_ts(((my_time + precision_ts - 1) / precision_ts) *
-                           precision_ts);
-            }
+            simtime_picosec my_time =
+                    (GLOBAL_TIME - (4160 * 8 / LINK_SPEED_MODERN * 1000) -
+                     (LINK_DELAY_MODERN * 1000));
+
+            pkt.set_ts(my_time);
 
             if (COLLECT_DATA) {
                 // Sent
@@ -95,10 +88,14 @@ void FatTreeSwitch::receivePacket(Packet &pkt) {
                                          std::to_string(pkt.from) + ".txt ");
                 std::ofstream MyFile(file_name, std::ios_base::app);
 
-                MyFile << (GLOBAL_TIME - 70000000) / 1000 << "," << 1
+                MyFile << my_time / 1000 << "," << 1 << "," << pkt.id()
                        << std::endl;
 
                 MyFile.close();
+
+                // printf("Pkt %d %d - Time %lu %lu - Size %d\n", pkt.from,
+                //        pkt.id(), eventlist().now() / 1000, my_time,
+                //        pkt.size());
             }
         }
 
@@ -427,14 +424,27 @@ Route *FatTreeSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 break;
             }
 
+        bool force_routing = true;
+        if (force_routing && pkt.size() > 1000 &&
+            nodename() == "Switch_LowerPod_0") {
+            ecmp_choice = pkt.from;
+        }
+
         FibEntry *e = (*available_hops)[ecmp_choice];
-        /*printf("Here2 %d %d - Hops Size %d - IdxID %d - Inc ID %d - Direction
-           "
+
+        printf("Here2 %d %d@%d - Time %lu - Hops Size %d - IdxID %d - Inc ID "
                "%d - "
+               "Direction"
+               "%d - EgressPort %d - ECMP Choice %d -"
                "MyId "
                "%d %s\n",
-               pkt.size(), pkt.dst(), available_hops->size(), pkt.my_idx,
-               pkt.inc_id, e->getDirection(), id, nodename().c_str());*/
+               pkt.size(), pkt.from, pkt.dst(), GLOBAL_TIME / 1000,
+               available_hops->size(), pkt.my_idx, pkt.inc_id,
+               e->getDirection(), e->getEgressPort()->path_id(), ecmp_choice,
+               id, nodename().c_str());
+        printf("FROM %d / CHOICE %d / HOPS %d \n", pkt.from, ecmp_choice,
+               available_hops->size());
+        fflush(stdout);
         pkt.set_direction(e->getDirection());
 
         return e->getEgressPort();

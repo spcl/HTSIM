@@ -227,17 +227,17 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-gain_value_med_inc")) {
             gain_value_med_inc = std::stod(argv[i + 1]);
-            UecSrc::set_gain_value_med_inc(gain_value_med_inc);
+            // UecSrc::set_gain_value_med_inc(gain_value_med_inc);
             printf("GainValueMedIncrease: %f\n", gain_value_med_inc);
             i++;
         } else if (!strcmp(argv[i], "-jitter_value_med_inc")) {
             jitter_value_med_inc = std::stod(argv[i + 1]);
-            UecSrc::set_jitter_value_med_inc(jitter_value_med_inc);
+            // UecSrc::set_jitter_value_med_inc(jitter_value_med_inc);
             printf("JitterValue: %f\n", jitter_value_med_inc);
             i++;
         } else if (!strcmp(argv[i], "-delay_gain_value_med_inc")) {
             delay_gain_value_med_inc = std::stod(argv[i + 1]);
-            UecSrc::set_delay_gain_value_med_inc(delay_gain_value_med_inc);
+            // UecSrc::set_delay_gain_value_med_inc(delay_gain_value_med_inc);
             printf("DelayGainValue: %f\n", delay_gain_value_med_inc);
             i++;
         } else if (!strcmp(argv[i], "-target_rtt_percentage_over_base")) {

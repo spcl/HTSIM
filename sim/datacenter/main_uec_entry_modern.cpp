@@ -151,6 +151,7 @@ int main(int argc, char **argv) {
     double exp_avg_alpha = 0.125;
     bool use_exp_avg_ecn = false;
     bool use_exp_avg_rtt = false;
+    int stop_pacing_after_rtt = 0;
 
     int i = 1;
     filename << "logout.dat";
@@ -191,6 +192,10 @@ int main(int argc, char **argv) {
             UecSrc::set_once_per_rtt(once_per_rtt);
             printf("OnceRTTDecrease: %d\n", once_per_rtt);
             i++;
+        } else if (!strcmp(argv[i], "-stop_pacing_after_rtt")) {
+            stop_pacing_after_rtt = atoi(argv[i + 1]);
+            UecSrc::set_stop_pacing(stop_pacing_after_rtt);
+            i++;
         } else if (!strcmp(argv[i], "-linkspeed")) {
             // linkspeed specified is in Mbps
             linkspeed = speedFromMbps(atof(argv[i + 1]));
@@ -203,6 +208,8 @@ int main(int argc, char **argv) {
             // kmin as percentage of queue size (0..100)
             kmin = atoi(argv[i + 1]);
             printf("KMin: %d\n", atoi(argv[i + 1]));
+            CompositeQueue::set_kMin(kmin);
+            UecSrc::set_kmin(kmin / 100.0);
             i++;
         } else if (!strcmp(argv[i], "-k")) {
             fat_tree_k = atoi(argv[i + 1]);
@@ -215,6 +222,8 @@ int main(int argc, char **argv) {
             // kmin as percentage of queue size (0..100)
             kmax = atoi(argv[i + 1]);
             printf("KMax: %d\n", atoi(argv[i + 1]));
+            CompositeQueue::set_kMax(kmax);
+            UecSrc::set_kmax(kmax / 100.0);
             i++;
         } else if (!strcmp(argv[i], "-pfc_marking")) {
             pfc_marking = atoi(argv[i + 1]);
@@ -323,17 +332,29 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-gain_value_med_inc")) {
             gain_value_med_inc = std::stod(argv[i + 1]);
-            UecSrc::set_gain_value_med_inc(gain_value_med_inc);
+            // UecSrc::set_gain_value_med_inc(gain_value_med_inc);
             printf("GainValueMedIncrease: %f\n", gain_value_med_inc);
             i++;
         } else if (!strcmp(argv[i], "-jitter_value_med_inc")) {
             jitter_value_med_inc = std::stod(argv[i + 1]);
-            UecSrc::set_jitter_value_med_inc(jitter_value_med_inc);
+            // UecSrc::set_jitter_value_med_inc(jitter_value_med_inc);
             printf("JitterValue: %f\n", jitter_value_med_inc);
+            i++;
+        } else if (!strcmp(argv[i], "-decrease_on_nack")) {
+            double decrease_on_nack = std::stod(argv[i + 1]);
+            UecSrc::set_decrease_on_nack(decrease_on_nack);
+            i++;
+        } else if (!strcmp(argv[i], "-phantom_in_series")) {
+            CompositeQueue::set_use_phantom_in_series();
+            printf("PhantomQueueInSeries: %d\n", 1);
+            // i++;
+        } else if (!strcmp(argv[i], "-phantom_both_queues")) {
+            CompositeQueue::set_use_both_queues();
+            printf("PhantomUseBothForECNMarking: %d\n", 1);
             i++;
         } else if (!strcmp(argv[i], "-delay_gain_value_med_inc")) {
             delay_gain_value_med_inc = std::stod(argv[i + 1]);
-            UecSrc::set_delay_gain_value_med_inc(delay_gain_value_med_inc);
+            // UecSrc::set_delay_gain_value_med_inc(delay_gain_value_med_inc);
             printf("DelayGainValue: %f\n", delay_gain_value_med_inc);
             i++;
         } else if (!strcmp(argv[i], "-target_rtt_percentage_over_base")) {
@@ -508,6 +529,15 @@ int main(int argc, char **argv) {
                 printf("Name Running: SMaRTT ECN Only Variable\n");
             } else if (!strcmp(argv[i + 1], "intersmartt")) {
                 UecSrc::set_alogirthm("intersmartt");
+                printf("Name Running: SMaRTT InterDataCenter\n");
+            } else if (!strcmp(argv[i + 1], "intersmartt_new")) {
+                UecSrc::set_alogirthm("intersmartt_new");
+                printf("Name Running: SMaRTT InterDataCenter\n");
+            } else if (!strcmp(argv[i + 1], "intersmartt_simple")) {
+                UecSrc::set_alogirthm("intersmartt_simple");
+                printf("Name Running: SMaRTT InterDataCenter\n");
+            } else if (!strcmp(argv[i + 1], "intersmartt_advanced")) {
+                UecSrc::set_alogirthm("intersmartt_advanced");
                 printf("Name Running: SMaRTT InterDataCenter\n");
             }
             i++;

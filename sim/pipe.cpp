@@ -21,6 +21,8 @@ void Pipe::receivePacket(Packet &pkt) {
     if (_count == 0) {
         /* no packets currently inflight; need to notify the eventlist
            we've an event pending */
+        // printf("Pkt1 %d %d - Time %lu %lu - Size %d\n", pkt.from, pkt.id(),
+        //        eventlist().now() / 1000, 1, pkt.size());
         eventlist().sourceIsPendingRel(*this, _delay);
     }
     _count++;
@@ -40,6 +42,9 @@ void Pipe::receivePacket(Packet &pkt) {
         }
         _size += _size;
     }
+
+    // printf("Pkt2 %d %d - Time %lu %lu - Size %d\n", pkt.from, pkt.id(),
+    //        eventlist().now() / 1000, 1, pkt.size());
     _inflight_v[_next_insert].time = eventlist().now() + _delay;
     _inflight_v[_next_insert].pkt = &pkt;
     _next_insert = (_next_insert + 1) % _size;
@@ -60,11 +65,13 @@ void Pipe::doNextEvent() {
 
     // tell the packet to move itself on to the next hop
     pkt->sendOn();
-
-    // if (!_inflight.empty()) {
+    // printf("Pkt4 %d %d - Time %lu vs %lu - Size %d\n", pkt->from, pkt->id(),
+    //        eventlist().now() / 1000, 1000 / 1000, pkt->size());
+    //  if (!_inflight.empty()) {
     if (_count > 0) {
         // notify the eventlist we've another event pending
         simtime_picosec nexteventtime = _inflight_v[_next_pop].time;
+
         _eventlist.sourceIsPending(*this, nexteventtime);
     }
 }

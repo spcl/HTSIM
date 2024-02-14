@@ -48,6 +48,12 @@ class CompositeQueue : public Queue {
         _ecn_maxthresh = max_thresh;
     }
 
+    static void set_use_phantom_in_series() { _phantom_in_series = true; }
+
+    static void set_kMin(int value) { _kmin_from_input = value; }
+
+    static void set_kMax(int value) { _kmax_from_input = value; }
+
     void set_bts_threshold(mem_b bts_triggers_at) {
         _bts_triggering = bts_triggers_at;
     }
@@ -60,6 +66,8 @@ class CompositeQueue : public Queue {
     static void set_use_phantom_queue(bool use_phantom) {
         _use_phantom = use_phantom;
     }
+
+    static void set_use_both_queues() { _use_both_queues = true; }
 
     static void set_phantom_queue_size(int phantom_size) {
         _phantom_queue_size = phantom_size;
@@ -75,6 +83,7 @@ class CompositeQueue : public Queue {
     static bool _use_mixed;
     static bool _drop_when_full;
     static bool _use_phantom;
+    static bool _use_both_queues;
     static int _phantom_queue_size;
     static int _phantom_queue_slowdown;
     int _num_packets;
@@ -90,6 +99,9 @@ class CompositeQueue : public Queue {
     int trimmed_seen = 0;
     simtime_picosec _decrease_phantom_next = 0;
     simtime_picosec _draining_time_phantom = 0;
+    static bool _phantom_in_series;
+    static int _kmin_from_input;
+    static int _kmax_from_input;
 
   protected:
     // Mechanism

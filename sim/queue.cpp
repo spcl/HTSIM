@@ -262,7 +262,7 @@ simtime_picosec PriorityQueue::serviceTime(Packet &pkt) {
 
 void PriorityQueue::receivePacket(Packet &pkt) {
     // is this a PAUSE packet?
-    printf("Received2 here\n");
+    // printf("Received2 here\n");
     if (pkt.type() == ETH_PAUSE) {
         EthPausePacket *p = (EthPausePacket *)&pkt;
 
@@ -442,7 +442,7 @@ FairPriorityQueue::getPriority(Packet &pkt) {
         } else {
             UecPacket *uec = dynamic_cast<UecPacket *>(&pkt);
             if (uec->retransmitted()) {
-                prio = Q_MID;
+                prio = Q_LO;
             } else {
                 prio = Q_LO;
             }
@@ -574,6 +574,8 @@ void FairPriorityQueue::receivePacket(Packet &pkt) {
     }
 
     _queuesize[prio] += pkt.size();
+    // printf("Pkt6 %d %d - Time %lu %lu - Size %d - Prio %d\n", pkt.from,
+    //        pkt.id(), eventlist().now() / 1000, 1, pkt.size(), prio);
     _queue[prio].enqueue(pkt);
 
     if (_logger)
@@ -581,6 +583,8 @@ void FairPriorityQueue::receivePacket(Packet &pkt) {
 
     if (queueWasEmpty && _state_send == LosslessQueue::READY) {
         /* schedule the dequeue event */
+        // printf("Pkt8 %d %d - Time %lu %lu - Size %d - Prio %d\n", pkt.from,
+        //        pkt.id(), eventlist().now() / 1000, 1, pkt.size(), prio);
         beginService();
     }
 }
@@ -594,6 +598,10 @@ void FairPriorityQueue::beginService() {
             _sending = _queue[prio].dequeue();
 
             assert(_sending != NULL);
+            // printf("Pkt7 %d %d - Time %lu %lu - Size %d - Prio %d - Drain "
+            //        "%lu\n",
+            //        _sending->from, _sending->id(), eventlist().now() / 1000,
+            //        1, _sending->size(), prio, drainTime(_sending));
             eventlist().sourceIsPendingRel(*this, drainTime(_sending));
             _servicing = (queue_priority_t)prio;
             return;
@@ -620,6 +628,8 @@ void FairPriorityQueue::completeService() {
             _logger->logQueue(*this, QueueLogger::PKT_SERVICE, *pkt);
 
         /* tell the packet to move on to the next pipe */
+        // printf("Pkt5 %d %d - Time %lu %lu - Size %d\n", pkt->from, pkt->id(),
+        //        eventlist().now() / 1000, 1, pkt->size());
         pkt->sendOn();
     }
 
