@@ -124,11 +124,11 @@ int main(int argc, char **argv) {
     double bonus_drop = 1;
     double drop_value_buffer = 1;
     double starting_cwnd_ratio = 0;
-    int explicit_starting_cwnd = 0;
-    int explicit_starting_buffer = 0;
-    int explicit_base_rtt = 0;
-    int explicit_target_rtt = 0;
-    int explicit_bdp = 0;
+    uint64_t explicit_starting_cwnd = 0;
+    uint64_t explicit_starting_buffer = 0;
+    uint64_t explicit_base_rtt = 0;
+    uint64_t explicit_target_rtt = 0;
+    uint64_t explicit_bdp = 0;
     double queue_size_ratio = 0;
     bool disable_case_3 = false;
     bool disable_case_4 = false;
@@ -151,6 +151,7 @@ int main(int argc, char **argv) {
     double exp_avg_alpha = 0.125;
     bool use_exp_avg_ecn = false;
     bool use_exp_avg_rtt = false;
+    int jump_to = 0;
     int stop_pacing_after_rtt = 0;
 
     int i = 1;
@@ -246,6 +247,9 @@ int main(int argc, char **argv) {
             disable_case_3 = atoi(argv[i + 1]);
             UecSrc::set_disable_case_3(disable_case_3);
             printf("DisableCase3: %d\n", disable_case_3);
+            i++;
+        } else if (!strcmp(argv[i], "-jump_to")) {
+            UecSrc::jump_to = atoi(argv[i + 1]);
             i++;
         } else if (!strcmp(argv[i], "-reaction_delay")) {
             reaction_delay = atoi(argv[i + 1]);
@@ -400,13 +404,13 @@ int main(int argc, char **argv) {
             explicit_bdp = explicit_starting_buffer;
             i++;
         } else if (!strcmp(argv[i], "-explicit_base_rtt")) {
-            explicit_base_rtt = atoi(argv[i + 1]);
+            explicit_base_rtt = ((uint64_t)atoi(argv[i + 1])) * 1000;
             printf("BaseRTTForced: %d\n", explicit_base_rtt);
             UecSrc::set_explicit_rtt(explicit_base_rtt);
             i++;
         } else if (!strcmp(argv[i], "-explicit_target_rtt")) {
-            explicit_target_rtt = atoi(argv[i + 1]);
-            printf("TargetRTTForced: %d\n", explicit_target_rtt);
+            explicit_target_rtt = ((uint64_t)atoi(argv[i + 1])) * 1000;
+            printf("TargetRTTForced: %lu\n", explicit_target_rtt);
             UecSrc::set_explicit_target_rtt(explicit_target_rtt);
             i++;
         } else if (!strcmp(argv[i], "-queue_size_ratio")) {
@@ -539,6 +543,9 @@ int main(int argc, char **argv) {
             } else if (!strcmp(argv[i + 1], "intersmartt_advanced")) {
                 UecSrc::set_alogirthm("intersmartt_advanced");
                 printf("Name Running: SMaRTT InterDataCenter\n");
+            } else if (!strcmp(argv[i + 1], "intersmartt_composed")) {
+                UecSrc::set_alogirthm("intersmartt_composed");
+                printf("Name Running: SMaRTT InterDataCenter\n");
             }
             i++;
         } else
@@ -584,7 +591,7 @@ int main(int argc, char **argv) {
     }
 
     // Calculate Network Info
-    int hops = 6; // hardcoded for now
+    int hops = 4; // hardcoded for now
     uint64_t actual_starting_cwnd = 0;
     uint64_t base_rtt_max_hops =
             (hops * LINK_DELAY_MODERN) +
@@ -613,8 +620,10 @@ int main(int argc, char **argv) {
 
     UecSrc::set_starting_cwnd(actual_starting_cwnd);
 
-    printf("Using BDP of %lu - Queue is %lld - Starting Window is %lu\n",
-           bdp_local, queuesize, actual_starting_cwnd);
+    printf("Using BDP of %lu - Queue is %lld - Starting Window is %lu - RTT "
+           "%lu - Bandwidth %lu\n",
+           bdp_local, queuesize, actual_starting_cwnd, base_rtt_max_hops,
+           LINK_SPEED_MODERN);
 
     cout << "Using subflow count " << subflow_count << endl;
 

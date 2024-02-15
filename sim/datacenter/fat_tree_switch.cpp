@@ -424,7 +424,7 @@ Route *FatTreeSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 break;
             }
 
-        bool force_routing = true;
+        bool force_routing = false;
         if (force_routing && pkt.size() > 1000 &&
             nodename() == "Switch_LowerPod_0") {
             ecmp_choice = pkt.from;
@@ -432,7 +432,7 @@ Route *FatTreeSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
 
         FibEntry *e = (*available_hops)[ecmp_choice];
 
-        printf("Here2 %d %d@%d - Time %lu - Hops Size %d - IdxID %d - Inc ID "
+        /*printf("Here2 %d %d@%d - Time %lu - Hops Size %d - IdxID %d - Inc ID "
                "%d - "
                "Direction"
                "%d - EgressPort %d - ECMP Choice %d -"
@@ -444,7 +444,7 @@ Route *FatTreeSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                id, nodename().c_str());
         printf("FROM %d / CHOICE %d / HOPS %d \n", pkt.from, ecmp_choice,
                available_hops->size());
-        fflush(stdout);
+        fflush(stdout);*/
         pkt.set_direction(e->getDirection());
 
         return e->getEgressPort();

@@ -126,9 +126,9 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     }
     static void set_exp_avg_alpha(double value) { exp_avg_alpha = value; }
 
-    static void set_explicit_rtt(int value) { explicit_base_rtt = value; }
+    static void set_explicit_rtt(uint64_t value) { explicit_base_rtt = value; }
     static void set_explicit_bdp(int value) { explicit_bdp = value; }
-    static void set_explicit_target_rtt(int value) {
+    static void set_explicit_target_rtt(uint64_t value) {
         explicit_target_rtt = value;
     }
 
@@ -247,6 +247,8 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     bool was_zero_before = false;
     double ideal_x = 0;
     static bool do_jitter;
+    static int jump_to;
+    int qa_count = 0;
     static bool do_exponential_gain;
     static bool use_fast_increase;
     static bool use_super_fast_increase;
@@ -261,9 +263,9 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     simtime_picosec next_increase_at = 0;
     int increasing_for = 1;
 
-    static int explicit_target_rtt;
-    static int explicit_base_rtt;
-    static int explicit_bdp;
+    static uint64_t explicit_target_rtt;
+    static uint64_t explicit_base_rtt;
+    static uint64_t explicit_bdp;
 
     static double exp_avg_ecn_value;
     static double exp_avg_rtt_value;
@@ -426,6 +428,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     simtime_picosec current_bonus_end = 0;
     double bonus_rand = 0;
     double previous_ecn_rate = 0;
+    bool rate_increasing = false;
 
     static double kmax, kmin;
 

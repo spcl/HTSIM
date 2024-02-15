@@ -38,7 +38,7 @@ CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize,
     _ecn_maxthresh = maxsize * 2; // don't set ECN by default
 
     _draining_time_phantom =
-            ((4096 + 64) * 8.0) / 80; // Add paramters here eventually
+            ((4096 + 64) * 8.0) / 10; // Add paramters here eventually
     _draining_time_phantom +=
             (_draining_time_phantom * _phantom_queue_slowdown / 100.0);
     _draining_time_phantom *= 1000;
@@ -102,28 +102,28 @@ bool CompositeQueue::decide_ECN() {
 
     // ECN mark on deque
     if (_use_both_queues) {
-        printf("Using both Queues");
-        uint64_t starting_bonus_from_real_queue = 0;
-        _ecn_maxthresh = _maxsize / 100 * _kmax_from_input;
-        _ecn_minthresh = _maxsize / 100 * _kmin_from_input;
+
+        bool real_queue_ecn = false;
+        _ecn_maxthresh = _maxsize / 100 * 50;
+        _ecn_minthresh = _maxsize / 100 * 80;
         if (_queuesize_low > _ecn_minthresh) {
             uint64_t p = (0x7FFFFFFF * (_queuesize_low - _ecn_minthresh)) /
                          (_ecn_maxthresh - _ecn_minthresh);
-            starting_bonus_from_real_queue = p / 2;
+            if ((uint64_t)random() < p) {
+                real_queue_ecn = true;
+                printf("Using both Queues - Size Real %lu\n", _maxsize);
+            }
         }
 
         _ecn_maxthresh = _phantom_queue_size / 100 * _kmax_from_input;
         _ecn_minthresh = _phantom_queue_size / 100 * _kmin_from_input;
-
         if (_current_queuesize_phatom > _ecn_maxthresh) {
             return true;
         } else if (_current_queuesize_phatom > _ecn_minthresh) {
             uint64_t p = (0x7FFFFFFF *
                           (_current_queuesize_phatom - _ecn_minthresh)) /
                          (_ecn_maxthresh - _ecn_minthresh);
-            printf("Queue %s - Contr 1 %lu - Contr 2 %lu\n", _name.c_str(),
-                   starting_bonus_from_real_queue, p);
-            if ((uint64_t)random() < (p + starting_bonus_from_real_queue)) {
+            if (((uint64_t)random() < p) || real_queue_ecn) {
                 return true;
             }
         }
@@ -235,7 +235,7 @@ void CompositeQueue::completeService() {
         assert(!_enqueued_high.empty());
         pkt = _enqueued_high.pop();
         trimmed_seen++;
-        printf("Queue %s - %d@%d\n", _nodename.c_str(), pkt->from, pkt->to);
+        // printf("Queue %s - %d@%d\n", _nodename.c_str(), pkt->from, pkt->to);
         _queuesize_high -= pkt->size();
         if (_logger)
             _logger->logQueue(*this, QueueLogger::PKT_SERVICE, *pkt);
@@ -415,8 +415,8 @@ void CompositeQueue::receivePacket(Packet &pkt) {
                 }
             }
 
-            printf("Trimming %d@%d - Time %lu\n", pkt.from, pkt.to,
-                   GLOBAL_TIME / 1000);
+            // printf("Trimming %d@%d - Time %lu\n", pkt.from, pkt.to,
+            //        GLOBAL_TIME / 1000);
             pkt.strip_payload();
             _num_stripped++;
             pkt.flow().logTraffic(pkt, *this, TrafficLogger::PKT_TRIM);
@@ -426,7 +426,7 @@ void CompositeQueue::receivePacket(Packet &pkt) {
     }
     assert(pkt.header_only());
 
-    if (_queuesize_high + pkt.size() > 200 * _maxsize) {
+    if (_queuesize_high + pkt.size() > 2000 * _maxsize) {
         // drop header
         // cout << "drop!\n";
         if (pkt.reverse_route() && pkt.bounced() == false) {
