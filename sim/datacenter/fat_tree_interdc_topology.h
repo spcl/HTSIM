@@ -1,6 +1,6 @@
 // -*- c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef FAT_TREE
-#define FAT_TREE
+#ifndef FAT_TREE_INTERDC_TOPOLOGY_H
+#define FAT_TREE_INTERDC_TOPOLOGY_H
 #include "config.h"
 #include "eventlist.h"
 #include "firstfit.h"
@@ -39,28 +39,32 @@ typedef enum { UPLINK, DOWNLINK } link_direction;
 
 class FatTreeInterDCTopology : public Topology {
   public:
-    vector<Switch *> switches_lp;
-    vector<Switch *> switches_up;
-    vector<Switch *> switches_c;
-    vector<Switch *> switches_border;
+    vector<vector<Switch *>> switches_lp;
+    vector<vector<Switch *>> switches_up;
+    vector<vector<Switch *>> switches_c;
+    vector<vector<Switch *>> switches_border;
 
-    vector<vector<Pipe *>> pipes_nborder_nc;
-    vector<vector<Pipe *>> pipes_nc_nup;
-    vector<vector<Pipe *>> pipes_nup_nlp;
-    vector<vector<Pipe *>> pipes_nlp_ns;
-    vector<vector<BaseQueue *>> queues_nborder_nc;
-    vector<vector<BaseQueue *>> queues_nc_nup;
-    vector<vector<BaseQueue *>> queues_nup_nlp;
-    vector<vector<BaseQueue *>> queues_nlp_ns;
+    vector<vector<Pipe *>> pipes_nborderl_nborderu;
+    vector<vector<vector<Pipe *>>> pipes_nborder_nc;
+    vector<vector<vector<Pipe *>>> pipes_nc_nup;
+    vector<vector<vector<Pipe *>>> pipes_nup_nlp;
+    vector<vector<vector<Pipe *>>> pipes_nlp_ns;
+    vector<vector<BaseQueue *>> queues_nborderl_nborderu;
+    vector<vector<vector<BaseQueue *>>> queues_nborder_nc;
+    vector<vector<vector<BaseQueue *>>> queues_nc_nup;
+    vector<vector<vector<BaseQueue *>>> queues_nup_nlp;
+    vector<vector<vector<BaseQueue *>>> queues_nlp_ns;
 
-    vector<vector<Pipe *>> pipes_nc_nborder;
-    vector<vector<Pipe *>> pipes_nup_nc;
-    vector<vector<Pipe *>> pipes_nlp_nup;
-    vector<vector<Pipe *>> pipes_ns_nlp;
-    vector<vector<BaseQueue *>> queues_nc_nborder;
-    vector<vector<BaseQueue *>> queues_nup_nc;
-    vector<vector<BaseQueue *>> queues_nlp_nup;
-    vector<vector<BaseQueue *>> queues_ns_nlp;
+    vector<vector<Pipe *>> pipes_nborderu_nborderl;
+    vector<vector<vector<Pipe *>>> pipes_nc_nborder;
+    vector<vector<vector<Pipe *>>> pipes_nup_nc;
+    vector<vector<vector<Pipe *>>> pipes_nlp_nup;
+    vector<vector<vector<Pipe *>>> pipes_ns_nlp;
+    vector<vector<BaseQueue *>> queues_nborderu_nborderl;
+    vector<vector<vector<BaseQueue *>>> queues_nc_nborder;
+    vector<vector<vector<BaseQueue *>>> queues_nup_nc;
+    vector<vector<vector<BaseQueue *>>> queues_nlp_nup;
+    vector<vector<vector<BaseQueue *>>> queues_ns_nlp;
 
     FirstFit *ff;
     QueueLoggerFactory *_logger_factory;
@@ -110,6 +114,7 @@ class FatTreeInterDCTopology : public Topology {
     uint32_t no_of_cores() const { return NCORE; }
     uint32_t no_of_servers() const { return NSRV; }
     uint32_t no_of_pods() const { return NPOD; }
+    uint32_t no_of_border_switches() const { return number_border_switches; }
     uint32_t no_of_switches_per_pod() const { return K; }
 
     void add_failed_link(uint32_t type, uint32_t switch_id, uint32_t link_id);
@@ -127,6 +132,7 @@ class FatTreeInterDCTopology : public Topology {
     static void set_bts_threshold(int value) { bts_trigger = value; }
     static void set_ignore_data_ecn(bool value) { bts_ignore_data = value; }
     static void set_failed_links(int value) { num_failing_links = value; }
+    int get_dc_id(int node);
 
     uint32_t HOST_POD_SWITCH(uint32_t src) { return 2 * src / K; }
     uint32_t HOST_POD_ID(uint32_t src) {
@@ -179,6 +185,8 @@ class FatTreeInterDCTopology : public Topology {
     static bool bts_ignore_data;
     static int num_failing_links;
     int curr_failed_link = 0;
+    int number_border_switches = 2;
+    int number_datacenters = 2;
 };
 
 #endif

@@ -1,6 +1,6 @@
 // -*- c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef _FATTREESWITCH_H
-#define _FATTREESWITCH_H
+#ifndef _FATTREESWITCH_H_INTER
+#define _FATTREESWITCH_H_INTER
 
 #include "callback_pipe.h"
 #include "switch.h"
@@ -103,7 +103,7 @@ class FlowletInfo {
 
 class FatTreeInterDCSwitch : public Switch {
   public:
-    enum switch_type { NONE = 0, TOR = 1, AGG = 2, CORE = 3 };
+    enum switch_type { NONE = 0, TOR = 1, AGG = 2, CORE = 3, BORDER = 4 };
 
     enum routing_strategy {
         NIX = 0,
@@ -118,7 +118,7 @@ class FatTreeInterDCSwitch : public Switch {
 
     FatTreeInterDCSwitch(EventList &eventlist, string s, switch_type t,
                          uint32_t id, simtime_picosec switch_delay,
-                         FatTreeInterDCTopology *ft);
+                         FatTreeInterDCTopology *ft, int);
 
     virtual void receivePacket(Packet &pkt);
     virtual Route *getNextHop(Packet &pkt, BaseQueue *ingress_port);
@@ -171,6 +171,7 @@ class FatTreeInterDCSwitch : public Switch {
     switch_type _type;
     Pipe *_pipe;
     FatTreeInterDCTopology *_ft;
+    int dc_id;
     vector<pair<simtime_picosec, uint64_t>> _list_sent;
 
     // CAREFUL: can't always have a single FIB for all up destinations when

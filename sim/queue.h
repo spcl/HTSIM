@@ -84,6 +84,8 @@ class BaseQueue : public EventSource, public PacketSink, public Drawable {
     uint8_t _last_qs, _last_utilization;
 
     Switch *_switch; // which switch is this queue part of?
+
+    int datacenter_id = 0;
 };
 
 // A standard FIFO packet queue of fixed size
