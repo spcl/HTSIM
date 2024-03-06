@@ -23,7 +23,7 @@ int CompositeQueue::_phantom_queue_slowdown = 10;
 CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize,
                                EventList &eventlist, QueueLogger *logger)
         : Queue(bitrate, maxsize, eventlist, logger) {
-    _ratio_high = 2;
+    _ratio_high = 10;
     _ratio_low = 1;
     _crt = 0;
     _num_headers = 0;
@@ -298,8 +298,16 @@ void CompositeQueue::receivePacket(Packet &pkt) {
     if (_logger)
         _logger->logQueue(*this, QueueLogger::PKT_ARRIVE, pkt);
     // is this a Tofino packet from the egress pipeline?
-    if (!pkt.header_only()) {
+
+    if (failed_link && !pkt.header_only()) {
+        pkt.strip_payload();
+        pkt.is_failed = true;
+        printf("Queue %s - Time %lu - Broken Link", _nodename.c_str(),
+               GLOBAL_TIME / 1000);
+
+    } else if (!pkt.header_only()) {
         //  Queue
+
         if (COLLECT_DATA) {
             if (_queuesize_low != 0) {
                 std::string file_name =
@@ -466,6 +474,10 @@ void CompositeQueue::receivePacket(Packet &pkt) {
     // if (pkt.type()==NDP)
     //   cout << "H " << pkt.flow().str() << endl;
     Packet *pkt_p = &pkt;
+    if (pkt.is_failed) {
+        pkt_p->is_failed = true;
+        printf("Setting Failure Bit\n");
+    }
     _enqueued_high.push(pkt_p);
     _queuesize_high += pkt.size();
     if (_logger)

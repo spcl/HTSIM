@@ -401,7 +401,7 @@ void UecDropSrc::do_fast_drop(bool ecn_or_trimmed) {
                 eventlist().now() / 1000, count_trimmed_in_rtt * _mss));
         count_trimmed_in_rtt = 0;
         count_ecn_in_rtt = 0;
-        next_window_end = eventlist().now() + (_target_rtt * 1);
+        next_window_end = eventlist().now() + (_base_rtt * 1);
 
         ecn_last_rtt = false;
 
@@ -424,14 +424,9 @@ void UecDropSrc::do_fast_drop(bool ecn_or_trimmed) {
              (saved_acked_bytes == 0 && previous_window_end != 0)) &&
             previous_window_end != 0) {
 
-            saved_acked_bytes =
-                    saved_acked_bytes *
-                    ((double)_target_rtt /
-                     (eventlist().now() - previous_window_end + _target_rtt));
-
             double bonus_based_on_target = buffer_drop;
 
-            /*printf("Using Fast Drop2 - Flow %d@%d%d, Ecn %d, CWND %d, Saved "
+            printf("Using Fast Drop2 - Flow %d@%d%d, Ecn %d, CWND %d, Saved "
                    "Acked %d (dropping to %f - bonus1 %f 2 %f -> %f and %f) - "
                    "Previous "
                    "Window %lu - Next "
@@ -448,16 +443,13 @@ void UecDropSrc::do_fast_drop(bool ecn_or_trimmed) {
                    (saved_acked_bytes * bonus_based_on_target * bonus_drop +
                     _mss),
                    previous_window_end / 1000, next_window_end / 1000,
-                   eventlist().now() / 1000);*/
+                   eventlist().now() / 1000);
 
-            _cwnd = max((double)(saved_acked_bytes * bonus_based_on_target *
-                                 bonus_drop),
+            _cwnd = max((double)(saved_acked_bytes * 1 * bonus_drop),
                         (double)_mss);
 
             //_cwnd = 40000;
-            ignore_for =
-                    ((get_unacked() / (double)_mss) + (_cwnd / (double)_mss)) *
-                    1.25;
+            ignore_for = (get_unacked() / (double)_mss);
             // int random_integer_wait = rand() % ignore_for;
             //  ignore_for += random_integer_wait;
             printf("Ignoring %d for %d pkts - New Wnd %d (%d %d)\n", from,

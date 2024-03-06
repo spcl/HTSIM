@@ -638,14 +638,14 @@ def main(args):
         )
     print("Sent Plot")
     # Sent
-    mean_sent = df5["Time"].mean()
+    '''mean_sent = df5["Time"].mean()
     df5['Sent'] = df5['Sent'].multiply(y_sent)
     for i in df5['Node'].unique():
         sub_df5 = df5.loc[df5['Node'] == str(i)]
         fig.add_trace(
             go.Scatter(x=sub_df5["Time"], y=sub_df5["Sent"], mode="markers", marker_symbol="triangle-up", name="Sent Packet", marker=dict(size=5, color="green"), showlegend=True),
             secondary_y=False
-        )
+        )'''
 
     print("NACK Plot")
     # NACK

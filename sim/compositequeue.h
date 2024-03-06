@@ -102,6 +102,7 @@ class CompositeQueue : public Queue {
     static bool _phantom_in_series;
     static int _kmin_from_input;
     static int _kmax_from_input;
+    bool failed_link = false;
 
   protected:
     // Mechanism

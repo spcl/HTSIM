@@ -280,6 +280,7 @@ class Packet {
     string switch_name;
     bool pfc_just_happened = false;
     bool _is_trim = false;
+    bool is_failed = false;
 
   protected:
     virtual void set_route(PacketFlow &flow, const Route &route, int pkt_size,

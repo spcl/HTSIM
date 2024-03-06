@@ -52,6 +52,7 @@ double UecSrc::exp_avg_rtt_value = 0.3;
 double UecSrc::exp_avg_alpha = 0.125;
 bool UecSrc::use_exp_avg_ecn = false;
 bool UecSrc::use_exp_avg_rtt = false;
+int UecSrc::adjust_packet_counts = 1;
 
 RouteStrategy UecSrc::_route_strategy = NOT_SET;
 RouteStrategy UecSink::_route_strategy = NOT_SET;
@@ -96,7 +97,8 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger,
 
     _rtt = _base_rtt;
     _rto = rtt + _hop_count * queueDrainTime + (rtt * 900000);
-    _rto_margin = _rtt / 2;
+    _rto = _base_rtt * 3;
+    _rto_margin = _rtt / 8;
     _rtx_timeout = timeInf;
     _rtx_timeout_pending = false;
     _rtx_pending = false;
@@ -151,8 +153,10 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger,
         generic_pacer = new SmarttPacer(eventlist(), *this);
         pacer_start_time = eventlist().now();
         pacing_delay = ((4160 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
-        pacing_delay -= (4160 * 8 / LINK_SPEED_MODERN);
-        printf("Setting the pacing delay %d %lu to %lu at %lu\n", _cwnd,
+        printf("Setting the pacing delay1 %d %lu to %lu at %lu\n", _cwnd,
+               (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
+        // pacing_delay -= (4160 * 8 / LINK_SPEED_MODERN);
+        printf("Setting the pacing delay2 %d %lu to %lu at %lu\n", _cwnd,
                (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
         pacing_delay *= 1000; // ps
     }
@@ -625,7 +629,9 @@ void UecSrc::quick_adapt(bool trimmed) {
             if (eventlist().now() < _base_rtt * 5 && jump_to != 0) {
                 int coin = rand() % 2;
                 int extra = rand() % (jump_to / 10);
-                if (jump_to > 1000000) {
+                if (jump_to > 1200000) {
+                    extra /= 100;
+                } else if (jump_to > 1000000) {
                     extra /= 3;
                 }
 
@@ -665,7 +671,7 @@ void UecSrc::quick_adapt(bool trimmed) {
                 pacer_start_time = eventlist().now();
                 pacing_delay =
                         ((4160 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
-                pacing_delay -= (4160 * 8 / LINK_SPEED_MODERN);
+                // pacing_delay -= (4160 * 8 / LINK_SPEED_MODERN);
                 printf("Setting the pacing delay %d %lu to %lu at %lu\n", _cwnd,
                        (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
                 pacing_delay *= 1000; // ps
@@ -705,7 +711,8 @@ void UecSrc::processNack(UecNack &pkt) {
     acked_bytes += 64;
     saved_trimmed_bytes += 64;
 
-    // printf("Just NA CK from %d at %lu\n", from, eventlist().now() / 1000);
+    printf("Just NA CK from %d at %lu - %d\n", from, eventlist().now() / 1000,
+           pkt.is_failed);
 
     // Reduce Window Or Do Fast Drop
     if (use_fast_drop) {
@@ -732,7 +739,10 @@ void UecSrc::processNack(UecNack &pkt) {
     _received_ecn.push_back(std::make_tuple(eventlist().now(), true, _mss,
                                             _target_rtt + 10000));
 
-    _list_nack.push_back(std::make_pair(eventlist().now() / 1000, 1));
+    if (!pkt.is_failed) {
+        _list_nack.push_back(std::make_pair(eventlist().now() / 1000, 1));
+    }
+
     // mark corresponding packet for retransmission
     auto i = get_sent_packet_idx(pkt.seqno());
     assert(i < _sent_packets.size());
@@ -841,28 +851,47 @@ int UecSrc::choose_route() {
         }
         break;
     case ECMP_RANDOM2_ECN: {
-        uint64_t allpathssizes = _mss * _paths.size();
-        if (_highest_sent < max(_maxcwnd, allpathssizes)) {
-            /*printf("Trying this for %d // Highest Sent %d - cwnd %d - "
-                   "allpathsize %d\n",
-                   from, _highest_sent, _maxcwnd, allpathssizes);*/
-            _crt_path++;
-            // printf("Trying this for %d\n", from);
-            if (_crt_path == _paths.size()) {
-                // permute_paths();
-                _crt_path = 0;
-            }
-        } else {
-            if (_next_pathid == -1) {
-                assert(_paths.size() > 0);
-                _crt_path = random() % _paths.size();
-                // printf("New Path %d is %d\n", from, _crt_path);
+
+        if (false) {
+            uint64_t allpathssizes = _mss * _paths.size();
+            if (_highest_sent < max(_maxcwnd, (uint64_t)1)) {
+                curr_entropy++;
+                _crt_path++;
+                if (_crt_path == _paths.size()) {
+                    _crt_path = 0;
+                }
             } else {
-                // printf("Recycling Path %d is %d\n", from, _next_pathid);
-                _crt_path = _next_pathid;
+                if (!_good_entropies_list.empty()) {
+                    _crt_path = _good_entropies_list.back();
+                    //_good_entropies_list.pop_back();
+                } else {
+                    curr_entropy++;
+                    _crt_path = curr_entropy % _paths.size();
+                }
             }
+            break;
+        } else {
+            uint64_t allpathssizes = _mss * _paths.size();
+            if (_highest_sent < max(_maxcwnd, (uint64_t)1)) {
+                /*printf("Trying this for %d // Highest Sent %d - cwnd %d - "
+                       "allpathsize %d\n",
+                       from, _highest_sent, _maxcwnd, allpathssizes);*/
+                _crt_path++;
+                // printf("Trying this for %d\n", from);
+                if (_crt_path == _paths.size()) {
+                    // permute_paths();
+                    _crt_path = 0;
+                }
+            } else {
+                if (_next_pathid == -1) {
+                    assert(_paths.size() > 0);
+                    _crt_path = random() % _paths.size();
+                } else {
+                    _crt_path = _next_pathid;
+                }
+            }
+            break;
         }
-        break;
     }
     case ECMP_RANDOM_ECN: {
         //_crt_path = from;
@@ -940,7 +969,7 @@ void UecSrc::processBts(UecPacket *pkt) {
     _consecutive_low_rtt = 0;
     _received_ecn.push_back(std::make_tuple(eventlist().now(), true, _mss,
                                             _target_rtt + 10000));
-    _list_nack.push_back(std::make_pair(eventlist().now() / 1000, 1));
+    //_list_nack.push_back(std::make_pair(eventlist().now() / 1000, 1));
     bool marked = pkt->flags() &
                   ECN_CE; // ECN was marked on data packet and echoed on ACK
 
@@ -1078,6 +1107,7 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
     if (!marked) {
         _consecutive_no_ecn += _mss;
         _next_pathid = pkt.pathid_echo;
+        _good_entropies_list.push_back(pkt.pathid_echo);
     } else {
         _next_pathid = -1;
         ecn_last_rtt = true;
@@ -1214,6 +1244,7 @@ void UecSrc::receivePacket(Packet &pkt) {
         }*/
 
         processAck(dynamic_cast<UecAck &>(pkt), false);
+        printf("Done Processing ACK\n");
 
         /*if (pkt.pfc_just_happened) {
             printf("PFC Src Happened at %lu - %d@%d\n", GLOBAL_TIME / 1000,
@@ -1228,7 +1259,8 @@ void UecSrc::receivePacket(Packet &pkt) {
         pkt.free();
         return;
     case UECNACK:
-        printf("\nNACK at %lu %d@%d@%d\n", GLOBAL_TIME / 1000, from, to, tag);
+        printf("\nNACK at %lu %d@%d@%d - %d\n", GLOBAL_TIME / 1000, from, to,
+               tag, pkt.is_failed);
         // fflush(stdout);
         total_nack++;
         if (_trimming_enabled) {
@@ -1619,6 +1651,120 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
 
             /*printf("Old CWND %d - New CWND %d - At %lu\n", old, _cwnd,
                    GLOBAL_TIME / 1000);*/
+
+            // Delay Logic, Version C Logic
+        } else if (algorithm_type == "smartt_2") {
+
+            adjust_current_packet++;
+            if (use_fast_drop) {
+                if (count_received >= ignore_for) {
+                    quick_adapt(false);
+                }
+            }
+
+            if (count_received < ignore_for && ecn) {
+                return;
+            }
+
+            packets_seen_md += 1;
+            accumulated_delay += rtt;
+
+            if ((increasing ||
+                 counter_consecutive_good_bytes > target_window) &&
+                use_fast_increase) {
+                fast_increase();
+                // Case 1 RTT Based Increase
+            } else if (!ecn && rtt < _target_rtt) {
+
+                adjust_value += min((double)_mss * y_gain * _mss,
+                                    (_target_rtt - (double)rtt) * y_gain *
+                                            _mss * 0.00005 * _mss);
+                // adjust_value += _mss * x_gain * _mss;
+                //  adjust_value += _mss * x_gain;
+
+                if (COLLECT_DATA) {
+                    _list_medium_increase_event.push_back(
+                            std::make_pair(eventlist().now() / 1000, 1));
+                    count_case_1.push_back(
+                            std::make_pair(eventlist().now() / 1000, 1));
+                }
+                //  Case 2 Hybrid Based Decrease || RTT Decrease
+            } else if (ecn && rtt > _target_rtt) {
+
+                if (can_decrease_exp_avg) {
+                    uint64_t avg_delay = 0;
+                    // fd_bytes += _mss * z_gain;
+                    if (eventlist().now() - last_decrease_ts > _base_rtt) {
+                        if (packets_seen_md == 0) {
+                            avg_delay = 0;
+                        } else {
+                            avg_delay = accumulated_delay / packets_seen_md;
+                        }
+                        if (avg_delay > _target_rtt && avg_delay != 0) {
+                            double gamma_d = 0.8;
+                            printf("From %d - Reducing %lu - Seen %lu %d\n",
+                                   from, avg_delay, accumulated_delay,
+                                   packets_seen_md);
+                            _cwnd *= max(0.5,
+                                         1 - gamma_d *
+                                                         ((double)avg_delay -
+                                                          _target_rtt) /
+                                                         avg_delay);
+                            // fd_bytes += _mss * z_gain;
+                        }
+                        last_decrease_ts = eventlist().now();
+                        accumulated_delay = 0;
+                        packets_seen_md = 0;
+                    }
+                }
+                if (COLLECT_DATA) {
+                    count_case_2.push_back(
+                            std::make_pair(eventlist().now() / 1000, 1));
+                }
+
+            } else if (ecn && rtt < _target_rtt) {
+                //  Case 3 Fair Decrease (Window based)
+                if (can_decrease_exp_avg) {
+                    fd_bytes += _mss * z_gain;
+                    if (COLLECT_DATA) {
+                        count_case_3.push_back(
+                                std::make_pair(eventlist().now() / 1000, 1));
+                    }
+                }
+                //  Case 4
+            } else if (!ecn && rtt > _target_rtt) {
+                // Do nothing but fairness increase
+                if (!disable_case_4) {
+                    adjust_value += _mss * x_gain * _mss;
+                }
+                if (COLLECT_DATA) {
+                    count_case_4.push_back(
+                            std::make_pair(eventlist().now() / 1000, 1));
+                }
+            }
+
+            printf("From %d - Last Adjust %lu - %lu > %lu\n", from,
+                   last_adjust_ts, (eventlist().now() - last_adjust_ts),
+                   (_base_rtt / 4));
+            if (((eventlist().now() - last_adjust_ts) > (_base_rtt / 4)) ||
+                adjust_current_packet >= adjust_packet_counts) {
+                // Adjust actual cwnd
+                printf("Adjusting %d at %lu - Adjust is %lu - FD Bytes %lu --> "
+                       "%lu + %lu \n",
+                       from, GLOBAL_TIME / 1000, adjust_value, fd_bytes,
+                       (adjust_value / _cwnd),
+                       uint64_t((fd_bytes * ((double)_cwnd / _bdp))));
+                _cwnd += (adjust_value / _cwnd) -
+                         (fd_bytes * ((double)_cwnd / _bdp));
+
+                fd_bytes = 0;
+                adjust_value = 0;
+
+                // Update adjust params
+                last_adjust_ts = eventlist().now();
+                current_packet_adjust = 0;
+                adjust_current_packet = 0;
+            }
 
             // Delay Logic, Version C Logic
         } else if (algorithm_type == "intersmartt") {
@@ -2452,24 +2598,7 @@ void UecSrc::connect(Route *routeout, Route *routeback, UecSink &sink,
 
     printf("StartTime %s is %lu\n", _name.c_str(), starttime);
 
-    if (_name == "uec_0_15") {
-        starttime = 0;
-    } else if (_name == "uec_1_15") {
-        starttime = 80000 * 2;
-    } else if (_name == "uec_2_15") {
-        starttime = 80000 * 4;
-    } else if (_name == "uec_3_15") {
-        starttime = 80000 * 6;
-    } else if (_name == "uec_4_15") {
-        starttime = 80000 * 4;
-    } else if (_name == "uec_5_15") {
-        starttime = 80000 * 5;
-    } else if (_name == "uec_6_15") {
-        starttime = 80000 * 6;
-    } else if (_name == "uec_7_15") {
-        starttime = 80000 * 7;
-    }
-    eventlist().sourceIsPending(*this, 0 * 1000);
+    eventlist().sourceIsPending(*this, starttime);
 }
 
 void UecSrc::startflow() {
@@ -2744,21 +2873,22 @@ void UecSrc::apply_timeout_penalty() {
     if (_trimming_enabled) {
         reduce_cwnd(_mss);
     } else {
-        _cwnd = _mss;
+        reduce_cwnd(_mss);
+        //_cwnd = _mss;
     }
 }
 
-void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
+/*void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
     // #ifndef RESEND_ON_TIMEOUT
     //     return; // TODO: according to ndp.cpp, rtx is not necessary with
     //     RTS. Check
     //             // if this applies to us
     // #endif
 
-    if (_highest_sent == 0)
-        return;
-    if (_rtx_timeout == timeInf || now + period < _rtx_timeout)
-        return;
+    // if (_highest_sent == 0)
+    //     return;
+    // if (_rtx_timeout == timeInf || now + period < _rtx_timeout)
+    //     return;
 
     // here we can run into phase effects because the timer is checked
     // only periodically for ALL flows but if we keep the difference
@@ -2772,7 +2902,8 @@ void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
              << "us RTT " << timeAsUs(_rtt) << "us SEQ " << _last_acked / _mss
              << " CWND " << _cwnd / _mss << " Flow ID " << str() << endl;
 
-        _cwnd = _mss;
+        //_cwnd = _mss;
+        reduce_cwnd(_mss);
 
         // check the timer difference between the event and the real value
         simtime_picosec too_early = _rtx_timeout - now;
@@ -2786,6 +2917,46 @@ void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
         }
         eventlist().sourceIsPendingRel(*this, too_early);
     }
+}*/
+
+void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
+    // #ifndef RESEND_ON_TIMEOUT
+    //     return; // TODO: according to ndp.cpp, rtx is not necessary with
+    //     RTS. Check
+    //             // if this applies to us
+    // #endif
+    /*printf("Status1 - RTX Pending %d --> %d %d %d\n", _rtx_pending,
+           _highest_sent, _rtx_timeout, now + period < _rtx_timeout);
+    if (_highest_sent == 0) {
+        printf("Return1");
+        return;
+    }
+
+    if (_rtx_timeout == timeInf || now + period < _rtx_timeout) {
+        printf("Return2 %d\n", _rtx_timeout == timeInf);
+        return;
+    }
+
+    printf("Status2 - RTX Pending %d\n", _rtx_pending);*/
+
+    // do_fast_drop(false);
+    // reduce_cwnd(_mss);
+    retransmit_packet();
+
+    // here we can run into phase effects because the timer is checked
+    // only periodically for ALL flows but if we keep the difference
+    // between scanning time and real timeout time when restarting the
+    // flows we should minimize them !
+    /*if (!_rtx_timeout_pending) {
+        _rtx_timeout_pending = true;
+        // apply_timeout_penalty();
+        simtime_picosec too_early = _rtx_timeout - now;
+        cout << "At " << timeAsUs(now) << "us RTO " << timeAsUs(_rto)
+             << "us RTT " << timeAsUs(_rtt) << "us SEQ " << _last_acked / _mss
+             << " CWND " << _cwnd / _mss << " Flow ID " << str() << "Time"
+             << too_early << endl;
+        eventlist().sourceIsPendingRel(*this, 0);
+    }*/
 }
 
 bool UecSrc::resend_packet(std::size_t idx) {
@@ -2875,10 +3046,12 @@ void UecSink::set_end_trigger(Trigger &end_trigger) {
 }
 
 void UecSink::send_nack(simtime_picosec ts, bool marked, UecAck::seq_t seqno,
-                        UecAck::seq_t ackno, const Route *rt, int path_id) {
+                        UecAck::seq_t ackno, const Route *rt, int path_id,
+                        bool is_failed) {
 
     UecNack *nack =
             UecNack::newpkt(_src->_flow, *_route, seqno, ackno, 0, _srcaddr);
+    nack->is_failed = is_failed;
 
     // printf("Sending NACK at %lu\n", GLOBAL_TIME);
     nack->set_pathid(_path_ids[_crt_path]);
@@ -2917,7 +3090,8 @@ bool UecSink::already_received(UecPacket &pkt) {
 }
 
 void UecSink::receivePacket(Packet &pkt) {
-    // printf("Sink Received %lu\n", GLOBAL_TIME);
+    printf("Sink Received %d - Entropy %d - %lu - %\n", pkt.is_failed,
+           pkt.pathid(), GLOBAL_TIME);
     //  fflush(stdout);
     if (pkt.pfc_just_happened) {
         pfc_just_seen = 1;
@@ -2991,7 +3165,8 @@ void UecSink::receivePacket(Packet &pkt) {
 
     // packet was trimmed
     if (pkt.header_only() && pkt._is_trim) {
-        send_nack(ts, marked, seqno, ackno, _paths.at(crt_path), pkt.pathid());
+        send_nack(ts, marked, seqno, ackno, _paths.at(crt_path), pkt.pathid(),
+                  pkt.is_failed);
         pkt.flow().logTraffic(pkt, *this, TrafficLogger::PKT_RCVDESTROY);
         p->free();
         // printf("NACKR %d@%d@%d - Time %lu\n", from, to, tag,

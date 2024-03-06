@@ -153,6 +153,7 @@ int main(int argc, char **argv) {
     bool use_exp_avg_rtt = false;
     int jump_to = 0;
     int stop_pacing_after_rtt = 0;
+    int num_failed_links = 0;
 
     int i = 1;
     filename << "logout.dat";
@@ -367,6 +368,10 @@ int main(int argc, char **argv) {
                     target_rtt_percentage_over_base);
             printf("TargetRTT: %d\n", target_rtt_percentage_over_base);
             i++;
+        } else if (!strcmp(argv[i], "-num_failed_links")) {
+            num_failed_links = atoi(argv[i + 1]);
+            FatTreeTopology::set_failed_links(num_failed_links);
+            i++;
         } else if (!strcmp(argv[i], "-fast_drop_rtt")) {
             UecSrc::set_fast_drop_rtt(atoi(argv[i + 1]));
             i++;
@@ -546,6 +551,9 @@ int main(int argc, char **argv) {
             } else if (!strcmp(argv[i + 1], "intersmartt_composed")) {
                 UecSrc::set_alogirthm("intersmartt_composed");
                 printf("Name Running: SMaRTT InterDataCenter\n");
+            } else if (!strcmp(argv[i + 1], "smartt_2")) {
+                UecSrc::set_alogirthm("smartt_2");
+                printf("Name Running: SMaRTT smartt_2\n");
             }
             i++;
         } else
@@ -591,7 +599,7 @@ int main(int argc, char **argv) {
     }
 
     // Calculate Network Info
-    int hops = 4; // hardcoded for now
+    int hops = 6; // hardcoded for now
     uint64_t actual_starting_cwnd = 0;
     uint64_t base_rtt_max_hops =
             (hops * LINK_DELAY_MODERN) +

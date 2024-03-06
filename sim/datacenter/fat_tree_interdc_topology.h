@@ -37,22 +37,27 @@ typedef enum {
 typedef enum { UPLINK, DOWNLINK } link_direction;
 #endif
 
-class FatTreeTopology : public Topology {
+class FatTreeInterDCTopology : public Topology {
   public:
     vector<Switch *> switches_lp;
     vector<Switch *> switches_up;
     vector<Switch *> switches_c;
+    vector<Switch *> switches_border;
 
+    vector<vector<Pipe *>> pipes_nborder_nc;
     vector<vector<Pipe *>> pipes_nc_nup;
     vector<vector<Pipe *>> pipes_nup_nlp;
     vector<vector<Pipe *>> pipes_nlp_ns;
+    vector<vector<BaseQueue *>> queues_nborder_nc;
     vector<vector<BaseQueue *>> queues_nc_nup;
     vector<vector<BaseQueue *>> queues_nup_nlp;
     vector<vector<BaseQueue *>> queues_nlp_ns;
 
+    vector<vector<Pipe *>> pipes_nc_nborder;
     vector<vector<Pipe *>> pipes_nup_nc;
     vector<vector<Pipe *>> pipes_nlp_nup;
     vector<vector<Pipe *>> pipes_ns_nlp;
+    vector<vector<BaseQueue *>> queues_nc_nborder;
     vector<vector<BaseQueue *>> queues_nup_nc;
     vector<vector<BaseQueue *>> queues_nlp_nup;
     vector<vector<BaseQueue *>> queues_ns_nlp;
@@ -64,21 +69,23 @@ class FatTreeTopology : public Topology {
     queue_type _qt;
     queue_type _sender_qt;
 
-    FatTreeTopology(uint32_t no_of_nodes, linkspeed_bps linkspeed,
-                    mem_b queuesize, QueueLoggerFactory *logger_factory,
-                    EventList *ev, FirstFit *f, queue_type qt,
-                    simtime_picosec latency, simtime_picosec switch_latency,
-                    queue_type snd = FAIR_PRIO);
-    FatTreeTopology(uint32_t no_of_nodes, linkspeed_bps linkspeed,
-                    mem_b queuesize, QueueLoggerFactory *logger_factory,
-                    EventList *ev, FirstFit *f, queue_type qt);
-    FatTreeTopology(uint32_t no_of_nodes, linkspeed_bps linkspeed,
-                    mem_b queuesize, QueueLoggerFactory *logger_factory,
-                    EventList *ev, FirstFit *f, queue_type qt, uint32_t fail);
-    FatTreeTopology(uint32_t no_of_nodes, linkspeed_bps linkspeed,
-                    mem_b queuesize, QueueLoggerFactory *logger_factory,
-                    EventList *ev, FirstFit *f, queue_type qt,
-                    queue_type sender_qt, uint32_t fail);
+    FatTreeInterDCTopology(uint32_t no_of_nodes, linkspeed_bps linkspeed,
+                           mem_b queuesize, QueueLoggerFactory *logger_factory,
+                           EventList *ev, FirstFit *f, queue_type qt,
+                           simtime_picosec latency,
+                           simtime_picosec switch_latency,
+                           queue_type snd = FAIR_PRIO);
+    FatTreeInterDCTopology(uint32_t no_of_nodes, linkspeed_bps linkspeed,
+                           mem_b queuesize, QueueLoggerFactory *logger_factory,
+                           EventList *ev, FirstFit *f, queue_type qt);
+    FatTreeInterDCTopology(uint32_t no_of_nodes, linkspeed_bps linkspeed,
+                           mem_b queuesize, QueueLoggerFactory *logger_factory,
+                           EventList *ev, FirstFit *f, queue_type qt,
+                           uint32_t fail);
+    FatTreeInterDCTopology(uint32_t no_of_nodes, linkspeed_bps linkspeed,
+                           mem_b queuesize, QueueLoggerFactory *logger_factory,
+                           EventList *ev, FirstFit *f, queue_type qt,
+                           queue_type sender_qt, uint32_t fail);
 
     void init_network();
     virtual vector<const Route *> *get_bidir_paths(uint32_t src, uint32_t dest,

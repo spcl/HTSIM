@@ -74,11 +74,11 @@ def updateGoalList(incast_am):
 
 def getIdealJump(incast_am):
     if (incast_am == 2):
-        return 1250000
+        return 1280000
     elif (incast_am == 8):
-        return 312500
+        return 318500
     if (incast_am == 16):
-        return 156250
+        return 158250
 
 def getNumTrimmedAfter(name_file_to_use, after):
     num_nack = 0
@@ -145,7 +145,7 @@ for idx_incast, incast_flow in enumerate(incast_amount):
                 unique_id = "{}\nS:{}%\nQ:{}".format(getProNameFromGoal(goal_name), slowdown_percentage, getProNameFromPQtype(pq_type))
                 print("Considering {}".format(unique_id))
                 out_file = "tmp.out"
-                run_string = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -k 1 -algorithm intersmartt_composed -nodes 8192 -q 4452000 -strat ecmp_host_random_ecn -number_entropies 256 -kmin 2 -kmax 80 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 10000 -mtu 4096 -seed 2819 -queue_type composite -hop_latency 250000 -switch_latency 0 -reuse_entropy 1 -goal {} -x_gain 6 -y_gain 0 -w_gain 0 -z_gain 2.5 -bonus_drop 1 -collect_data 0 -explicit_starting_cwnd 2500000 -explicit_starting_buffer 250000 -explicit_base_rtt 2001328 -explicit_target_rtt 2301328 -use_pacing 1 -use_phantom 1 -phantom_slowdown {} -phantom_size 2500000 -decrease_on_nack 0 -jump_to {} {} > {}".format(goal_name, slowdown_percentage, getIdealJump(incast_flow), pq_type, out_file)
+                run_string = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -k 1 -algorithm intersmartt_composed -nodes 8192 -q 4452000 -strat ecmp_host_random_ecn -number_entropies 256 -kmin 2 -kmax 80 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 10000 -mtu 4096 -seed 2819 -queue_type composite -hop_latency 250000 -switch_latency 0 -reuse_entropy 1 -goal {} -x_gain 4.5 -y_gain 0 -w_gain 0 -z_gain 2.5 -bonus_drop 1 -collect_data 0 -explicit_starting_cwnd 2500000 -explicit_starting_buffer 250000 -explicit_base_rtt 2001328 -explicit_target_rtt 2301328 -use_pacing 1 -use_phantom 1 -phantom_slowdown {} -phantom_size 2500000 -decrease_on_nack 0 -jump_to {} {} > {}".format(goal_name, slowdown_percentage, getIdealJump(incast_flow), pq_type, out_file)
                 os.system(run_string)
                 
                 actual_completion_time = getMaxCompletionTime(out_file)

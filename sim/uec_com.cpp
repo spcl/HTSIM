@@ -1683,7 +1683,7 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
                 state_end = eventlist().now() + _base_rtt;
             }
 
-            if (ecn) {
+            if (ecn) { 
 
                 total_pkt_seen_rtt++;
 

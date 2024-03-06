@@ -46,6 +46,7 @@ class LogSimInterface {
                     EventList &eventList, FatTreeTopology *,
                     std::vector<const Route *> ***);
     std::unordered_map<std::string, MsgInfo> active_sends;
+    int compute_started = 0;
     std::unordered_map<std::string, UecSrc *> connection_log;
     std::unordered_map<std::string, SwiftTrimmingSrc *> connection_log_swift;
     void htsim_schedule(u_int32_t, int, int, int, u_int64_t, int);
@@ -89,6 +90,7 @@ class LogSimInterface {
     int _cwd;
     ComputeEvent *compute_events_handler;
     graph_node_properties *_latest_recv;
+    bool compute_if_finished = false;
     vector<UecSrc *> _uecSrcVector;
     vector<UecDropSrc *> _uecDropSrcVector;
     vector<SwiftTrimmingSrc *> _swiftTrimmingSrcVector;

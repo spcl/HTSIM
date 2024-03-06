@@ -163,7 +163,10 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
         quickadapt_lossless_rtt = value;
     }
     static void set_disable_case_3(double value) { disable_case_3 = value; }
-    static void set_reaction_delay(int value) { reaction_delay = value; }
+    static void set_reaction_delay(int value) {
+        reaction_delay = value;
+        adjust_packet_counts = value;
+    }
     static void set_precision_ts(int value) { precision_ts = value; }
     static void set_disable_case_4(double value) { disable_case_4 = value; }
     static void set_starting_cwnd(double value) { starting_cwnd = value; }
@@ -239,6 +242,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     bool did_qa = false;
 
     // Custom Parameters
+    static int adjust_packet_counts;
     static std::string queue_type;
     static std::string algorithm_type;
     static int precision_ts;
@@ -266,6 +270,18 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static uint64_t explicit_target_rtt;
     static uint64_t explicit_base_rtt;
     static uint64_t explicit_bdp;
+    simtime_picosec last_adjust_ts;
+    int current_packet_adjust = 0;
+    uint64_t adjust_value = 0;
+    uint64_t fd_bytes = 0;
+    uint64_t accumulated_delay = 0;
+    int packets_seen_md = 0;
+    simtime_picosec last_decrease_ts = 0;
+    uint64_t asdas = 0;
+    vector<int> _good_entropies_list;
+    int curr_entropy = 0;
+
+    int adjust_current_packet = 0;
 
     static double exp_avg_ecn_value;
     static double exp_avg_rtt_value;
@@ -507,12 +523,13 @@ class UecSink : public PacketSink, public DataReceiver {
     vector<const Route *> _original_paths; // paths in original permutation
                                            // order
     UecSrc *_src;
+    vector<int> _good_entropies_list;
 
     void send_ack(simtime_picosec ts, bool marked, UecAck::seq_t seqno,
                   UecAck::seq_t ackno, const Route *rt, const Route *inRoute,
                   int path_id);
     void send_nack(simtime_picosec ts, bool marked, UecAck::seq_t seqno,
-                   UecAck::seq_t ackno, const Route *rt, int);
+                   UecAck::seq_t ackno, const Route *rt, int, bool);
     bool already_received(UecPacket &pkt);
 };
 
