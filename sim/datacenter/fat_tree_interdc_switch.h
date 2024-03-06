@@ -77,25 +77,14 @@ class FatTreeInterDCTopology;
         c ^= (b >> 15);                                                        \
     } while (/*CONSTCOND*/ 0)
 
-static inline uint32_t freeBSDHash(uint32_t target1, uint32_t target2 = 0,
-                                   uint32_t target3 = 0) {
-    uint32_t a = 0x9e3779b9, b = 0x9e3779b9, c = 0; // hask key
-
-    b += target3;
-    c += target2;
-    a += target1;
-    MIX(a, b, c);
-    return c;
-}
-
 #undef MIX
 
-class FlowletInfo {
+class FlowletInfoInterDC {
   public:
     uint32_t _egress;
     simtime_picosec _last;
 
-    FlowletInfo(uint32_t egress, simtime_picosec lasttime) {
+    FlowletInfoInterDC(uint32_t egress, simtime_picosec lasttime) {
         _egress = egress;
         _last = lasttime;
     };
@@ -178,7 +167,7 @@ class FatTreeInterDCSwitch : public Switch {
     // there are failures!
     vector<FibEntry *> *_uproutes;
 
-    unordered_map<uint32_t, FlowletInfo *> _flowlet_maps;
+    unordered_map<uint32_t, FlowletInfoInterDC *> _flowlet_maps;
     uint32_t _crt_route;
     uint32_t _hash_salt;
     simtime_picosec _last_choice;

@@ -4,6 +4,7 @@
 
 #include "compute_event.h"
 #include "eventlist.h"
+#include "fat_tree_interdc_topology.h"
 #include "fat_tree_topology.h"
 #include "lgs/logsim.h"
 #include "uec.h"
@@ -45,6 +46,9 @@ class LogSimInterface {
     LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger,
                     EventList &eventList, FatTreeTopology *,
                     std::vector<const Route *> ***);
+    LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger,
+                    EventList &eventList, FatTreeInterDCTopology *,
+                    std::vector<const Route *> ***);
     std::unordered_map<std::string, MsgInfo> active_sends;
     int compute_started = 0;
     std::unordered_map<std::string, UecSrc *> connection_log;
@@ -85,7 +89,8 @@ class LogSimInterface {
     TrafficLogger *_flow;
     UecLogger *_logger;
     EventList *_eventlist;
-    FatTreeTopology *_topo;
+    FatTreeTopology *_topo = NULL;
+    FatTreeInterDCTopology *_topo_inter_dc = NULL;
     std::vector<const Route *> ***_netPaths;
     int _cwd;
     ComputeEvent *compute_events_handler;

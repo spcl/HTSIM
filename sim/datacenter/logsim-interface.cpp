@@ -48,6 +48,24 @@ LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger,
     }
 }
 
+LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger,
+                                 EventList &eventList,
+                                 FatTreeInterDCTopology *topo,
+                                 std::vector<const Route *> ***routes) {
+    _logger = logger;
+    _flow = pktLogger;
+    _eventlist = &eventList;
+    _topo_inter_dc = topo;
+    _netPaths = routes;
+    _latest_recv = new graph_node_properties();
+    if (compute_events_handler == NULL) {
+        compute_events_handler = new ComputeEvent(_logger, *_eventlist);
+        compute_events_handler->set_compute_over_hook(std::bind(
+                &LogSimInterface::compute_over, this, std::placeholders::_1));
+    }
+    printf("Running InterDC\n");
+}
+
 void LogSimInterface::set_cwd(int cwd) { _cwd = cwd; }
 
 void LogSimInterface::htsim_schedule(u_int32_t host, int to, int size, int tag,
@@ -107,7 +125,7 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
                                      // bpps
 
         // Create Routes from/to Src and Dest
-        vector<const Route *> *paths = _topo->get_paths(from, to);
+        /*vector<const Route *> *paths = _topo->get_paths(from, to);
         _netPaths[from][to] = paths;
         vector<const Route *> *paths2 = _topo->get_paths(to, from);
         _netPaths[to][from] = paths2;
@@ -115,9 +133,10 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
         // Choose Path from possible routes
         int choice = rand() % _netPaths[from][to]->size();
 
-        Route *routein = new Route(*_topo->get_paths(to, from)->at(choice));
+        Route *routein = new Route(*_topo->get_paths(to, from)->at(choice));*/
+
         UecSrc *uecSrc = new UecSrc(_logger, _flow, *_eventlist, rtt, bdp,
-                                    queueDrainTime, routein->hop_count());
+                                    queueDrainTime, 6);
 
         uecSrc->setFlowSize(size);
         uecSrc->setReuse(_use_good_entropies);
@@ -148,21 +167,67 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
         uecSink->set_src(from);
 
         Route *srctotor = new Route();
-        srctotor->push_back(
-                _topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-        srctotor->push_back(
-                _topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-        srctotor->push_back(
-                _topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]
-                        ->getRemoteEndpoint());
-
         Route *dsttotor = new Route();
-        dsttotor->push_back(
-                _topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-        dsttotor->push_back(
-                _topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-        dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]
-                                    ->getRemoteEndpoint());
+
+        if (_topo != NULL) {
+            srctotor->push_back(
+                    _topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
+            srctotor->push_back(
+                    _topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
+            srctotor->push_back(
+                    _topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]
+                            ->getRemoteEndpoint());
+
+            dsttotor->push_back(
+                    _topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
+            dsttotor->push_back(
+                    _topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
+            dsttotor->push_back(
+                    _topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]
+                            ->getRemoteEndpoint());
+
+        } else if (_topo_inter_dc != NULL) {
+            int idx_dc = _topo_inter_dc->get_dc_id(from);
+            int idx_dc_to = _topo_inter_dc->get_dc_id(to);
+
+            printf("Source in Datacenter %d - Dest in Datacenter %d\n", idx_dc,
+                   idx_dc_to);
+            fflush(stdout);
+
+            srctotor->push_back(
+                    _topo_inter_dc
+                            ->queues_ns_nlp[idx_dc][from % 16]
+                                           [_topo_inter_dc->HOST_POD_SWITCH(
+                                                   from % 16)]);
+            srctotor->push_back(
+                    _topo_inter_dc
+                            ->pipes_ns_nlp[idx_dc][from % 16]
+                                          [_topo_inter_dc->HOST_POD_SWITCH(
+                                                  from % 16)]);
+            srctotor->push_back(
+                    _topo_inter_dc
+                            ->queues_ns_nlp[idx_dc][from % 16]
+                                           [_topo_inter_dc->HOST_POD_SWITCH(
+                                                   from % 16)]
+                            ->getRemoteEndpoint());
+
+            dsttotor->push_back(
+                    _topo_inter_dc
+                            ->queues_ns_nlp[idx_dc_to][to % 16]
+                                           [_topo_inter_dc->HOST_POD_SWITCH(
+                                                   to % 16)]);
+            dsttotor->push_back(
+                    _topo_inter_dc
+                            ->pipes_ns_nlp[idx_dc_to][to % 16]
+                                          [_topo_inter_dc->HOST_POD_SWITCH(
+                                                  to % 16)]);
+            dsttotor->push_back(
+                    _topo_inter_dc
+                            ->queues_ns_nlp[idx_dc_to][to % 16]
+                                           [_topo_inter_dc->HOST_POD_SWITCH(to %
+                                                                            16)]
+                            ->getRemoteEndpoint());
+        }
 
         if (tag == 99) {
             uecSrc->connect(srctotor, dsttotor, *uecSink, GLOBAL_TIME + 100000);
@@ -174,12 +239,34 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
         uecSink->set_paths(path_entropy_size);
 
         // register src and snk to receive packets from their respective TORs.
-        assert(_topo->switches_lp[_topo->HOST_POD_SWITCH(from)]);
-        assert(_topo->switches_lp[_topo->HOST_POD_SWITCH(to)]);
-        _topo->switches_lp[_topo->HOST_POD_SWITCH(from)]->addHostPort(
-                from, uecSrc->flow_id(), uecSrc);
-        _topo->switches_lp[_topo->HOST_POD_SWITCH(to)]->addHostPort(
-                to, uecSrc->flow_id(), uecSink);
+
+        if (_topo != NULL) {
+            assert(_topo->switches_lp[_topo->HOST_POD_SWITCH(from)]);
+            assert(_topo->switches_lp[_topo->HOST_POD_SWITCH(to)]);
+
+            _topo->switches_lp[_topo->HOST_POD_SWITCH(from)]->addHostPort(
+                    from, uecSrc->flow_id(), uecSrc);
+            _topo->switches_lp[_topo->HOST_POD_SWITCH(to)]->addHostPort(
+                    to, uecSrc->flow_id(), uecSink);
+        } else {
+            int idx_dc = _topo_inter_dc->get_dc_id(from);
+            int idx_dc_to = _topo_inter_dc->get_dc_id(to);
+            assert(_topo_inter_dc->switches_lp[idx_dc]
+                                              [_topo_inter_dc->HOST_POD_SWITCH(
+                                                      from % 16)]);
+            assert(_topo_inter_dc->switches_lp[idx_dc_to]
+                                              [_topo_inter_dc->HOST_POD_SWITCH(
+                                                      to % 16)]);
+
+            _topo_inter_dc
+                    ->switches_lp[from % 16]
+                                 [_topo_inter_dc->HOST_POD_SWITCH(from % 16)]
+                    ->addHostPort(from % 16, uecSrc->flow_id(), uecSrc);
+            _topo_inter_dc
+                    ->switches_lp[idx_dc_to]
+                                 [_topo_inter_dc->HOST_POD_SWITCH(to % 16)]
+                    ->addHostPort(to % 16, uecSrc->flow_id(), uecSink);
+        }
 
         // Actually connect src and dest
         _uecRtxScanner->registerUec(*uecSrc);

@@ -26,7 +26,7 @@
 
 // Fat Tree topology was modified to work with this script, others won't work
 // correctly
-#include "fat_tree_topology.h"
+#include "fat_tree_interdc_topology.h"
 //#include "oversubscribed_fat_tree_topology.h"
 //#include "multihomed_fat_tree_topology.h"
 //#include "star_topology.h"
@@ -154,6 +154,7 @@ int main(int argc, char **argv) {
     int jump_to = 0;
     int stop_pacing_after_rtt = 0;
     int num_failed_links = 0;
+    bool topology_normal = true;
 
     int i = 1;
     filename << "logout.dat";
@@ -487,12 +488,22 @@ int main(int argc, char **argv) {
             } else if (!strcmp(argv[i + 1], "ecmp_host")) {
                 route_strategy = ECMP_FIB;
                 FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+                FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
             } else if (!strcmp(argv[i + 1], "ecmp_host_random_ecn")) {
                 route_strategy = ECMP_RANDOM_ECN;
                 FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+                FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
             } else if (!strcmp(argv[i + 1], "ecmp_host_random2_ecn")) {
                 route_strategy = ECMP_RANDOM2_ECN;
                 FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+                FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
+            }
+            i++;
+        } else if (!strcmp(argv[i], "-topology")) {
+            if (!strcmp(argv[i + 1], "normal")) {
+                topology_normal = true;
+            } else if (!strcmp(argv[i + 1], "interdc")) {
+                topology_normal = false;
             }
             i++;
         } else if (!strcmp(argv[i], "-queue_type")) {
@@ -671,6 +682,11 @@ int main(int argc, char **argv) {
 
     int dest;
 
+    if (topology_normal) {
+
+    } else {
+    }
+
 #if USE_FIRST_FIT
     if (subflow_count == 1) {
         ff = new FirstFit(timeFromMs(FIRST_FIT_INTERVAL), eventlist);
@@ -678,15 +694,10 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef FAT_TREE
-    FatTreeTopology::set_tiers(3);
-    FatTreeTopology::set_os_stage_2(fat_tree_k);
-    FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
-    FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
-    FatTreeTopology::set_bts_threshold(bts_threshold);
-    FatTreeTopology::set_ignore_data_ecn(ignore_ecn_data);
-    FatTreeTopology *top = new FatTreeTopology(
-            no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
-            queue_choice, hop_latency, switch_latency);
+#endif
+
+#ifdef FAT_TREE_INTERDC_TOPOLOGY_H
+
 #endif
 
 #ifdef OV_FAT_TREE
@@ -712,41 +723,10 @@ int main(int argc, char **argv) {
     VL2Topology *top = new VL2Topology(&logfile, &eventlist, ff);
 #endif
 
-    vector<const Route *> ***net_paths;
-    net_paths = new vector<const Route *> **[no_of_nodes];
-
-    int *is_dest = new int[no_of_nodes];
-
-    for (int i = 0; i < no_of_nodes; i++) {
-        is_dest[i] = 0;
-        net_paths[i] = new vector<const Route *> *[no_of_nodes];
-        for (int j = 0; j < no_of_nodes; j++)
-            net_paths[i][j] = NULL;
-    }
-
 #if USE_FIRST_FIT
     if (ff)
         ff->net_paths = net_paths;
 #endif
-
-    // vector<int> *destinations;
-
-    // Permutation connections
-    // ConnectionMatrix *conns = new ConnectionMatrix(no_of_conns);
-    // conns->setLocalTraffic(top);
-
-    // cout << "Running perm with " << no_of_conns << " connections" << endl;
-    // conns->setPermutation(no_of_conns);
-    // conns->setIncast(no_of_conns, no_of_nodes - no_of_conns);
-    //  conns->setStride(no_of_conns);
-    //  conns->setStaggeredPermutation(top,(double)no_of_conns/100.0);
-    //  conns->setStaggeredRandom(top,512,1);
-    //  conns->setHotspot(no_of_conns,512/no_of_conns);
-    //  conns->setManytoMany(128);
-
-    // conns->setVL2();
-
-    // conns->setRandom(no_of_conns);
 
     map<int, vector<int> *>::iterator it;
 
@@ -758,10 +738,33 @@ int main(int argc, char **argv) {
     // int receiving_node = 127;
     vector<int> subflows_chosen;
 
-    vector<UecSrc *> uecSrcVector;
     printf("Starting LGS Interface");
-    LogSimInterface *lgs = new LogSimInterface(NULL, &traffic_logger, eventlist,
-                                               top, net_paths);
+    LogSimInterface *lgs;
+    if (topology_normal) {
+        FatTreeTopology::set_tiers(3);
+        FatTreeTopology::set_os_stage_2(fat_tree_k);
+        FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
+        FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
+        FatTreeTopology::set_bts_threshold(bts_threshold);
+        FatTreeTopology::set_ignore_data_ecn(ignore_ecn_data);
+        FatTreeTopology *top = new FatTreeTopology(
+                no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+                queue_choice, hop_latency, switch_latency);
+        lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+    } else {
+        FatTreeInterDCTopology::set_tiers(3);
+        FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
+        FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
+        FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin,
+                                                                       kmax);
+        FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
+        FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
+        FatTreeInterDCTopology *top = new FatTreeInterDCTopology(
+                no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+                queue_choice, hop_latency, switch_latency);
+        lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+    }
+
     lgs->set_protocol(UEC_PROTOCOL);
     lgs->set_cwd(cwnd);
     lgs->set_queue_size(queuesize);
@@ -772,7 +775,7 @@ int main(int argc, char **argv) {
     lgs->setNumberPaths(number_entropies);
     start_lgs(goal_filename, *lgs);
 
-    for (int src = 0; src < dest; ++src) {
+    /*for (int src = 0; src < dest; ++src) {
         connID++;
         if (!net_paths[src][dest]) {
             vector<const Route *> *paths = top->get_paths(src, dest);
@@ -785,7 +788,7 @@ int main(int argc, char **argv) {
             vector<const Route *> *paths = top->get_paths(dest, src);
             net_paths[dest][src] = paths;
         }
-    }
+    }*/
 
     // Record the setup
     int pktsize = Packet::data_packet_size();

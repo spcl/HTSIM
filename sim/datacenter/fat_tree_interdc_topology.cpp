@@ -250,6 +250,18 @@ void FatTreeInterDCTopology::set_params(uint32_t no_of_nodes) {
             number_datacenters,
             vector<vector<BaseQueue *>>(
                     NCORE, vector<BaseQueue *>(number_border_switches)));
+
+    queues_nborderl_nborderu.resize(
+            number_border_switches,
+            vector<BaseQueue *>(number_border_switches));
+    queues_nborderu_nborderl.resize(
+            number_border_switches,
+            vector<BaseQueue *>(number_border_switches));
+
+    pipes_nborderl_nborderu.resize(number_border_switches,
+                                   vector<Pipe *>(number_border_switches));
+    pipes_nborderu_nborderl.resize(number_border_switches,
+                                   vector<Pipe *>(number_border_switches));
 }
 
 BaseQueue *FatTreeInterDCTopology::alloc_src_queue(QueueLogger *queueLogger) {
