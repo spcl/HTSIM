@@ -86,7 +86,7 @@ Please check the files for more command line options that can be used with both.
 
 ## Example
 
-If we want to run a 8:1 incast with SMaRTT with 4MiB messages, we would do the following steps:
+If we want to run a 8:1 incast with SMaRTT with 4MiB messages on a normal FatTree topology, we would do the following steps:
 
 - First run the program by using the following command (please note we are using default parameters of SMaRTT for the run) 
 ```
@@ -98,3 +98,38 @@ If we want to run a 8:1 incast with SMaRTT with 4MiB messages, we would do the f
 - A broswer should open showing the following plot:
 ![](plotting/Sample.png)
 
+On the other hand, we can run the inter datacenter version of SMaRTT by running
+```
+./htsim_uec_entry_modern -o uec_entry -k 1 -algorithm intersmartt_advanced -nodes 16 -q 4452000 -strat ecmp_host_random2_ecn -number_entropies 1024 -kmin 2 -kmax 80 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 80000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 700 -switch_latency 0 -reuse_entropy 1 -goal one_send_interdc2.bin -x_gain 5 -y_gain 0 -w_gain 0 -z_gain 2.5 -bonus_drop 1.0 -collect_data 1 -explicit_starting_cwnd 5600000 -explicit_starting_buffer 560000 -use_pacing 1 -use_phantom 1 -phantom_slowdown 5 -phantom_size 5600000 -decrease_on_nack 0 -topology interdc > out3.tmp
+```
+
+## Main Paramters Explanation for SMaRTT
+Here we have a summary of the most important parameters for SMaRTT when running the previous two examples:
+- ```-algorithm``` indicated the CC algorithm. We are currently using ```delayB``` for default SMaRTT (will be updated soon) and ```intersmartt_advanced``` for the interDC version of SMarTT.
+- ```-topology``` indicates whether we are using a normal Fat Tree topology (```normal```) or a interDC one (```interdc```).
+- ```-nodes``` indicates the number of nodes in the topology. If we are using the interDC one then it will be doubled in total.
+-```-strat``` indicates the routing being used. ```ecmp_host_random2_ecn``` is REPS. This will be updated eventually.
+- ```-number_entropies``` indicates the number of entropies.
+- ```-kmin``` and ```-kmax``` indicates the kmin and kmax as a percentage of the queue size.
+- ```-use_fast_increase``` indicates whether FastIncrease is active.
+- ```-fast_drop``` indicates whether QuickAdapt is on.
+- ```-linkspeed``` indicates the link speed in Mbps.
+- ```-mtu``` indicates the MTU in Bytes.
+- ```-seed``` sets a seed for the simulation.
+- ```-queue_type``` indicates the queue to use. In our simulations we always use ```composite```.
+- ```-hop_latency``` indicates the link latency in ns.
+- ```-switch_latency``` indicates the switch latency in ns.
+- ```-goal``` indicates the goal file to use.
+- ```-collect_data``` collect custom data for plotting.
+
+General Purpose SMaRTT:
+- ```-decrease_on_nack``` indicates how much in % of a MTU we want to decrease when receiving a NACK.
+- ```-x_gain``` indicates how much we want to increase when doing fair increase per RTT in packets.
+- ```-y_gain``` indicates how much we want to increase when doing multiplicative increase.
+- ```-w_gain``` indicates how much we want to decrease when doing multiplicative decrease.
+- ```-z_gain``` indicates how much we want to decrease when doing fair decrease.
+
+Specific to InterDC SMaRTT:
+- ```-use_pacing``` enables pacing.
+- ```-phantom_slowdown``` indicates how much the phantom queue dequeues slower compared to the real queue.
+- ```-phantom_size``` indicates the phantom queue size.
