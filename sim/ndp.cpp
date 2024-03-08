@@ -555,6 +555,7 @@ void NdpSrc::processRTS(NdpPacket &pkt) {
    resend immediately */
 void NdpSrc::processNack(const NdpNack &nack) {
     NdpPacket *p = 0;
+
     /*
         if (nack.pull())
             printf("Receive NACK (pull)\n");
@@ -1013,6 +1014,7 @@ int NdpSrc::send_packet(NdpPull::seq_t pacer_no) {
         p->from = this->from;
         p->to = this->to;
         p->tag = this->tag;
+        p->hop_count = 0;
 
         switch (_route_strategy) {
         case SINGLE_PATH:
@@ -1084,6 +1086,7 @@ int NdpSrc::send_packet(NdpPull::seq_t pacer_no) {
             p = NdpPacket::newpkt(_flow, *rt, _highest_sent + 1, pacer_no, _mss,
                                   false, _paths.size() > 0 ? _paths.size() : 1,
                                   last_packet, _dstaddr);
+            p->hop_count = 0;
 
 #ifdef DEBUG_PATH_STATS
             _path_counts_new[p->path_id()]++;
@@ -1100,6 +1103,7 @@ int NdpSrc::send_packet(NdpPull::seq_t pacer_no) {
             p->set_route(*_route);
             int crt = choose_route();
             // crt = random() % _paths.size();
+            p->hop_count = 0;
 
             p->set_pathid(_path_ids[crt]);
             /*
@@ -1138,6 +1142,7 @@ int NdpSrc::send_packet(NdpPull::seq_t pacer_no) {
         p->from = this->from;
         p->to = this->to;
         p->tag = this->tag;
+        p->hop_count = 0;
 
         PacketSink *sink = p->sendOn();
         packets_sent++;

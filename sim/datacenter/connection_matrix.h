@@ -3,6 +3,7 @@
 #define connection_matrix
 
 #include "eventlist.h"
+#include "fat_tree_interdc_switch.h"
 #include "fat_tree_switch.h"
 #include "main.h"
 #include "randomqueue.h"

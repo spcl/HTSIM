@@ -176,7 +176,7 @@ def main(args):
         df4.reset_index(drop=True, inplace=True)
 
     # Sent data
-    '''colnames=['Time', 'Sent'] 
+    colnames=['Time', 'Sent', 'Other'] 
     df5 = pd.DataFrame(columns =colnames)
     name = ['0'] * df5.shape[0]
     df5 = df5.assign(Node=name)
@@ -194,7 +194,7 @@ def main(args):
         # DownScale
         df5 = df5.iloc[::int(ratio)]
         # Reset the index of the new dataframe
-        df5.reset_index(drop=True, inplace=True)'''
+        df5.reset_index(drop=True, inplace=True)
 
     if (args.show_case):
         # Case1 Data
@@ -636,9 +636,9 @@ def main(args):
             go.Scatter(x=sub_df4["Time"], y=sub_df4['ECN'], mode="markers", marker_symbol="triangle-up", name="ECN Packet", marker=dict(size=5, color="yellow"), showlegend=True),
             secondary_y=False
         )
-    '''print("Sent Plot")
+    print("Sent Plot")
     # Sent
-    mean_sent = df5["Time"].mean()
+    '''mean_sent = df5["Time"].mean()
     df5['Sent'] = df5['Sent'].multiply(y_sent)
     for i in df5['Node'].unique():
         sub_df5 = df5.loc[df5['Node'] == str(i)]
@@ -696,7 +696,7 @@ def main(args):
         my_title=args.name
     else:
         my_title="<b>Incast 2:1 – 1:1 FT – 800Gbps – 4KiB MTU – 128MiB Flows - LoadBalancing ON</b>"
-        my_title="Overall Timeline"
+        my_title="Overall Timeline - Parallel Phantom - Gentle Decrease when Rate Increasing"
 
     # Add figure title
     fig.update_layout(title_text=my_title)

@@ -1,5 +1,5 @@
 // -*- c-basic-offset: 4; tab-width: 8; indent-tabs-mode: t -*-
-#include "uec_drop.h"
+#include "uec.h"
 #include "ecn.h"
 #include "queue.h"
 #include <filesystem>
@@ -13,36 +13,49 @@
 #define timeInf 0
 
 // Parameters
-std::string UecDropSrc::queue_type = "composite";
-std::string UecDropSrc::algorithm_type = "standard_trimming";
-bool UecDropSrc::use_fast_drop = false;
-int UecDropSrc::fast_drop_rtt = 1;
-bool UecDropSrc::do_jitter = false;
-bool UecDropSrc::do_exponential_gain = false;
-bool UecDropSrc::use_fast_increase = false;
-bool UecDropSrc::use_mixed = false;
-bool UecDropSrc::use_super_fast_increase = false;
-double UecDropSrc::exp_gain_value_med_inc = 1;
-double UecDropSrc::jitter_value_med_inc = 1;
-double UecDropSrc::delay_gain_value_med_inc = 5;
-int UecDropSrc::target_rtt_percentage_over_base = 50;
+std::string UecSrc::queue_type = "composite";
+std::string UecSrc::algorithm_type = "standard_trimming";
+bool UecSrc::use_fast_drop = false;
+int UecSrc::fast_drop_rtt = 1;
+bool UecSrc::use_pacing = false;
+simtime_picosec UecSrc::pacing_delay = 0;
+bool UecSrc::do_jitter = false;
+bool UecSrc::do_exponential_gain = false;
+bool UecSrc::use_fast_increase = false;
+bool UecSrc::use_super_fast_increase = false;
+int UecSrc::target_rtt_percentage_over_base = 50;
+bool UecSrc::stop_after_quick = false;
+double UecSrc::y_gain = 1;
+double UecSrc::x_gain = 0.15;
+double UecSrc::z_gain = 1;
+double UecSrc::w_gain = 1;
+double UecSrc::quickadapt_lossless_rtt = 2.0;
+bool UecSrc::disable_case_4 = false;
+bool UecSrc::disable_case_3 = false;
+double UecSrc::starting_cwnd = 1;
+double UecSrc::bonus_drop = 1;
+double UecSrc::buffer_drop = 1.2;
+int UecSrc::ratio_os_stage_1 = 1;
+double UecSrc::decrease_on_nack = 1;
+simtime_picosec UecSrc::stop_pacing_after_rtt = 0;
+int UecSrc::reaction_delay = 1;
+int UecSrc::precision_ts = 1;
+int UecSrc::once_per_rtt = 0;
+int UecSrc::explicit_target_rtt = 0;
+int UecSrc::explicit_base_rtt = 0;
+int UecSrc::explicit_bdp = 0;
+double UecSrc::exp_avg_ecn_value = 0.3;
+double UecSrc::exp_avg_rtt_value = 0.3;
+double UecSrc::exp_avg_alpha = 0.125;
+bool UecSrc::use_exp_avg_ecn = false;
+bool UecSrc::use_exp_avg_rtt = false;
 
-double UecDropSrc::y_gain = 1;
-double UecDropSrc::x_gain = 0.15;
-double UecDropSrc::z_gain = 1;
-double UecDropSrc::w_gain = 1;
-bool UecDropSrc::disable_case_3 = false;
-double UecDropSrc::starting_cwnd = 1;
-double UecDropSrc::bonus_drop = 1;
-double UecDropSrc::buffer_drop = 1.2;
-int UecDropSrc::ratio_os_stage_1 = 1;
+RouteStrategy UecSrc::_route_strategy = NOT_SET;
+RouteStrategy UecSink::_route_strategy = NOT_SET;
 
-RouteStrategy UecDropSrc::_route_strategy = NOT_SET;
-RouteStrategy UecDropSink::_route_strategy = NOT_SET;
-
-UecDropSrc::UecDropSrc(UecDropLogger *logger, TrafficLogger *pktLogger,
-                       EventList &eventList, uint64_t rtt, uint64_t bdp,
-                       uint64_t queueDrainTime, int hops)
+UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger,
+               EventList &eventList, uint64_t rtt, uint64_t bdp,
+               uint64_t queueDrainTime, int hops)
         : EventSource(eventList, "uec"), _logger(logger), _flow(pktLogger) {
     _mss = Packet::data_packet_size();
     _unacked = 0;
@@ -54,20 +67,33 @@ UecDropSrc::UecDropSrc(UecDropLogger *logger, TrafficLogger *pktLogger,
     _next_good_entropy = 0;
 
     _nack_rtx_pending = 0;
+    current_ecn_rate = 0;
 
     // new CC variables
     _hop_count = hops;
+
     _base_rtt = ((_hop_count * LINK_DELAY_MODERN) +
                  ((PKT_SIZE_MODERN + 64) * 8 / LINK_SPEED_MODERN * _hop_count) +
                  +(_hop_count * LINK_DELAY_MODERN) +
                  (64 * 8 / LINK_SPEED_MODERN * _hop_count)) *
                 1000;
+
+    if (precision_ts != 1) {
+        _base_rtt = (((_base_rtt + precision_ts - 1) / precision_ts) *
+                     precision_ts);
+    }
+
     _target_rtt =
             _base_rtt * ((target_rtt_percentage_over_base + 1) / 100.0 + 1);
 
+    if (precision_ts != 1) {
+        _target_rtt = (((_target_rtt + precision_ts - 1) / precision_ts) *
+                       precision_ts);
+    }
+
     _rtt = _base_rtt;
-    _rto = _base_rtt * 25;
-    _rto_margin = _base_rtt / 8;
+    _rto = rtt + _hop_count * queueDrainTime + (rtt * 900000);
+    _rto_margin = _rtt / 2;
     _rtx_timeout = timeInf;
     _rtx_timeout_pending = false;
     _rtx_pending = false;
@@ -81,20 +107,52 @@ UecDropSrc::UecDropSrc(UecDropLogger *logger, TrafficLogger *pktLogger,
     _queue_size = _bdp; // Temporary
     initial_x_gain = x_gain;
 
-    _maxcwnd = starting_cwnd;
+    if (explicit_base_rtt != 0) {
+        _base_rtt = explicit_base_rtt;
+        _target_rtt = explicit_target_rtt;
+        bdp = explicit_bdp * 8;
+    }
+
+    // internal_stop_pacing_rtt = 0;
+
+    _maxcwnd = starting_cwnd * 8;
     _cwnd = starting_cwnd;
     _consecutive_low_rtt = 0;
     target_window = _cwnd;
     _target_based_received = true;
 
-    /*printf("Link Delay %lu - Link Speed %lu - Pkt Size %d - Base RTT %lu - "
-           "Target RTT is %lu - BDP %lu - CWND %lu - Hops %d\n",
+    printf("Link Delay %d - Link Speed %lu - Pkt Size %d - Base RTT %lu - "
+           "Target RTT is %lu - BDP %lu - CWND %u - Hops %d - Stop Pacing "
+           "%lu\n",
            LINK_DELAY_MODERN, LINK_SPEED_MODERN, PKT_SIZE_MODERN, _base_rtt,
-           _target_rtt, _bdp, _cwnd, _hop_count);*/
+           _target_rtt, _bdp, _cwnd, _hop_count, stop_pacing_after_rtt);
 
     _max_good_entropies = 10; // TODO: experimental value
     _enableDistanceBasedRtx = false;
     f_flow_over_hook = nullptr;
+    last_pac_change = 0;
+
+    /*if (use_pacing && generic_pacer == NULL) {
+        generic_pacer = new SmarttPacer(eventlist(), *this);
+        pacer_start_time = eventlist().now();
+        pacing_delay = ((4160 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
+        pacing_delay -= (4160 * 8 / LINK_SPEED_MODERN);
+
+        pacing_delay = (4160 * 8 / LINK_SPEED_MODERN) * 100;
+        printf("Setting the pacing delay %d %lu to %lu at %lu\n", _cwnd,
+               (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
+        pacing_delay *= 1000; // ps
+    }*/
+
+    if (use_pacing && generic_pacer == NULL) {
+        generic_pacer = new SmarttPacer(eventlist(), *this);
+        pacer_start_time = eventlist().now();
+        pacing_delay = ((4160 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
+        pacing_delay -= (4160 * 8 / LINK_SPEED_MODERN);
+        printf("Setting the pacing delay %d %lu to %lu at %lu\n", _cwnd,
+               (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
+        pacing_delay *= 1000; // ps
+    }
 
     if (queue_type == "composite_bts") {
         _bts_enabled = true;
@@ -104,7 +162,7 @@ UecDropSrc::UecDropSrc(UecDropLogger *logger, TrafficLogger *pktLogger,
 }
 
 // Add deconstructor and save data once we are done.
-UecDropSrc::~UecDropSrc() {
+UecSrc::~UecSrc() {
     // If we are collecting specific logs
     if (COLLECT_DATA) {
         // RTT
@@ -189,6 +247,17 @@ UecDropSrc::~UecDropSrc() {
         }
 
         MyFileEcnRTT.close();
+
+        // ECN Received
+        file_name = PROJECT_ROOT_PATH / ("sim/output/ecn/ecn" + _name + "_" +
+                                         std::to_string(tag) + ".txt");
+        std::ofstream MyFileEcnReceived(file_name, std::ios_base::app);
+
+        for (const auto &p : _list_ecn_received) {
+            MyFileEcnReceived << p.first << "," << p.second << std::endl;
+        }
+
+        MyFileEcnReceived.close();
 
         // Acked Trimmed
         file_name = PROJECT_ROOT_PATH /
@@ -281,9 +350,13 @@ UecDropSrc::~UecDropSrc() {
     }
 }
 
-void UecDropSrc::doNextEvent() { startflow(); }
+void UecSrc::doNextEvent() { startflow(); }
 
-std::size_t UecDropSrc::get_sent_packet_idx(uint32_t pkt_seqno) {
+void UecSrc::set_end_trigger(Trigger &end_trigger) {
+    _end_trigger = &end_trigger;
+}
+
+std::size_t UecSrc::get_sent_packet_idx(uint32_t pkt_seqno) {
     for (std::size_t i = 0; i < _sent_packets.size(); ++i) {
         if (pkt_seqno == _sent_packets[i].seqno) {
             return i;
@@ -292,7 +365,18 @@ std::size_t UecDropSrc::get_sent_packet_idx(uint32_t pkt_seqno) {
     return _sent_packets.size();
 }
 
-void UecDropSrc::mark_received(UecDropAck &pkt) {
+void UecSrc::update_rtx_time() {
+    _rtx_timeout = timeInf;
+    for (const auto &sp : _sent_packets) {
+        auto timeout = sp.timer;
+        if (!sp.acked && !sp.nacked && !sp.timedOut &&
+            (timeout < _rtx_timeout || _rtx_timeout == timeInf)) {
+            _rtx_timeout = timeout;
+        }
+    }
+}
+
+void UecSrc::mark_received(UecAck &pkt) {
     // cummulative ack
     if (pkt.seqno() == 1) {
         while (!_sent_packets.empty() &&
@@ -300,13 +384,12 @@ void UecDropSrc::mark_received(UecDropAck &pkt) {
                 _sent_packets[0].acked)) {
             _sent_packets.erase(_sent_packets.begin());
         }
-
+        update_rtx_time();
         return;
     }
     if (_sent_packets.empty() || _sent_packets[0].seqno > pkt.ackno()) {
         // duplicate ACK -- since we support OOO, this must be caused by
         // duplicate retransmission
-
         return;
     }
     auto i = get_sent_packet_idx(pkt.seqno());
@@ -320,13 +403,36 @@ void UecDropSrc::mark_received(UecDropAck &pkt) {
         assert(i < _sent_packets.size());
         auto timer = _sent_packets[i].timer;
         auto seqno = _sent_packets[i].seqno;
-        _sent_packets[i] =
-                SentPacketUecDrop(timer, seqno, true, false, false, 0);
+        auto nacked = _sent_packets[i].nacked;
+        _sent_packets[i] = SentPacket(timer, seqno, true, false, false);
+        if (nacked) {
+            --_nack_rtx_pending;
+        }
         _last_acked = seqno + _mss - 1;
+        if (_enableDistanceBasedRtx) {
+            bool trigger = true;
+            // TODO: this could be optimized with counters or bitsets,
+            // but I'm doing this the simple way to avoid bugs while
+            // we don't need the optimizations
+            for (std::size_t k = 1; k < _sent_packets.size() / 2; ++k) {
+                if (!_sent_packets[k].acked) {
+                    trigger = false;
+                    break;
+                }
+            }
+            if (trigger) {
+                // TODO: what's the proper way to act if this packet was
+                // NACK'ed? Not super relevant right now as we are not enabling
+                // this feature anyway
+                _sent_packets[0].timer = eventlist().now();
+                _rtx_timeout_pending = true;
+            }
+        }
     }
+    update_rtx_time();
 }
 
-void UecDropSrc::add_ack_path(const Route *rt) {
+void UecSrc::add_ack_path(const Route *rt) {
     for (auto &r : _good_entropies) {
         if (r == rt) {
             return;
@@ -349,11 +455,11 @@ void UecDropSrc::add_ack_path(const Route *rt) {
     }
 }
 
-void UecDropSrc::set_traffic_logger(TrafficLogger *pktlogger) {
+void UecSrc::set_traffic_logger(TrafficLogger *pktlogger) {
     _flow.set_logger(pktlogger);
 }
 
-void UecDropSrc::reduce_cwnd(uint64_t amount) {
+void UecSrc::reduce_cwnd(uint64_t amount) {
     if (_cwnd >= amount + _mss) {
         _cwnd -= amount * 1;
     } else {
@@ -361,7 +467,7 @@ void UecDropSrc::reduce_cwnd(uint64_t amount) {
     }
 }
 
-void UecDropSrc::reduce_unacked(uint64_t amount) {
+void UecSrc::reduce_unacked(uint64_t amount) {
     if (_unacked >= amount) {
         _unacked -= amount;
     } else {
@@ -369,7 +475,7 @@ void UecDropSrc::reduce_unacked(uint64_t amount) {
     }
 }
 
-void UecDropSrc::check_limits_cwnd() {
+void UecSrc::check_limits_cwnd() {
     // Upper Limit
     if (_cwnd > _maxcwnd) {
         _cwnd = _maxcwnd;
@@ -380,11 +486,8 @@ void UecDropSrc::check_limits_cwnd() {
     }
 }
 
-void UecDropSrc::do_fast_drop(bool ecn_or_trimmed) {
-
-    if (use_fast_drop == false) {
-        return;
-    }
+/*
+void UecSrc::do_fast_drop(bool ecn_or_trimmed) {
 
     if (eventlist().now() >= next_window_end) {
         previous_window_end = next_window_end;
@@ -401,28 +504,27 @@ void UecDropSrc::do_fast_drop(bool ecn_or_trimmed) {
                 eventlist().now() / 1000, count_trimmed_in_rtt * _mss));
         count_trimmed_in_rtt = 0;
         count_ecn_in_rtt = 0;
-        next_window_end = eventlist().now() + (_base_rtt * 1);
+
+        if (stop_after_quick) {
+            next_window_end = eventlist().now() + (_base_rtt * 1);
+        } else {
+            next_window_end = eventlist().now() + (_target_rtt * 1);
+        }
 
         ecn_last_rtt = false;
 
         // Enable Fast Drop
-        /*printf("Using Fast Drop1 - Flow %d@%d@%d, Ecn %d, CWND %d, Saved "
-               "Acked %d (%d) - Previous Window %lu - Next Window %lu -  "
-               "get_unacked() %lu - // "
-               "Time "
-               "%lu - Ratio is %f (%lu vs %lu vs %lu) - Trimmed %d\n",
-               from, to, tag, 1, _cwnd, saved_acked_bytes, saved_trimmed_bytes,
-               previous_window_end / 1000, next_window_end / 1000,
-               get_unacked(), eventlist().now() / 1000,
-               ((eventlist().now() - previous_window_end + _base_rtt) /
-                (double)_base_rtt),
-               (eventlist().now() - previous_window_end + _base_rtt) / 1000,
-               previous_window_end / 1000, _base_rtt / 1000);*/
+
         saved_trimmed_bytes = 0;
-        if ((ecn_or_trimmed || need_fast_drop) &&
+        if ((ecn_or_trimmed || need_fast_drop) && first_quick_adapt == false &&
             (saved_acked_bytes > 0 ||
              (saved_acked_bytes == 0 && previous_window_end != 0)) &&
             previous_window_end != 0) {
+
+            saved_acked_bytes =
+                    saved_acked_bytes *
+                    ((double)_target_rtt /
+                     (eventlist().now() - previous_window_end + _target_rtt));
 
             double bonus_based_on_target = buffer_drop;
 
@@ -445,11 +547,14 @@ void UecDropSrc::do_fast_drop(bool ecn_or_trimmed) {
                    previous_window_end / 1000, next_window_end / 1000,
                    eventlist().now() / 1000);
 
-            _cwnd = max((double)(saved_acked_bytes * 1 * bonus_drop),
+            _cwnd = max((double)(saved_acked_bytes * bonus_based_on_target *
+                                 bonus_drop),
                         (double)_mss);
 
+            first_quick_adapt = true;
+
             //_cwnd = 40000;
-            ignore_for = (get_unacked() / (double)_mss);
+            ignore_for = (get_unacked() / (double)_mss) * 1.25;
             // int random_integer_wait = rand() % ignore_for;
             //  ignore_for += random_integer_wait;
             printf("Ignoring %d for %d pkts - New Wnd %d (%d %d)\n", from,
@@ -461,10 +566,8 @@ void UecDropSrc::do_fast_drop(bool ecn_or_trimmed) {
             need_fast_drop = false;
             _list_fast_decrease.push_back(
                     std::make_pair(eventlist().now() / 1000, 1));
-            /*printf("Updating List Fast Drop\n");
-            fflush(stdout);*/
             check_limits_cwnd();
-            last_fast_drop_event = eventlist().now();
+            pause_send = false;
 
             // Update XGAIN
             x_gain = min(initial_x_gain,
@@ -472,10 +575,107 @@ void UecDropSrc::do_fast_drop(bool ecn_or_trimmed) {
         }
     }
 }
+*/
 
-void UecDropSrc::processNack(UecDropNack &pkt) {
+void UecSrc::quick_adapt(bool trimmed) {
 
-    printf("Nack from %d - ECN 1, Path %d\n", from, pkt.pathid_echo);
+    if (eventlist().now() >= next_window_end) {
+        previous_window_end = next_window_end;
+        saved_acked_bytes = acked_bytes;
+
+        acked_bytes = 0;
+        next_window_end = eventlist().now() + _base_rtt;
+        // Enable Fast Drop
+        if ((trimmed || need_quick_adapt) && previous_window_end != 0) {
+
+            if (did_qa) {
+                // return;
+            }
+
+            if (eventlist().now() > next_qa) {
+                next_qa = eventlist().now() + _base_rtt * 6;
+            } else {
+                return;
+            }
+
+            // Edge case where we get here receiving a packet a long time after
+            // the last one (>> base_rtt). Should not matter in most cases.
+            /*saved_acked_bytes =
+                    saved_acked_bytes *
+                    ((double)_base_rtt /
+                     (eventlist().now() - previous_window_end + _base_rtt));*/
+
+            // Update window and ignore count
+            printf("Before Update Saved CWD is %lu \n", saved_acked_bytes);
+            if (send_size <= _bdp) {
+                // saved_acked_bytes =
+                //         saved_acked_bytes * (_bdp / (double)send_size);
+                printf("BDP %lu - Send Size %lu - Ratio %f\n", _bdp, send_size,
+                       (_bdp / (double)send_size));
+            }
+            printf("After Update Saved CWD is %lu \n", saved_acked_bytes);
+            _cwnd = max((double)(saved_acked_bytes * bonus_drop),
+                        (double)_mss); // 1.5 is the amount of target_rtt over
+                                       // base_rtt. Simplified here for this
+                                       // code share.
+
+            // _cwnd = 690000; // TODO: Remove
+            // saved_acked_bytes = 690000;
+            // saved_acked_bytes = _cwnd;
+            check_limits_cwnd();
+            ignore_for = (get_unacked() / (double)_mss);
+
+            // Reset counters, update logs.
+            count_received = 0;
+            need_quick_adapt = false;
+            _list_fast_decrease.push_back(
+                    std::make_pair(eventlist().now() / 1000, 1));
+
+            // Update x_gain after large incasts. We want to limit its effect if
+            // we move to much smaller windows.
+            // x_gain = min(initial_x_gain,
+            //             (_queue_size / 5.0) / (_mss * ((double)_bdp /
+            //             _cwnd)));
+            // printf("New X Gain is %f\n", x_gain);
+            did_qa = true;
+
+            // Go into pacing mode after QuickAdapt
+            if (use_pacing && generic_pacer == NULL) {
+                generic_pacer = new SmarttPacer(eventlist(), *this);
+                pacer_start_time = eventlist().now();
+                pacing_delay =
+                        ((4160 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
+                pacing_delay -= (4160 * 8 / LINK_SPEED_MODERN);
+                printf("Setting the pacing delay %d %lu to %lu at %lu\n", _cwnd,
+                       (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
+                pacing_delay *= 1000; // ps
+            }
+
+            // Print
+
+            printf("Total pkt %d - Total NACK %d\n", total_pkt, total_nack);
+            printf("Using Fast Drop2 - Flow %d@%d@%d, Ecn %d, CWND %d, "
+                   "Saved "
+                   "Acked %d (dropping to %f - bonus1  %f -> %f and "
+                   "%f) - "
+                   "Previous "
+                   "Window %lu - Next "
+                   "Window %lu// "
+                   "Time "
+                   "%lu\n",
+                   from, to, tag, 1, _cwnd, saved_acked_bytes,
+                   max((double)(saved_acked_bytes * bonus_drop),
+                       saved_acked_bytes * bonus_drop + _mss),
+                   bonus_drop, (saved_acked_bytes * bonus_drop),
+                   (saved_acked_bytes * bonus_drop + _mss),
+                   previous_window_end / 1000, next_window_end / 1000,
+                   eventlist().now() / 1000);
+        }
+    }
+}
+
+void UecSrc::processNack(UecNack &pkt) {
+
     count_trimmed_in_rtt++;
     consecutive_nack++;
     trimmed_last_rtt++;
@@ -483,22 +683,20 @@ void UecDropSrc::processNack(UecDropNack &pkt) {
     acked_bytes += 64;
     saved_trimmed_bytes += 64;
 
-    if (count_received >= ignore_for) {
-        need_fast_drop = true;
-    }
-
     // printf("Just NA CK from %d at %lu\n", from, eventlist().now() / 1000);
 
     // Reduce Window Or Do Fast Drop
     if (use_fast_drop) {
         if (count_received >= ignore_for) {
-            do_fast_drop(true);
+            // need_quick_adapt = true;
+            pause_send = true;
+            // quick_adapt(true);
         }
         if (count_received > ignore_for) {
-            reduce_cwnd(uint64_t(_mss * 1));
+            reduce_cwnd(uint64_t(_mss * decrease_on_nack));
         }
     } else {
-        reduce_cwnd(uint64_t(_mss * 1));
+        reduce_cwnd(uint64_t(_mss * decrease_on_nack));
     }
     check_limits_cwnd();
 
@@ -527,8 +725,32 @@ void UecDropSrc::processNack(UecDropNack &pkt) {
     }
 }
 
+void UecSrc::simulateTrimEvent(UecAck &pkt) {
+
+    consecutive_good_medium = 0;
+    // acked_bytes += _mss;
+    // saved_trimmed_bytes += 64;
+
+    if (count_received >= ignore_for) {
+        need_quick_adapt = true;
+    }
+
+    // printf("Just NA CK from %d at %lu\n", from, eventlist().now() / 1000);
+
+    // Reduce Window Or Do Fast Drop
+    if (use_fast_drop) {
+        if (count_received >= ignore_for) {
+            quick_adapt(true);
+        }
+    }
+
+    check_limits_cwnd();
+
+    //_list_nack.push_back(std::make_pair(eventlist().now() / 1000, 1));
+}
+
 /* Choose a route for a particular packet */
-int UecDropSrc::choose_route() {
+int UecSrc::choose_route() {
 
     switch (_route_strategy) {
     case PULL_BASED: {
@@ -617,20 +839,7 @@ int UecDropSrc::choose_route() {
         break;
     }
     case ECMP_RANDOM_ECN: {
-        if (_highest_sent < _maxcwnd) { //_mss*_paths.size()
-            _crt_path++;
-            if (_crt_path == _paths.size()) {
-                // permute_paths();
-                _crt_path = 0;
-            }
-        } else {
-            if (_next_pathid == -1) {
-                assert(_paths.size() > 0);
-                _crt_path = random() % _paths.size();
-            } else {
-                _crt_path = _next_pathid;
-            }
-        }
+        _crt_path = from;
         break;
     }
     case ECMP_FIB_ECN: {
@@ -672,7 +881,7 @@ int UecDropSrc::choose_route() {
     return _crt_path / 1;
 }
 
-int UecDropSrc::next_route() {
+int UecSrc::next_route() {
     // used for reactive ECN.
     // Just move on to the next path blindly
     assert(_route_strategy == REACTIVE_ECN);
@@ -695,7 +904,7 @@ int UecDropSrc::next_route() {
             (queue_deviation / (observed_queue_occupancy) / (cwnd / _mss)))
 }*/
 
-void UecDropSrc::processBts(UecDropPacket *pkt) {
+void UecSrc::processBts(UecPacket *pkt) {
     _list_cwd.push_back(std::make_pair(eventlist().now() / 1000, _cwnd));
 
     // Update variables
@@ -783,28 +992,62 @@ void UecDropSrc::processBts(UecDropPacket *pkt) {
     // //fflush(stdout);
 }
 
-void UecDropSrc::processAck(UecDropAck &pkt, bool force_marked) {
-    UecDropAck::seq_t seqno = pkt.ackno();
+void UecSrc::processAck(UecAck &pkt, bool force_marked) {
+    UecAck::seq_t seqno = pkt.ackno();
     simtime_picosec ts = pkt.ts();
+    // printf("Received ACK\n");
 
     consecutive_nack = 0;
     bool marked = pkt.flags() &
                   ECN_ECHO; // ECN was marked on data packet and echoed on ACK
 
-    /*printf("Packet from %d is ECN Marked %d - Time %lu - Next Window End "
-           "%lu\n",
-           from, marked, GLOBAL_TIME / 1000, next_window_end / 1000);*/
+    if (pkt.from == 0) {
+        _list_acked_bytes.push_back(
+                std::make_pair(eventlist().now() / 1000, pacing_delay / 1000));
+    }
 
-    uint64_t newRtt = eventlist().now() - ts;
-    printf("Received ACK\n");
+    if (COLLECT_DATA && marked) {
+        std::string file_name =
+                PROJECT_ROOT_PATH /
+                ("sim/output/ecn/ecn" + std::to_string(pkt.from) + "_" +
+                 std::to_string(pkt.to) + ".txt");
+        std::ofstream MyFile(file_name, std::ios_base::app);
+
+        MyFile << eventlist().now() / 1000 << "," << marked << std::endl;
+
+        MyFile.close();
+    }
+
+    uint64_t now_time = 0;
+    if (precision_ts == 1) {
+        now_time = eventlist().now();
+    } else {
+        now_time = (((eventlist().now() + precision_ts - 1) / precision_ts) *
+                    precision_ts);
+    }
+    uint64_t newRtt = now_time - ts;
     mark_received(pkt);
+
+    if (use_pacing && generic_pacer != NULL /*&& did_qa*/ &&
+        ((eventlist().now() - last_pac_change) > _base_rtt / 20)) {
+        pacing_delay = (4160 * 8) / ((_cwnd * 8.0) / (_base_rtt / 1000.0));
+        //  pacing_delay -= (4160 * 8 / 80);
+        printf("Setting the pacing delay update %d %lu to %lu at %lu\n", _cwnd,
+               (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
+        pacing_delay *= 1000; // ps
+        generic_pacer->cancel();
+        // generic_pacer->schedule_send(pacing_delay);
+        last_pac_change = eventlist().now();
+    }
 
     count_total_ack++;
     if (marked) {
+        _list_ecn_received.push_back(
+                std::make_pair(eventlist().now() / 1000, 1));
         count_total_ecn++;
         consecutive_good_medium = 0;
     }
-    // printf("Currently at Pkt %d\n", count_total_ack);
+
     if (from == 0 && count_total_ack % 10 == 0) {
         printf("Currently at Pkt %d\n", count_total_ack);
         // fflush(stdout);
@@ -814,7 +1057,6 @@ void UecDropSrc::processAck(UecDropAck &pkt, bool force_marked) {
         _consecutive_no_ecn += _mss;
         _next_pathid = pkt.pathid_echo;
     } else {
-        // printf("Ack %d - ECN 1, Path %d\n", from, pkt.pathid_echo);
         _next_pathid = -1;
         ecn_last_rtt = true;
         _consecutive_no_ecn = 0;
@@ -828,6 +1070,16 @@ void UecDropSrc::processAck(UecDropAck &pkt, bool force_marked) {
                 pkt.ackno(), _base_rtt / 1000, _target_rtt / 1000));
     }
 
+    if (newRtt > _base_rtt * quickadapt_lossless_rtt && marked &&
+        queue_type == "lossless_input") {
+        // printf("PFC Src Happened at %lu - %d@%d\n", GLOBAL_TIME / 1000, from,
+        //        pkt.id());
+        simulateTrimEvent(dynamic_cast<UecAck &>(pkt));
+    } else {
+        // printf("ACK Happened at %lu - %d@%d\n", GLOBAL_TIME / 1000, from,
+        //        pkt.id());
+    }
+
     if (seqno >= _flow_size && _sent_packets.empty() && !_flow_finished) {
         _flow_finished = true;
         if (f_flow_over_hook) {
@@ -839,10 +1091,13 @@ void UecDropSrc::processAck(UecDropAck &pkt, bool force_marked) {
         cout << "Flow " << nodename() << " completion time is "
              << timeAsMs(eventlist().now() - _flow_start_time) << endl;
 
-        printf("Completion Time Flow is %lu\n",
-               eventlist().now() - _flow_start_time);
+        printf("Completion Time Flow is %lu - Overall Time %lu\n",
+               eventlist().now() - _flow_start_time, GLOBAL_TIME);
 
         printf("Overall Completion at %lu\n", GLOBAL_TIME);
+        if (_end_trigger) {
+            _end_trigger->activate();
+        }
         return;
     }
 
@@ -856,7 +1111,10 @@ void UecDropSrc::processAck(UecDropAck &pkt, bool force_marked) {
 
         _list_cwd.push_back(std::make_pair(eventlist().now() / 1000, _cwnd));
         // printf("Window Is %d - From %d To %d\n", _cwnd, from, to);
+        current_pkt++;
+        // printf("Triggering ADJ\n");
         adjust_window(ts, marked, newRtt);
+
         acked_bytes += _mss;
         good_bytes += _mss;
 
@@ -867,7 +1125,7 @@ void UecDropSrc::processAck(UecDropAck &pkt, bool force_marked) {
     }
 }
 
-uint64_t UecDropSrc::get_unacked() {
+uint64_t UecSrc::get_unacked() {
     // return _unacked;
     uint64_t missing = 0;
     for (const auto &sp : _sent_packets) {
@@ -878,7 +1136,7 @@ uint64_t UecDropSrc::get_unacked() {
     return missing;
 }
 
-void UecDropSrc::receivePacket(Packet &pkt) {
+void UecSrc::receivePacket(Packet &pkt) {
     // every packet received represents one less packet in flight
 
     // printf("Node %s - Received packet %d - From %d\n",
@@ -895,32 +1153,66 @@ void UecDropSrc::receivePacket(Packet &pkt) {
     pkt.flow().logTraffic(pkt, *this, TrafficLogger::PKT_RCVDESTROY);
 
     if (_logger) {
-        _logger->logUecDrop(*this, UecDropLogger::UEC_RCV);
+        _logger->logUec(*this, UecLogger::UEC_RCV);
     }
     switch (pkt.type()) {
-    case UEC_DROP:
+    case UEC:
         // BTS
         if (_bts_enabled) {
             if (pkt.bounced()) {
-                processBts((UecDropPacket *)(&pkt));
+                processBts((UecPacket *)(&pkt));
                 counter_consecutive_good_bytes = 0;
                 increasing = false;
             }
         }
         break;
-    case UECACK_DROP:
+    case UECACK:
         // fflush(stdout);
         count_received++;
-        processAck(dynamic_cast<UecDropAck &>(pkt), false);
+        total_pkt++;
+
+        /*if (use_pacing && generic_pacer != NULL && did_qa &&
+            ((eventlist().now() - last_pac_change) > _base_rtt / 4)) {
+            pacing_delay = pacing_delay / 2;
+            printf("Setting the pacing delay update %d %lu to %lu at %lu\n",
+                   _cwnd, (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
+            generic_pacer->cancel();
+            last_pac_change = eventlist().now();
+        }
+
+        printf("Considering Disable Pacer - Stop %lu - Time %lu vs %lu\n",
+               (stop_pacing_after_rtt * _base_rtt), eventlist().now(),
+               (stop_pacing_after_rtt * _base_rtt));
+        if ((stop_pacing_after_rtt * _base_rtt) != 0 &&
+            eventlist().now() > (stop_pacing_after_rtt * _base_rtt) &&
+            generic_pacer != NULL) {
+            generic_pacer->cancel();
+            use_pacing = false;
+            printf("Disabling Pacer\n");
+        }*/
+
+        processAck(dynamic_cast<UecAck &>(pkt), false);
+
+        /*if (pkt.pfc_just_happened) {
+            printf("PFC Src Happened at %lu - %d@%d\n", GLOBAL_TIME / 1000,
+                   from, pkt.id());
+            simulateTrimEvent(dynamic_cast<UecAck &>(pkt));
+        }*/
         pkt.free();
         break;
-    case UECNACK_DROP:
+    case ETH_PAUSE:
+        printf("Src received a Pause\n");
+        // processPause((const EthPausePacket &)pkt);
+        pkt.free();
+        return;
+    case UECNACK:
         printf("NACK %d@%d@%d\n", from, to, tag);
         // fflush(stdout);
+        total_nack++;
         if (_trimming_enabled) {
             _next_pathid = -1;
             count_received++;
-            processNack(dynamic_cast<UecDropNack &>(pkt));
+            processNack(dynamic_cast<UecNack &>(pkt));
             pkt.free();
         }
         break;
@@ -937,63 +1229,14 @@ void UecDropSrc::receivePacket(Packet &pkt) {
     // //fflush(stdout);
 }
 
-uint32_t UecDropSrc::medium_increase(simtime_picosec rtt) {
-    /*printf("Inceasing %d by %d at %lu\n", from,
-           min(uint32_t((((_target_rtt - rtt) / (double)rtt) * 5 *
-                         ((double)_mss / _cwnd) * _mss) +
-                        (((double)_mss / _cwnd) * _mss)),
-               uint32_t(_mss)),
-           eventlist().now() / 1000);*/
-    consecutive_good_medium += _mss;
-    // Jitter
-    if (do_jitter) {
-        jitter_value_med_inc = (consecutive_good_medium / (double)_mss);
-    } else {
-        jitter_value_med_inc = 1;
-    }
-    // Exponential/Linear
-    int none_rtt_gain = 1;
-    if (do_exponential_gain) {
-        exp_gain_value_med_inc = 1;
-    } else {
-        none_rtt_gain = 1; /*LINK_SPEED_MODERN / 100 / 8*/
-        exp_gain_value_med_inc = (_mss / (double)_cwnd);
-    }
-
-    // Delay Gain Automated (1 / (target_ratio - 1)) vs manually set at 0
-    // (put close to target_rtt)
-
-    if (consecutive_good_medium < _cwnd && do_jitter) {
-        return 0;
-    } else {
-        consecutive_good_medium = 0;
-
-        _list_medium_increase_event.push_back(
-                std::make_pair(eventlist().now() / 1000, 1));
-        if (delay_gain_value_med_inc == 0) {
-            return min(uint32_t(_mss) * exp_gain_value_med_inc * none_rtt_gain,
-                       double(_mss) * none_rtt_gain) *
-                   jitter_value_med_inc;
-        } else {
-            return min(uint32_t((((_target_rtt - rtt) / (double)rtt) *
-                                 delay_gain_value_med_inc * _mss) *
-                                        exp_gain_value_med_inc +
-                                (_mss) * (_mss / (double)_cwnd)) *
-                               none_rtt_gain,
-                       uint32_t(_mss)) *
-                   none_rtt_gain * jitter_value_med_inc;
-        }
-    }
-}
-
-void UecDropSrc::fast_increase() {
+void UecSrc::fast_increase() {
     if (use_fast_drop) {
         if (count_received > ignore_for) {
             // counter_consecutive_good_bytes =
             // counter_consecutive_good_bytes / 2;
             if (use_super_fast_increase) {
-                _cwnd += 4 * _mss * (LINK_SPEED_MODERN / 100);
-                //_cwnd *= 2;
+                //_cwnd += 4 * _mss * (LINK_SPEED_MODERN / 100);
+                _cwnd += 2 * _mss;
             } else {
                 _cwnd += _mss;
             }
@@ -1014,22 +1257,78 @@ void UecDropSrc::fast_increase() {
             std::make_pair(eventlist().now() / 1000, 1));
 }
 
-void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
-                               simtime_picosec rtt) {
+void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
 
-    if (rtt <= (_base_rtt + (_mss * 8 / LINK_SPEED_MODERN * 3 * 1000)) &&
-        !ecn) {
-        counter_consecutive_good_bytes += _mss;
+    /*printf("Eval RTT %lu vs %lu - ECN %d - Time %lu \n", rtt,
+           (_base_rtt + (_mss * 8 / LINK_SPEED_MODERN * 5 * 1000)), ecn,
+           GLOBAL_TIME);*/
+
+    bool can_decrease_exp_avg = false;
+    exp_avg_ecn = exp_avg_alpha * ecn + (1 - exp_avg_alpha) * exp_avg_ecn;
+
+    if (rtt > _target_rtt) {
+        exp_avg_rtt = exp_avg_alpha * 1 + (1 - exp_avg_alpha) * exp_avg_rtt;
     } else {
-        target_window = _cwnd;
-        counter_consecutive_good_bytes = 0;
-        _consecutive_no_ecn = 0;
-        increasing = false;
+        exp_avg_rtt = exp_avg_alpha * 0 + (1 - exp_avg_alpha) * exp_avg_rtt;
+    }
+
+    if (ecn) {
+        // TO DO Improve
+        if (saved_acked_bytes != 0 && ecn && algorithm_type == "intersmartt") {
+            _cwnd = min(_cwnd, (uint32_t)(saved_acked_bytes * bonus_drop));
+            //_cwnd = min(saved_acked_bytes, (uint32_t)(saved_acked_bytes * 1));
+        }
+    }
+
+    // ECN Check
+    if (use_exp_avg_ecn) {
+        if (exp_avg_ecn > exp_avg_ecn_value) {
+            can_decrease_exp_avg = true;
+        }
+    } // RTT Check
+    else if (use_exp_avg_rtt) {
+        if (exp_avg_rtt > exp_avg_rtt_value) {
+            can_decrease_exp_avg = true;
+            printf("I am in here\n");
+        }
+    } else {
+        can_decrease_exp_avg = true;
+    }
+
+    printf("From %d - Time %lu - ECN %d - Avg %f - Consecutive %lu vs %lu\n",
+           from, GLOBAL_TIME / 1000, ecn, exp_avg_ecn,
+           counter_consecutive_good_bytes, target_window);
+
+    if (algorithm_type == "intersmartt") {
+        if (!ecn && exp_avg_ecn < 0.05 && GLOBAL_TIME > _base_rtt * 10) {
+            counter_consecutive_good_bytes += _mss;
+        } else {
+            target_window = _cwnd;
+            counter_consecutive_good_bytes = 0;
+            _consecutive_no_ecn = 0;
+            increasing = false;
+        }
+    } else {
+        if (rtt <= (_base_rtt + (_mss * 8 / LINK_SPEED_MODERN * 5 * 1000)) &&
+            !ecn) {
+            counter_consecutive_good_bytes += _mss;
+        } else {
+            target_window = _cwnd;
+            counter_consecutive_good_bytes = 0;
+            _consecutive_no_ecn = 0;
+            increasing = false;
+        }
     }
 
     if (rtt >= _target_rtt) {
         consecutive_good_medium = 0;
     }
+
+    if (current_pkt < reaction_delay) {
+        // printf("Triggering ADJ\n");
+        return;
+    }
+    current_pkt = 0;
 
     // BTS Logic
     if (_bts_enabled) {
@@ -1076,7 +1375,7 @@ void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
 
             // Check if we can fast drop if it is enabled and drop in case.
             if (use_fast_drop) {
-                do_fast_drop(ecn);
+                quick_adapt(ecn);
             }
 
             // Normal, non fast drop cases. ECN
@@ -1091,10 +1390,10 @@ void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
             } else if (rtt < _target_rtt) {
                 if (use_fast_drop) {
                     if (count_received >= ignore_for) {
-                        _cwnd += medium_increase(rtt);
+                        //_cwnd += medium_increase(rtt);
                     }
                 } else {
-                    _cwnd += medium_increase(rtt);
+                    //_cwnd += medium_increase(rtt);
                 }
             } else if (rtt >= _target_rtt) {
                 // We don't do anything in this case. Before we did the
@@ -1107,7 +1406,7 @@ void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
             // printf("Name Running: UEC Version A\n");
             if (use_fast_drop) {
                 if (count_received >= ignore_for) {
-                    do_fast_drop(ecn);
+                    quick_adapt(ecn);
                 }
             }
             if ((counter_consecutive_good_bytes > target_window) &&
@@ -1117,10 +1416,10 @@ void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
             } else if (!ecn && rtt < _target_rtt) {
                 if (use_fast_drop) {
                     if (count_received >= ignore_for) {
-                        _cwnd += medium_increase(rtt);
+                        //_cwnd += medium_increase(rtt);
                     }
                 } else {
-                    _cwnd += medium_increase(rtt);
+                    //_cwnd += medium_increase(rtt);
                 }
                 // Insta or Exp Avg (in Perm)
                 // Case 2
@@ -1162,15 +1461,315 @@ void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
 
             /*printf("From %d - Changing Windows - Consecutive Good %d - Cwnd "
                    "%d - Count %d vs %d\n",
-                   from, counter_consecutive_good_bytes, _cwnd, count_received,
-                   ignore_for);*/
+                   from, counter_consecutive_good_bytes, target_window,
+                   count_received, ignore_for);*/
 
             if (use_fast_drop) {
                 if (count_received >= ignore_for) {
-                    do_fast_drop(false);
+                    quick_adapt(false);
                 }
             }
 
+            if (t_last_decrease == 0) {
+                t_last_decrease = eventlist().now();
+            }
+            bool time_enough =
+                    (eventlist().now() - t_last_decrease) > _base_rtt;
+
+            if (count_received < ignore_for && ecn) {
+                return;
+            }
+
+            // Special case, decrease once per RTT
+            /*if (ecn && time_enough && once_per_rtt == 1) {
+                if (rtt > _target_rtt) {
+                    _cwnd = _cwnd * max(0.5, 1 - 0.8 * ((rtt - _target_rtt) /
+                                                        (double)rtt));
+                } else {
+                    reduce_cwnd(static_cast<double>(_cwnd) / _bdp * _mss *
+                                z_gain * 1);
+                }
+
+                t_last_decrease = eventlist().now();
+                return;
+            } else if (ecn && time_enough && once_per_rtt == 2) {
+                if (rtt > _target_rtt) {
+                    _cwnd -= 1 *
+                             min(((w_gain *
+                                   ((rtt - (double)_target_rtt) / rtt) * _mss) +
+                                  _cwnd / (double)_bdp * z_gain * _mss),
+                                 (double)_mss);
+                } else {
+                    reduce_cwnd(static_cast<double>(_cwnd) / _bdp * _mss *
+                                z_gain * 1);
+                }
+
+                t_last_decrease = eventlist().now();
+                count_skipped = 0;
+                return;
+            } else if (ecn && time_enough && once_per_rtt == 3) {
+                if (rtt > _target_rtt) {
+                    _cwnd -= count_skipped *
+                             min(((w_gain *
+                                   ((rtt - (double)_target_rtt) / rtt) * _mss) +
+                                  _cwnd / (double)_bdp * z_gain * _mss),
+                                 (double)_mss);
+                } else {
+                    reduce_cwnd(static_cast<double>(_cwnd) / _bdp * _mss *
+                                z_gain * count_skipped);
+                }
+
+                t_last_decrease = eventlist().now();
+                count_skipped = 0;
+                return;
+            } */
+
+            if (ecn && once_per_rtt >= 1) {
+                count_skipped++;
+                return;
+            }
+
+            if ((increasing ||
+                 counter_consecutive_good_bytes > target_window) &&
+                use_fast_increase) {
+                fast_increase();
+                // Case 1 RTT Based Increase
+            } else if (!ecn && rtt < _target_rtt) {
+
+                _cwnd +=
+                        (min(uint32_t((((_target_rtt - rtt) / (double)rtt) *
+                                       y_gain * _mss * (_mss / (double)_cwnd))),
+                             uint32_t(_mss))) *
+                        reaction_delay;
+
+                if (!disable_case_4) {
+                    _cwnd += ((double)_mss / _cwnd) * x_gain * _mss *
+                             reaction_delay;
+                }
+
+                if (COLLECT_DATA) {
+                    _list_medium_increase_event.push_back(
+                            std::make_pair(eventlist().now() / 1000, 1));
+                    count_case_1.push_back(
+                            std::make_pair(eventlist().now() / 1000, 1));
+                }
+                // printf("1\n");
+                //  Case 2 Hybrid Based Decrease || RTT Decrease
+            } else if (ecn && rtt > _target_rtt) {
+                if (can_decrease_exp_avg) {
+                    _cwnd -= reaction_delay *
+                             min(((w_gain *
+                                   ((rtt - (double)_target_rtt) / rtt) * _mss) +
+                                  _cwnd / (double)_bdp * z_gain * _mss),
+                                 (double)_mss);
+                }
+                if (COLLECT_DATA) {
+                    count_case_2.push_back(
+                            std::make_pair(eventlist().now() / 1000, 1));
+                }
+                // printf("2\n");
+                //  Case 3 Gentle Decrease (Window based)
+            } else if (ecn && rtt < _target_rtt) {
+                if (can_decrease_exp_avg) {
+                    reduce_cwnd(static_cast<double>(_cwnd) / _bdp * _mss *
+                                z_gain * reaction_delay);
+                    if (COLLECT_DATA) {
+                        count_case_3.push_back(
+                                std::make_pair(eventlist().now() / 1000, 1));
+                    }
+                }
+                // printf("3\n");
+                //  Case 4
+            } else if (!ecn && rtt > _target_rtt) {
+                // Do nothing but fairness
+                if (!disable_case_4) {
+                    _cwnd += ((double)_mss / _cwnd) * x_gain * _mss *
+                             reaction_delay;
+                }
+                if (COLLECT_DATA) {
+                    count_case_4.push_back(
+                            std::make_pair(eventlist().now() / 1000, 1));
+                }
+                // printf("4\n");
+            }
+
+            /*printf("Old CWND %d - New CWND %d - At %lu\n", old, _cwnd,
+                   GLOBAL_TIME / 1000);*/
+
+            // Delay Logic, Version C Logic
+        } else if (algorithm_type == "intersmartt") {
+
+            if (use_fast_drop) {
+                if (count_received >= ignore_for) {
+                    quick_adapt(false);
+                }
+            };
+
+            if (count_received < ignore_for && ecn) {
+                return;
+            }
+
+            if ((increasing ||
+                 counter_consecutive_good_bytes > target_window) &&
+                use_fast_increase) {
+                fast_increase();
+                // Case 1 RTT Based Increase
+            } else if (ecn) {
+                if (!disable_case_3) {
+                    reduce_cwnd(z_gain * _mss);
+                    if (COLLECT_DATA) {
+                        count_case_3.push_back(
+                                std::make_pair(eventlist().now() / 1000, 1));
+                    }
+                }
+            } else if (!ecn) {
+                _cwnd += ((double)_mss / _cwnd) * x_gain * _mss;
+                if (COLLECT_DATA) {
+                    count_case_4.push_back(
+                            std::make_pair(eventlist().now() / 1000, 1));
+                }
+            }
+
+            // Delay Logic, Version C Logic
+        } else if (algorithm_type == "intersmartt_new") {
+
+            // Undo Decrease
+            bool undo_decrease = false;
+            printf("ECN Rate is %f\n", current_ecn_rate);
+            if (current_ecn_rate > 90) {
+                quick_adapt(true);
+                current_state = GENTLE_DECREASE;
+                state_end = eventlist().now() + _base_rtt;
+                return;
+            }
+
+            // Quick Adapt Related
+            if (use_fast_drop) {
+                if (count_received >= ignore_for) {
+                    quick_adapt(false);
+                }
+            }
+            if (count_received < ignore_for && ecn) {
+                return;
+            }
+
+            // RTT Decrease
+            if (t_last_decrease == 0) {
+                t_last_decrease = eventlist().now();
+            }
+            can_decrease = (eventlist().now() - t_last_decrease) > _base_rtt;
+
+            // Reached Kmin
+            if (current_ecn_rate > 0 && can_decrease &&
+                eventlist().now() > _base_rtt * 1) {
+                started_increasing = false; // We have reached KMin, reset
+                                            // timestamp increasing
+                timestamp_kmin = eventlist().now();
+
+                double custom_val = (current_ecn_rate / 100) * (0.6) + 0.2;
+                custom_val = 0.15 * increase_since_last_zero / custom_val;
+                should_decrease =
+                        (increase_since_last_zero - custom_val) * 1.45;
+                should_decrease = increase_since_last_zero * 0.75;
+
+                printf("From %d - Time %lu - Increased by %d Bytes - Rate %f - "
+                       "Must "
+                       "decrease %d - Started at %lu \n",
+                       from, GLOBAL_TIME / 1000, increase_since_last_zero,
+                       current_ecn_rate, should_decrease,
+                       timestamp_zero_ecn / 1000);
+                increase_since_last_zero = 0;
+                current_state = UNDO_DECREASE;
+                state_end = eventlist().now() + _base_rtt;
+            }
+
+            if (ecn) { 
+
+                total_pkt_seen_rtt++;
+
+                if (marked) {
+                    pkt_with_ecn_rtt++;
+                }
+
+                // Do InterSmart New Stuff
+                if (eventlist().now() > count_rtt + (_base_rtt / 2)) {
+                    count_rtt = eventlist().now();
+                    if (pkt_with_ecn_rtt == 0 && count_rtt != 0) {
+                        counter_ecn_without_rtt++;
+                    }
+                    current_ecn_rate = ((double)pkt_with_ecn_rtt) /
+                                       total_pkt_seen_rtt * 100;
+                    printf("Packet ECN - Packet Tot %d %d\n", pkt_with_ecn_rtt,
+                           total_pkt_seen_rtt);
+                    pkt_with_ecn_rtt = 0;
+                    total_pkt_seen_rtt = 0;
+                }
+
+                printf("Current Status %d - State End %lu vs current %lu - "
+                       "marked %d\n",
+                       current_state, state_end, eventlist().now(), marked);
+
+                if (eventlist().now() > state_end) {
+                    current_state = GENTLE_DECREASE;
+                    state_end = eventlist().now() + _base_rtt;
+                    counter_ecn_without_rtt = 0;
+                }
+            } else {
+                if (eventlist().now() > state_end) {
+                    current_state = INCREASE;
+                    state_end = eventlist().now() + _base_rtt;
+                }
+            }
+
+            printf("--- STATE %d ----- %lu\n", current_state, GLOBAL_TIME);
+
+            if (undo_decrease) {
+
+            } else if (counter_ecn_without_rtt >= 5 && use_fast_increase) {
+                // Fast Increase
+                fast_increase();
+            } else if (current_state == UNDO_DECREASE) {
+                // Gentle Decrease
+                _cwnd -= ((double)_mss / _cwnd) * (should_decrease / _mss) *
+                         _mss;
+                // reduce_cwnd(static_cast<double>(_cwnd) / _bdp * _mss *
+                //             (x_gain / 2) * (((double)_mss / _cwnd)));
+
+                count_gentle_decrease++;
+                t_last_decrease = eventlist().now();
+            } else if (current_state == INCREASE) {
+                // Gentle Increase
+                printf("From %d - Time %lu - Increase Start - Rate %f, "
+                       "started_increasing %d \n",
+                       from, GLOBAL_TIME / 1000, current_ecn_rate,
+                       started_increasing);
+                _cwnd += ((double)_mss / _cwnd) * x_gain * _mss;
+                increase_since_last_zero +=
+                        ((double)_mss / _cwnd) * x_gain * _mss;
+                if ((int)current_ecn_rate == 0 && !started_increasing) {
+                    timestamp_zero_ecn = eventlist().now();
+                    started_increasing = true;
+                    increase_since_last_zero = 0;
+                    printf("From %d - Time %lu - Setting Increase Start\n",
+                           from, GLOBAL_TIME / 1000);
+                }
+            } else if (current_state == GENTLE_DECREASE) {
+                // Gentle Increase
+                //_cwnd -= ((double)_mss / _cwnd) * (x_gain / 4) * _mss;
+            }
+
+            // Delay Logic, Version C Logic
+        } else if (algorithm_type == "delayB_rtt") {
+            if (use_fast_drop) {
+                if (count_received >= ignore_for) {
+                    quick_adapt(false);
+                }
+            }
+
+            if (t_last_decrease == 0) {
+                t_last_decrease = eventlist().now();
+            }
+            can_decrease = (eventlist().now() - t_last_decrease) > _base_rtt;
             if (count_received < ignore_for && ecn) {
                 return;
             }
@@ -1184,7 +1783,10 @@ void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
                 _cwnd += min(uint32_t((((_target_rtt - rtt) / (double)rtt) *
                                        y_gain * _mss * (_mss / (double)_cwnd))),
                              uint32_t(_mss));
-                _cwnd += ((double)_mss / _cwnd) * x_gain * _mss;
+
+                if (!disable_case_4) {
+                    _cwnd += ((double)_mss / _cwnd) * x_gain * _mss;
+                }
 
                 if (COLLECT_DATA) {
                     _list_medium_increase_event.push_back(
@@ -1193,10 +1795,13 @@ void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
                             std::make_pair(eventlist().now() / 1000, 1));
                 }
                 // Case 2 Hybrid Based Decrease || RTT Decrease
-            } else if (ecn && rtt > _target_rtt) {
-                _cwnd -= min((w_gain * ((rtt - (double)_target_rtt) / rtt) *
-                              _mss) + _cwnd / (double)_bdp * z_gain * _mss,
-                             (double)_mss);
+            } else if (ecn && rtt > _target_rtt && can_decrease) {
+                _cwnd -= min(
+                        ((w_gain * ((rtt - (double)_target_rtt) / rtt) * _mss) +
+                         _cwnd / (double)_bdp * z_gain * _mss) *
+                                (_cwnd / _mss),
+                        (double)_mss);
+                t_last_decrease = eventlist().now();
                 if (COLLECT_DATA) {
                     count_case_2.push_back(
                             std::make_pair(eventlist().now() / 1000, 1));
@@ -1205,7 +1810,8 @@ void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
             } else if (ecn && rtt < _target_rtt) {
                 if (!disable_case_3) {
                     reduce_cwnd(static_cast<double>(_cwnd) / _bdp * _mss *
-                                z_gain);
+                                z_gain * (_cwnd / _mss));
+                    t_last_decrease = eventlist().now();
                     if (COLLECT_DATA) {
                         count_case_3.push_back(
                                 std::make_pair(eventlist().now() / 1000, 1));
@@ -1214,7 +1820,9 @@ void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
                 // Case 4
             } else if (!ecn && rtt > _target_rtt) {
                 // Do nothing but fairness
-                _cwnd += ((double)_mss / _cwnd) * x_gain * _mss;
+                if (!disable_case_4) {
+                    _cwnd += ((double)_mss / _cwnd) * x_gain * _mss;
+                }
                 if (COLLECT_DATA) {
                     count_case_4.push_back(
                             std::make_pair(eventlist().now() / 1000, 1));
@@ -1222,6 +1830,58 @@ void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
             }
 
             // Delay Logic, Version C Logic
+        } else if (algorithm_type == "delayC") {
+            //
+            if (use_fast_drop) {
+                quick_adapt(ecn);
+            }
+            if ((counter_consecutive_good_bytes > target_window) &&
+                use_fast_increase) {
+                fast_increase();
+                // Case 1
+            } else if (!ecn && rtt < _target_rtt) {
+                _cwnd += min(uint32_t((((_target_rtt - rtt) / (double)rtt) *
+                                       y_gain * _mss * (_mss / (double)_cwnd))),
+                             uint32_t(_mss));
+                _cwnd += ((double)_mss / _cwnd) * x_gain *
+                         _mss; // For x 0.15, 0.5, 0.3
+                _list_medium_increase_event.push_back(
+                        std::make_pair(eventlist().now() / 1000, 1));
+                // Case 2
+            } else if (ecn && rtt > _target_rtt) {
+                if (count_received >= ignore_for) {
+                    if (target_rtt_percentage_over_base == 20) {
+                    } else if (target_rtt_percentage_over_base == 50) {
+                    } else {
+                        printf("Error, unknown Target value\n");
+                    }
+                    _cwnd -=
+                            min(w_gain * (rtt - _target_rtt) / rtt, 1.0) * _mss;
+                }
+                // Case 3
+            } else if (ecn && rtt < _target_rtt) {
+                if (count_received >= ignore_for) {
+                    double scaling = 0;
+                    if (target_rtt_percentage_over_base == 20) {
+                        scaling = 2.5;
+                        rtt = 1.5 * _base_rtt;
+                    } else if (target_rtt_percentage_over_base == 50) {
+                        rtt = 1.65 * _base_rtt;
+                        scaling = 4;
+                    } else {
+                        printf("Error, unknown Target value\n");
+                    }
+                    _cwnd -= min(scaling * 2 * (rtt - _target_rtt) / rtt, 1.0) *
+                             _mss;
+                }
+            } else if (!ecn && rtt > _target_rtt) {
+                // Do nothing
+                _cwnd += ((double)_mss / _cwnd) * x_gain *
+                         _mss; // For x 0.15, 0.5, 0.3
+            }
+            printf("Using DelayC");
+
+            // Delay Logic, Version D Logic
         } else if (algorithm_type == "delayD") {
             // printf("Name Running: STrack\n");
             int b = 5;
@@ -1266,6 +1926,13 @@ void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
                 avg_rtt = avg_rtt * (1 - ewma) + ewma * rtt;
             }
 
+            /*printf("Allowed to Decrease %d %d %d %d - RTT vs Current "
+                   "AvgRTT vs "
+                   "Target "
+                   "%lu vs %lu vs %lu - Saved Acked %d\n",
+                   ecn, can_decrease, avg_rtt > custom_target_delay,
+                   _cwnd > achieved_bdp, rtt / 1000, avg_rtt / 1000,
+                   custom_target_delay / 1000, achieved_bdp);*/
             if (rtt > custom_target_delay * 2 && !ecn) {
                 _cwnd += ((double)b * _mss) / (_cwnd * _mss);
                 printf("Increase 1 by %f\n", ((double)b / _cwnd) * _mss * _mss);
@@ -1299,9 +1966,23 @@ void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
                 t_last_fairness = eventlist().now();
             }
         } else if (algorithm_type == "rtt") {
+            if (rtt < _target_rtt) {
+                _cwnd += min(uint32_t((((_target_rtt - rtt) / (double)rtt) *
+                                       y_gain * _mss * (_mss / (double)_cwnd))),
+                             uint32_t(_mss));
+                _cwnd += ((double)_mss / _cwnd) * x_gain * _mss;
+            } else if (rtt > (simtime_picosec)target_rtt_percentage_over_base) {
+                if (count_received >= ignore_for) {
+                    _cwnd -= min((w_gain * ((rtt - (double)_target_rtt) / rtt) *
+                                  _mss),
+                                 (double)_mss * 0.5);
+                }
+            }
+        } else if (algorithm_type == "rtt_rtt") {
             // printf("Name Running: SMaRTT RTT Only\n");
             uint64_t custom_target_delay =
                     _base_rtt * (1 + (target_rtt_percentage_over_base / 100.0));
+
             /*printf("Alpha D is %lu %f %f %f\n", _bdp, scaling_a, scaling_b,
                    alpha_d);*/
 
@@ -1323,7 +2004,7 @@ void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
 
             if (use_fast_drop) {
                 if (count_received >= ignore_for) {
-                    do_fast_drop(false);
+                    quick_adapt(false);
                 }
             }
 
@@ -1342,7 +2023,7 @@ void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
             // printf("Name Running: SMaRTT ECN Only\n");
             if (use_fast_drop) {
                 if (count_received >= ignore_for) {
-                    do_fast_drop(false);
+                    quick_adapt(false);
                 }
             }
 
@@ -1350,7 +2031,7 @@ void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
                 use_fast_increase) {
                 fast_increase();
             } else if (!ecn) {
-                _cwnd += ((double)_mss / _cwnd) * _mss;
+                _cwnd += ((double)_mss / _cwnd) * x_gain * _mss;
             } else if (ecn) {
                 if (count_received >= ignore_for) {
                     reduce_cwnd(static_cast<double>(_mss) * 0.5);
@@ -1361,7 +2042,7 @@ void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
             // printf("Name Running: SMaRTT ECN Only\n");
             if (use_fast_drop) {
                 if (count_received >= ignore_for) {
-                    do_fast_drop(false);
+                    quick_adapt(false);
                 }
             }
 
@@ -1382,7 +2063,7 @@ void UecDropSrc::adjust_window(simtime_picosec ts, bool ecn,
     check_limits_cwnd();
 }
 
-void UecDropSrc::drop_old_received() {
+void UecSrc::drop_old_received() {
     if (true) {
         if (eventlist().now() > _target_rtt) {
             uint64_t lower_thresh = eventlist().now() - (_target_rtt * 1);
@@ -1398,7 +2079,7 @@ void UecDropSrc::drop_old_received() {
     }
 }
 
-bool UecDropSrc::no_ecn_last_target_rtt() {
+bool UecSrc::no_ecn_last_target_rtt() {
     drop_old_received();
     for (const auto &[ts, ecn, size, rtt] : _received_ecn) {
         if (ecn) {
@@ -1408,7 +2089,7 @@ bool UecDropSrc::no_ecn_last_target_rtt() {
     return true;
 }
 
-bool UecDropSrc::no_rtt_over_target_last_target_rtt() {
+bool UecSrc::no_rtt_over_target_last_target_rtt() {
     drop_old_received();
     for (const auto &[ts, ecn, size, rtt] : _received_ecn) {
         if (rtt > _target_rtt) {
@@ -1418,7 +2099,7 @@ bool UecDropSrc::no_rtt_over_target_last_target_rtt() {
     return true;
 }
 
-std::size_t UecDropSrc::getEcnInTargetRtt() {
+std::size_t UecSrc::getEcnInTargetRtt() {
     drop_old_received();
     std::size_t ecn_count = 0;
     for (const auto &[ts, ecn, size, rtt] : _received_ecn) {
@@ -1429,17 +2110,17 @@ std::size_t UecDropSrc::getEcnInTargetRtt() {
     return ecn_count;
 }
 
-bool UecDropSrc::ecn_congestion() {
+bool UecSrc::ecn_congestion() {
     if (getEcnInTargetRtt() >= _received_ecn.size() / 2) {
         return true;
     }
     return false;
 }
 
-const string &UecDropSrc::nodename() { return _nodename; }
+const string &UecSrc::nodename() { return _nodename; }
 
-void UecDropSrc::connect(Route *routeout, Route *routeback, UecDropSink &sink,
-                         simtime_picosec starttime) {
+void UecSrc::connect(Route *routeout, Route *routeback, UecSink &sink,
+                     simtime_picosec starttime) {
     if (_route_strategy == SINGLE_PATH || _route_strategy == ECMP_FIB ||
         _route_strategy == ECMP_FIB_ECN || _route_strategy == REACTIVE_ECN ||
         _route_strategy == ECMP_RANDOM2_ECN ||
@@ -1454,27 +2135,60 @@ void UecDropSrc::connect(Route *routeout, Route *routeback, UecDropSink &sink,
     _flow._name = _name;
     _sink->connect(*this, routeback);
 
-    printf("StartTime is %lu\n", starttime);
-    eventlist().sourceIsPending(*this, starttime);
+    printf("StartTime %s is %lu\n", _name.c_str(), starttime);
+
+    if (_name == "uec_0_15") {
+        starttime = 0;
+    } else if (_name == "uec_1_15") {
+        starttime = 80000 * 2;
+    } else if (_name == "uec_2_15") {
+        starttime = 80000 * 4;
+    } else if (_name == "uec_3_15") {
+        starttime = 80000 * 6;
+    } else if (_name == "uec_4_15") {
+        starttime = 80000 * 4;
+    } else if (_name == "uec_5_15") {
+        starttime = 80000 * 5;
+    } else if (_name == "uec_6_15") {
+        starttime = 80000 * 6;
+    } else if (_name == "uec_7_15") {
+        starttime = 80000 * 7;
+    }
+    eventlist().sourceIsPending(*this, 0 * 1000);
 }
 
-void UecDropSrc::startflow() {
+void UecSrc::startflow() {
     ideal_x = x_gain;
     _flow_start_time = eventlist().now();
-    if (use_mixed) {
-        if (tag == 898) {
-            _rto = _base_rtt * 15;
-        } else {
-            _rto = _base_rtt * 1.40;
-        }
-    } else {
-        _rto = _base_rtt * 25;
-    }
 
+    /*if (from < 512 && to >= 512) {
+        _base_rtt =
+                ((5 * LINK_DELAY_MODERN) +
+                 ((PKT_SIZE_MODERN + 64) * 8 / LINK_SPEED_MODERN *
+    _hop_count) +
+                 +(5 * LINK_DELAY_MODERN) +
+                 (64 * 8 / LINK_SPEED_MODERN * _hop_count) + (2 * 700000)) *
+                1000;
+
+        _target_rtt =
+                _base_rtt * ((target_rtt_percentage_over_base + 1) / 100.0 +
+    1);
+
+        _bdp = (_base_rtt * LINK_SPEED_MODERN / 8) / 1000;
+
+        _maxcwnd = _bdp;
+        _cwnd = _bdp;
+        _consecutive_low_rtt = 0;
+        target_window = _cwnd;
+    }*/
+    printf("Starting Flow from %d to %d tag %d - RTT %lu - Target %lu - "
+           "Time "
+           "%lu\n",
+           from, to, tag, _base_rtt, _target_rtt, GLOBAL_TIME / 1000);
     send_packets();
 }
 
-const Route *UecDropSrc::get_path() {
+const Route *UecSrc::get_path() {
     // TODO: add other ways to select paths
     // printf("Entropy Size %d\n", _good_entropies.size());
     if (_use_good_entropies && !_good_entropies.empty()) {
@@ -1501,63 +2215,56 @@ const Route *UecDropSrc::get_path() {
     return _paths.at(_crt_path);
 }
 
-void UecDropSrc::map_entropies() {
+void UecSrc::map_entropies() {
     for (int i = 0; i < _num_entropies; i++) {
         _entropy_array.push_back(random() % _paths.size());
     }
     printf("Printing my Paths: ");
-    // //fflush(stdout);
     for (int i = 0; i < _num_entropies; i++) {
         printf("%d - ", _entropy_array[i]);
     }
     printf("\n");
 }
 
-void UecDropSrc::send_packets() {
-    //_list_cwd.push_back(std::make_pair(eventlist().now() / 1000, _cwnd));
-    if (need_fast_drop) {
-        return;
+void UecSrc::pacedSend() {
+    _paced_packet = true;
+    send_packets();
+}
+
+void UecSrc::send_packets() {
+
+    if (_rtx_pending) {
+        retransmit_packet();
     }
-    retransmit_packet();
-    // printf("Sent Packet Called, %d\n", from);
     _list_unacked.push_back(std::make_pair(eventlist().now() / 1000, _unacked));
     unsigned c = _cwnd;
 
-    while ( //_last_acked + c >= _highest_sent + _mss &&
-            get_unacked() + _mss <= c && _highest_sent <= _flow_size + 1) {
-        uint64_t data_seq = 0;
-        // printf("Sending %d at %lu\n", from, GLOBAL_TIME / 1000);
-        //  create packet
-        //  printf("Dest 1 is %d\n", _dstaddr);
-        //  //fflush(stdout);
-        UecDropPacket *p =
-                UecDropPacket::newpkt(_flow, *_route, _highest_sent + 1,
-                                      data_seq, _mss, false, _dstaddr);
-        // p->set_route(*_route);
-        // int path_chosen = choose_route();
-        // printf("Path Chosen %d - Size %d\n", path_chosen,
-        // _path_ids.size()); p->set_pathid(_path_ids[path_chosen]);
+    while (get_unacked() + _mss <= c && _highest_sent < _flow_size) {
 
-        p->set_route(*_route);
-        if (use_mixed) {
-            if (tag == 898) {
-                p->timeout_budget = _base_rtt * 20;
-            } else {
-                p->timeout_budget = _base_rtt * 0.41;
-            }
-        } else {
-            p->timeout_budget = _base_rtt * 200;
+        // Stop sending
+        if (pause_send && stop_after_quick) {
+            break;
         }
 
+        // Check pacer and set timeout
+        if (!_paced_packet && use_pacing) {
+            if (generic_pacer != NULL && !generic_pacer->is_pending()) {
+                printf("scheduling send\n");
+                generic_pacer->schedule_send(pacing_delay);
+                return;
+            } else if (generic_pacer != NULL) {
+                return;
+            }
+        }
+
+        uint64_t data_seq = 0;
+        UecPacket *p = UecPacket::newpkt(_flow, *_route, _highest_sent + 1,
+                                         data_seq, _mss, false, _dstaddr);
+
+        p->set_route(*_route);
         int crt = choose_route();
-        // crt = random() % _paths.size();
 
         p->set_pathid(_path_ids[crt]);
-
-        /*printf("From %d - CRT %d - PathID %d - Size %d\n", from, crt,
-               _path_ids[crt], _path_ids.size());
-        //fflush(stdout);*/
-
         p->from = this->from;
         p->to = this->to;
         p->tag = this->tag;
@@ -1572,19 +2279,25 @@ void UecDropSrc::send_packets() {
         _unacked += _mss;
 
         // Getting time until packet is really sent
-        // printf("Sent Packet, %d\n", from);
         PacketSink *sink = p->sendOn();
-        printf("Sending\n");
         HostQueue *q = dynamic_cast<HostQueue *>(sink);
         assert(q);
         uint32_t service_time = q->serviceTime(*p);
         _sent_packets.push_back(
-                SentPacketUecDrop(eventlist().now() + service_time + _rto,
-                                  p->seqno(), false, false, false, 0));
+                SentPacket(eventlist().now() + service_time + _rto, p->seqno(),
+                           false, false, false));
+
+        if (generic_pacer != NULL && use_pacing) {
+            generic_pacer->just_sent();
+            _paced_packet = false;
+        }
+        if (_rtx_timeout == timeInf) {
+            update_rtx_time();
+        }
     }
 }
 
-void permute_sequence_uec_drop(vector<int> &seq) {
+void permute_sequence_uec(vector<int> &seq) {
     size_t len = seq.size();
     for (uint32_t i = 0; i < len; i++) {
         seq[i] = i;
@@ -1597,19 +2310,19 @@ void permute_sequence_uec_drop(vector<int> &seq) {
     }
 }
 
-void UecDropSrc::set_paths(uint32_t no_of_paths) {
+void UecSrc::set_paths(uint32_t no_of_paths) {
     if (_route_strategy != ECMP_FIB && _route_strategy != ECMP_FIB_ECN &&
         _route_strategy != ECMP_FIB2_ECN && _route_strategy != REACTIVE_ECN &&
         _route_strategy != ECMP_RANDOM_ECN &&
         _route_strategy != ECMP_RANDOM2_ECN) {
-        cout << "Set paths uec_drop (path_count) called with wrong route "
+        cout << "Set paths uec (path_count) called with wrong route "
                 "strategy "
              << _route_strategy << endl;
         abort();
     }
 
     _path_ids.resize(no_of_paths);
-    permute_sequence_uec_drop(_path_ids);
+    permute_sequence_uec(_path_ids);
 
     _paths.resize(no_of_paths);
     _original_paths.resize(no_of_paths);
@@ -1638,7 +2351,7 @@ void UecDropSrc::set_paths(uint32_t no_of_paths) {
     }
 }
 
-void UecDropSrc::set_paths(vector<const Route *> *rt_list) {
+void UecSrc::set_paths(vector<const Route *> *rt_list) {
     uint32_t no_of_paths = rt_list->size();
     switch (_route_strategy) {
     case NOT_SET:
@@ -1705,13 +2418,14 @@ void UecDropSrc::set_paths(vector<const Route *> *rt_list) {
         // permute_paths();
         break;
     }
-    default:
+    default: {
         abort();
         break;
     }
+    }
 }
 
-void UecDropSrc::apply_timeout_penalty() {
+void UecSrc::apply_timeout_penalty() {
     if (_trimming_enabled) {
         reduce_cwnd(_mss);
     } else {
@@ -1719,91 +2433,80 @@ void UecDropSrc::apply_timeout_penalty() {
     }
 }
 
-void UecDropSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
+void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
     // #ifndef RESEND_ON_TIMEOUT
     //     return; // TODO: according to ndp.cpp, rtx is not necessary with
     //     RTS. Check
     //             // if this applies to us
     // #endif
-    /*printf("Status1 - RTX Pending %d --> %d %d %d\n", _rtx_pending,
-           _highest_sent, _rtx_timeout, now + period < _rtx_timeout);
-    if (_highest_sent == 0) {
-        printf("Return1");
+
+    if (_highest_sent == 0)
         return;
-    }
-
-    if (_rtx_timeout == timeInf || now + period < _rtx_timeout) {
-        printf("Return2 %d\n", _rtx_timeout == timeInf);
+    if (_rtx_timeout == timeInf || now + period < _rtx_timeout)
         return;
-    }
-
-    printf("Status2 - RTX Pending %d\n", _rtx_pending);*/
-
-    do_fast_drop(false);
-    retransmit_packet();
 
     // here we can run into phase effects because the timer is checked
     // only periodically for ALL flows but if we keep the difference
     // between scanning time and real timeout time when restarting the
     // flows we should minimize them !
-    /*if (!_rtx_timeout_pending) {
+    if (!_rtx_timeout_pending) {
         _rtx_timeout_pending = true;
-        // apply_timeout_penalty();
-        simtime_picosec too_early = _rtx_timeout - now;
+        apply_timeout_penalty();
+
         cout << "At " << timeAsUs(now) << "us RTO " << timeAsUs(_rto)
              << "us RTT " << timeAsUs(_rtt) << "us SEQ " << _last_acked / _mss
-             << " CWND " << _cwnd / _mss << " Flow ID " << str() << "Time"
-             << too_early << endl;
-        eventlist().sourceIsPendingRel(*this, 0);
-    }*/
+             << " CWND " << _cwnd / _mss << " Flow ID " << str() << endl;
+
+        _cwnd = _mss;
+
+        // check the timer difference between the event and the real value
+        simtime_picosec too_early = _rtx_timeout - now;
+        if (now > _rtx_timeout) {
+            // This might happen because we hold on retransmitting if we
+            // have enough packets in flight cout << "late_rtx_timeout: " <<
+            // _rtx_timeout << " now: " << now
+            //     << " now+rto: " << now + _rto << " rto: " << _rto <<
+            //     endl;
+            too_early = 0;
+        }
+        eventlist().sourceIsPendingRel(*this, too_early);
+    }
 }
 
-bool UecDropSrc::resend_packet(std::size_t idx) {
+bool UecSrc::resend_packet(std::size_t idx) {
 
-    if (get_unacked() >= _cwnd) {
+    if (get_unacked() >= _cwnd || (pause_send && stop_after_quick)) {
         return false;
     }
-    if (need_fast_drop) {
-        return false;
+
+    // Check pacer and set timeout
+    if (!_paced_packet && use_pacing) {
+        if (generic_pacer != NULL && !generic_pacer->is_pending()) {
+            generic_pacer->schedule_send(pacing_delay);
+            return false;
+        } else if (generic_pacer != NULL) {
+            return false;
+        }
     }
+
     assert(!_sent_packets[idx].acked);
 
     // this will cause retransmission not only of the offending
     // packet, but others close to timeout
-    // _rto_margin = _rtt / 2;
+    _rto_margin = _rtt / 2;
 
-    // if (_use_good_entropies && !_good_entropies.empty()) {
-    //     rt = _good_entropies[_next_good_entropy];
-    //     ++_next_good_entropy;
-    //     _next_good_entropy %= _good_entropies.size();
-    // } else {
-    // }
-    // Getting time until packet is really sent
     _unacked += _mss;
-    UecDropPacket *p = UecDropPacket::newpkt(
-            _flow, *_route, _sent_packets[idx].seqno, 0, _mss, true, _dstaddr);
+    UecPacket *p = UecPacket::newpkt(_flow, *_route, _sent_packets[idx].seqno,
+                                     0, _mss, true, _dstaddr);
     p->set_ts(eventlist().now());
-    // printf("From %d - Resending at %lu\n", from, GLOBAL_TIME);
 
-    if (use_mixed) {
-        if (tag == 898) {
-            p->timeout_budget = _base_rtt * 20;
-        } else {
-            p->timeout_budget = _base_rtt * 0.41 * 2;
-            _rto = _base_rtt * 2.2;
-        }
-    } else {
-        p->timeout_budget = _base_rtt * 200;
-    }
     p->set_route(*_route);
     int crt = choose_route();
-    // crt = random() % _paths.size();
 
     p->set_pathid(_path_ids[crt]);
 
     p->flow().logTraffic(*p, *this, TrafficLogger::PKT_CREATE);
     PacketSink *sink = p->sendOn();
-    printf("Sending\n");
     HostQueue *q = dynamic_cast<HostQueue *>(sink);
     assert(q);
     uint32_t service_time = q->serviceTime(*p);
@@ -1813,30 +2516,26 @@ bool UecDropSrc::resend_packet(std::size_t idx) {
     }
     _sent_packets[idx].timer = eventlist().now() + service_time + _rto;
     _sent_packets[idx].timedOut = false;
-    // printf("Retransmitting %d at %lu\n", from, GLOBAL_TIME / 1000);
+    update_rtx_time();
+    if (generic_pacer != NULL) {
+        generic_pacer->just_sent();
+        _paced_packet = false;
+    }
     return true;
 }
 
 // retransmission for timeout
-void UecDropSrc::retransmit_packet() {
+void UecSrc::retransmit_packet() {
     _rtx_pending = false;
     for (std::size_t i = 0; i < _sent_packets.size(); ++i) {
         auto &sp = _sent_packets[i];
-        if (!sp.acked && !sp.nacked && sp.timer <= eventlist().now()) {
+        if (_rtx_timeout_pending && !sp.acked && !sp.nacked &&
+            sp.timer <= eventlist().now() + _rto_margin) {
+            _cwnd = _mss;
             sp.timedOut = true;
-            sp.nRetrans++;
-            if (count_received >= ignore_for && sp.nRetrans <= 1) {
-                /*if (last_fast_drop_event == 0 ||
-                    eventlist().now() > last_fast_drop_event * 25)*/
-                need_fast_drop = true;
-                /*printf("Needing to Fast Drop %d-%d at %lu\n", from, sp.seqno,
-                       GLOBAL_TIME / 1000);*/
-            }
-            /*printf("Timed Out %d-%d at %lu\n", from, sp.seqno,
-                   GLOBAL_TIME / 1000);*/
             reduce_unacked(_mss);
         }
-        if (!sp.acked && sp.timedOut) {
+        if (!sp.acked && (sp.timedOut || sp.nacked)) {
             if (!resend_packet(i)) {
                 _rtx_pending = true;
             }
@@ -1846,22 +2545,24 @@ void UecDropSrc::retransmit_packet() {
 }
 
 /**********
- * UecDropSink *
+ * UecSink *
  **********/
 
-UecDropSink::UecDropSink()
-        : DataReceiver("sink"), _cumulative_ack{0}, _drops{0} {
+UecSink::UecSink() : DataReceiver("sink"), _cumulative_ack{0}, _drops{0} {
     _nodename = "uecsink";
 }
 
-void UecDropSink::send_nack(simtime_picosec ts, bool marked,
-                            UecDropAck::seq_t seqno, UecDropAck::seq_t ackno,
-                            const Route *rt, int path_id) {
+void UecSink::set_end_trigger(Trigger &end_trigger) {
+    _end_trigger = &end_trigger;
+}
 
-    UecDropNack *nack = UecDropNack::newpkt(_src->_flow, *_route, seqno, ackno,
-                                            0, _srcaddr);
+void UecSink::send_nack(simtime_picosec ts, bool marked, UecAck::seq_t seqno,
+                        UecAck::seq_t ackno, const Route *rt, int path_id) {
 
-    // printf("Sending NACK\n");
+    UecNack *nack =
+            UecNack::newpkt(_src->_flow, *_route, seqno, ackno, 0, _srcaddr);
+
+    // printf("Sending NACK at %lu\n", GLOBAL_TIME);
     nack->set_pathid(_path_ids[_crt_path]);
     _crt_path++;
     if (_crt_path == _paths.size()) {
@@ -1881,8 +2582,8 @@ void UecDropSink::send_nack(simtime_picosec ts, bool marked,
     nack->sendOn();
 }
 
-bool UecDropSink::already_received(UecDropPacket &pkt) {
-    UecDropPacket::seq_t seqno = pkt.seqno();
+bool UecSink::already_received(UecPacket &pkt) {
+    UecPacket::seq_t seqno = pkt.seqno();
 
     if (seqno <= _cumulative_ack) { // TODO: this assumes
                                     // that all data packets
@@ -1897,18 +2598,30 @@ bool UecDropSink::already_received(UecDropPacket &pkt) {
     return false;
 }
 
-void UecDropSink::receivePacket(Packet &pkt) {
-    // printf("Sink Received\n");
-    // fflush(stdout);
+void UecSink::receivePacket(Packet &pkt) {
+    // printf("Sink Received %lu\n", GLOBAL_TIME);
+    //  fflush(stdout);
+    if (pkt.pfc_just_happened) {
+        pfc_just_seen = 1;
+        // printf("PFC Sink Happened1 at %lu - %d@%d\n", GLOBAL_TIME / 1000,
+        // from,
+        //        pkt.id());
+    } else {
+        pfc_just_seen = 0;
+        // printf("PFC Sink Happened0 at %lu - %d@%d\n", GLOBAL_TIME / 1000,
+        // from,
+        //        pkt.id());
+    }
+
     switch (pkt.type()) {
-    case UECACK_DROP:
-    case UECNACK_DROP:
+    case UECACK:
+    case UECNACK:
         // bounced, ignore
         pkt.free();
         // printf("Free4\n");
         // //fflush(stdout);
         return;
-    case UEC_DROP:
+    case UEC:
         // do what comes after the switch
         if (pkt.bounced()) {
             printf("Bounced at Sink, no sense\n");
@@ -1922,9 +2635,9 @@ void UecDropSink::receivePacket(Packet &pkt) {
         // //fflush(stdout);
         return;
     }
-    UecDropPacket *p = dynamic_cast<UecDropPacket *>(&pkt);
-    UecDropPacket::seq_t seqno = p->seqno();
-    UecDropPacket::seq_t ackno = p->seqno() + p->data_packet_size() - 1;
+    UecPacket *p = dynamic_cast<UecPacket *>(&pkt);
+    UecPacket::seq_t seqno = p->seqno();
+    UecPacket::seq_t ackno = p->seqno() + p->data_packet_size() - 1;
     simtime_picosec ts = p->ts();
 
     if (p->type() == UEC) {
@@ -2020,11 +2733,11 @@ void UecDropSink::receivePacket(Packet &pkt) {
              path_id);
 }
 
-void UecDropSink::send_ack(simtime_picosec ts, bool marked,
-                           UecDropAck::seq_t seqno, UecDropAck::seq_t ackno,
-                           const Route *rt, const Route *inRoute, int path_id) {
+void UecSink::send_ack(simtime_picosec ts, bool marked, UecAck::seq_t seqno,
+                       UecAck::seq_t ackno, const Route *rt,
+                       const Route *inRoute, int path_id) {
 
-    UecDropAck *ack = 0;
+    UecAck *ack = 0;
 
     switch (_route_strategy) {
     case ECMP_FIB:
@@ -2032,8 +2745,7 @@ void UecDropSink::send_ack(simtime_picosec ts, bool marked,
     case REACTIVE_ECN:
     case ECMP_RANDOM2_ECN:
     case ECMP_RANDOM_ECN:
-        ack = UecDropAck::newpkt(_src->_flow, *_route, seqno, ackno, 0,
-                                 _srcaddr);
+        ack = UecAck::newpkt(_src->_flow, *_route, seqno, ackno, 0, _srcaddr);
 
         ack->set_pathid(_path_ids[_crt_path]);
         _crt_path++;
@@ -2045,7 +2757,8 @@ void UecDropSink::send_ack(simtime_picosec ts, bool marked,
 
         // set ECN echo only if that is selected strategy
         if (marked) {
-            // printf("ACK - ECN %d - From %d\n", path_id, from);
+            /*printf("ACK - ECN %d - From %d at %lu\n", path_id, from,
+                   GLOBAL_TIME / 1000);*/
             ack->set_flags(ECN_ECHO);
         } else {
             // printf("ACK - NO ECN\n");
@@ -2065,6 +2778,10 @@ void UecDropSink::send_ack(simtime_picosec ts, bool marked,
     }
     assert(ack);
     ack->pathid_echo = path_id;
+    ack->pfc_just_happened = false;
+    if (pfc_just_seen == 1) {
+        ack->pfc_just_happened = true;
+    }
 
     // ack->inRoute = inRoute;
     ack->is_ack = true;
@@ -2079,13 +2796,13 @@ void UecDropSink::send_ack(simtime_picosec ts, bool marked,
     ack->sendOn();
 }
 
-const string &UecDropSink::nodename() { return _nodename; }
+const string &UecSink::nodename() { return _nodename; }
 
-uint64_t UecDropSink::cumulative_ack() { return _cumulative_ack; }
+uint64_t UecSink::cumulative_ack() { return _cumulative_ack; }
 
-uint32_t UecDropSink::drops() { return _drops; }
+uint32_t UecSink::drops() { return _drops; }
 
-void UecDropSink::connect(UecDropSrc &src, const Route *route) {
+void UecSink::connect(UecSrc &src, const Route *route) {
     _src = &src;
     switch (_route_strategy) {
     case SINGLE_PATH:
@@ -2109,7 +2826,7 @@ void UecDropSink::connect(UecDropSrc &src, const Route *route) {
     _drops = 0;
 }
 
-void UecDropSink::set_paths(uint32_t no_of_paths) {
+void UecSink::set_paths(uint32_t no_of_paths) {
     switch (_route_strategy) {
     case SCATTER_PERMUTE:
     case SCATTER_RANDOM:
@@ -2121,9 +2838,19 @@ void UecDropSink::set_paths(uint32_t no_of_paths) {
 
     case ECMP_FIB:
     case ECMP_FIB_ECN:
-    case ECMP_RANDOM_ECN:
     case ECMP_RANDOM2_ECN:
     case REACTIVE_ECN:
+        assert(_paths.size() == 0);
+        _paths.resize(no_of_paths);
+        _path_ids.resize(no_of_paths);
+        for (unsigned int i = 0; i < no_of_paths; i++) {
+            _paths[i] = NULL;
+            _path_ids[i] = i;
+        }
+        _crt_path = 0;
+        // permute_paths();
+        break;
+    case ECMP_RANDOM_ECN:
         assert(_paths.size() == 0);
         _paths.resize(no_of_paths);
         _path_ids.resize(no_of_paths);
@@ -2140,24 +2867,22 @@ void UecDropSink::set_paths(uint32_t no_of_paths) {
 }
 
 /**********************
- * UecDropRtxTimerScanner *
+ * UecRtxTimerScanner *
  **********************/
 
-UecDropRtxTimerScanner::UecDropRtxTimerScanner(simtime_picosec scanPeriod,
-                                               EventList &eventlist)
+UecRtxTimerScanner::UecRtxTimerScanner(simtime_picosec scanPeriod,
+                                       EventList &eventlist)
         : EventSource(eventlist, "RtxScanner"), _scanPeriod{scanPeriod} {
     eventlist.sourceIsPendingRel(*this, 0);
 }
 
-void UecDropRtxTimerScanner::registerUecDrop(UecDropSrc &uecsrc) {
+void UecRtxTimerScanner::registerUec(UecSrc &uecsrc) {
     _uecs.push_back(&uecsrc);
 }
 
-void UecDropRtxTimerScanner::doNextEvent() {
+void UecRtxTimerScanner::doNextEvent() {
     simtime_picosec now = eventlist().now();
     uecs_t::iterator i;
-    // printf("Was called at %lu\n", GLOBAL_TIME);
-
     for (i = _uecs.begin(); i != _uecs.end(); i++) {
         (*i)->rtx_timer_hook(now, _scanPeriod);
     }

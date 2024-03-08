@@ -118,6 +118,7 @@ class Packet {
        well. It's a separate method, for convenient reuse */
     Packet() {
         _is_header = false;
+        _is_trim = false;
         _bounced = false;
         _type = IP;
         _flags = 0;
@@ -196,6 +197,7 @@ class Packet {
     virtual void strip_payload() {
         assert(!_is_header);
         _is_header = true;
+        _is_trim = true;
     };
     virtual void bounce();
     virtual void unbounce(uint16_t pktsize);
@@ -266,7 +268,7 @@ class Packet {
     bool is_ack = false;
     int pathid_echo = 0;
     int pathid_sender = 0;
-    uint32_t from = 0;
+    uint32_t from = -1;
     uint32_t to = 0;
     uint32_t tag = 0;
     uint32_t my_idx = 0;
@@ -277,6 +279,8 @@ class Packet {
     uint16_t queue_status;
     string switch_name;
     bool pfc_just_happened = false;
+    bool _is_trim = false;
+    bool is_failed = false;
 
   protected:
     virtual void set_route(PacketFlow &flow, const Route &route, int pkt_size,
@@ -293,6 +297,7 @@ class Packet {
     uint16_t _size, _oldsize;
 
     bool _is_header;
+
     bool _bounced; // packet has hit a full queue, and is being bounced back to
                    // the sender
 
@@ -344,7 +349,9 @@ class PacketSink {
     virtual const string &nodename() = 0;
 
     PacketSink *_remoteEndpoint;
-    uint32_t from, to, tag;
+    uint32_t from = -1;
+    uint32_t to = -1;
+    uint32_t tag;
     simtime_picosec next_start_time;
 };
 
