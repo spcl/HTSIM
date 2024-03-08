@@ -31,9 +31,12 @@ class TcpSrc : public PacketSink, public EventSource {
 
   public:
     TcpSrc(TcpLogger *logger, TrafficLogger *pktlogger, EventList &eventlist);
-    virtual void connect(const Route &routeout, const Route &routeback, TcpSink &sink, simtime_picosec startTime);
+    virtual void connect(const Route &routeout, const Route &routeback,
+                         TcpSink &sink, simtime_picosec startTime);
     void startflow();
-    inline void joinMultipathConnection(MultipathTcpSrc *multipathSrc) { _mSrc = multipathSrc; };
+    inline void joinMultipathConnection(MultipathTcpSrc *multipathSrc) {
+        _mSrc = multipathSrc;
+    };
 
     void doNextEvent();
     virtual void receivePacket(Packet &pkt);
@@ -140,13 +143,17 @@ class TcpSink : public PacketSink, public DataReceiver {
   public:
     TcpSink();
 
-    inline void joinMultipathConnection(MultipathTcpSink *multipathSink) { _mSink = multipathSink; };
+    inline void joinMultipathConnection(MultipathTcpSink *multipathSink) {
+        _mSink = multipathSink;
+    };
 
     void receivePacket(Packet &pkt);
     TcpAck::seq_t _cumulative_ack; // the packet we have cumulatively acked
     uint64_t _packets;
     uint32_t _drops;
-    uint64_t cumulative_ack() { return _cumulative_ack + _received.size() * 1000; }
+    uint64_t cumulative_ack() {
+        return _cumulative_ack + _received.size() * 1000;
+    }
     uint32_t drops() { return _src->_drops; }
     virtual const string &nodename() { return _nodename; }
 

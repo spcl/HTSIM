@@ -43,4 +43,7 @@ plotting/us_to_cs
 !sim/lgs/input/incast_1024_8_4194304.bin
 !sim/lgs/input/incast_1024_100_4194304.bin
 !plotting/Sample.png
+
+!sim/lgs/input/test8_32.bin
+!sim/lgs/input/test8_64.bin
 !traffic_gen/cdf_files/*.txt

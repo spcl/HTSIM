@@ -1,24 +1,24 @@
 // -*- c-basic-offset: 4; tab-width: 8; indent-tabs-mode: t -*-
 
-#ifndef UEC_H
-#define UEC_H
+#ifndef BBR_H
+#define BBR_H
 
 /*
- * A UEC source and sink
+ * A BBR source and sink
  */
 #include "config.h"
 #include "eventlist.h"
 #include "fairpullqueue.h"
 #include "smartt_pacer.h"
 //#include "datacenter/logsim-interface.h"
+#include "bbrpacket.h"
 #include "network.h"
 #include "trigger.h"
-#include "uecpacket.h"
 #include <functional>
 #include <list>
 #include <map>
 
-class UecSink;
+class BBRSink;
 // class LogSimInterface;
 
 class SentPacket {
@@ -35,22 +35,22 @@ class SentPacket {
     bool timedOut;
 };
 
-class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
-    friend class UecSink;
+class BBRSrc : public PacketSink, public EventSource, public TriggerTarget {
+    friend class BBRSink;
 
   public:
-    UecSrc(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList,
+    BBRSrc(BBRLogger *logger, TrafficLogger *pktLogger, EventList &eventList,
            uint64_t rtt, uint64_t bdp, uint64_t queueDrainTime, int hops);
-    // UecSrc(UecLogger *logger, TrafficLogger* pktLogger, EventList& eventList,
+    // BBRSrc(UecLogger *logger, TrafficLogger* pktLogger, EventList& eventList,
     // uint64_t rtt=timeFromUs(5.25), uint64_t bdp=63000);
-    ~UecSrc();
+    ~BBRSrc();
 
     virtual void doNextEvent() override;
 
     void receivePacket(Packet &pkt) override;
     const string &nodename() override;
 
-    virtual void connect(Route *routeout, Route *routeback, UecSink &sink,
+    virtual void connect(Route *routeout, Route *routeback, BBRSink &sink,
                          simtime_picosec startTime);
     void startflow();
     void set_paths(vector<const Route *> *rt);
@@ -78,10 +78,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     void setNumberEntropies(int num_entropies) {
         _num_entropies = num_entropies;
     };
-    void setHopCount(int hops) {
-        _hop_count = hops;
-        printf("Hop Count is %d\n", hops);
-    };
+    void setHopCount(int hops) { _hop_count = hops; };
     void setFlowSize(uint64_t flow_size) { _flow_size = flow_size; }
     void setKeepAcksInTargetRtt(bool keep) { _target_based_received = keep; }
     // void setLgs(LogSimInterface *lgs) { _lgs = lgs; };
@@ -111,17 +108,6 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static void set_pacing_delay(simtime_picosec value) {
         pacing_delay = value * 1000;
     }
-
-    static void set_exp_avg_ecn(bool value) { use_exp_avg_ecn = value; }
-    static void set_exp_avg_rtt(bool value) { use_exp_avg_rtt = value; }
-
-    static void set_exp_avg_ecn_value(double value) {
-        exp_avg_ecn_value = value;
-    }
-    static void set_exp_avg_rtt_value(double value) {
-        exp_avg_rtt_value = value;
-    }
-    static void set_exp_avg_alpha(double value) { exp_avg_alpha = value; }
 
     static void set_explicit_rtt(int value) { explicit_base_rtt = value; }
     static void set_explicit_bdp(int value) { explicit_bdp = value; }
@@ -225,10 +211,6 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     double alpha_route = 0.0625;
     int current_pkt = 0;
     bool pause_send = false;
-    int total_pkt = 0;
-    int total_nack = 0;
-    uint64_t send_size = 0;
-    bool did_qa = false;
 
     // Custom Parameters
     static std::string queue_type;
@@ -252,12 +234,6 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static int explicit_target_rtt;
     static int explicit_base_rtt;
     static int explicit_bdp;
-
-    static double exp_avg_ecn_value;
-    static double exp_avg_rtt_value;
-    static bool use_exp_avg_ecn;
-    static bool use_exp_avg_rtt;
-    static double exp_avg_alpha;
 
     static double y_gain;
     static double x_gain;
@@ -324,8 +300,8 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     uint64_t avg_rtt;
     int rx_count = 0;
     uint32_t achieved_bdp = 0;
-    UecLogger *_logger;
-    UecSink *_sink;
+    BBRLogger *_logger;
+    BBRSink *_sink;
 
     uint16_t _crt_direction;
     vector<int> _path_ids;                 // path IDs to be used for ECMP FIB.
@@ -344,9 +320,6 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     SmarttPacer *generic_pacer = NULL;
     simtime_picosec pacer_start_time = 0;
     PacketFlow _flow;
-
-    double exp_avg_ecn = 0;
-    double exp_avg_rtt = 0;
 
     string _nodename;
     std::function<void(const Packet &p)> f_flow_over_hook;
@@ -405,28 +378,28 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     bool ecn_congestion();
     void drop_old_received();
     const Route *get_path();
-    void mark_received(UecAck &pkt);
+    void mark_received(BBRAck &pkt);
     void add_ack_path(const Route *rt);
     bool resend_packet(std::size_t i);
     void retransmit_packet();
-    void processAck(UecAck &pkt, bool);
+    void processAck(BBRAck &pkt, bool);
     std::size_t get_sent_packet_idx(uint32_t pkt_seqno);
 
     void update_rtx_time();
     void reduce_cwnd(uint64_t amount);
-    void processNack(UecNack &nack);
-    void processBts(UecPacket *nack);
-    void simulateTrimEvent(UecAck &nack);
+    void processNack(BBRNack &nack);
+    void processBts(BBRPacket *nack);
+    void simulateTrimEvent(BBRAck &nack);
     void reduce_unacked(uint64_t amount);
     void check_limits_cwnd();
     void apply_timeout_penalty();
 };
 
-class UecSink : public PacketSink, public DataReceiver {
-    friend class UecSrc;
+class BBRSink : public PacketSink, public DataReceiver {
+    friend class BBRSrc;
 
   public:
-    UecSink();
+    BBRSink();
 
     void receivePacket(Packet &pkt) override;
     const string &nodename() override;
@@ -435,7 +408,7 @@ class UecSink : public PacketSink, public DataReceiver {
 
     uint64_t cumulative_ack() override;
     uint32_t drops() override;
-    void connect(UecSrc &src, const Route *route);
+    void connect(BBRSrc &src, const Route *route);
     void set_paths(uint32_t num_paths);
     void set_src(uint32_t s) { _srcaddr = s; }
     uint32_t from = 0;
@@ -449,40 +422,40 @@ class UecSink : public PacketSink, public DataReceiver {
     int pfc_just_seen = -10;
 
   private:
-    UecAck::seq_t _cumulative_ack;
+    BBRAck::seq_t _cumulative_ack;
     uint64_t _packets;
     uint32_t _srcaddr;
     uint32_t _drops;
     int ack_count_idx = 0;
     string _nodename;
-    list<UecAck::seq_t> _received; // list of packets received OOO
+    list<BBRAck::seq_t> _received; // list of packets received OOO
     uint16_t _crt_path;
     const Route *_route;
     vector<const Route *> _paths;
     vector<int> _path_ids;                 // path IDs to be used for ECMP FIB.
     vector<const Route *> _original_paths; // paths in original permutation
                                            // order
-    UecSrc *_src;
+    BBRSrc *_src;
 
-    void send_ack(simtime_picosec ts, bool marked, UecAck::seq_t seqno,
-                  UecAck::seq_t ackno, const Route *rt, const Route *inRoute,
+    void send_ack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno,
+                  BBRAck::seq_t ackno, const Route *rt, const Route *inRoute,
                   int path_id);
-    void send_nack(simtime_picosec ts, bool marked, UecAck::seq_t seqno,
-                   UecAck::seq_t ackno, const Route *rt, int);
-    bool already_received(UecPacket &pkt);
+    void send_nack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno,
+                   BBRAck::seq_t ackno, const Route *rt, int);
+    bool already_received(BBRPacket &pkt);
 };
 
-class UecRtxTimerScanner : public EventSource {
+class BBRRtxTimerScanner : public EventSource {
   public:
-    UecRtxTimerScanner(simtime_picosec scanPeriod, EventList &eventlist);
+    BBRRtxTimerScanner(simtime_picosec scanPeriod, EventList &eventlist);
     void doNextEvent();
-    void registerUec(UecSrc &uecsrc);
+    void registerBBR(BBRSrc &BBRsrc);
 
   private:
     simtime_picosec _scanPeriod;
     simtime_picosec _lastScan;
-    typedef list<UecSrc *> uecs_t;
-    uecs_t _uecs;
+    typedef list<BBRSrc *> BBRs_t;
+    BBRs_t _uecs;
 };
 
 #endif

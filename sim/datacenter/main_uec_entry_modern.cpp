@@ -94,6 +94,7 @@ int main(int argc, char **argv) {
     linkspeed_bps linkspeed = speedFromMbps((double)HOST_NIC);
     simtime_picosec hop_latency = timeFromNs((uint32_t)RTT);
     simtime_picosec switch_latency = timeFromNs((uint32_t)0);
+    simtime_picosec pacing_delay = 1000;
     int packet_size = 2048;
     int kmin = -1;
     int kmax = -1;
@@ -138,12 +139,18 @@ int main(int argc, char **argv) {
     double quickadapt_lossless_rtt = 2.0;
     int reaction_delay = 1;
     bool stop_after_quick = false;
+    bool use_pacing = false;
     int precision_ts = 1;
     int once_per_rtt = 0;
     bool use_mixed = false;
     int phantom_size;
     int phantom_slowdown = 10;
     bool use_phantom = false;
+    double exp_avg_ecn_value = .3;
+    double exp_avg_rtt_value = .3;
+    double exp_avg_alpha = 0.125;
+    bool use_exp_avg_ecn = false;
+    bool use_exp_avg_rtt = false;
 
     int i = 1;
     filename << "logout.dat";
@@ -268,6 +275,14 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-ignore_ecn_data")) {
             ignore_ecn_data = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-pacing_delay")) {
+            pacing_delay = atoi(argv[i + 1]);
+            UecSrc::set_pacing_delay(pacing_delay);
+            i++;
+        } else if (!strcmp(argv[i], "-use_pacing")) {
+            use_pacing = atoi(argv[i + 1]);
+            UecSrc::set_use_pacing(use_pacing);
             i++;
         } else if (!strcmp(argv[i], "-fast_drop")) {
             UecSrc::set_fast_drop(atoi(argv[i + 1]));
@@ -394,6 +409,31 @@ int main(int argc, char **argv) {
             use_phantom = atoi(argv[i + 1]);
             printf("UsePhantomQueue: %d\n", use_phantom);
             CompositeQueue::set_use_phantom_queue(use_phantom);
+            i++;
+        } else if (!strcmp(argv[i], "-use_exp_avg_ecn")) {
+            use_exp_avg_ecn = atoi(argv[i + 1]);
+            printf("UseExpAvgEcn: %d\n", use_exp_avg_ecn);
+            UecSrc::set_exp_avg_ecn(use_exp_avg_ecn);
+            i++;
+        } else if (!strcmp(argv[i], "-use_exp_avg_rtt")) {
+            use_exp_avg_rtt = atoi(argv[i + 1]);
+            printf("UseExpAvgRtt: %d\n", use_exp_avg_rtt);
+            UecSrc::set_exp_avg_rtt(use_exp_avg_rtt);
+            i++;
+        } else if (!strcmp(argv[i], "-exp_avg_rtt_value")) {
+            exp_avg_rtt_value = std::stod(argv[i + 1]);
+            printf("UseExpAvgRttValue: %d\n", exp_avg_rtt_value);
+            UecSrc::set_exp_avg_rtt_value(exp_avg_rtt_value);
+            i++;
+        } else if (!strcmp(argv[i], "-exp_avg_ecn_value")) {
+            exp_avg_ecn_value = std::stod(argv[i + 1]);
+            printf("UseExpAvgecn_value: %d\n", exp_avg_ecn_value);
+            UecSrc::set_exp_avg_ecn_value(exp_avg_ecn_value);
+            i++;
+        } else if (!strcmp(argv[i], "-exp_avg_alpha")) {
+            exp_avg_alpha = std::stod(argv[i + 1]);
+            printf("UseExpAvgalpha: %d\n", exp_avg_alpha);
+            UecSrc::set_exp_avg_alpha(exp_avg_alpha);
             i++;
         } else if (!strcmp(argv[i], "-phantom_size")) {
             phantom_size = atoi(argv[i + 1]);
@@ -563,9 +603,6 @@ int main(int argc, char **argv) {
         exit(1);
     }
 #endif
-
-    int tot_subs = 0;
-    int cnt_con = 0;
 
     lg = &logfile;
 

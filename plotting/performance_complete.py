@@ -176,7 +176,7 @@ def main(args):
         df4.reset_index(drop=True, inplace=True)
 
     # Sent data
-    colnames=['Time', 'Sent'] 
+    '''colnames=['Time', 'Sent'] 
     df5 = pd.DataFrame(columns =colnames)
     name = ['0'] * df5.shape[0]
     df5 = df5.assign(Node=name)
@@ -194,7 +194,7 @@ def main(args):
         # DownScale
         df5 = df5.iloc[::int(ratio)]
         # Reset the index of the new dataframe
-        df5.reset_index(drop=True, inplace=True)
+        df5.reset_index(drop=True, inplace=True)'''
 
     if (args.show_case):
         # Case1 Data
@@ -696,6 +696,7 @@ def main(args):
         my_title=args.name
     else:
         my_title="<b>Incast 2:1 – 1:1 FT – 800Gbps – 4KiB MTU – 128MiB Flows - LoadBalancing ON</b>"
+        my_title="Overall Timeline"
 
     # Add figure title
     fig.update_layout(title_text=my_title)
@@ -830,7 +831,7 @@ def main(args):
     # Set y-axes titles
     fig.update_yaxes(title_text="RTT || Queuing Latency (ns)", secondary_y=False)
     fig.update_yaxes(title_text="Congestion Window (B)", secondary_y=True)
-
+    
     now = datetime.now() # current date and time
     date_time = now.strftime("%m:%d:%Y_%H:%M:%S")
     print("Saving Plot")

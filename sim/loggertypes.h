@@ -6,6 +6,7 @@
 class Packet;
 class TcpSrc;
 class NdpSrc;
+class BBRSrc;
 class UecSrc;
 class UecDropSrc;
 class SwiftTrimmingSrc;
@@ -351,6 +352,16 @@ class UecLogger : public Logger {
     enum UecMemoryRecord { MEMORY = 0 };
     virtual void logUec(UecSrc &src, UecEvent ev) = 0;
     virtual ~UecLogger(){};
+};
+
+class BBRLogger : public Logger {
+  public:
+    enum BBREvent { BBR_RCV = 0, BBR_TIMEOUT = 1 }; // TODO: add more events
+    enum BBRState { BBRSTATE_CNTRL = 0, BBRSTATE_SEQ = 1 };
+    enum BBRRecord { AVE_CWND = 0 };
+    enum BBRMemoryRecord { MEMORY = 0 };
+    virtual void logBBR(BBRSrc &src, BBREvent ev) = 0;
+    virtual ~BBRLogger(){};
 };
 
 class UecDropLogger : public Logger {

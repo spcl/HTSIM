@@ -19,7 +19,7 @@ int CompositeQueue::_phantom_queue_slowdown = 10;
 CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize,
                                EventList &eventlist, QueueLogger *logger)
         : Queue(bitrate, maxsize, eventlist, logger) {
-    _ratio_high = 2;
+    _ratio_high = 100;
     _ratio_low = 1;
     _crt = 0;
     _num_headers = 0;
@@ -189,9 +189,9 @@ void CompositeQueue::completeService() {
         // printf("Queue %s - Packets %d\n", _nodename.c_str(), packets_seen);
         _queuesize_low -= pkt->size();
         //_current_queuesize_phatom -= pkt->size();
-        /*printf("Queue %s - Packets Normal %lu - Packets Ghost %lu\n",
+        printf("Queue %s - Packets Normal %lu - Packets Ghost %lu\n",
                _nodename.c_str(), _queuesize_low, _current_queuesize_phatom);
-        printf("Considering Queue %s - From %d - Header Only %d - Size
+        /*printf("Considering Queue %s - From %d - Header Only %d - Size
         %d - " "Arrayt Size "
                "%d\n",
                _nodename.c_str(), pkt->from, pkt->header_only(),
@@ -308,6 +308,11 @@ void CompositeQueue::receivePacket(Packet &pkt) {
         _logger->logQueue(*this, QueueLogger::PKT_ARRIVE, pkt);
     // is this a Tofino packet from the egress pipeline?
     if (!pkt.header_only()) {
+
+        /*printf("Current Queue Size %d - Max %d - Bit Rate %lu - Name %s vs "
+               "%s\n",
+               _queuesize_low, _maxsize, _bitrate, _nodename.c_str(),
+               _name.c_str());*/
         //  Queue
         if (COLLECT_DATA) {
             if (_queuesize_low != 0) {
@@ -356,12 +361,93 @@ void CompositeQueue::receivePacket(Packet &pkt) {
             }
         }
 
-        if (_queuesize_low + pkt.size() <= _maxsize) {
+        if (_queuesize_low + pkt.size() <= _maxsize || drand() < 0.5) {
             // regular packet; don't drop the arriving packet
 
             // we are here because either the queue isn't full or,
             // it might be full and we randomly chose an
             // enqueued packet to trim
+
+            if (_queuesize_low + pkt.size() > _maxsize) {
+                /*printf("Trimming at %s - Packet from %d PathID %d\n",
+                       _nodename.c_str(), pkt.from, pkt.pathid());*/
+                //  we're going to drop an existing packet from the queue
+                if (_enqueued_low.empty()) {
+                    // cout << "QUeuesize " << _queuesize_low << "
+                    // packetsize "
+                    // << pkt.size() << " maxsize " << _maxsize << endl;
+                    assert(0);
+                }
+
+                if (_drop_when_full) {
+                    // Dropping Packet and returning
+                    /*printf("Queue Size %d - Max %d\n", _queuesize_low,
+                           _maxsize);*/
+                    printf("Dropping a PKT\n");
+                    pkt.free();
+                    return;
+                }
+                // take last packet from low prio queue, make it a header
+                // and place it in the high prio queue
+
+                Packet *booted_pkt = _enqueued_low.pop_front();
+                _queuesize_low -= booted_pkt->size();
+                _current_queuesize_phatom -= booted_pkt->size();
+                if (_logger)
+                    _logger->logQueue(*this, QueueLogger::PKT_UNQUEUE,
+                                      *booted_pkt);
+
+                // cout << "A [ " << _enqueued_low.size() << " " <<
+                // _enqueued_high.size() << " ] STRIP" << endl; cout <<
+                // "booted_pkt->size(): " << booted_pkt->size();
+                booted_pkt->strip_payload();
+                _num_stripped++;
+                booted_pkt->flow().logTraffic(*booted_pkt, *this,
+                                              TrafficLogger::PKT_TRIM);
+                if (_logger)
+                    _logger->logQueue(*this, QueueLogger::PKT_TRIM, pkt);
+
+                if (_queuesize_high + booted_pkt->size() > 200 * _maxsize) {
+                    if (booted_pkt->reverse_route() &&
+                        booted_pkt->bounced() == false) {
+                        // return the packet to the sender
+                        if (_logger)
+                            _logger->logQueue(*this, QueueLogger::PKT_BOUNCE,
+                                              *booted_pkt);
+                        booted_pkt->flow().logTraffic(
+                                pkt, *this, TrafficLogger::PKT_BOUNCE);
+                        // XXX what to do with it now?
+#if 0
+                        printf("Bounce2 at %s\n", _nodename.c_str());
+                        printf("Fwd route:\n");
+                        print_route(*(booted_pkt->route()));
+                        printf("nexthop: %d\n", booted_pkt->nexthop());
+#endif
+                        booted_pkt->bounce();
+#if 0
+                        printf("\nRev route:\n");
+                        print_route(*(booted_pkt->reverse_route()));
+                        printf("nexthop: %d\n", booted_pkt->nexthop());
+#endif
+                        _num_bounced++;
+                        booted_pkt->sendOn();
+                    } else {
+                        cout << "Dropped\n";
+                        booted_pkt->flow().logTraffic(*booted_pkt, *this,
+                                                      TrafficLogger::PKT_DROP);
+                        booted_pkt->free();
+                        if (_logger)
+                            _logger->logQueue(*this, QueueLogger::PKT_DROP,
+                                              pkt);
+                    }
+                } else {
+                    _enqueued_high.push(booted_pkt);
+                    _queuesize_high += booted_pkt->size();
+                    if (_logger)
+                        _logger->logQueue(*this, QueueLogger::PKT_ENQUEUE,
+                                          *booted_pkt);
+                }
+            }
 
             assert(_queuesize_low + pkt.size() <= _maxsize);
             Packet *pkt_p = &pkt;
@@ -376,15 +462,15 @@ void CompositeQueue::receivePacket(Packet &pkt) {
             pkt_p->enter_timestamp = GLOBAL_TIME;
             _enqueued_low.push(pkt_p);
 
-            // Increase PQ on data packet
             _queuesize_low += pkt.size();
             _current_queuesize_phatom += pkt.size();
             if (_current_queuesize_phatom > _phantom_queue_size) {
+                printf("inside if");
                 _current_queuesize_phatom = _phantom_queue_size;
             }
-            /*printf("QueueRec %s - Packets Normal %lu - Packets Ghost %lu\n",
+            printf("QueueRec %s - Packets Normal %lu - Packets Ghost %lu\n",
                    _nodename.c_str(), _queuesize_low,
-                   _current_queuesize_phatom);*/
+                   _current_queuesize_phatom);
 
             if (_logger)
                 _logger->logQueue(*this, QueueLogger::PKT_ENQUEUE, pkt);
@@ -412,12 +498,6 @@ void CompositeQueue::receivePacket(Packet &pkt) {
                     pkt.free();
                     return;
                 }
-            }
-
-            // Increase Phantom Queue when also getting a trim
-            _current_queuesize_phatom += 4160;
-            if (_current_queuesize_phatom > _phantom_queue_size) {
-                _current_queuesize_phatom = _phantom_queue_size;
             }
 
             pkt.strip_payload();

@@ -2041,8 +2041,8 @@ NdpPullPacer::NdpPullPacer(EventList &event, linkspeed_bps linkspeed,
             (simtime_picosec)((Packet::data_packet_size() + ACKSIZE) *
                               (pow(10.0, 12.0) * 8) / linkspeed) /
             pull_rate_modifier;
-    // cout << "Packet drain time " << timeAsUs(_packet_drain_time) << "us" <<
-    // endl;
+    cout << "Packet drain time " << timeAsUs(_packet_drain_time) << "us"
+         << endl;
     _log_me = false;
     _pacer_no = 0;
 }
