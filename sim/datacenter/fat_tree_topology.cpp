@@ -29,6 +29,7 @@ int FatTreeTopology::kmin = -1;
 int FatTreeTopology::kmax = -1;
 int FatTreeTopology::bts_trigger = -1;
 bool FatTreeTopology::bts_ignore_data = true;
+int FatTreeTopology::num_failing_links = -1;
 //  extern int N;
 
 FatTreeTopology::FatTreeTopology(uint32_t no_of_nodes, linkspeed_bps linkspeed,
@@ -234,6 +235,82 @@ BaseQueue *FatTreeTopology::alloc_queue(QueueLogger *queueLogger,
                                         mem_b queuesize, link_direction dir,
                                         bool tor = false) {
     return alloc_queue(queueLogger, _linkspeed, queuesize, dir, tor);
+}
+
+BaseQueue *FatTreeTopology::alloc_queue(QueueLogger *queueLogger,
+                                        linkspeed_bps speed, mem_b queuesize,
+                                        link_direction dir, bool tor,
+                                        bool is_failing) {
+    switch (_qt) {
+    case RANDOM:
+        return new RandomQueue(speed, queuesize, *_eventlist, queueLogger,
+                               memFromPkt(RANDOM_BUFFER));
+    case COMPOSITE: {
+        CompositeQueue *q =
+                new CompositeQueue(speed, queuesize, *_eventlist, queueLogger);
+
+        if (kmin != -1) {
+            q->set_ecn_thresholds((kmin / 100.0) * queuesize,
+                                  (kmax / 100.0) * queuesize);
+        }
+        q->failed_link = is_failing;
+        return q;
+    }
+    case COMPOSITE_BTS: {
+        CompositeQueueBts *q = new CompositeQueueBts(speed, queuesize,
+                                                     *_eventlist, queueLogger);
+
+        if (kmin != -1) {
+            q->set_ecn_thresholds((kmin / 100.0) * queuesize,
+                                  (kmax / 100.0) * queuesize);
+        }
+        if (bts_trigger != -1) {
+            q->set_bts_threshold((bts_trigger / 100.0) * queuesize);
+        }
+        q->set_ignore_ecn_data(bts_ignore_data);
+        return q;
+    }
+    case CTRL_PRIO:
+        return new CtrlPrioQueue(speed, queuesize, *_eventlist, queueLogger);
+    case ECN:
+        return new ECNQueue(speed, queuesize, *_eventlist, queueLogger,
+                            memFromPkt(15));
+    case LOSSLESS:
+        return new LosslessQueue(speed, queuesize, *_eventlist, queueLogger,
+                                 NULL);
+    case LOSSLESS_INPUT: {
+        LosslessOutputQueue *q = new LosslessOutputQueue(
+                speed, queuesize, *_eventlist, queueLogger);
+        if (kmin != -1) {
+            q->set_ecn_thresholds((kmin / 100.0) * queuesize,
+                                  (kmax / 100.0) * queuesize);
+        }
+        printf("Creaing Lossless queue");
+        return q;
+    }
+    case LOSSLESS_INPUT_ECN:
+        return new LosslessOutputQueue(speed, memFromPkt(10000), *_eventlist,
+                                       queueLogger, 1, memFromPkt(16));
+    case COMPOSITE_ECN:
+        if (tor)
+            return new CompositeQueue(speed, queuesize, *_eventlist,
+                                      queueLogger);
+        else
+            return new ECNQueue(speed, memFromPkt(2 * SWITCH_BUFFER),
+                                *_eventlist, queueLogger, memFromPkt(15));
+    case COMPOSITE_ECN_LB: {
+        CompositeQueue *q =
+                new CompositeQueue(speed, queuesize, *_eventlist, queueLogger);
+        if (!tor || dir == UPLINK) {
+            // don't use ECN on ToR downlinks
+            q->set_ecn_threshold(FatTreeSwitch::_ecn_threshold_fraction *
+                                 queuesize);
+        }
+        return q;
+    }
+    default:
+        abort();
+    }
 }
 
 BaseQueue *FatTreeTopology::alloc_queue(QueueLogger *queueLogger,
@@ -536,9 +613,18 @@ void FatTreeTopology::init_network() {
                 /*queues_nup_nc[agg][core] =
                         alloc_queue(queueLogger, _queuesize, UPLINK);*/
 
-                queues_nup_nc[agg][core] = alloc_queue(
-                        queueLogger, _linkspeed / _os_ratio_stage_1,
-                        _queuesize / _os_ratio_stage_1, UPLINK, false);
+                if (curr_failed_link < num_failing_links) {
+                    queues_nup_nc[agg][core] = alloc_queue(
+                            queueLogger, _linkspeed / _os_ratio_stage_1,
+                            _queuesize / _os_ratio_stage_1, UPLINK, false,
+                            true);
+                    curr_failed_link++;
+                } else {
+                    queues_nup_nc[agg][core] = alloc_queue(
+                            queueLogger, _linkspeed / _os_ratio_stage_1,
+                            _queuesize / _os_ratio_stage_1, UPLINK, false,
+                            false);
+                }
 
                 queues_nup_nc[agg][core]->setName("US" + ntoa(agg) + "->CS" +
                                                   ntoa(core));

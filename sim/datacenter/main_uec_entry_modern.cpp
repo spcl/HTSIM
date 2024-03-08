@@ -26,7 +26,7 @@
 
 // Fat Tree topology was modified to work with this script, others won't work
 // correctly
-#include "fat_tree_topology.h"
+#include "fat_tree_interdc_topology.h"
 //#include "oversubscribed_fat_tree_topology.h"
 //#include "multihomed_fat_tree_topology.h"
 //#include "star_topology.h"
@@ -124,11 +124,11 @@ int main(int argc, char **argv) {
     double bonus_drop = 1;
     double drop_value_buffer = 1;
     double starting_cwnd_ratio = 0;
-    int explicit_starting_cwnd = 0;
-    int explicit_starting_buffer = 0;
-    int explicit_base_rtt = 0;
-    int explicit_target_rtt = 0;
-    int explicit_bdp = 0;
+    uint64_t explicit_starting_cwnd = 0;
+    uint64_t explicit_starting_buffer = 0;
+    uint64_t explicit_base_rtt = 0;
+    uint64_t explicit_target_rtt = 0;
+    uint64_t explicit_bdp = 0;
     double queue_size_ratio = 0;
     bool disable_case_3 = false;
     bool disable_case_4 = false;
@@ -151,6 +151,10 @@ int main(int argc, char **argv) {
     double exp_avg_alpha = 0.125;
     bool use_exp_avg_ecn = false;
     bool use_exp_avg_rtt = false;
+    int jump_to = 0;
+    int stop_pacing_after_rtt = 0;
+    int num_failed_links = 0;
+    bool topology_normal = true;
 
     int i = 1;
     filename << "logout.dat";
@@ -191,6 +195,10 @@ int main(int argc, char **argv) {
             UecSrc::set_once_per_rtt(once_per_rtt);
             printf("OnceRTTDecrease: %d\n", once_per_rtt);
             i++;
+        } else if (!strcmp(argv[i], "-stop_pacing_after_rtt")) {
+            stop_pacing_after_rtt = atoi(argv[i + 1]);
+            UecSrc::set_stop_pacing(stop_pacing_after_rtt);
+            i++;
         } else if (!strcmp(argv[i], "-linkspeed")) {
             // linkspeed specified is in Mbps
             linkspeed = speedFromMbps(atof(argv[i + 1]));
@@ -203,6 +211,8 @@ int main(int argc, char **argv) {
             // kmin as percentage of queue size (0..100)
             kmin = atoi(argv[i + 1]);
             printf("KMin: %d\n", atoi(argv[i + 1]));
+            CompositeQueue::set_kMin(kmin);
+            UecSrc::set_kmin(kmin / 100.0);
             i++;
         } else if (!strcmp(argv[i], "-k")) {
             fat_tree_k = atoi(argv[i + 1]);
@@ -215,6 +225,8 @@ int main(int argc, char **argv) {
             // kmin as percentage of queue size (0..100)
             kmax = atoi(argv[i + 1]);
             printf("KMax: %d\n", atoi(argv[i + 1]));
+            CompositeQueue::set_kMax(kmax);
+            UecSrc::set_kmax(kmax / 100.0);
             i++;
         } else if (!strcmp(argv[i], "-pfc_marking")) {
             pfc_marking = atoi(argv[i + 1]);
@@ -237,6 +249,9 @@ int main(int argc, char **argv) {
             disable_case_3 = atoi(argv[i + 1]);
             UecSrc::set_disable_case_3(disable_case_3);
             printf("DisableCase3: %d\n", disable_case_3);
+            i++;
+        } else if (!strcmp(argv[i], "-jump_to")) {
+            UecSrc::jump_to = atoi(argv[i + 1]);
             i++;
         } else if (!strcmp(argv[i], "-reaction_delay")) {
             reaction_delay = atoi(argv[i + 1]);
@@ -323,17 +338,29 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-gain_value_med_inc")) {
             gain_value_med_inc = std::stod(argv[i + 1]);
-            UecSrc::set_gain_value_med_inc(gain_value_med_inc);
+            // UecSrc::set_gain_value_med_inc(gain_value_med_inc);
             printf("GainValueMedIncrease: %f\n", gain_value_med_inc);
             i++;
         } else if (!strcmp(argv[i], "-jitter_value_med_inc")) {
             jitter_value_med_inc = std::stod(argv[i + 1]);
-            UecSrc::set_jitter_value_med_inc(jitter_value_med_inc);
+            // UecSrc::set_jitter_value_med_inc(jitter_value_med_inc);
             printf("JitterValue: %f\n", jitter_value_med_inc);
+            i++;
+        } else if (!strcmp(argv[i], "-decrease_on_nack")) {
+            double decrease_on_nack = std::stod(argv[i + 1]);
+            UecSrc::set_decrease_on_nack(decrease_on_nack);
+            i++;
+        } else if (!strcmp(argv[i], "-phantom_in_series")) {
+            CompositeQueue::set_use_phantom_in_series();
+            printf("PhantomQueueInSeries: %d\n", 1);
+            // i++;
+        } else if (!strcmp(argv[i], "-phantom_both_queues")) {
+            CompositeQueue::set_use_both_queues();
+            printf("PhantomUseBothForECNMarking: %d\n", 1);
             i++;
         } else if (!strcmp(argv[i], "-delay_gain_value_med_inc")) {
             delay_gain_value_med_inc = std::stod(argv[i + 1]);
-            UecSrc::set_delay_gain_value_med_inc(delay_gain_value_med_inc);
+            // UecSrc::set_delay_gain_value_med_inc(delay_gain_value_med_inc);
             printf("DelayGainValue: %f\n", delay_gain_value_med_inc);
             i++;
         } else if (!strcmp(argv[i], "-target_rtt_percentage_over_base")) {
@@ -341,6 +368,10 @@ int main(int argc, char **argv) {
             UecSrc::set_target_rtt_percentage_over_base(
                     target_rtt_percentage_over_base);
             printf("TargetRTT: %d\n", target_rtt_percentage_over_base);
+            i++;
+        } else if (!strcmp(argv[i], "-num_failed_links")) {
+            num_failed_links = atoi(argv[i + 1]);
+            FatTreeTopology::set_failed_links(num_failed_links);
             i++;
         } else if (!strcmp(argv[i], "-fast_drop_rtt")) {
             UecSrc::set_fast_drop_rtt(atoi(argv[i + 1]));
@@ -379,13 +410,13 @@ int main(int argc, char **argv) {
             explicit_bdp = explicit_starting_buffer;
             i++;
         } else if (!strcmp(argv[i], "-explicit_base_rtt")) {
-            explicit_base_rtt = atoi(argv[i + 1]);
+            explicit_base_rtt = ((uint64_t)atoi(argv[i + 1])) * 1000;
             printf("BaseRTTForced: %d\n", explicit_base_rtt);
             UecSrc::set_explicit_rtt(explicit_base_rtt);
             i++;
         } else if (!strcmp(argv[i], "-explicit_target_rtt")) {
-            explicit_target_rtt = atoi(argv[i + 1]);
-            printf("TargetRTTForced: %d\n", explicit_target_rtt);
+            explicit_target_rtt = ((uint64_t)atoi(argv[i + 1])) * 1000;
+            printf("TargetRTTForced: %lu\n", explicit_target_rtt);
             UecSrc::set_explicit_target_rtt(explicit_target_rtt);
             i++;
         } else if (!strcmp(argv[i], "-queue_size_ratio")) {
@@ -457,12 +488,22 @@ int main(int argc, char **argv) {
             } else if (!strcmp(argv[i + 1], "ecmp_host")) {
                 route_strategy = ECMP_FIB;
                 FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+                FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
             } else if (!strcmp(argv[i + 1], "ecmp_host_random_ecn")) {
                 route_strategy = ECMP_RANDOM_ECN;
                 FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+                FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
             } else if (!strcmp(argv[i + 1], "ecmp_host_random2_ecn")) {
                 route_strategy = ECMP_RANDOM2_ECN;
                 FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+                FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
+            }
+            i++;
+        } else if (!strcmp(argv[i], "-topology")) {
+            if (!strcmp(argv[i + 1], "normal")) {
+                topology_normal = true;
+            } else if (!strcmp(argv[i + 1], "interdc")) {
+                topology_normal = false;
             }
             i++;
         } else if (!strcmp(argv[i], "-queue_type")) {
@@ -509,6 +550,21 @@ int main(int argc, char **argv) {
             } else if (!strcmp(argv[i + 1], "intersmartt")) {
                 UecSrc::set_alogirthm("intersmartt");
                 printf("Name Running: SMaRTT InterDataCenter\n");
+            } else if (!strcmp(argv[i + 1], "intersmartt_new")) {
+                UecSrc::set_alogirthm("intersmartt_new");
+                printf("Name Running: SMaRTT InterDataCenter\n");
+            } else if (!strcmp(argv[i + 1], "intersmartt_simple")) {
+                UecSrc::set_alogirthm("intersmartt_simple");
+                printf("Name Running: SMaRTT InterDataCenter\n");
+            } else if (!strcmp(argv[i + 1], "intersmartt_advanced")) {
+                UecSrc::set_alogirthm("intersmartt_advanced");
+                printf("Name Running: SMaRTT InterDataCenter\n");
+            } else if (!strcmp(argv[i + 1], "intersmartt_composed")) {
+                UecSrc::set_alogirthm("intersmartt_composed");
+                printf("Name Running: SMaRTT InterDataCenter\n");
+            } else if (!strcmp(argv[i + 1], "smartt_2")) {
+                UecSrc::set_alogirthm("smartt_2");
+                printf("Name Running: SMaRTT smartt_2\n");
             }
             i++;
         } else
@@ -583,8 +639,10 @@ int main(int argc, char **argv) {
 
     UecSrc::set_starting_cwnd(actual_starting_cwnd);
 
-    printf("Using BDP of %lu - Queue is %lld - Starting Window is %lu\n",
-           bdp_local, queuesize, actual_starting_cwnd);
+    printf("Using BDP of %lu - Queue is %lld - Starting Window is %lu - RTT "
+           "%lu - Bandwidth %lu\n",
+           bdp_local, queuesize, actual_starting_cwnd, base_rtt_max_hops,
+           LINK_SPEED_MODERN);
 
     cout << "Using subflow count " << subflow_count << endl;
 
@@ -624,6 +682,11 @@ int main(int argc, char **argv) {
 
     int dest;
 
+    if (topology_normal) {
+
+    } else {
+    }
+
 #if USE_FIRST_FIT
     if (subflow_count == 1) {
         ff = new FirstFit(timeFromMs(FIRST_FIT_INTERVAL), eventlist);
@@ -631,15 +694,10 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef FAT_TREE
-    FatTreeTopology::set_tiers(3);
-    FatTreeTopology::set_os_stage_2(fat_tree_k);
-    FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
-    FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
-    FatTreeTopology::set_bts_threshold(bts_threshold);
-    FatTreeTopology::set_ignore_data_ecn(ignore_ecn_data);
-    FatTreeTopology *top = new FatTreeTopology(
-            no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
-            queue_choice, hop_latency, switch_latency);
+#endif
+
+#ifdef FAT_TREE_INTERDC_TOPOLOGY_H
+
 #endif
 
 #ifdef OV_FAT_TREE
@@ -665,41 +723,10 @@ int main(int argc, char **argv) {
     VL2Topology *top = new VL2Topology(&logfile, &eventlist, ff);
 #endif
 
-    vector<const Route *> ***net_paths;
-    net_paths = new vector<const Route *> **[no_of_nodes];
-
-    int *is_dest = new int[no_of_nodes];
-
-    for (int i = 0; i < no_of_nodes; i++) {
-        is_dest[i] = 0;
-        net_paths[i] = new vector<const Route *> *[no_of_nodes];
-        for (int j = 0; j < no_of_nodes; j++)
-            net_paths[i][j] = NULL;
-    }
-
 #if USE_FIRST_FIT
     if (ff)
         ff->net_paths = net_paths;
 #endif
-
-    // vector<int> *destinations;
-
-    // Permutation connections
-    // ConnectionMatrix *conns = new ConnectionMatrix(no_of_conns);
-    // conns->setLocalTraffic(top);
-
-    // cout << "Running perm with " << no_of_conns << " connections" << endl;
-    // conns->setPermutation(no_of_conns);
-    // conns->setIncast(no_of_conns, no_of_nodes - no_of_conns);
-    //  conns->setStride(no_of_conns);
-    //  conns->setStaggeredPermutation(top,(double)no_of_conns/100.0);
-    //  conns->setStaggeredRandom(top,512,1);
-    //  conns->setHotspot(no_of_conns,512/no_of_conns);
-    //  conns->setManytoMany(128);
-
-    // conns->setVL2();
-
-    // conns->setRandom(no_of_conns);
 
     map<int, vector<int> *>::iterator it;
 
@@ -711,10 +738,33 @@ int main(int argc, char **argv) {
     // int receiving_node = 127;
     vector<int> subflows_chosen;
 
-    vector<UecSrc *> uecSrcVector;
     printf("Starting LGS Interface");
-    LogSimInterface *lgs = new LogSimInterface(NULL, &traffic_logger, eventlist,
-                                               top, net_paths);
+    LogSimInterface *lgs;
+    if (topology_normal) {
+        FatTreeTopology::set_tiers(3);
+        FatTreeTopology::set_os_stage_2(fat_tree_k);
+        FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
+        FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
+        FatTreeTopology::set_bts_threshold(bts_threshold);
+        FatTreeTopology::set_ignore_data_ecn(ignore_ecn_data);
+        FatTreeTopology *top = new FatTreeTopology(
+                no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+                queue_choice, hop_latency, switch_latency);
+        lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+    } else {
+        FatTreeInterDCTopology::set_tiers(3);
+        FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
+        FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
+        FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin,
+                                                                       kmax);
+        FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
+        FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
+        FatTreeInterDCTopology *top = new FatTreeInterDCTopology(
+                no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+                queue_choice, hop_latency, switch_latency);
+        lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+    }
+
     lgs->set_protocol(UEC_PROTOCOL);
     lgs->set_cwd(cwnd);
     lgs->set_queue_size(queuesize);
@@ -725,7 +775,7 @@ int main(int argc, char **argv) {
     lgs->setNumberPaths(number_entropies);
     start_lgs(goal_filename, *lgs);
 
-    for (int src = 0; src < dest; ++src) {
+    /*for (int src = 0; src < dest; ++src) {
         connID++;
         if (!net_paths[src][dest]) {
             vector<const Route *> *paths = top->get_paths(src, dest);
@@ -738,7 +788,7 @@ int main(int argc, char **argv) {
             vector<const Route *> *paths = top->get_paths(dest, src);
             net_paths[dest][src] = paths;
         }
-    }
+    }*/
 
     // Record the setup
     int pktsize = Packet::data_packet_size();
