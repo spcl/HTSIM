@@ -702,9 +702,6 @@ void FatTreeInterDCTopology::init_network() {
                         queueLogger = NULL;
                     }
 
-                    /*queues_nup_nc[agg][core] =
-                            alloc_queue(queueLogger, _queuesize, UPLINK);*/
-
                     if (curr_failed_link < num_failing_links) {
                         queues_nup_nc[i][agg][core] = alloc_queue(
                                 queueLogger, _linkspeed / _os_ratio_stage_1,
@@ -766,11 +763,6 @@ void FatTreeInterDCTopology::init_network() {
                     queues_nc_nup[i][core][agg]->setRemoteEndpoint(
                             switches_up[i][agg]);
 
-                    /*if (_qt==LOSSLESS){
-                      ((LosslessQueue*)queues_nup_nc[agg][core])->setRemoteEndpoint(queues_nc_nup[core][agg]);
-                      ((LosslessQueue*)queues_nc_nup[core][agg])->setRemoteEndpoint(queues_nup_nc[agg][core]);
-                      }
-                      else*/
                     if (_qt == LOSSLESS_INPUT || _qt == LOSSLESS_INPUT_ECN) {
                         new LosslessInputQueue(*_eventlist,
                                                queues_nup_nc[i][agg][core],
@@ -784,9 +776,6 @@ void FatTreeInterDCTopology::init_network() {
 
                     pipes_nc_nup[i][core][agg] =
                             new Pipe(_hop_latency, *_eventlist);
-
-                    /*printf("Core %d - Agg %d - Latency %lu\n", core, agg,
-                           _hop_latency);*/
 
                     pipes_nc_nup[i][core][agg]->setName(
                             "DC" + ntoa(i) + "-Pipe-CS" + ntoa(core) + "->US" +
@@ -857,12 +846,6 @@ void FatTreeInterDCTopology::init_network() {
                 if (_qt == LOSSLESS_INPUT || _qt == LOSSLESS_INPUT_ECN) {
                     printf("Not Supported Yet!\n");
                     exit(0);
-                    /*
-                    new LosslessInputQueue(*_eventlist,
-                    queues_nup_nc[agg][core], switches_c[core]); new
-                    LosslessInputQueue(*_eventlist, queues_nc_nup[core][agg],
-                                           switches_up[agg]);
-                    */
                 }
 
                 if (ff) {
@@ -888,7 +871,7 @@ void FatTreeInterDCTopology::init_network() {
                     ntoa(border_u));
 
             pipes_nborderl_nborderu[border_l][border_u] =
-                    new Pipe(_hop_latency, *_eventlist);
+                    new Pipe(_hop_latency * 100, *_eventlist);
 
             pipes_nborderl_nborderu[border_l][border_u]->setName(
                     "DC" + ntoa(0) + "-Pipe-BORDER" + ntoa(border_l) +
@@ -904,7 +887,7 @@ void FatTreeInterDCTopology::init_network() {
                     ntoa(border_l));
 
             pipes_nborderu_nborderl[border_u][border_l] =
-                    new Pipe(_hop_latency, *_eventlist);
+                    new Pipe(_hop_latency * 100, *_eventlist);
 
             pipes_nborderu_nborderl[border_u][border_l]->setName(
                     "DC" + ntoa(0) + "-Pipe-BORDER" + ntoa(border_u) +

@@ -189,6 +189,9 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
         } else if (_topo_inter_dc != NULL) {
             int idx_dc = _topo_inter_dc->get_dc_id(from);
             int idx_dc_to = _topo_inter_dc->get_dc_id(to);
+            uecSrc->src_dc = _topo_inter_dc->get_dc_id(from);
+            uecSrc->dest_dc = _topo_inter_dc->get_dc_id(to);
+            uecSrc->updateParams();
 
             printf("Source in Datacenter %d - Dest in Datacenter %d\n", idx_dc,
                    idx_dc_to);
@@ -259,7 +262,7 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
                                                       to % 16)]);
 
             _topo_inter_dc
-                    ->switches_lp[from % 16]
+                    ->switches_lp[idx_dc]
                                  [_topo_inter_dc->HOST_POD_SWITCH(from % 16)]
                     ->addHostPort(from % 16, uecSrc->flow_id(), uecSrc);
             _topo_inter_dc

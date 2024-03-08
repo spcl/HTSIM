@@ -19,10 +19,30 @@ make clean && cd datacenter/ && make clean && cd .. && make -j 8 && cd datacente
 ```
 
 It is then possible to run htsim by using three possible methods:
-- Using connection matrixes. Details here.
+- Using connection matrixes. Details [here](https://github.com/Broadcom/csg-htsim/wiki).
 - Using C++ code to setup the simulation directly.
-- Using LGS. See the next paragraph for details.
+- Using LGS. See the following paragraphs for details.
 
+## Main additions
+We will explore here the main additions compared to the original htsim repository.
+### SMaRTT
+The SMaRTT congestion control protocol (see details on the paper here) has been added to htsim. It also includes a custom version to work on inter-DC topologies. The main files that have been changed/added to support this CC are:
+
+- ```uec.cpp``` and ```uec.h``` --> here the main congestion control loop is described. 
+- ```compositequeue.cpp``` and ```compositequeue.h``` --> the queue type that we use for the simulations. It supports trimming, phantom queues, Back-To-Sender and custom logging.
+- ```main_uec.cpp``` and ```main_uec_entry_modern.cpp``` --> the two main entry points for the simulation. The first one is used with connection matrixes while the second one uses LGS. Future plans include merging these two and making the entry point a parameter. 
+
+### BBR
+The BBR congestion control protocol (see details on the paper [here](https://research.google/pubs/bbr-congestion-based-congestion-control-2/)) has been added to htsim. The main files that have been changed/added to support this CC are:
+- ```bbr.cpp``` and ```bbr.h``` --> here the main congestion control loop is described. 
+- ```main_bbr.cpp``` and ```main_bbr_entry_modern.cpp``` --> the two main entry points for the simulation. The first one is used with connection matrixes while the second one uses LGS.
+
+### Custom Topology for Inter-DC traffic
+Custom code has been added to support a toplogy where we have 2 FatTree DC linked together by border switches. It works by defining the number of border switches [1-4] and the oversubscription ratio.
+In the future it could be easily updated to support 3 or more datacenter and not just 2.
+The main files that have been changed/added to support this CC are:
+- ```fat_tree_interdc_topology.cpp``` and ```fat_tree_interdc_topology.h``` --> here we define the topology.
+- ```fat_tree_interdc_switch.cpp``` and ```fat_tree_interdc_switch.h``` --> here we define the custom routing for the topology.
 
 ## Basic Instructions for LGS
 

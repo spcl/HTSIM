@@ -363,6 +363,91 @@ void UecSrc::set_end_trigger(Trigger &end_trigger) {
     _end_trigger = &end_trigger;
 }
 
+void UecSrc::updateParams() {
+    if (src_dc != dest_dc) {
+        _hop_count = 9;
+        _base_rtt =
+                ((((_hop_count - 1) * LINK_DELAY_MODERN) +
+                  LINK_DELAY_MODERN * 100) +
+                 ((PKT_SIZE_MODERN + 64) * 8 / LINK_SPEED_MODERN * _hop_count) +
+                 +(_hop_count * LINK_DELAY_MODERN) +
+                 (64 * 8 / LINK_SPEED_MODERN * _hop_count)) *
+                1000;
+    } else {
+        _hop_count = 6;
+        _base_rtt =
+                ((_hop_count * LINK_DELAY_MODERN) +
+                 ((PKT_SIZE_MODERN + 64) * 8 / LINK_SPEED_MODERN * _hop_count) +
+                 +(_hop_count * LINK_DELAY_MODERN) +
+                 (64 * 8 / LINK_SPEED_MODERN * _hop_count)) *
+                1000;
+    }
+
+    if (precision_ts != 1) {
+        _base_rtt = (((_base_rtt + precision_ts - 1) / precision_ts) *
+                     precision_ts);
+    }
+
+    _target_rtt =
+            _base_rtt * ((target_rtt_percentage_over_base + 1) / 100.0 + 1);
+
+    if (precision_ts != 1) {
+        _target_rtt = (((_target_rtt + precision_ts - 1) / precision_ts) *
+                       precision_ts);
+    }
+
+    _rtt = _base_rtt;
+    _rto = _base_rtt * 900000;
+    _rto = _base_rtt * 3;
+    _rto_margin = _rtt / 8;
+    _rtx_timeout = timeInf;
+    _rtx_timeout_pending = false;
+    _rtx_pending = false;
+    _crt_path = 0;
+    _flow_size = _mss * 934;
+    _trimming_enabled = true;
+
+    _next_pathid = 1;
+
+    _bdp = (_base_rtt * LINK_SPEED_MODERN / 8) / 1000;
+    _queue_size = _bdp; // Temporary
+    initial_x_gain = x_gain;
+
+    if (explicit_base_rtt != 0) {
+        _base_rtt = explicit_base_rtt;
+        _target_rtt = explicit_target_rtt;
+    }
+
+    _maxcwnd = starting_cwnd * 1;
+    _cwnd = starting_cwnd;
+    _consecutive_low_rtt = 0;
+    target_window = _cwnd;
+    _target_based_received = true;
+
+    printf("Link Delay %d - Link Speed %lu - Pkt Size %d - Base RTT %lu - "
+           "Target RTT is %lu - BDP %lu - CWND %u - Hops %d - Stop Pacing "
+           "%lu\n",
+           LINK_DELAY_MODERN, LINK_SPEED_MODERN, PKT_SIZE_MODERN, _base_rtt,
+           _target_rtt, _bdp, _cwnd, _hop_count, stop_pacing_after_rtt);
+
+    _max_good_entropies = 10; // TODO: experimental value
+    _enableDistanceBasedRtx = false;
+    f_flow_over_hook = nullptr;
+    last_pac_change = 0;
+
+    if (use_pacing && generic_pacer != NULL) {
+        generic_pacer = new SmarttPacer(eventlist(), *this);
+        pacer_start_time = eventlist().now();
+        pacing_delay = ((4160 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
+        printf("Setting the pacing delay1 %d %lu to %lu at %lu\n", _cwnd,
+               (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
+        // pacing_delay -= (4160 * 8 / LINK_SPEED_MODERN);
+        printf("Setting the pacing delay2 %d %lu to %lu at %lu\n", _cwnd,
+               (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
+        pacing_delay *= 1000; // ps
+    }
+}
+
 std::size_t UecSrc::get_sent_packet_idx(uint32_t pkt_seqno) {
     for (std::size_t i = 0; i < _sent_packets.size(); ++i) {
         if (pkt_seqno == _sent_packets[i].seqno) {

@@ -186,6 +186,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
 
     virtual void rtx_timer_hook(simtime_picosec now, simtime_picosec period);
     void pacedSend();
+    void updateParams();
 
     Trigger *_end_trigger = 0;
     // should really be private, but loggers want to see:
@@ -266,6 +267,8 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     simtime_picosec last_qa_event = 0;
     simtime_picosec next_increase_at = 0;
     int increasing_for = 1;
+    int src_dc = 0;
+    int dest_dc = 0;
 
     static uint64_t explicit_target_rtt;
     static uint64_t explicit_base_rtt;
