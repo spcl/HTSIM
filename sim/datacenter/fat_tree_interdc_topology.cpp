@@ -234,6 +234,10 @@ void FatTreeInterDCTopology::set_params(uint32_t no_of_nodes) {
             vector<vector<BaseQueue *>>(NSRV, vector<BaseQueue *>(NTOR)));
 
     // Double Check Later
+    uint32_t links_core_to_border = max((unsigned int)1, (K / 2) / _os);
+    uint32_t links_border_to_border =
+            (links_core_to_border * NCORE) / number_border_switches;
+
     pipes_nborder_nc.resize(number_datacenters,
                             vector<vector<Pipe *>>(number_border_switches,
                                                    vector<Pipe *>(NCORE)));
@@ -252,16 +256,16 @@ void FatTreeInterDCTopology::set_params(uint32_t no_of_nodes) {
                     NCORE, vector<BaseQueue *>(number_border_switches)));
 
     queues_nborderl_nborderu.resize(
-            number_border_switches,
-            vector<BaseQueue *>(number_border_switches));
+            links_border_to_border,
+            vector<BaseQueue *>(links_border_to_border));
     queues_nborderu_nborderl.resize(
-            number_border_switches,
-            vector<BaseQueue *>(number_border_switches));
+            links_border_to_border,
+            vector<BaseQueue *>(links_border_to_border));
 
-    pipes_nborderl_nborderu.resize(number_border_switches,
-                                   vector<Pipe *>(number_border_switches));
-    pipes_nborderu_nborderl.resize(number_border_switches,
-                                   vector<Pipe *>(number_border_switches));
+    pipes_nborderl_nborderu.resize(links_border_to_border,
+                                   vector<Pipe *>(links_border_to_border));
+    pipes_nborderu_nborderl.resize(links_border_to_border,
+                                   vector<Pipe *>(links_border_to_border));
 }
 
 BaseQueue *FatTreeInterDCTopology::alloc_src_queue(QueueLogger *queueLogger) {
@@ -465,12 +469,17 @@ void FatTreeInterDCTopology::init_network() {
         }
     }
 
+    uint32_t links_core_to_border = max((unsigned int)1, (K / 2) / _os);
+    uint32_t links_border_to_border =
+            (links_core_to_border * NCORE) / number_border_switches;
+    _no_of_core_to_border = links_border_to_border;
+    printf("Core To border %d\n", _no_of_core_to_border);
     for (uint32_t j = 0; j < number_border_switches; j++) {
         for (uint32_t k = 0; k < number_border_switches; k++) {
             queues_nborderl_nborderu[j][k] = NULL;
             pipes_nborderl_nborderu[j][k] = NULL;
-            queues_nborderu_nborderl[k][j] = NULL;
-            pipes_nborderu_nborderl[k][j] = NULL;
+            queues_nborderu_nborderl[j][k] = NULL;
+            pipes_nborderu_nborderl[j][k] = NULL;
         }
     }
 
@@ -894,16 +903,16 @@ void FatTreeInterDCTopology::init_network() {
                     "->BORDER" + ntoa(border_l));
 
             // Add Ports to switches
-            switches_border[0][border_l]->addPort(
+            switches_border[0][border_l % number_border_switches]->addPort(
                     queues_nborderl_nborderu[border_l][border_u]);
-            switches_border[1][border_u]->addPort(
+            switches_border[1][border_u % number_border_switches]->addPort(
                     queues_nborderu_nborderl[border_u][border_l]);
 
             // Add Remote Endpoints
             queues_nborderl_nborderu[border_l][border_u]->setRemoteEndpoint(
-                    switches_border[1][border_u]);
+                    switches_border[1][border_u % number_border_switches]);
             queues_nborderu_nborderl[border_u][border_l]->setRemoteEndpoint(
-                    switches_border[0][border_l]);
+                    switches_border[0][border_l % number_border_switches]);
 
             if (_qt == LOSSLESS_INPUT || _qt == LOSSLESS_INPUT_ECN) {
                 printf("Not Supported Yet!\n");

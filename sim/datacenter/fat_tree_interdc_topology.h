@@ -111,6 +111,9 @@ class FatTreeInterDCTopology : public Topology {
     void print_path(std::ofstream &paths, uint32_t src, const Route *route);
     vector<uint32_t> *get_neighbours(uint32_t src) { return NULL; };
     uint32_t no_of_nodes() const { return _no_of_nodes; }
+    uint32_t no_of_links_core_to_border() const {
+        return _no_of_core_to_border;
+    }
     uint32_t no_of_cores() const { return NCORE; }
     uint32_t no_of_servers() const { return NSRV; }
     uint32_t no_of_pods() const { return NPOD; }
@@ -175,7 +178,7 @@ class FatTreeInterDCTopology : public Topology {
     uint32_t K, NCORE, NAGG, NTOR, NSRV, NPOD;
     static uint32_t _tiers;
     static uint32_t _os, _os_ratio_stage_1;
-    uint32_t _no_of_nodes;
+    uint32_t _no_of_nodes, _no_of_core_to_border;
     mem_b _queuesize;
     linkspeed_bps _linkspeed;
     simtime_picosec _hop_latency, _switch_latency;
