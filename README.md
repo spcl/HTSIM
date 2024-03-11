@@ -105,7 +105,7 @@ On the other hand, we can run the inter datacenter version of SMaRTT by running
 
 ## Main Paramters Explanation for SMaRTT
 Here we have a summary of the most important parameters for SMaRTT when running the previous two examples:
-- ```-algorithm``` indicated the CC algorithm. We are currently using ```delayB``` for default SMaRTT (will be updated soon) and ```intersmartt_advanced``` for the interDC version of SMarTT.
+- ```-algorithm``` indicated the CC algorithm. We are currently using ```smartt``` for default SMaRTT and ```intersmartt``` for the interDC version of SMarTT.
 - ```-topology``` indicates whether we are using a normal Fat Tree topology (```normal```) or a interDC one (```interdc```).
 - ```-nodes``` indicates the number of nodes in the topology. If we are using the interDC one then it will be doubled in total.
 -```-strat``` indicates the routing being used. ```ecmp_host_random2_ecn``` is REPS. This will be updated eventually.

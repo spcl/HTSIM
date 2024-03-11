@@ -533,8 +533,8 @@ int main(int argc, char **argv) {
             if (!strcmp(argv[i + 1], "delayA")) {
                 UecSrc::set_alogirthm("delayA");
                 printf("Name Running: UEC Version A\n");
-            } else if (!strcmp(argv[i + 1], "delayB")) {
-                UecSrc::set_alogirthm("delayB");
+            } else if (!strcmp(argv[i + 1], "smartt")) {
+                UecSrc::set_alogirthm("smartt");
                 printf("Name Running: SMaRTT\n");
             } else if (!strcmp(argv[i + 1], "delayB_rtt")) {
                 UecSrc::set_alogirthm("delayB_rtt");
@@ -565,8 +565,8 @@ int main(int argc, char **argv) {
             } else if (!strcmp(argv[i + 1], "intersmartt_simple")) {
                 UecSrc::set_alogirthm("intersmartt_simple");
                 printf("Name Running: SMaRTT InterDataCenter\n");
-            } else if (!strcmp(argv[i + 1], "intersmartt_advanced")) {
-                UecSrc::set_alogirthm("intersmartt_advanced");
+            } else if (!strcmp(argv[i + 1], "intersmartt")) {
+                UecSrc::set_alogirthm("intersmartt");
                 printf("Name Running: SMaRTT InterDataCenter\n");
             } else if (!strcmp(argv[i + 1], "intersmartt_composed")) {
                 UecSrc::set_alogirthm("intersmartt_composed");
@@ -574,6 +574,9 @@ int main(int argc, char **argv) {
             } else if (!strcmp(argv[i + 1], "smartt_2")) {
                 UecSrc::set_alogirthm("smartt_2");
                 printf("Name Running: SMaRTT smartt_2\n");
+            } else {
+                printf("Wrong Algorithm Name\n");
+                exit(0);
             }
             i++;
         } else
