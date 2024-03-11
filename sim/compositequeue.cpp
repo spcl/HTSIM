@@ -38,7 +38,7 @@ CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize,
     _ecn_maxthresh = maxsize * 2; // don't set ECN by default
 
     _draining_time_phantom =
-            ((4096 + 64) * 8.0) / 10; // Add paramters here eventually
+            ((4096 + 64) * 8.0) / 100; // Add paramters here eventually
     _draining_time_phantom +=
             (_draining_time_phantom * _phantom_queue_slowdown / 100.0);
     _draining_time_phantom *= 1000;

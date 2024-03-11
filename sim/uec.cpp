@@ -25,6 +25,7 @@ simtime_picosec UecSrc::pacing_delay = 0;
 bool UecSrc::do_jitter = false;
 bool UecSrc::do_exponential_gain = false;
 bool UecSrc::use_fast_increase = false;
+uint64_t UecSrc::_interdc_delay = 0;
 bool UecSrc::use_super_fast_increase = false;
 int UecSrc::target_rtt_percentage_over_base = 50;
 bool UecSrc::stop_after_quick = false;
@@ -47,6 +48,7 @@ int UecSrc::once_per_rtt = 0;
 uint64_t UecSrc::explicit_target_rtt = 0;
 uint64_t UecSrc::explicit_base_rtt = 0;
 uint64_t UecSrc::explicit_bdp = 0;
+uint64_t UecSrc::_switch_queue_size = 0;
 double UecSrc::exp_avg_ecn_value = 0.3;
 double UecSrc::exp_avg_rtt_value = 0.3;
 double UecSrc::exp_avg_alpha = 0.125;
@@ -367,8 +369,8 @@ void UecSrc::updateParams() {
     if (src_dc != dest_dc) {
         _hop_count = 9;
         _base_rtt =
-                ((((_hop_count - 1) * LINK_DELAY_MODERN) +
-                  LINK_DELAY_MODERN * 100) +
+                ((((_hop_count - 2) * LINK_DELAY_MODERN) +
+                  (_interdc_delay / 1000) * 2) +
                  ((PKT_SIZE_MODERN + 64) * 8 / LINK_SPEED_MODERN * _hop_count) +
                  +(_hop_count * LINK_DELAY_MODERN) +
                  (64 * 8 / LINK_SPEED_MODERN * _hop_count)) *
@@ -388,8 +390,11 @@ void UecSrc::updateParams() {
                      precision_ts);
     }
 
-    _target_rtt =
-            _base_rtt * ((target_rtt_percentage_over_base + 1) / 100.0 + 1);
+    int time_to_drain_queue = _switch_queue_size * 8 / LINK_SPEED_MODERN * 1000;
+
+    _target_rtt = _base_rtt +
+                  time_to_drain_queue *
+                          ((target_rtt_percentage_over_base + 1) / 100.0 + 1);
 
     if (precision_ts != 1) {
         _target_rtt = (((_target_rtt + precision_ts - 1) / precision_ts) *
@@ -404,7 +409,6 @@ void UecSrc::updateParams() {
     _rtx_timeout_pending = false;
     _rtx_pending = false;
     _crt_path = 0;
-    _flow_size = _mss * 934;
     _trimming_enabled = true;
 
     _next_pathid = 1;
@@ -413,26 +417,23 @@ void UecSrc::updateParams() {
     _queue_size = _bdp; // Temporary
     initial_x_gain = x_gain;
 
-    if (explicit_base_rtt != 0) {
-        _base_rtt = explicit_base_rtt;
-        _target_rtt = explicit_target_rtt;
-    }
-
-    _maxcwnd = starting_cwnd * 1;
-    _cwnd = starting_cwnd;
+    _maxcwnd = _bdp;
+    _cwnd = _bdp;
     _consecutive_low_rtt = 0;
     target_window = _cwnd;
     _target_based_received = true;
 
-    printf("Link Delay %d - Link Speed %lu - Pkt Size %d - Base RTT %lu - "
-           "Target RTT is %lu - BDP %lu - CWND %u - Hops %d - Stop Pacing "
+    printf("UPDATING VALUES - Link Delay %d (InterDC %lu) - Link Speed %lu - "
+           "Pkt Size %d - "
+           "Base RTT %lu - "
+           "Target RTT is %lu - Drain Queue %lu - BDP %lu - CWND %u - Queue Size %lu - Hops %d - Stop Pacing "
            "%lu\n",
-           LINK_DELAY_MODERN, LINK_SPEED_MODERN, PKT_SIZE_MODERN, _base_rtt,
-           _target_rtt, _bdp, _cwnd, _hop_count, stop_pacing_after_rtt);
-
+           LINK_DELAY_MODERN, _interdc_delay / 1000, LINK_SPEED_MODERN,
+           PKT_SIZE_MODERN, _base_rtt, _target_rtt, time_to_drain_queue, _bdp, _cwnd, _switch_queue_size, _hop_count,
+           stop_pacing_after_rtt);
+    fflush(stdout);
     _max_good_entropies = 10; // TODO: experimental value
     _enableDistanceBasedRtx = false;
-    f_flow_over_hook = nullptr;
     last_pac_change = 0;
 
     if (use_pacing && generic_pacer != NULL) {
@@ -2263,7 +2264,7 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
                     pkt_with_ecn_rtt = 0;
                     total_pkt_seen_rtt = 0;
                     count_add_from_zero_ecn = 0;
-                    ecn_rtt_end = eventlist().now() + _base_rtt / 2;
+                    ecn_rtt_end = eventlist().now() + _base_rtt;
 
                     gent_dec_amount =
                             (x_gain / 2) * _mss * ((double)_mss / _cwnd);
@@ -2769,6 +2770,9 @@ void UecSrc::send_packets() {
     unsigned c = _cwnd;
 
     while (get_unacked() + _mss <= c && _highest_sent < _flow_size) {
+
+        printf("Sending packet %d vs %d ~ %d vs %d\n", get_unacked() + _mss,
+               _cwnd, _highest_sent, _flow_size);
 
         // Stop sending
         if (pause_send && stop_after_quick) {

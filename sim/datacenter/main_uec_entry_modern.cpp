@@ -155,6 +155,8 @@ int main(int argc, char **argv) {
     int stop_pacing_after_rtt = 0;
     int num_failed_links = 0;
     bool topology_normal = true;
+    uint64_t interdc_delay = 0;
+    uint64_t max_queue_size = 0;
 
     int i = 1;
     filename << "logout.dat";
@@ -305,6 +307,13 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-seed")) {
             seed = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-interdc_delay")) {
+            interdc_delay = atoi(argv[i + 1]);
+            interdc_delay *= 1000;
+            i++;
+        } else if (!strcmp(argv[i], "-max_queue_size")) {
+            max_queue_size = atoi(argv[i + 1]);
             i++;
         } else if (!strcmp(argv[i], "-pfc_low")) {
             pfc_low = atoi(argv[i + 1]);
@@ -638,6 +647,10 @@ int main(int argc, char **argv) {
     }
 
     UecSrc::set_starting_cwnd(actual_starting_cwnd);
+    if (max_queue_size != 0) {
+        queuesize = max_queue_size;
+        UecSrc::set_switch_queue_size(max_queue_size);
+    }
 
     printf("Using BDP of %lu - Queue is %lld - Starting Window is %lu - RTT "
            "%lu - Bandwidth %lu\n",
@@ -741,6 +754,7 @@ int main(int argc, char **argv) {
     printf("Starting LGS Interface");
     LogSimInterface *lgs;
     if (topology_normal) {
+        printf("Normal Topology\n");
         FatTreeTopology::set_tiers(3);
         FatTreeTopology::set_os_stage_2(fat_tree_k);
         FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
@@ -752,6 +766,13 @@ int main(int argc, char **argv) {
                 queue_choice, hop_latency, switch_latency);
         lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
     } else {
+        if (interdc_delay != 0) {
+            FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
+            UecSrc::set_interdc_delay(interdc_delay);
+        } else {
+            FatTreeInterDCTopology::set_interdc_delay(hop_latency);
+            UecSrc::set_interdc_delay(hop_latency);
+        }
         FatTreeInterDCTopology::set_tiers(3);
         FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
         FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);

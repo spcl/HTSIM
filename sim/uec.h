@@ -128,6 +128,9 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
 
     static void set_explicit_rtt(uint64_t value) { explicit_base_rtt = value; }
     static void set_explicit_bdp(int value) { explicit_bdp = value; }
+    static void set_switch_queue_size(uint64_t value) {
+        _switch_queue_size = value;
+    }
     static void set_explicit_target_rtt(uint64_t value) {
         explicit_target_rtt = value;
     }
@@ -186,6 +189,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
 
     virtual void rtx_timer_hook(simtime_picosec now, simtime_picosec period);
     void pacedSend();
+    static void set_interdc_delay(uint64_t delay) { _interdc_delay = delay; }
     void updateParams();
 
     Trigger *_end_trigger = 0;
@@ -197,6 +201,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     uint64_t _rtx_packets_sent;
     uint64_t _acks_received;
     uint64_t _nacks_received;
+    static uint64_t _interdc_delay;
     uint64_t _pulls_received;
     uint64_t _implicit_pulls;
     uint64_t _bounces_received;
@@ -273,6 +278,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static uint64_t explicit_target_rtt;
     static uint64_t explicit_base_rtt;
     static uint64_t explicit_bdp;
+    static uint64_t _switch_queue_size;
     simtime_picosec last_adjust_ts;
     int current_packet_adjust = 0;
     uint64_t adjust_value = 0;
