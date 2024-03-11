@@ -819,6 +819,12 @@ class SerializedGraph {
     void MarkNodeAsDone(uint32_t offset) {
 
         DeserializedNode N = get_node_by_offset(offset);
+
+        if (N.Type == OP_LOCOP_IN_PROGRESS || N.Type == OP_LOCOP) {
+            printf("Size depending on me %d - Rank %d Offset %d\n",
+                   N.DependOnMe.size(), my_rank, offset);
+        }
+
         for (uint32_t cnt = 0; cnt < N.DependOnMe.size(); cnt++) {
             uint32_t offset = N.DependOnMe[cnt];
 

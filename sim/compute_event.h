@@ -29,6 +29,7 @@ class ComputeEvent : public EventSource {
     }
 
     void setCompute(simtime_picosec computation_time);
+    void startComputations();
 
     // void receivePacket(Packet &pkt) override;
     // const string &nodename() override;

@@ -83,7 +83,7 @@ void LogSimInterface::htsim_schedule(u_int32_t host, int to, int size, int tag,
            GLOBAL_TIME);
     fflush(stdout);
     MsgInfo entry;
-    entry.start_time = start_time_event * 1000;
+    entry.start_time = start_time_event * 1;
     entry.total_bytes_msg = size;
     entry.offset = my_offset;
     entry.bytes_left_to_recv = size;
@@ -608,7 +608,11 @@ graph_node_properties LogSimInterface::htsim_simulate_until(u_int64_t until) {
     printf("Simulating Until Called\n");
     fflush(stdout);
     // GO!
+
     while (_eventlist->doNextEvent()) {
+
+        // compute_events_handler->startComputations();
+
         if (_latest_recv->updated) {
             printf("Running - %d - %lu\n", _latest_recv->updated, GLOBAL_TIME);
             break;
@@ -786,7 +790,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
             default:
                 printf("not implemented!\n");
             }
-            freeop->time = lgs_interface->htsim_time;
+            freeop->time = lgs_interface->htsim_time / 1000;
             aq.push(*freeop);
             // std::cout << "AQ size after push: " << aq.size() << "\n";
         }
@@ -816,7 +820,9 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
 
         graph_node_properties temp_elem = aq.top();
         fflush(stdout);
-        while (!aq.empty() && aq.top().time <= lgs_interface->htsim_time) {
+
+        while (!aq.empty() &&
+               aq.top().time <= (lgs_interface->htsim_time / 1000)) {
             printf("Active Queue Size %d - Top Time %lu Type %d - HTSIM Time "
                    "%lu\n",
                    (int)aq.size(), aq.top().time, aq.top().type,
@@ -844,9 +850,10 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                            "%i)\n",
                            elem.host, (ulint)elem.size, (ulint)elem.time,
                            elem.proc);
-                if (nexto[elem.host][elem.proc] <= elem.time) {
+                if (nexto[elem.host][elem.proc] <= elem.time || true) {
                     // check if OS Noise occurred
-                    printf("Executing compute of %lu\n", elem.size);
+                    printf("Executing compute of %lu - Host %d\n", elem.size,
+                           elem.host);
                     osnoise.get_noise(elem.host, elem.time,
                                       elem.time + elem.size);
                     nexto[elem.host][elem.proc] =
@@ -1091,6 +1098,83 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
         printf("Current elem time is %ld while NS3 %ld\n", temp_elem.time,
                lgs_interface->htsim_time);
         fflush(stdout);
+
+        host = 0;
+        for (Parser::schedules_t::iterator sched = parser.schedules.begin();
+             sched != parser.schedules.end(); ++sched, ++host) {
+            printf("Starting to parse new ops %d\n", 1);
+            // fflush(stdout);
+            //  host = *iter;
+            //  for(host = 0; host < p; host++)
+            //  SerializedGraph *sched=&parser.schedules[host];
+
+            // retrieve all free operations
+            SerializedGraph::nodelist_t free_ops;
+            sched->GetExecutableNodes(&free_ops);
+            // ensure that the free ops are ordered by type
+            std::sort(free_ops.begin(), free_ops.end(), gnp_op_comp_func());
+
+            printf("Free Op Size %d\n", free_ops.size());
+
+            // walk all new free operations and throw them in the queue
+            for (SerializedGraph::nodelist_t::iterator freeop =
+                         free_ops.begin();
+                 freeop != free_ops.end(); ++freeop) {
+                // if(print) std::cout << *freeop << " " ;
+                // new_events = true;
+
+                // assign host that it starts on
+                freeop->host = host;
+
+#ifdef STRICT_ORDER
+                freeop->ts = aqtime++;
+#endif
+                printf("We arrive here %d\n", freeop->type);
+                fflush(stdout);
+                switch (freeop->type) {
+                case OP_LOCOP:
+                    freeop->time = nexto[host][freeop->proc];
+                    if (print)
+                        printf("%i (%i,%i) loclop: %lu, time: %lu, offset: "
+                               "%i\n",
+                               host, freeop->proc, freeop->nic,
+                               (long unsigned int)freeop->size,
+                               (long unsigned int)freeop->time, freeop->offset);
+                    break;
+                case OP_SEND:
+                    freeop->time = lgs_interface->htsim_time / 1000;
+                    // freeop->time = std::max(nexto[host][freeop->proc],
+                    // nextgs[host][freeop->nic]);
+                    if (1)
+                        printf("%i (%i,%i) send to: %i, tag: %i, size: %lu, "
+                               "time: %lu, offset: %i\n",
+                               host, freeop->proc, freeop->nic, freeop->target,
+                               freeop->tag, (long unsigned int)freeop->size,
+                               (long unsigned int)freeop->time, freeop->offset);
+                    fflush(stdout);
+                    break;
+                case OP_RECV:
+                    freeop->time = nexto[host][freeop->proc];
+                    if (1)
+                        printf("%i (%i,%i) recvs from: %i, tag: %i, size: %lu, "
+                               "time: %lu, offset: %i\n",
+                               host, freeop->proc, freeop->nic, freeop->target,
+                               freeop->tag, (long unsigned int)freeop->size,
+                               (long unsigned int)freeop->time, freeop->offset);
+                    break;
+                default:
+                    printf("not implemented!\n");
+                }
+                freeop->time = GLOBAL_TIME / 1000;
+                printf("Unlocked operation host %d target %d at time %lu - "
+                       "Time on top of AQ is %lu\n",
+                       freeop->host, freeop->target, freeop->time,
+                       aq.top().time);
+                fflush(stdout);
+                aq.push(*freeop);
+            }
+        }
+
         if (!lgs_interface->all_sends_delivered() ||
             lgs_interface->compute_started != 0) {
             if (temp_elem.time > lgs_interface->htsim_time) {
@@ -1121,85 +1205,12 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                    "Type %d\n",
                    recev_msg.host, recev_msg.target, recev_msg.proc,
                    temp_elem.type);
+            recev_msg.time /= 1000;
             aq.push(recev_msg);
             lgs_interface->reset_latest_receive();
         } else {
             // If not NULL, we add it to the AQ
             printf("..... NOT Received a MSG\n");
-        }
-
-        host = 0;
-        for (Parser::schedules_t::iterator sched = parser.schedules.begin();
-             sched != parser.schedules.end(); ++sched, ++host) {
-            // printf("Starting to parse new ops %d\n", 1);
-            // fflush(stdout);
-            //  host = *iter;
-            //  for(host = 0; host < p; host++)
-            //  SerializedGraph *sched=&parser.schedules[host];
-
-            // retrieve all free operations
-            SerializedGraph::nodelist_t free_ops;
-            sched->GetExecutableNodes(&free_ops);
-            // ensure that the free ops are ordered by type
-            std::sort(free_ops.begin(), free_ops.end(), gnp_op_comp_func());
-
-            // printf("Free Op Size %d\n", free_ops.size());
-
-            // walk all new free operations and throw them in the queue
-            for (SerializedGraph::nodelist_t::iterator freeop =
-                         free_ops.begin();
-                 freeop != free_ops.end(); ++freeop) {
-                // if(print) std::cout << *freeop << " " ;
-                // new_events = true;
-
-                // assign host that it starts on
-                freeop->host = host;
-
-#ifdef STRICT_ORDER
-                freeop->ts = aqtime++;
-#endif
-                printf("We arrive here %d\n", freeop->type);
-                fflush(stdout);
-                switch (freeop->type) {
-                case OP_LOCOP:
-                    freeop->time = nexto[host][freeop->proc];
-                    if (print)
-                        printf("%i (%i,%i) loclop: %lu, time: %lu, offset: "
-                               "%i\n",
-                               host, freeop->proc, freeop->nic,
-                               (long unsigned int)freeop->size,
-                               (long unsigned int)freeop->time, freeop->offset);
-                    break;
-                case OP_SEND:
-                    freeop->time = lgs_interface->htsim_time;
-                    // freeop->time = std::max(nexto[host][freeop->proc],
-                    // nextgs[host][freeop->nic]);
-                    if (1)
-                        printf("%i (%i,%i) send to: %i, tag: %i, size: %lu, "
-                               "time: %lu, offset: %i\n",
-                               host, freeop->proc, freeop->nic, freeop->target,
-                               freeop->tag, (long unsigned int)freeop->size,
-                               (long unsigned int)freeop->time, freeop->offset);
-                    fflush(stdout);
-                    break;
-                case OP_RECV:
-                    freeop->time = nexto[host][freeop->proc];
-                    if (1)
-                        printf("%i (%i,%i) recvs from: %i, tag: %i, size: %lu, "
-                               "time: %lu, offset: %i\n",
-                               host, freeop->proc, freeop->nic, freeop->target,
-                               freeop->tag, (long unsigned int)freeop->size,
-                               (long unsigned int)freeop->time, freeop->offset);
-                    break;
-                default:
-                    printf("not implemented!\n");
-                }
-                freeop->time = GLOBAL_TIME;
-                printf("Unlocked operation host %d target %d at time %lu\n",
-                       freeop->host, freeop->target, freeop->time);
-                fflush(stdout);
-                aq.push(*freeop);
-            }
         }
 
         first_cycle = false;

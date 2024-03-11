@@ -1294,28 +1294,7 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
             counter_consecutive_good_bytes = _cwnd / 2;
             exp_avg_bts = 0;
             exp_avg_route = 0;
-            /*if (no_ecn_last_target_rtt() &&
-                no_rtt_over_target_last_target_rtt()) {
-                printf("Fast Increasen\n");
-                _cwnd += _mss * ((double)_cwnd / _bdp) * 1;
-                _consecutive_low_rtt = 0;
-                _consecutive_no_ecn = 0;
-            }*/
         } else if (!ecn) {
-            // printf("Second Increase, %d", from);
-            //_cwnd += ((double)_mss / _cwnd) * 1 * _mss;
-            //_consecutive_no_ecn = 0;
-
-            /*double ratio = (_bdp / (double)_cwnd);
-            int threshold = max(1, (int)((_cwnd / ratio)));
-
-            if (_consecutive_no_ecn >= threshold) {
-                // printf("Actual Increase\n");
-                _cwnd += _mss * (_cwnd / (double)_bdp) *
-                         (_consecutive_no_ecn / threshold);
-                _consecutive_no_ecn = 0;
-            }
-            */
             _cwnd += ((double)_mss / _cwnd) * 1 * _mss;
 
         } else {
