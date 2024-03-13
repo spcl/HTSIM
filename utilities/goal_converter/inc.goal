@@ -1,0 +1,513 @@
+num_ranks 128
+
+rank 0 {
+l1: send 2480000b to 64 tag 0
+}
+
+rank 1 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 2 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 3 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 4 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 5 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 6 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 7 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 8 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 9 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 10 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 11 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 12 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 13 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 14 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 15 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 16 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 17 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 18 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 19 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 20 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 21 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 22 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 23 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 24 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 25 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 26 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 27 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 28 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 29 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 30 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 31 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 32 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 33 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 34 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 35 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 36 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 37 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 38 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 39 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 40 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 41 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 42 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 43 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 44 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 45 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 46 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 47 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 48 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 49 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 50 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 51 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 52 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 53 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 54 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 55 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 56 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 57 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 58 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 59 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 60 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 61 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 62 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 63 {
+l1: send 1280000b to 64 tag 0
+}
+
+rank 64 {
+l1: recv 2480000b from 0 tag 0
+l2: recv 1280000b from 1 tag 0
+l3: recv 1280000b from 2 tag 0
+l4: recv 1280000b from 3 tag 0
+l5: recv 1280000b from 4 tag 0
+l6: recv 1280000b from 5 tag 0
+l7: recv 1280000b from 6 tag 0
+l8: recv 1280000b from 7 tag 0
+l9: recv 1280000b from 8 tag 0
+l10: recv 1280000b from 9 tag 0
+l11: recv 1280000b from 10 tag 0
+l12: recv 1280000b from 11 tag 0
+l13: recv 1280000b from 12 tag 0
+l14: recv 1280000b from 13 tag 0
+l15: recv 1280000b from 14 tag 0
+l16: recv 1280000b from 15 tag 0
+l17: recv 1280000b from 16 tag 0
+l18: recv 1280000b from 17 tag 0
+l19: recv 1280000b from 18 tag 0
+l20: recv 1280000b from 19 tag 0
+l21: recv 1280000b from 20 tag 0
+l22: recv 1280000b from 21 tag 0
+l23: recv 1280000b from 22 tag 0
+l24: recv 1280000b from 23 tag 0
+l25: recv 1280000b from 24 tag 0
+l26: recv 1280000b from 25 tag 0
+l27: recv 1280000b from 26 tag 0
+l28: recv 1280000b from 27 tag 0
+l29: recv 1280000b from 28 tag 0
+l30: recv 1280000b from 29 tag 0
+l31: recv 1280000b from 30 tag 0
+l32: recv 1280000b from 31 tag 0
+l33: recv 1280000b from 32 tag 0
+l34: recv 1280000b from 33 tag 0
+l35: recv 1280000b from 34 tag 0
+l36: recv 1280000b from 35 tag 0
+l37: recv 1280000b from 36 tag 0
+l38: recv 1280000b from 37 tag 0
+l39: recv 1280000b from 38 tag 0
+l40: recv 1280000b from 39 tag 0
+l41: recv 1280000b from 40 tag 0
+l42: recv 1280000b from 41 tag 0
+l43: recv 1280000b from 42 tag 0
+l44: recv 1280000b from 43 tag 0
+l45: recv 1280000b from 44 tag 0
+l46: recv 1280000b from 45 tag 0
+l47: recv 1280000b from 46 tag 0
+l48: recv 1280000b from 47 tag 0
+l49: recv 1280000b from 48 tag 0
+l50: recv 1280000b from 49 tag 0
+l51: recv 1280000b from 50 tag 0
+l52: recv 1280000b from 51 tag 0
+l53: recv 1280000b from 52 tag 0
+l54: recv 1280000b from 53 tag 0
+l55: recv 1280000b from 54 tag 0
+l56: recv 1280000b from 55 tag 0
+l57: recv 1280000b from 56 tag 0
+l58: recv 1280000b from 57 tag 0
+l59: recv 1280000b from 58 tag 0
+l60: recv 1280000b from 59 tag 0
+l61: recv 1280000b from 60 tag 0
+l62: recv 1280000b from 61 tag 0
+l63: recv 1280000b from 62 tag 0
+l64: recv 1280000b from 63 tag 0
+}
+
+rank 65 {
+}
+
+rank 66 {
+}
+
+rank 67 {
+}
+
+rank 68 {
+}
+
+rank 69 {
+}
+
+rank 70 {
+}
+
+rank 71 {
+}
+
+rank 72 {
+}
+
+rank 73 {
+}
+
+rank 74 {
+}
+
+rank 75 {
+}
+
+rank 76 {
+}
+
+rank 77 {
+}
+
+rank 78 {
+}
+
+rank 79 {
+}
+
+rank 80 {
+}
+
+rank 81 {
+}
+
+rank 82 {
+}
+
+rank 83 {
+}
+
+rank 84 {
+}
+
+rank 85 {
+}
+
+rank 86 {
+}
+
+rank 87 {
+}
+
+rank 88 {
+}
+
+rank 89 {
+}
+
+rank 90 {
+}
+
+rank 91 {
+}
+
+rank 92 {
+}
+
+rank 93 {
+}
+
+rank 94 {
+}
+
+rank 95 {
+}
+
+rank 96 {
+}
+
+rank 97 {
+}
+
+rank 98 {
+}
+
+rank 99 {
+}
+
+rank 100 {
+}
+
+rank 101 {
+}
+
+rank 102 {
+}
+
+rank 103 {
+}
+
+rank 104 {
+}
+
+rank 105 {
+}
+
+rank 106 {
+}
+
+rank 107 {
+}
+
+rank 108 {
+}
+
+rank 109 {
+}
+
+rank 110 {
+}
+
+rank 111 {
+}
+
+rank 112 {
+}
+
+rank 113 {
+}
+
+rank 114 {
+}
+
+rank 115 {
+}
+
+rank 116 {
+}
+
+rank 117 {
+}
+
+rank 118 {
+}
+
+rank 119 {
+}
+
+rank 120 {
+}
+
+rank 121 {
+}
+
+rank 122 {
+}
+
+rank 123 {
+}
+
+rank 124 {
+}
+
+rank 125 {
+}
+
+rank 126 {
+}
+
+rank 127 {
+}

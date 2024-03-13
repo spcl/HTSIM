@@ -405,11 +405,13 @@ void UecSrc::updateParams() {
     _next_pathid = 1;
 
     _bdp = (_base_rtt * LINK_SPEED_MODERN / 8) / 1000;
+
     _queue_size = _bdp; // Temporary
     initial_x_gain = x_gain;
 
     _maxcwnd = _bdp;
     _cwnd = _bdp;
+
     _consecutive_low_rtt = 0;
     target_window = _cwnd;
     _target_based_received = true;
@@ -572,6 +574,11 @@ void UecSrc::quick_adapt(bool trimmed) {
         acked_bytes = 0;
         next_window_end = eventlist().now() + _base_rtt;
         // Enable Fast Drop
+
+        printf("From %d considering QA at %lu -- %d %d %lu\n", from,
+               eventlist().now() / 1000, trimmed, need_quick_adapt,
+               previous_window_end / 1000);
+
         if ((trimmed || need_quick_adapt) && previous_window_end != 0) {
 
             if (did_qa) {
@@ -599,11 +606,12 @@ void UecSrc::quick_adapt(bool trimmed) {
                 printf("BDP %lu - Send Size %lu - Ratio %f\n", _bdp, send_size,
                        (_bdp / (double)send_size));
             }
-            printf("After Update Saved CWD is %lu \n", saved_acked_bytes);
+
             _cwnd = max((double)(saved_acked_bytes * bonus_drop),
                         (double)_mss); // 1.5 is the amount of target_rtt over
                                        // base_rtt. Simplified here for this
                                        // code share.
+            printf("After Update Saved CWD is %lu \n", _cwnd);
 
             if (eventlist().now() < _base_rtt * 5 && jump_to != 0) {
                 int coin = rand() % 2;
@@ -863,8 +871,8 @@ int UecSrc::choose_route() {
         }
     }
     case ECMP_RANDOM_ECN: {
-        //_crt_path = from;
-        _crt_path = (random() * 1) % _paths.size();
+        _crt_path = from;
+        // _crt_path = (random() * 1) % _paths.size();
         break;
     }
     case ECMP_FIB_ECN: {
@@ -1229,7 +1237,7 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
     if (ecn) {
         if (saved_acked_bytes != 0 && ecn &&
             (algorithm_type == "intersmartt")) {
-            _cwnd = min(_cwnd, (uint32_t)(saved_acked_bytes * bonus_drop));
+            //_cwnd = min(_cwnd, (uint32_t)(saved_acked_bytes * bonus_drop));
         }
     }
 
@@ -1388,6 +1396,9 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
         } else if (algorithm_type == "intersmartt") {
             total_pkt_seen_rtt++;
             quick_adapt(false);
+
+            x_gain = (_bdp / 100 * initial_x_gain) / _mss;
+            printf("X Gain updated is %f\n", x_gain);
 
             if (current_ecn_rate >= previous_ecn_rate) {
                 last_phantom_increase = eventlist().now();
@@ -1969,8 +1980,8 @@ bool UecSink::already_received(UecPacket &pkt) {
 }
 
 void UecSink::receivePacket(Packet &pkt) {
-    printf("Sink Received %d - Entropy %d - %lu - %\n", pkt.is_failed,
-           pkt.pathid(), GLOBAL_TIME);
+    printf("Sink Received %d %d - Entropy %d - %lu - \n", pkt.from,
+          pkt.id(), pkt.pathid(), GLOBAL_TIME / 1000);
     if (pkt.pfc_just_happened) {
         pfc_just_seen = 1;
     } else {

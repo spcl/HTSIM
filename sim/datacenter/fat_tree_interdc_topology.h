@@ -44,24 +44,24 @@ class FatTreeInterDCTopology : public Topology {
     vector<vector<Switch *>> switches_c;
     vector<vector<Switch *>> switches_border;
 
-    vector<vector<Pipe *>> pipes_nborderl_nborderu;
-    vector<vector<vector<Pipe *>>> pipes_nborder_nc;
+    vector<vector<vector<Pipe *>>> pipes_nborderl_nborderu;
+    vector<vector<vector<vector<Pipe *>>>> pipes_nborder_nc;
     vector<vector<vector<Pipe *>>> pipes_nc_nup;
     vector<vector<vector<Pipe *>>> pipes_nup_nlp;
     vector<vector<vector<Pipe *>>> pipes_nlp_ns;
-    vector<vector<BaseQueue *>> queues_nborderl_nborderu;
-    vector<vector<vector<BaseQueue *>>> queues_nborder_nc;
+    vector<vector<vector<BaseQueue *>>> queues_nborderl_nborderu;
+    vector<vector<vector<vector<BaseQueue *>>>> queues_nborder_nc;
     vector<vector<vector<BaseQueue *>>> queues_nc_nup;
     vector<vector<vector<BaseQueue *>>> queues_nup_nlp;
     vector<vector<vector<BaseQueue *>>> queues_nlp_ns;
 
-    vector<vector<Pipe *>> pipes_nborderu_nborderl;
-    vector<vector<vector<Pipe *>>> pipes_nc_nborder;
+    vector<vector<vector<Pipe *>>> pipes_nborderu_nborderl;
+    vector<vector<vector<vector<Pipe *>>>> pipes_nc_nborder;
     vector<vector<vector<Pipe *>>> pipes_nup_nc;
     vector<vector<vector<Pipe *>>> pipes_nlp_nup;
     vector<vector<vector<Pipe *>>> pipes_ns_nlp;
-    vector<vector<BaseQueue *>> queues_nborderu_nborderl;
-    vector<vector<vector<BaseQueue *>>> queues_nc_nborder;
+    vector<vector<vector<BaseQueue *>>> queues_nborderu_nborderl;
+    vector<vector<vector<vector<BaseQueue *>>>> queues_nc_nborder;
     vector<vector<vector<BaseQueue *>>> queues_nup_nc;
     vector<vector<vector<BaseQueue *>>> queues_nlp_nup;
     vector<vector<vector<BaseQueue *>>> queues_ns_nlp;
@@ -106,6 +106,8 @@ class FatTreeInterDCTopology : public Topology {
     static void set_interdc_delay(uint64_t delay) { _interdc_delay = delay; }
     static void set_os_stage_2(uint32_t os) { _os = os; }
     static void set_os_stage_1(uint32_t os) { _os_ratio_stage_1 = os; }
+    static void set_os_ratio_border(uint32_t os) { os_ratio_border = os; }
+    static uint32_t get_os_ratio_border() { return os_ratio_border; }
     static uint32_t get_tiers() { return _tiers; }
 
     void count_queue(Queue *);
@@ -114,6 +116,12 @@ class FatTreeInterDCTopology : public Topology {
     uint32_t no_of_nodes() const { return _no_of_nodes; }
     uint32_t no_of_links_core_to_border() const {
         return _no_of_core_to_border;
+    }
+    uint32_t no_of_links_core_to_same_border() const {
+        return _num_links_same_border_from_core;
+    }
+    uint32_t no_of_links_between_border() const {
+        return _num_links_between_borders;
     }
     uint32_t no_of_cores() const { return NCORE; }
     uint32_t no_of_servers() const { return NSRV; }
@@ -180,7 +188,8 @@ class FatTreeInterDCTopology : public Topology {
     static uint32_t _tiers;
     static uint64_t _interdc_delay;
     static uint32_t _os, _os_ratio_stage_1;
-    uint32_t _no_of_nodes, _no_of_core_to_border;
+    uint32_t _no_of_nodes, _no_of_core_to_border,
+            _num_links_same_border_from_core, _num_links_between_borders;
     mem_b _queuesize;
     linkspeed_bps _linkspeed;
     simtime_picosec _hop_latency, _switch_latency;
@@ -192,6 +201,7 @@ class FatTreeInterDCTopology : public Topology {
     int curr_failed_link = 0;
     int number_border_switches = 2;
     int number_datacenters = 2;
+    static int os_ratio_border;
 };
 
 #endif

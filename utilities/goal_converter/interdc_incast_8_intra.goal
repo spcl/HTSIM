@@ -1,0 +1,68 @@
+num_ranks 17
+
+rank 0 {
+l1: send 24000000b to 15 tag 0
+}
+
+rank 1 {
+l1: send 24000000b to 15 tag 0
+}
+
+rank 2 {
+l1: send 24000000b to 15 tag 0
+}
+
+rank 3 {
+l1: send 24000000b to 15 tag 0
+}
+
+rank 4 {
+l1: send 24000000b to 15 tag 0
+}
+
+rank 5 {
+l1: send 24000000b to 15 tag 0
+}
+
+rank 6 {
+l1: send 24000000b to 15 tag 0
+}
+
+rank 7 {
+l1: send 24000000b to 15 tag 0
+}
+
+rank 8 {
+}
+
+rank 9 {
+}
+
+rank 10 {
+}
+
+rank 11 {
+}
+
+rank 12 {
+}
+
+rank 13 {
+}
+
+rank 14 {
+}
+
+rank 15 {
+l1: recv 24000000b from 0 tag 0
+l2: recv 24000000b from 1 tag 0
+l3: recv 24000000b from 2 tag 0
+l4: recv 24000000b from 3 tag 0
+l5: recv 24000000b from 4 tag 0
+l6: recv 24000000b from 5 tag 0
+l7: recv 24000000b from 6 tag 0
+l8: recv 24000000b from 7 tag 0
+}
+
+rank 16 {
+}

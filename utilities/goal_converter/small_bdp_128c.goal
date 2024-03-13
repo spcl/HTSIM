@@ -1,0 +1,53 @@
+num_ranks 16
+
+rank 0 {
+l1: send 400000b to 15 tag 0
+}
+
+rank 1 {
+l1: send 400000b to 15 tag 0
+}
+
+rank 2 {
+}
+
+rank 3 {
+}
+
+rank 4 {
+}
+
+rank 5 {
+}
+
+rank 6 {
+}
+
+rank 7 {
+}
+
+rank 8 {
+}
+
+rank 9 {
+}
+
+rank 10 {
+}
+
+rank 11 {
+}
+
+rank 12 {
+}
+
+rank 13 {
+}
+
+rank 14 {
+}
+
+rank 15 {
+l1: recv 400000b from 0 tag 0
+l2: recv 400000b from 1 tag 0
+}

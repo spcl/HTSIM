@@ -1,0 +1,84 @@
+num_ranks 17
+
+rank 0 {
+l1: send 15000000b to 16 tag 0
+}
+
+rank 1 {
+l1: send 15000000b to 16 tag 0
+}
+
+rank 2 {
+l1: send 15000000b to 16 tag 0
+}
+
+rank 3 {
+l1: send 15000000b to 16 tag 0
+}
+
+rank 4 {
+l1: send 15000000b to 16 tag 0
+}
+
+rank 5 {
+l1: send 15000000b to 16 tag 0
+}
+
+rank 6 {
+l1: send 15000000b to 16 tag 0
+}
+
+rank 7 {
+l1: send 15000000b to 16 tag 0
+}
+
+rank 8 {
+l1: send 15000000b to 16 tag 0
+}
+
+rank 9 {
+l1: send 15000000b to 16 tag 0
+}
+
+rank 10 {
+l1: send 15000000b to 16 tag 0
+}
+
+rank 11 {
+l1: send 15000000b to 16 tag 0
+}
+
+rank 12 {
+l1: send 15000000b to 16 tag 0
+}
+
+rank 13 {
+l1: send 15000000b to 16 tag 0
+}
+
+rank 14 {
+l1: send 15000000b to 16 tag 0
+}
+
+rank 15 {
+l1: send 15000000b to 16 tag 0
+}
+
+rank 16 {
+l1: recv 15000000b from 0 tag 0
+l2: recv 15000000b from 1 tag 0
+l3: recv 15000000b from 5 tag 0
+l4: recv 15000000b from 6 tag 0
+l5: recv 15000000b from 2 tag 0
+l6: recv 15000000b from 3 tag 0
+l7: recv 15000000b from 4 tag 0
+l8: recv 15000000b from 7 tag 0
+l9: recv 15000000b from 8 tag 0
+l10: recv 15000000b from 9 tag 0
+l11: recv 15000000b from 10 tag 0
+l12: recv 15000000b from 11 tag 0
+l13: recv 15000000b from 12 tag 0
+l14: recv 15000000b from 13 tag 0
+l15: recv 15000000b from 14 tag 0
+l16: recv 15000000b from 15 tag 0
+}

@@ -480,6 +480,10 @@ int main(int argc, char **argv) {
             printf("PhantomQueueSize: %d\n", phantom_size);
             CompositeQueue::set_phantom_queue_size(phantom_size);
             i++;
+        } else if (!strcmp(argv[i], "-os_border")) {
+            int os_b = atoi(argv[i + 1]);
+            FatTreeInterDCTopology::set_os_ratio_border(os_b);
+            i++;
         } else if (!strcmp(argv[i], "-phantom_slowdown")) {
             phantom_slowdown = atoi(argv[i + 1]);
             printf("PhantomQueueSize: %d\n", phantom_slowdown);

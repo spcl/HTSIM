@@ -37,8 +37,8 @@ CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize,
     _ecn_minthresh = maxsize * 2; // don't set ECN by default
     _ecn_maxthresh = maxsize * 2; // don't set ECN by default
 
-    _draining_time_phantom =
-            ((4096 + 64) * 8.0) / 100; // Add paramters here eventually
+    _draining_time_phantom = ((4096 + 64) * 8.0) /
+                             LINK_SPEED_MODERN; // Add paramters here eventually
     _draining_time_phantom +=
             (_draining_time_phantom * _phantom_queue_slowdown / 100.0);
     _draining_time_phantom *= 1000;
@@ -213,6 +213,11 @@ void CompositeQueue::completeService() {
         /*printf("Budget From %d - ID %d - Budget %li\n", pkt->from, pkt->id(),
                pkt->timeout_budget);*/
 
+        printf("Send: Queue %s - From %d to %d - time %lu - Last %f\n",
+               _nodename.c_str(), pkt->from, pkt->to, GLOBAL_TIME / 1000,
+               GLOBAL_TIME / 1000.0 - last_send / 1000.0);
+        last_send = GLOBAL_TIME;
+
         packets_seen++;
         _queuesize_low -= pkt->size();
 
@@ -374,6 +379,18 @@ void CompositeQueue::receivePacket(Packet &pkt) {
             fflush(stdout);*/
             pkt_p->enter_timestamp = GLOBAL_TIME;
             _enqueued_low.push(pkt_p);
+
+            if (_nodename == "compqueue(50000Mb/s,1250000bytes)DC1-LS7->DST15") {
+                printf("Receive: Queue %s - From %d to %d size %d - time %lu - "
+                       "Last %f\n",
+                       _nodename.c_str(), pkt_p->from, pkt_p->to, pkt_p->size(),
+                       GLOBAL_TIME / 1000,
+                       GLOBAL_TIME / 1000.0 - last_recv / 1000.0);
+                if (pkt_p->from == 30) {
+                    last_recv = GLOBAL_TIME;
+                    printf("Updating at %lu\n", GLOBAL_TIME / 1000);
+                }
+            }
 
             // Increase PQ on data packet, if in parallel
             if (!_phantom_in_series) {

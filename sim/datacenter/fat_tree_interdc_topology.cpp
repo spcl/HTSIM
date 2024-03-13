@@ -31,6 +31,7 @@ int FatTreeInterDCTopology::bts_trigger = -1;
 bool FatTreeInterDCTopology::bts_ignore_data = true;
 int FatTreeInterDCTopology::num_failing_links = -1;
 uint64_t FatTreeInterDCTopology::_interdc_delay = 0;
+int FatTreeInterDCTopology::os_ratio_border = 1;
 //  extern int N;
 
 FatTreeInterDCTopology::FatTreeInterDCTopology(
@@ -235,38 +236,74 @@ void FatTreeInterDCTopology::set_params(uint32_t no_of_nodes) {
             vector<vector<BaseQueue *>>(NSRV, vector<BaseQueue *>(NTOR)));
 
     // Double Check Later
-    pipes_nborder_nc.resize(number_datacenters,
-                            vector<vector<Pipe *>>(number_border_switches,
-                                                   vector<Pipe *>(NCORE)));
+    uint32_t uplink_numbers = max((unsigned int)1, (K / 2) / _os);
+    _no_of_core_to_border = uplink_numbers * NAGG / NCORE;
+    printf("Number of core to border links: %d - uplinks %d \n",
+           _no_of_core_to_border, uplink_numbers);
+    _num_links_same_border_from_core = NAGG / _no_of_core_to_border;
+    _num_links_between_borders = uplink_numbers * NAGG / number_border_switches;
+    _num_links_same_border_from_core = _num_links_between_borders / NCORE;
+
+    _num_links_same_border_from_core =
+            _num_links_same_border_from_core / os_ratio_border;
+    _num_links_between_borders = _num_links_between_borders / os_ratio_border;
+
+    if (_num_links_same_border_from_core == 0 ||
+        _num_links_between_borders == 0) {
+        exit(0);
+    }
+
+    pipes_nborder_nc.resize(
+            number_datacenters,
+            vector<vector<vector<Pipe *>>>(
+                    number_border_switches,
+                    vector<vector<Pipe *>>(
+                            NCORE,
+                            vector<Pipe *>(_num_links_same_border_from_core))));
+
     queues_nborder_nc.resize(
             number_datacenters,
-            vector<vector<BaseQueue *>>(number_border_switches,
-                                        vector<BaseQueue *>(NCORE)));
+            vector<vector<vector<BaseQueue *>>>(
+                    number_border_switches,
+                    vector<vector<BaseQueue *>>(
+                            NCORE, vector<BaseQueue *>(
+                                           _num_links_same_border_from_core))));
 
     pipes_nc_nborder.resize(
             number_datacenters,
-            vector<vector<Pipe *>>(NCORE,
-                                   vector<Pipe *>(number_border_switches)));
+            vector<vector<vector<Pipe *>>>(
+                    NCORE,
+                    vector<vector<Pipe *>>(
+                            number_border_switches,
+                            vector<Pipe *>(_num_links_same_border_from_core))));
+
     queues_nc_nborder.resize(
             number_datacenters,
-            vector<vector<BaseQueue *>>(
-                    NCORE, vector<BaseQueue *>(number_border_switches)));
+            vector<vector<vector<BaseQueue *>>>(
+                    NCORE, vector<vector<BaseQueue *>>(
+                                   number_border_switches,
+                                   vector<BaseQueue *>(
+                                           _num_links_same_border_from_core))));
 
-    uint32_t uplink_numbers = max((unsigned int)1, (K / 2) / _os);
-    _no_of_core_to_border = uplink_numbers * NCORE / number_border_switches;
     queues_nborderl_nborderu.resize(
-            no_of_links_core_to_border(),
-            vector<BaseQueue *>(no_of_links_core_to_border()));
+            number_border_switches,
+            vector<vector<BaseQueue *>>(
+                    number_border_switches,
+                    vector<BaseQueue *>(_num_links_between_borders)));
     queues_nborderu_nborderl.resize(
-            no_of_links_core_to_border(),
-            vector<BaseQueue *>(no_of_links_core_to_border()));
+            number_border_switches,
+            vector<vector<BaseQueue *>>(
+                    number_border_switches,
+                    vector<BaseQueue *>(_num_links_between_borders)));
 
     pipes_nborderl_nborderu.resize(
-            no_of_links_core_to_border(),
-            vector<Pipe *>(no_of_links_core_to_border()));
+            number_border_switches,
+            vector<vector<Pipe *>>(number_border_switches,
+                                   vector<Pipe *>(_num_links_between_borders)));
     pipes_nborderu_nborderl.resize(
-            no_of_links_core_to_border(),
-            vector<Pipe *>(no_of_links_core_to_border()));
+            number_border_switches,
+            vector<vector<Pipe *>>(number_border_switches,
+                                   vector<Pipe *>(_num_links_between_borders)));
 }
 
 BaseQueue *FatTreeInterDCTopology::alloc_src_queue(QueueLogger *queueLogger) {
@@ -462,20 +499,25 @@ void FatTreeInterDCTopology::init_network() {
     for (int i = 0; i < number_datacenters; i++) {
         for (uint32_t j = 0; j < number_border_switches; j++) {
             for (uint32_t k = 0; k < NCORE; k++) {
-                queues_nborder_nc[i][j][k] = NULL;
-                pipes_nborder_nc[i][j][k] = NULL;
-                queues_nc_nborder[i][k][j] = NULL;
-                pipes_nc_nborder[i][k][j] = NULL;
+                for (uint32_t p = 0; p < _num_links_same_border_from_core;
+                     p++) {
+                    queues_nborder_nc[i][j][k][p] = NULL;
+                    pipes_nborder_nc[i][j][k][p] = NULL;
+                    queues_nc_nborder[i][k][j][p] = NULL;
+                    pipes_nc_nborder[i][k][j][p] = NULL;
+                }
             }
         }
     }
 
     for (uint32_t j = 0; j < number_border_switches; j++) {
         for (uint32_t k = 0; k < number_border_switches; k++) {
-            queues_nborderl_nborderu[j][k] = NULL;
-            pipes_nborderl_nborderu[j][k] = NULL;
-            queues_nborderu_nborderl[k][j] = NULL;
-            pipes_nborderu_nborderl[k][j] = NULL;
+            for (uint32_t p = 0; p < _num_links_between_borders; p++) {
+                queues_nborderl_nborderu[j][k][p] = NULL;
+                pipes_nborderl_nborderu[j][k][p] = NULL;
+                queues_nborderu_nborderl[k][j][p] = NULL;
+                pipes_nborderu_nborderl[k][j][p] = NULL;
+            }
         }
     }
 
@@ -801,52 +843,129 @@ void FatTreeInterDCTopology::init_network() {
     for (int i = 0; i < number_datacenters; i++) {
         for (uint32_t core = 0; core < NCORE; core++) {
             uint32_t uplink_numbers = number_border_switches;
-            for (uint32_t border_sw = 0; border_sw < uplink_numbers;
+            for (uint32_t border_sw = 0; border_sw < number_border_switches;
                  border_sw++) {
 
+                for (int link_num = 0;
+                     link_num < _num_links_same_border_from_core; link_num++) {
+
+                    // UpLinks Queues and Pipes
+                    queues_nc_nborder[i][core][border_sw][link_num] =
+                            alloc_queue(queueLogger,
+                                        _linkspeed / _os_ratio_stage_1,
+                                        _queuesize / _os_ratio_stage_1, UPLINK,
+                                        false, false);
+
+                    queues_nc_nborder[i][core][border_sw][link_num]->setName(
+                            "DC" + ntoa(i) + "-CS" + ntoa(core) + "->BORDER" +
+                            ntoa(border_sw) + "_LINK" + ntoa(link_num));
+
+                    pipes_nc_nborder[i][core][border_sw][link_num] =
+                            new Pipe(_hop_latency, *_eventlist);
+
+                    pipes_nc_nborder[i][core][border_sw][link_num]->setName(
+                            "DC" + ntoa(i) + "-Pipe-CS" + ntoa(core) +
+                            "->BORDER" + ntoa(border_sw) + "_LINK" +
+                            ntoa(link_num));
+
+                    // DownLinks Queues and Pipes
+                    queues_nborder_nc[i][border_sw][core][link_num] =
+                            alloc_queue(queueLogger,
+                                        _linkspeed / _os_ratio_stage_1,
+                                        _queuesize / _os_ratio_stage_1,
+                                        DOWNLINK, false);
+
+                    queues_nborder_nc[i][border_sw][core][link_num]->setName(
+                            "DC" + ntoa(i) + "-BORDER" + ntoa(border_sw) +
+                            "->CS" + ntoa(core) + "_LINK" + ntoa(link_num));
+
+                    pipes_nborder_nc[i][border_sw][core][link_num] =
+                            new Pipe(_hop_latency, *_eventlist);
+
+                    pipes_nborder_nc[i][border_sw][core][link_num]->setName(
+                            "DC" + ntoa(i) + "-Pipe-BORDER" + ntoa(border_sw) +
+                            "->CS" + ntoa(core) + "_LINK" + ntoa(link_num));
+
+                    // Add Ports to switches
+                    switches_c[i][core]->addPort(
+                            queues_nc_nborder[i][core][border_sw][link_num]);
+                    switches_border[i][border_sw]->addPort(
+                            queues_nborder_nc[i][border_sw][core][link_num]);
+
+                    // Add Remote Endpoints
+                    queues_nc_nborder[i][core][border_sw][link_num]
+                            ->setRemoteEndpoint(switches_border[i][border_sw]);
+                    queues_nborder_nc[i][border_sw][core][link_num]
+                            ->setRemoteEndpoint(switches_c[i][core]);
+
+                    if (_qt == LOSSLESS_INPUT || _qt == LOSSLESS_INPUT_ECN) {
+                        printf("Not Supported Yet!\n");
+                        exit(0);
+                    }
+
+                    if (ff) {
+                        ff->add_queue(queues_nc_nborder[i][core][border_sw]
+                                                       [link_num]);
+                        ff->add_queue(queues_nborder_nc[i][border_sw][core]
+                                                       [link_num]);
+                    }
+                }
+            }
+        }
+    }
+
+    // Between border switches
+    for (uint32_t border_l = 0; border_l < number_border_switches; border_l++) {
+        for (uint32_t border_u = 0; border_u < number_border_switches;
+             border_u++) {
+            for (int link_num = 0; link_num < _num_links_between_borders;
+                 link_num++) {
+
                 // UpLinks Queues and Pipes
-                queues_nc_nborder[i][core][border_sw] = alloc_queue(
-                        queueLogger, _linkspeed / _os_ratio_stage_1,
-                        _queuesize / _os_ratio_stage_1, UPLINK, false, false);
+                queues_nborderl_nborderu[border_l][border_u][link_num] =
+                        alloc_queue(queueLogger, _linkspeed / _os_ratio_stage_1,
+                                    _queuesize / _os_ratio_stage_1, UPLINK,
+                                    false, false);
 
-                queues_nc_nborder[i][core][border_sw]->setName(
-                        "DC" + ntoa(i) + "-CS" + ntoa(core) + "->BORDER" +
-                        ntoa(border_sw));
+                queues_nborderl_nborderu[border_l][border_u][link_num]->setName(
+                        "DC" + ntoa(0) + "-BORDER" + ntoa(border_l) +
+                        "->BORDER" + ntoa(border_u) + "_LINK" + ntoa(link_num));
 
-                pipes_nc_nborder[i][core][border_sw] =
-                        new Pipe(_hop_latency, *_eventlist);
+                pipes_nborderl_nborderu[border_l][border_u][link_num] =
+                        new Pipe(_interdc_delay, *_eventlist);
 
-                pipes_nc_nborder[i][core][border_sw]->setName(
-                        "DC" + ntoa(i) + "-Pipe-CS" + ntoa(core) + "->BORDER" +
-                        ntoa(border_sw));
+                pipes_nborderl_nborderu[border_l][border_u][link_num]->setName(
+                        "DC" + ntoa(0) + "-Pipe-BORDER" + ntoa(border_l) +
+                        "->BORDER" + ntoa(border_u) + "_LINK" + ntoa(link_num));
 
                 // DownLinks Queues and Pipes
-                queues_nborder_nc[i][border_sw][core] = alloc_queue(
-                        queueLogger, _linkspeed / _os_ratio_stage_1,
-                        _queuesize / _os_ratio_stage_1, DOWNLINK, false);
+                queues_nborderu_nborderl[border_u][border_l][link_num] =
+                        alloc_queue(queueLogger, _linkspeed / _os_ratio_stage_1,
+                                    _queuesize / _os_ratio_stage_1, DOWNLINK,
+                                    false);
 
-                queues_nborder_nc[i][border_sw][core]->setName(
-                        "DC" + ntoa(i) + "-BORDER" + ntoa(border_sw) + "->CS" +
-                        ntoa(core));
+                queues_nborderu_nborderl[border_u][border_l][link_num]->setName(
+                        "DC" + ntoa(0) + "-BORDER" + ntoa(border_u) +
+                        "->BORDER" + ntoa(border_l) + "_LINK" + ntoa(link_num));
 
-                pipes_nborder_nc[i][border_sw][core] =
-                        new Pipe(_hop_latency, *_eventlist);
+                pipes_nborderu_nborderl[border_u][border_l][link_num] =
+                        new Pipe(_interdc_delay, *_eventlist);
 
-                pipes_nborder_nc[i][border_sw][core]->setName(
-                        "DC" + ntoa(i) + "-Pipe-BORDER" + ntoa(border_sw) +
-                        "->CS" + ntoa(core));
+                pipes_nborderu_nborderl[border_u][border_l][link_num]->setName(
+                        "DC" + ntoa(0) + "-Pipe-BORDER" + ntoa(border_u) +
+                        "->BORDER" + ntoa(border_l) + "_LINK" + ntoa(link_num));
 
                 // Add Ports to switches
-                switches_c[i][core]->addPort(
-                        queues_nc_nborder[i][core][border_sw]);
-                switches_border[i][border_sw]->addPort(
-                        queues_nborder_nc[i][border_sw][core]);
+                switches_border[0][border_l]->addPort(
+                        queues_nborderl_nborderu[border_l][border_u][link_num]);
+                switches_border[1][border_u]->addPort(
+                        queues_nborderu_nborderl[border_u][border_l][link_num]);
 
                 // Add Remote Endpoints
-                queues_nc_nborder[i][core][border_sw]->setRemoteEndpoint(
-                        switches_border[i][border_sw]);
-                queues_nborder_nc[i][border_sw][core]->setRemoteEndpoint(
-                        switches_c[i][core]);
+                queues_nborderl_nborderu[border_l][border_u][link_num]
+                        ->setRemoteEndpoint(switches_border[1][border_u]);
+                queues_nborderu_nborderl[border_u][border_l][link_num]
+                        ->setRemoteEndpoint(switches_border[0][border_l]);
 
                 if (_qt == LOSSLESS_INPUT || _qt == LOSSLESS_INPUT_ECN) {
                     printf("Not Supported Yet!\n");
@@ -854,71 +973,12 @@ void FatTreeInterDCTopology::init_network() {
                 }
 
                 if (ff) {
-                    ff->add_queue(queues_nc_nborder[i][core][border_sw]);
-                    ff->add_queue(queues_nborder_nc[i][border_sw][core]);
+                    printf("FIRSTFIT");
+                    ff->add_queue(queues_nborderl_nborderu[border_l][border_u]
+                                                          [link_num]);
+                    ff->add_queue(queues_nborderu_nborderl[border_u][border_l]
+                                                          [link_num]);
                 }
-            }
-        }
-    }
-
-    // Between border switches
-    for (uint32_t border_l = 0; border_l < _no_of_core_to_border; border_l++) {
-        for (uint32_t border_u = 0; border_u < _no_of_core_to_border;
-             border_u++) {
-
-            // UpLinks Queues and Pipes
-            queues_nborderl_nborderu[border_l][border_u] = alloc_queue(
-                    queueLogger, _linkspeed / _os_ratio_stage_1,
-                    _queuesize / _os_ratio_stage_1, UPLINK, false, false);
-
-            queues_nborderl_nborderu[border_l][border_u]->setName(
-                    "DC" + ntoa(0) + "-BORDER" + ntoa(border_l) + "->BORDER" +
-                    ntoa(border_u));
-
-            pipes_nborderl_nborderu[border_l][border_u] =
-                    new Pipe(_interdc_delay, *_eventlist);
-
-            pipes_nborderl_nborderu[border_l][border_u]->setName(
-                    "DC" + ntoa(0) + "-Pipe-BORDER" + ntoa(border_l) +
-                    "->BORDER" + ntoa(border_u));
-
-            // DownLinks Queues and Pipes
-            queues_nborderu_nborderl[border_u][border_l] = alloc_queue(
-                    queueLogger, _linkspeed / _os_ratio_stage_1,
-                    _queuesize / _os_ratio_stage_1, DOWNLINK, false);
-
-            queues_nborderu_nborderl[border_u][border_l]->setName(
-                    "DC" + ntoa(0) + "-BORDER" + ntoa(border_u) + "->BORDER" +
-                    ntoa(border_l));
-
-            pipes_nborderu_nborderl[border_u][border_l] =
-                    new Pipe(_interdc_delay, *_eventlist);
-
-            pipes_nborderu_nborderl[border_u][border_l]->setName(
-                    "DC" + ntoa(0) + "-Pipe-BORDER" + ntoa(border_u) +
-                    "->BORDER" + ntoa(border_l));
-
-            // Add Ports to switches
-            switches_border[0][border_l % number_border_switches]->addPort(
-                    queues_nborderl_nborderu[border_l][border_u]);
-            switches_border[1][border_u % number_border_switches]->addPort(
-                    queues_nborderu_nborderl[border_u][border_l]);
-
-            // Add Remote Endpoints
-            queues_nborderl_nborderu[border_l][border_u]->setRemoteEndpoint(
-                    switches_border[1][border_u % number_border_switches]);
-            queues_nborderu_nborderl[border_u][border_l]->setRemoteEndpoint(
-                    switches_border[0][border_l % number_border_switches]);
-
-            if (_qt == LOSSLESS_INPUT || _qt == LOSSLESS_INPUT_ECN) {
-                printf("Not Supported Yet!\n");
-                exit(0);
-            }
-
-            if (ff) {
-                printf("FIRSTFIT");
-                ff->add_queue(queues_nborderl_nborderu[border_l][border_u]);
-                ff->add_queue(queues_nborderu_nborderl[border_u][border_l]);
             }
         }
     }

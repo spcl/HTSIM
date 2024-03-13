@@ -1,0 +1,129 @@
+num_ranks 32
+
+rank 0 {
+l1: send 8000000b to 16 tag 0
+}
+
+rank 1 {
+l1: send 8000000b to 17 tag 0
+}
+
+rank 2 {
+l1: send 8000000b to 18 tag 0
+}
+
+rank 3 {
+l1: send 8000000b to 19 tag 0
+}
+
+rank 4 {
+l1: send 8000000b to 20 tag 0
+}
+
+rank 5 {
+l1: send 8000000b to 21 tag 0
+}
+
+rank 6 {
+l1: send 8000000b to 22 tag 0
+}
+
+rank 7 {
+l1: send 8000000b to 23 tag 0
+}
+
+rank 8 {
+l1: send 8000000b to 24 tag 0
+}
+
+rank 9 {
+l1: send 8000000b to 25 tag 0
+}
+
+rank 10 {
+l1: send 8000000b to 26 tag 0
+}
+
+rank 11 {
+l1: send 8000000b to 27 tag 0
+}
+
+rank 12 {
+l1: send 8000000b to 28 tag 0
+}
+
+rank 13 {
+l1: send 8000000b to 29 tag 0
+}
+
+rank 14 {
+l1: send 8000000b to 30 tag 0
+}
+
+rank 15 {
+l1: send 8000000b to 31 tag 0
+}
+
+rank 16 {
+l1: recv 8000000b from 0 tag 0
+}
+
+rank 17 {
+l1: recv 8000000b from 1 tag 0
+}
+
+rank 18 {
+l1: recv 8000000b from 2 tag 0
+}
+
+rank 19 {
+l1: recv 8000000b from 3 tag 0
+}
+
+rank 20 {
+l1: recv 8000000b from 4 tag 0
+}
+
+rank 21 {
+l1: recv 8000000b from 5 tag 0
+}
+
+rank 22 {
+l1: recv 8000000b from 6 tag 0
+}
+
+rank 23 {
+l1: recv 8000000b from 7 tag 0
+}
+
+rank 24 {
+l1: recv 8000000b from 8 tag 0
+}
+
+rank 25 {
+l1: recv 8000000b from 9 tag 0
+}
+
+rank 26 {
+l1: recv 8000000b from 10 tag 0
+}
+
+rank 27 {
+l1: recv 8000000b from 11 tag 0
+}
+
+rank 28 {
+l1: recv 8000000b from 12 tag 0
+}
+
+rank 29 {
+l1: recv 8000000b from 13 tag 0
+}
+
+rank 30 {
+l1: recv 8000000b from 14 tag 0
+}
+
+rank 31 {
+l1: recv 8000000b from 15 tag 0
+}

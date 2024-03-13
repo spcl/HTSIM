@@ -104,6 +104,9 @@ class CompositeQueue : public Queue {
     static int _kmax_from_input;
     bool failed_link = false;
 
+    simtime_picosec last_send = 1;
+    simtime_picosec last_recv = 1;
+
   protected:
     // Mechanism
     void beginService(); // start serving the item at the head of the queue

@@ -86,6 +86,7 @@ class LogSimInterface {
     std::uint64_t htsim_time = 0;
 
   private:
+    bool debug_prints = false;
     TrafficLogger *_flow;
     UecLogger *_logger;
     EventList *_eventlist;

@@ -46,4 +46,6 @@ plotting/us_to_cs
 
 !sim/lgs/input/test8_32.bin
 !sim/lgs/input/test8_64.bin
+!sim/lgs/input/*.bin
+!utilities/goal_converter/*.goal
 !traffic_gen/cdf_files/*.txt

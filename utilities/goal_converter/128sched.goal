@@ -1,0 +1,641 @@
+num_ranks 128
+
+rank 0 {
+l1: send 32000000b to 77 tag 0
+l2: recv 32000000b from 96 tag 0
+}
+
+rank 1 {
+l1: send 32000000b to 71 tag 0
+l2: recv 32000000b from 74 tag 0
+}
+
+rank 2 {
+l1: send 32000000b to 84 tag 0
+l2: recv 32000000b from 98 tag 0
+}
+
+rank 3 {
+l1: send 32000000b to 86 tag 0
+l2: recv 32000000b from 101 tag 0
+}
+
+rank 4 {
+l1: send 32000000b to 126 tag 0
+l2: recv 32000000b from 76 tag 0
+}
+
+rank 5 {
+l1: send 32000000b to 70 tag 0
+l2: recv 32000000b from 72 tag 0
+}
+
+rank 6 {
+l1: send 32000000b to 111 tag 0
+l2: recv 32000000b from 117 tag 0
+}
+
+rank 7 {
+l1: send 32000000b to 80 tag 0
+l2: recv 32000000b from 67 tag 0
+}
+
+rank 8 {
+l1: send 32000000b to 72 tag 0
+l2: recv 32000000b from 112 tag 0
+}
+
+rank 9 {
+l1: send 32000000b to 100 tag 0
+l2: recv 32000000b from 127 tag 0
+}
+
+rank 10 {
+l1: send 32000000b to 125 tag 0
+l2: recv 32000000b from 113 tag 0
+}
+
+rank 11 {
+l1: send 32000000b to 119 tag 0
+l2: recv 32000000b from 115 tag 0
+}
+
+rank 12 {
+l1: send 32000000b to 89 tag 0
+l2: recv 32000000b from 88 tag 0
+}
+
+rank 13 {
+l1: send 32000000b to 76 tag 0
+l2: recv 32000000b from 99 tag 0
+}
+
+rank 14 {
+l1: send 32000000b to 98 tag 0
+l2: recv 32000000b from 126 tag 0
+}
+
+rank 15 {
+l1: send 32000000b to 81 tag 0
+l2: recv 32000000b from 83 tag 0
+}
+
+rank 16 {
+l1: send 32000000b to 82 tag 0
+l2: recv 32000000b from 110 tag 0
+}
+
+rank 17 {
+l1: send 32000000b to 107 tag 0
+l2: recv 32000000b from 65 tag 0
+}
+
+rank 18 {
+l1: send 32000000b to 90 tag 0
+l2: recv 32000000b from 93 tag 0
+}
+
+rank 19 {
+l1: send 32000000b to 108 tag 0
+l2: recv 32000000b from 78 tag 0
+}
+
+rank 20 {
+l1: send 32000000b to 115 tag 0
+l2: recv 32000000b from 64 tag 0
+}
+
+rank 21 {
+l1: send 32000000b to 96 tag 0
+l2: recv 32000000b from 114 tag 0
+}
+
+rank 22 {
+l1: send 32000000b to 101 tag 0
+l2: recv 32000000b from 118 tag 0
+}
+
+rank 23 {
+l1: send 32000000b to 65 tag 0
+l2: recv 32000000b from 84 tag 0
+}
+
+rank 24 {
+l1: send 32000000b to 102 tag 0
+l2: recv 32000000b from 108 tag 0
+}
+
+rank 25 {
+l1: send 32000000b to 127 tag 0
+l2: recv 32000000b from 121 tag 0
+}
+
+rank 26 {
+l1: send 32000000b to 74 tag 0
+l2: recv 32000000b from 106 tag 0
+}
+
+rank 27 {
+l1: send 32000000b to 97 tag 0
+l2: recv 32000000b from 123 tag 0
+}
+
+rank 28 {
+l1: send 32000000b to 112 tag 0
+l2: recv 32000000b from 81 tag 0
+}
+
+rank 29 {
+l1: send 32000000b to 104 tag 0
+l2: recv 32000000b from 125 tag 0
+}
+
+rank 30 {
+l1: send 32000000b to 75 tag 0
+l2: recv 32000000b from 70 tag 0
+}
+
+rank 31 {
+l1: send 32000000b to 116 tag 0
+l2: recv 32000000b from 94 tag 0
+}
+
+rank 32 {
+l1: send 32000000b to 78 tag 0
+l2: recv 32000000b from 85 tag 0
+}
+
+rank 33 {
+l1: send 32000000b to 106 tag 0
+l2: recv 32000000b from 95 tag 0
+}
+
+rank 34 {
+l1: send 32000000b to 91 tag 0
+l2: recv 32000000b from 73 tag 0
+}
+
+rank 35 {
+l1: send 32000000b to 113 tag 0
+l2: recv 32000000b from 104 tag 0
+}
+
+rank 36 {
+l1: send 32000000b to 95 tag 0
+l2: recv 32000000b from 120 tag 0
+}
+
+rank 37 {
+l1: send 32000000b to 118 tag 0
+l2: recv 32000000b from 91 tag 0
+}
+
+rank 38 {
+l1: send 32000000b to 73 tag 0
+l2: recv 32000000b from 90 tag 0
+}
+
+rank 39 {
+l1: send 32000000b to 67 tag 0
+l2: recv 32000000b from 75 tag 0
+}
+
+rank 40 {
+l1: send 32000000b to 66 tag 0
+l2: recv 32000000b from 86 tag 0
+}
+
+rank 41 {
+l1: send 32000000b to 122 tag 0
+l2: recv 32000000b from 109 tag 0
+}
+
+rank 42 {
+l1: send 32000000b to 103 tag 0
+l2: recv 32000000b from 68 tag 0
+}
+
+rank 43 {
+l1: send 32000000b to 87 tag 0
+l2: recv 32000000b from 69 tag 0
+}
+
+rank 44 {
+l1: send 32000000b to 93 tag 0
+l2: recv 32000000b from 66 tag 0
+}
+
+rank 45 {
+l1: send 32000000b to 88 tag 0
+l2: recv 32000000b from 102 tag 0
+}
+
+rank 46 {
+l1: send 32000000b to 123 tag 0
+l2: recv 32000000b from 87 tag 0
+}
+
+rank 47 {
+l1: send 32000000b to 105 tag 0
+l2: recv 32000000b from 116 tag 0
+}
+
+rank 48 {
+l1: send 32000000b to 79 tag 0
+l2: recv 32000000b from 79 tag 0
+}
+
+rank 49 {
+l1: send 32000000b to 121 tag 0
+l2: recv 32000000b from 100 tag 0
+}
+
+rank 50 {
+l1: send 32000000b to 124 tag 0
+l2: recv 32000000b from 124 tag 0
+}
+
+rank 51 {
+l1: send 32000000b to 110 tag 0
+l2: recv 32000000b from 77 tag 0
+}
+
+rank 52 {
+l1: send 32000000b to 68 tag 0
+l2: recv 32000000b from 80 tag 0
+}
+
+rank 53 {
+l1: send 32000000b to 99 tag 0
+l2: recv 32000000b from 82 tag 0
+}
+
+rank 54 {
+l1: send 32000000b to 114 tag 0
+l2: recv 32000000b from 92 tag 0
+}
+
+rank 55 {
+l1: send 32000000b to 109 tag 0
+l2: recv 32000000b from 89 tag 0
+}
+
+rank 56 {
+l1: send 32000000b to 69 tag 0
+l2: recv 32000000b from 122 tag 0
+}
+
+rank 57 {
+l1: send 32000000b to 92 tag 0
+l2: recv 32000000b from 103 tag 0
+}
+
+rank 58 {
+l1: send 32000000b to 64 tag 0
+l2: recv 32000000b from 71 tag 0
+}
+
+rank 59 {
+l1: send 32000000b to 120 tag 0
+l2: recv 32000000b from 97 tag 0
+}
+
+rank 60 {
+l1: send 32000000b to 94 tag 0
+l2: recv 32000000b from 107 tag 0
+}
+
+rank 61 {
+l1: send 32000000b to 85 tag 0
+l2: recv 32000000b from 105 tag 0
+}
+
+rank 62 {
+l1: send 32000000b to 83 tag 0
+l2: recv 32000000b from 119 tag 0
+}
+
+rank 63 {
+l1: send 32000000b to 117 tag 0
+l2: recv 32000000b from 111 tag 0
+}
+
+rank 64 {
+l1: send 32000000b to 20 tag 0
+l2: recv 32000000b from 58 tag 0
+}
+
+rank 65 {
+l1: send 32000000b to 17 tag 0
+l2: recv 32000000b from 23 tag 0
+}
+
+rank 66 {
+l1: send 32000000b to 44 tag 0
+l2: recv 32000000b from 40 tag 0
+}
+
+rank 67 {
+l1: send 32000000b to 7 tag 0
+l2: recv 32000000b from 39 tag 0
+}
+
+rank 68 {
+l1: send 32000000b to 42 tag 0
+l2: recv 32000000b from 52 tag 0
+}
+
+rank 69 {
+l1: send 32000000b to 43 tag 0
+l2: recv 32000000b from 56 tag 0
+}
+
+rank 70 {
+l1: send 32000000b to 30 tag 0
+l2: recv 32000000b from 5 tag 0
+}
+
+rank 71 {
+l1: send 32000000b to 58 tag 0
+l2: recv 32000000b from 1 tag 0
+}
+
+rank 72 {
+l1: send 32000000b to 5 tag 0
+l2: recv 32000000b from 8 tag 0
+}
+
+rank 73 {
+l1: send 32000000b to 34 tag 0
+l2: recv 32000000b from 38 tag 0
+}
+
+rank 74 {
+l1: send 32000000b to 1 tag 0
+l2: recv 32000000b from 26 tag 0
+}
+
+rank 75 {
+l1: send 32000000b to 39 tag 0
+l2: recv 32000000b from 30 tag 0
+}
+
+rank 76 {
+l1: send 32000000b to 4 tag 0
+l2: recv 32000000b from 13 tag 0
+}
+
+rank 77 {
+l1: send 32000000b to 51 tag 0
+l2: recv 32000000b from 0 tag 0
+}
+
+rank 78 {
+l1: send 32000000b to 19 tag 0
+l2: recv 32000000b from 32 tag 0
+}
+
+rank 79 {
+l1: send 32000000b to 48 tag 0
+l2: recv 32000000b from 48 tag 0
+}
+
+rank 80 {
+l1: send 32000000b to 52 tag 0
+l2: recv 32000000b from 7 tag 0
+}
+
+rank 81 {
+l1: send 32000000b to 28 tag 0
+l2: recv 32000000b from 15 tag 0
+}
+
+rank 82 {
+l1: send 32000000b to 53 tag 0
+l2: recv 32000000b from 16 tag 0
+}
+
+rank 83 {
+l1: send 32000000b to 15 tag 0
+l2: recv 32000000b from 62 tag 0
+}
+
+rank 84 {
+l1: send 32000000b to 23 tag 0
+l2: recv 32000000b from 2 tag 0
+}
+
+rank 85 {
+l1: send 32000000b to 32 tag 0
+l2: recv 32000000b from 61 tag 0
+}
+
+rank 86 {
+l1: send 32000000b to 40 tag 0
+l2: recv 32000000b from 3 tag 0
+}
+
+rank 87 {
+l1: send 32000000b to 46 tag 0
+l2: recv 32000000b from 43 tag 0
+}
+
+rank 88 {
+l1: send 32000000b to 12 tag 0
+l2: recv 32000000b from 45 tag 0
+}
+
+rank 89 {
+l1: send 32000000b to 55 tag 0
+l2: recv 32000000b from 12 tag 0
+}
+
+rank 90 {
+l1: send 32000000b to 38 tag 0
+l2: recv 32000000b from 18 tag 0
+}
+
+rank 91 {
+l1: send 32000000b to 37 tag 0
+l2: recv 32000000b from 34 tag 0
+}
+
+rank 92 {
+l1: send 32000000b to 54 tag 0
+l2: recv 32000000b from 57 tag 0
+}
+
+rank 93 {
+l1: send 32000000b to 18 tag 0
+l2: recv 32000000b from 44 tag 0
+}
+
+rank 94 {
+l1: send 32000000b to 31 tag 0
+l2: recv 32000000b from 60 tag 0
+}
+
+rank 95 {
+l1: send 32000000b to 33 tag 0
+l2: recv 32000000b from 36 tag 0
+}
+
+rank 96 {
+l1: send 32000000b to 0 tag 0
+l2: recv 32000000b from 21 tag 0
+}
+
+rank 97 {
+l1: send 32000000b to 59 tag 0
+l2: recv 32000000b from 27 tag 0
+}
+
+rank 98 {
+l1: send 32000000b to 2 tag 0
+l2: recv 32000000b from 14 tag 0
+}
+
+rank 99 {
+l1: send 32000000b to 13 tag 0
+l2: recv 32000000b from 53 tag 0
+}
+
+rank 100 {
+l1: send 32000000b to 49 tag 0
+l2: recv 32000000b from 9 tag 0
+}
+
+rank 101 {
+l1: send 32000000b to 3 tag 0
+l2: recv 32000000b from 22 tag 0
+}
+
+rank 102 {
+l1: send 32000000b to 45 tag 0
+l2: recv 32000000b from 24 tag 0
+}
+
+rank 103 {
+l1: send 32000000b to 57 tag 0
+l2: recv 32000000b from 42 tag 0
+}
+
+rank 104 {
+l1: send 32000000b to 35 tag 0
+l2: recv 32000000b from 29 tag 0
+}
+
+rank 105 {
+l1: send 32000000b to 61 tag 0
+l2: recv 32000000b from 47 tag 0
+}
+
+rank 106 {
+l1: send 32000000b to 26 tag 0
+l2: recv 32000000b from 33 tag 0
+}
+
+rank 107 {
+l1: send 32000000b to 60 tag 0
+l2: recv 32000000b from 17 tag 0
+}
+
+rank 108 {
+l1: send 32000000b to 24 tag 0
+l2: recv 32000000b from 19 tag 0
+}
+
+rank 109 {
+l1: send 32000000b to 41 tag 0
+l2: recv 32000000b from 55 tag 0
+}
+
+rank 110 {
+l1: send 32000000b to 16 tag 0
+l2: recv 32000000b from 51 tag 0
+}
+
+rank 111 {
+l1: send 32000000b to 63 tag 0
+l2: recv 32000000b from 6 tag 0
+}
+
+rank 112 {
+l1: send 32000000b to 8 tag 0
+l2: recv 32000000b from 28 tag 0
+}
+
+rank 113 {
+l1: send 32000000b to 10 tag 0
+l2: recv 32000000b from 35 tag 0
+}
+
+rank 114 {
+l1: send 32000000b to 21 tag 0
+l2: recv 32000000b from 54 tag 0
+}
+
+rank 115 {
+l1: send 32000000b to 11 tag 0
+l2: recv 32000000b from 20 tag 0
+}
+
+rank 116 {
+l1: send 32000000b to 47 tag 0
+l2: recv 32000000b from 31 tag 0
+}
+
+rank 117 {
+l1: send 32000000b to 6 tag 0
+l2: recv 32000000b from 63 tag 0
+}
+
+rank 118 {
+l1: send 32000000b to 22 tag 0
+l2: recv 32000000b from 37 tag 0
+}
+
+rank 119 {
+l1: send 32000000b to 62 tag 0
+l2: recv 32000000b from 11 tag 0
+}
+
+rank 120 {
+l1: send 32000000b to 36 tag 0
+l2: recv 32000000b from 59 tag 0
+}
+
+rank 121 {
+l1: send 32000000b to 25 tag 0
+l2: recv 32000000b from 49 tag 0
+}
+
+rank 122 {
+l1: send 32000000b to 56 tag 0
+l2: recv 32000000b from 41 tag 0
+}
+
+rank 123 {
+l1: send 32000000b to 27 tag 0
+l2: recv 32000000b from 46 tag 0
+}
+
+rank 124 {
+l1: send 32000000b to 50 tag 0
+l2: recv 32000000b from 50 tag 0
+}
+
+rank 125 {
+l1: send 32000000b to 29 tag 0
+l2: recv 32000000b from 10 tag 0
+}
+
+rank 126 {
+l1: send 32000000b to 14 tag 0
+l2: recv 32000000b from 4 tag 0
+}
+
+rank 127 {
+l1: send 32000000b to 9 tag 0
+l2: recv 32000000b from 25 tag 0
+}
