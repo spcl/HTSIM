@@ -20,8 +20,7 @@ int CompositeQueue::_kmin_from_input = 20;
 int CompositeQueue::_kmax_from_input = 80;
 int CompositeQueue::_phantom_queue_slowdown = 10;
 
-CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize,
-                               EventList &eventlist, QueueLogger *logger)
+CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize, EventList &eventlist, QueueLogger *logger)
         : Queue(bitrate, maxsize, eventlist, logger) {
     _ratio_high = 10;
     _ratio_low = 1;
@@ -37,10 +36,8 @@ CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize,
     _ecn_minthresh = maxsize * 2; // don't set ECN by default
     _ecn_maxthresh = maxsize * 2; // don't set ECN by default
 
-    _draining_time_phantom = ((4096 + 64) * 8.0) /
-                             LINK_SPEED_MODERN; // Add paramters here eventually
-    _draining_time_phantom +=
-            (_draining_time_phantom * _phantom_queue_slowdown / 100.0);
+    _draining_time_phantom = ((4096 + 64) * 8.0) / LINK_SPEED_MODERN; // Add paramters here eventually
+    _draining_time_phantom += (_draining_time_phantom * _phantom_queue_slowdown / 100.0);
     _draining_time_phantom *= 1000;
 
     _queuesize_high = _queuesize_low = _current_queuesize_phatom = 0;
@@ -75,13 +72,11 @@ void CompositeQueue::beginService() {
 
         if (_crt < _ratio_high) {
             _serv = QUEUE_HIGH;
-            eventlist().sourceIsPendingRel(*this,
-                                           drainTime(_enqueued_high.back()));
+            eventlist().sourceIsPendingRel(*this, drainTime(_enqueued_high.back()));
         } else {
             assert(_crt < _ratio_high + _ratio_low);
             _serv = QUEUE_LOW;
-            eventlist().sourceIsPendingRel(*this,
-                                           drainTime(_enqueued_low.back()));
+            eventlist().sourceIsPendingRel(*this, drainTime(_enqueued_low.back()));
         }
         return;
     }
@@ -103,20 +98,20 @@ bool CompositeQueue::decide_ECN() {
     // ECN mark on deque
     if (_use_both_queues) {
 
-        //printf("Using both Queues - Size Real %lu\n", _maxsize);
+        // printf("Using both Queues - Size Real %lu\n", _maxsize);
 
         bool real_queue_ecn = false;
         _ecn_maxthresh = _maxsize / 100 * 80;
         _ecn_minthresh = _maxsize / 100 * 20;
         if (_queuesize_low > _ecn_minthresh) {
-        printf("Using both Queues1 %s - Size Real %lu %lu - ECN %lu %lu\n",_nodename.c_str(),  _maxsize, _queuesize_low, _ecn_minthresh, _ecn_maxthresh);
+            /* printf("Using both Queues1 %s - Size Real %lu %lu - ECN %lu %lu\n",_nodename.c_str(),  _maxsize,
+             * _queuesize_low, _ecn_minthresh, _ecn_maxthresh); */
 
-            uint64_t p = (0x7FFFFFFF * (_queuesize_low - _ecn_minthresh)) /
-                         (_ecn_maxthresh - _ecn_minthresh);
-            
+            uint64_t p = (0x7FFFFFFF * (_queuesize_low - _ecn_minthresh)) / (_ecn_maxthresh - _ecn_minthresh);
+
             if ((uint64_t)random() < p) {
                 real_queue_ecn = true;
-                printf("Using both Queues2 - Size Real %lu\n", _maxsize);
+                /* printf("Using both Queues2 - Size Real %lu\n", _maxsize); */
             }
         }
 
@@ -125,9 +120,8 @@ bool CompositeQueue::decide_ECN() {
         if (_current_queuesize_phatom > _ecn_maxthresh) {
             return true;
         } else if (_current_queuesize_phatom > _ecn_minthresh) {
-            uint64_t p = (0x7FFFFFFF *
-                          (_current_queuesize_phatom - _ecn_minthresh)) /
-                         (_ecn_maxthresh - _ecn_minthresh);
+            uint64_t p =
+                    (0x7FFFFFFF * (_current_queuesize_phatom - _ecn_minthresh)) / (_ecn_maxthresh - _ecn_minthresh);
             if (((uint64_t)random() < p) || real_queue_ecn) {
                 return true;
             }
@@ -141,21 +135,20 @@ bool CompositeQueue::decide_ECN() {
         if (_current_queuesize_phatom > _ecn_maxthresh) {
             return true;
         } else if (_current_queuesize_phatom > _ecn_minthresh) {
-            uint64_t p = (0x7FFFFFFF *
-                          (_current_queuesize_phatom - _ecn_minthresh)) /
-                         (_ecn_maxthresh - _ecn_minthresh);
+            uint64_t p =
+                    (0x7FFFFFFF * (_current_queuesize_phatom - _ecn_minthresh)) / (_ecn_maxthresh - _ecn_minthresh);
             if ((uint64_t)random() < p) {
                 return true;
             }
         }
         return false;
     } else {
-        printf("Using both Queues1 %s - Time %lu - Size Real %lu %lu - ECN %lu %lu\n",_nodename.c_str(), GLOBAL_TIME / 1000, _maxsize, _queuesize_low, _ecn_minthresh, _ecn_maxthresh);
+        /* printf("Using both Queues1 %s - Time %lu - Size Real %lu %lu - ECN %lu %lu\n",_nodename.c_str(), GLOBAL_TIME
+         * / 1000, _maxsize, _queuesize_low, _ecn_minthresh, _ecn_maxthresh); */
         if (_queuesize_low > _ecn_maxthresh) {
             return true;
         } else if (_queuesize_low > _ecn_minthresh) {
-            uint64_t p = (0x7FFFFFFF * (_queuesize_low - _ecn_minthresh)) /
-                         (_ecn_maxthresh - _ecn_minthresh);
+            uint64_t p = (0x7FFFFFFF * (_queuesize_low - _ecn_minthresh)) / (_ecn_maxthresh - _ecn_minthresh);
             if ((uint64_t)random() < p) {
                 return true;
             }
@@ -175,16 +168,11 @@ void CompositeQueue::completeService() {
             int dropped_p = 0;
             int initial_count = _enqueued_low._count;
             for (int i = 0; i < _enqueued_low._count; i++) {
-                int64_t diff =
-                        GLOBAL_TIME - temp_queue[_enqueued_low._next_pop + i]
-                                              ->enter_timestamp;
-                int64_t diff_budget = temp_queue[_enqueued_low._next_pop + i]
-                                              ->timeout_budget -
-                                      diff;
+                int64_t diff = GLOBAL_TIME - temp_queue[_enqueued_low._next_pop + i]->enter_timestamp;
+                int64_t diff_budget = temp_queue[_enqueued_low._next_pop + i]->timeout_budget - diff;
                 int size_p = temp_queue[_enqueued_low._next_pop + i]->size();
                 if (diff_budget > 0) {
-                    _enqueued_low._queue[count_good] =
-                            temp_queue[_enqueued_low._next_pop + i];
+                    _enqueued_low._queue[count_good] = temp_queue[_enqueued_low._next_pop + i];
 
                     /*int64_t diff =
                             GLOBAL_TIME -
@@ -208,8 +196,8 @@ void CompositeQueue::completeService() {
                 printf("Started With %d Pkts - Dropped %d Pkts - Count %d - "
                        "Pop %d "
                        "- Push %d\n",
-                       initial_count, dropped_p, _enqueued_low._count,
-                       _enqueued_low._next_pop, _enqueued_low._next_push);
+                       initial_count, dropped_p, _enqueued_low._count, _enqueued_low._next_pop,
+                       _enqueued_low._next_push);
             }
         }
 
@@ -219,15 +207,14 @@ void CompositeQueue::completeService() {
         /*printf("Budget From %d - ID %d - Budget %li\n", pkt->from, pkt->id(),
                pkt->timeout_budget);*/
 
-
-        if (_nodename == "compqueue(50000Mb/s,1250000bytes)DC1-DST15->LS7") {
+        /* if (_nodename == "compqueue(50000Mb/s,1250000bytes)DC1-DST15->LS7") {
                 printf("Sending: Queue %s - From %d to %d size %d - time %lu - "
                        "Last %f\n",
                        _nodename.c_str(), pkt->from, pkt->to, pkt->size(),
                        GLOBAL_TIME / 1000,
                        GLOBAL_TIME / 1000.0 - last_recv / 1000.0);
                 last_recv = GLOBAL_TIME;
-            }
+            } */
 
         packets_seen++;
         _queuesize_low -= pkt->size();
@@ -253,20 +240,19 @@ void CompositeQueue::completeService() {
         trimmed_seen++;
         // printf("Queue %s - %d@%d\n", _nodename.c_str(), pkt->from, pkt->to);
         _queuesize_high -= pkt->size();
-        if (_nodename == "compqueue(50000Mb/s,1250000bytes)DC1-DST15->LS7" || true) {
+        /* if (_nodename == "compqueue(50000Mb/s,1250000bytes)DC1-DST15->LS7" || true) {
                 printf("Sending: Queue %s - From %d to %d size %d - time %lu - "
                        "Last %f\n",
                        _nodename.c_str(), pkt->from, pkt->to, pkt->size(),
                        GLOBAL_TIME / 1000,
                        GLOBAL_TIME / 1000.0 - last_recv / 1000.0);
                 last_recv = GLOBAL_TIME;
-            }
+            } */
         if (_logger)
             _logger->logQueue(*this, QueueLogger::PKT_SERVICE, *pkt);
         if (pkt->type() == NDPACK)
             _num_acks++;
-        else if (pkt->type() == NDPNACK || pkt->type() == UECNACK ||
-                 pkt->_is_trim) {
+        else if (pkt->type() == NDPNACK || pkt->type() == UECNACK || pkt->_is_trim) {
             _num_nacks++;
             if (_phantom_in_series) {
                 _current_queuesize_phatom += 4160;
@@ -326,30 +312,22 @@ void CompositeQueue::receivePacket(Packet &pkt) {
     if (failed_link && !pkt.header_only()) {
         pkt.strip_payload();
         pkt.is_failed = true;
-        printf("Queue %s - Time %lu - Broken Link", _nodename.c_str(),
-               GLOBAL_TIME / 1000);
+        /* printf("Queue %s - Time %lu - Broken Link", _nodename.c_str(),
+               GLOBAL_TIME / 1000); */
 
     } else if (!pkt.header_only()) {
         //  Queue
-
         if (COLLECT_DATA) {
             if (_queuesize_low != 0) {
-                std::string file_name =
-                        PROJECT_ROOT_PATH /
-                        ("sim/output/queue/queue" +
-                         _nodename.substr(_nodename.find(")") + 1) + ".txt");
+                std::string file_name = PROJECT_ROOT_PATH /
+                                        ("sim/output/queue/queue" + _nodename.substr(_nodename.find(")") + 1) + ".txt");
                 std::ofstream MyFile(file_name, std::ios_base::app);
                 /*printf("Bit rate is %lu\n", _bitrate);
                 fflush(stdout);*/
-                MyFile << eventlist().now() / 1000 << ","
-                       << int(_queuesize_low * 8 / (_bitrate / 1e9)) / (1)
-                       << ","
-                       << int(_ecn_minthresh * 8 / (_bitrate / 1e9)) / (1)
-                       << ","
-                       << int(_ecn_maxthresh * 8 / (_bitrate / 1e9)) / (1)
-                       << ","
-                       << int(_maxsize * 8 / (_bitrate / 1e9)) / (1)
-                       << std::endl;
+                MyFile << eventlist().now() / 1000 << "," << int(_queuesize_low * 8 / (_bitrate / 1e9)) / (1) << ","
+                       << int(_ecn_minthresh * 8 / (_bitrate / 1e9)) / (1) << ","
+                       << int(_ecn_maxthresh * 8 / (_bitrate / 1e9)) / (1) << ","
+                       << int(_maxsize * 8 / (_bitrate / 1e9)) / (1) << std::endl;
 
                 MyFile.close();
             }
@@ -357,25 +335,13 @@ void CompositeQueue::receivePacket(Packet &pkt) {
 
         if (COLLECT_DATA && _use_phantom) {
             if (_current_queuesize_phatom != 0) {
-                std::string file_name =
-                        PROJECT_ROOT_PATH /
-                        ("sim/output/queue_phantom/queue_phantom" +
-                         _nodename.substr(_nodename.find(")") + 1) + ".txt");
+                std::string file_name = PROJECT_ROOT_PATH / ("sim/output/queue_phantom/queue_phantom" +
+                                                             _nodename.substr(_nodename.find(")") + 1) + ".txt");
                 std::ofstream MyFile(file_name, std::ios_base::app);
 
-                MyFile << eventlist().now() / 1000 << ","
-                       << int(_current_queuesize_phatom * 8 /
-                              (_bitrate / 1e9)) /
-                                  (1)
-                       << ","
-                       << int((_phantom_queue_size / 100 * 40) * 8 /
-                              (_bitrate / 1e9)) /
-                                  (1)
-                       << ","
-                       << int((_phantom_queue_size / 100 * 70) * 8 /
-                              (_bitrate / 1e9)) /
-                                  (1)
-                       << std::endl;
+                MyFile << eventlist().now() / 1000 << "," << int(_current_queuesize_phatom * 8 / (_bitrate / 1e9)) / (1)
+                       << "," << int((_phantom_queue_size / 100 * 40) * 8 / (_bitrate / 1e9)) / (1) << ","
+                       << int((_phantom_queue_size / 100 * 70) * 8 / (_bitrate / 1e9)) / (1) << std::endl;
 
                 MyFile.close();
             }
@@ -450,9 +416,8 @@ void CompositeQueue::receivePacket(Packet &pkt) {
 
             // Increase Phantom Queue when also getting a trim
             if (!_phantom_in_series) {
-                _current_queuesize_phatom +=
-                        4160; // We increase as if it was a full pkt, not just
-                              // the header of the trim
+                _current_queuesize_phatom += 4160; // We increase as if it was a full pkt, not just
+                                                   // the header of the trim
                 if (_current_queuesize_phatom > _phantom_queue_size) {
                     _current_queuesize_phatom = _phantom_queue_size;
                 }
@@ -497,8 +462,7 @@ void CompositeQueue::receivePacket(Packet &pkt) {
             if (_logger)
                 _logger->logQueue(*this, QueueLogger::PKT_DROP, pkt);
             pkt.flow().logTraffic(pkt, *this, TrafficLogger::PKT_DROP);
-            cout << "B[ " << _enqueued_low.size() << " "
-                 << _enqueued_high.size() << " ] DROP " << pkt.flow().get_id()
+            cout << "B[ " << _enqueued_low.size() << " " << _enqueued_high.size() << " ] DROP " << pkt.flow().get_id()
                  << endl;
             pkt.free();
             _num_drops++;
@@ -526,6 +490,4 @@ void CompositeQueue::receivePacket(Packet &pkt) {
     }
 }
 
-mem_b CompositeQueue::queuesize() const {
-    return _queuesize_low + _queuesize_high;
-}
+mem_b CompositeQueue::queuesize() const { return _queuesize_low + _queuesize_high; }
