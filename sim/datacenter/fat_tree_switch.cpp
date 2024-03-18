@@ -44,6 +44,7 @@ void FatTreeSwitch::receivePacket(Packet &pkt) {
     }
 
     // printf("Node %s - Packet Received\n", nodename().c_str());
+    //printf("Node %s - Pkt ID %d - Packet Received at %lu\n", nodename().c_str(), pkt.id(), GLOBAL_TIME/1000);
 
     // printf("Packet Destination is 3 %d\n", pkt.dst());
 
@@ -73,7 +74,7 @@ void FatTreeSwitch::receivePacket(Packet &pkt) {
 
         if ((pkt.hop_count == 1) &&
             (pkt.type() == UEC || pkt.type() == NDP ||
-             pkt.type() == SWIFTTRIMMING || pkt.type() == UEC_DROP)) {
+             pkt.type() == SWIFTTRIMMING || pkt.type() == UEC_DROP || pkt.type() == BBR)) {
 
             simtime_picosec my_time =
                     (GLOBAL_TIME - (4160 * 8 / LINK_SPEED_MODERN * 1000) -

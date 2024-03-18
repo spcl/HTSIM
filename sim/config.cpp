@@ -139,8 +139,13 @@ void initializeLoggingFolders() {
     std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/case2/");
     std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/case3/");
     std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/case4/");
+    std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/sending_rate/");
+    std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/ecn_rate/");
     std::filesystem::remove_all(PROJECT_ROOT_PATH /
                                 "sim/output/queue_phantom/");
+    std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/status/");
+    std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/out_bw_paced/");
+    std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/out_bw/");
 
     bool ret_val =
             std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output");
@@ -184,6 +189,17 @@ void initializeLoggingFolders() {
                                                  "sim/output/case3");
     ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
                                                  "sim/output/case4");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
+    "sim/output/sending_rate");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
+    "sim/output/ecn_rate");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
+                                                 "sim/output/out_bw");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
+                                                 "sim/output/out_bw_paced");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
+                                                 "sim/output/status");
+    
 }
 
 // Path

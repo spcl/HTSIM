@@ -93,6 +93,7 @@ class BBRPacket : public Packet {
     // inline simtime_picosec ts() const {return _ts;}
     // inline void set_ts(simtime_picosec ts) {_ts = ts;}
     const static int acksize = 64;
+    int delivered_so_far = 0;
 
   protected:
     seq_t _seqno, _data_seqno;
@@ -148,6 +149,7 @@ class BBRAck : public Packet {
     virtual ~BBRAck() {}
     const static int acksize = 64;
     const Route *inRoute;
+    int delivered_so_far = 0;
 
   protected:
     seq_t _seqno;
@@ -200,6 +202,7 @@ class BBRNack : public Packet {
 
     virtual ~BBRNack() {}
     const static int acksize = 64;
+    int delivered_so_far = 0;
 
   protected:
     seq_t _seqno;

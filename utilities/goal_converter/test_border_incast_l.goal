@@ -86,16 +86,19 @@ rank 27 {
 }
 
 rank 28 {
+l1: send 32000000b to 31 tag 0
 }
 
 rank 29 {
+l1: send 32000000b to 31 tag 0
 }
 
 rank 30 {
-l1: send 32000000b to 31 tag 0
+
 }
 
 rank 31 {
 l1: recv 32000000b from 0 tag 0
-l1: recv 32000000b from 30 tag 0
+l2: recv 32000000b from 28 tag 0
+l3: recv 32000000b from 29 tag 0
 }

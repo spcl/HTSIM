@@ -133,7 +133,7 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
 
         Route *routein = new Route(*_topo->get_paths(to, from)->at(choice));*/
 
-        UecSrc *uecSrc = new UecSrc(_logger, _flow, *_eventlist, rtt, bdp,
+        UecSrc *uecSrc = new UecSrc(NULL, NULL, *_eventlist, rtt, bdp,
                                     queueDrainTime, 6);
 
         uecSrc->setFlowSize(size);
@@ -276,7 +276,7 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
         }
 
         // Actually connect src and dest
-        _uecRtxScanner->registerUec(*uecSrc);
+        //_uecRtxScanner->registerUec(*uecSrc);
         printf("Finished UEC LGS Setup\n");
 
     } else if (_protocolName == UEC_DROP_PROTOCOL) {
@@ -495,33 +495,110 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
         _ndpRtxScanner->registerNdp(*ndpSrc);
 
         Route *srctotor = new Route();
-        srctotor->push_back(
-                _topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-        srctotor->push_back(
-                _topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-        srctotor->push_back(
-                _topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]
-                        ->getRemoteEndpoint());
-
         Route *dsttotor = new Route();
-        dsttotor->push_back(
-                _topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-        dsttotor->push_back(
-                _topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-        dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]
-                                    ->getRemoteEndpoint());
+
+        if (_topo != NULL) {
+            srctotor->push_back(
+                    _topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
+            srctotor->push_back(
+                    _topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
+            srctotor->push_back(
+                    _topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]
+                            ->getRemoteEndpoint());
+
+            dsttotor->push_back(
+                    _topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
+            dsttotor->push_back(
+                    _topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
+            dsttotor->push_back(
+                    _topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]
+                            ->getRemoteEndpoint());
+
+        } else if (_topo_inter_dc != NULL) {
+            int idx_dc = _topo_inter_dc->get_dc_id(from);
+            int idx_dc_to = _topo_inter_dc->get_dc_id(to);
+            //ndpSrc->src_dc = _topo_inter_dc->get_dc_id(from);
+            //ndpSrc->dest_dc = _topo_inter_dc->get_dc_id(to);
+            //ndpSrc->updateParams();
+
+            printf("Source in Datacenter %d - Dest in Datacenter %d\n", idx_dc,
+                   idx_dc_to);
+
+            srctotor->push_back(
+                    _topo_inter_dc->queues_ns_nlp
+                            [idx_dc][from % _topo_inter_dc->no_of_nodes()]
+                            [_topo_inter_dc->HOST_POD_SWITCH(
+                                    from % _topo_inter_dc->no_of_nodes())]);
+            srctotor->push_back(
+                    _topo_inter_dc->pipes_ns_nlp
+                            [idx_dc][from % _topo_inter_dc->no_of_nodes()]
+                            [_topo_inter_dc->HOST_POD_SWITCH(
+                                    from % _topo_inter_dc->no_of_nodes())]);
+            srctotor->push_back(
+                    _topo_inter_dc
+                            ->queues_ns_nlp
+                                    [idx_dc]
+                                    [from % _topo_inter_dc->no_of_nodes()]
+                                    [_topo_inter_dc->HOST_POD_SWITCH(
+                                            from %
+                                            _topo_inter_dc->no_of_nodes())]
+                            ->getRemoteEndpoint());
+
+            dsttotor->push_back(
+                    _topo_inter_dc->queues_ns_nlp
+                            [idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
+                            [_topo_inter_dc->HOST_POD_SWITCH(
+                                    to % _topo_inter_dc->no_of_nodes())]);
+            dsttotor->push_back(
+                    _topo_inter_dc->pipes_ns_nlp
+                            [idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
+                            [_topo_inter_dc->HOST_POD_SWITCH(
+                                    to % _topo_inter_dc->no_of_nodes())]);
+            dsttotor->push_back(
+                    _topo_inter_dc
+                            ->queues_ns_nlp
+                                    [idx_dc_to]
+                                    [to % _topo_inter_dc->no_of_nodes()]
+                                    [_topo_inter_dc->HOST_POD_SWITCH(
+                                            to % _topo_inter_dc->no_of_nodes())]
+                            ->getRemoteEndpoint());
+        }
+
 
         ndpSrc->connect(srctotor, dsttotor, *ndpSnk, GLOBAL_TIME);
         ndpSrc->set_paths(path_entropy_size);
         ndpSnk->set_paths(path_entropy_size);
 
         // register src and snk to receive packets from their respective TORs.
-        assert(_topo->switches_lp[_topo->HOST_POD_SWITCH(from)]);
-        assert(_topo->switches_lp[_topo->HOST_POD_SWITCH(to)]);
-        _topo->switches_lp[_topo->HOST_POD_SWITCH(from)]->addHostPort(
-                from, ndpSrc->flow_id(), ndpSrc);
-        _topo->switches_lp[_topo->HOST_POD_SWITCH(to)]->addHostPort(
-                to, ndpSrc->flow_id(), ndpSnk);
+        if (_topo != NULL) {
+            assert(_topo->switches_lp[_topo->HOST_POD_SWITCH(from)]);
+            assert(_topo->switches_lp[_topo->HOST_POD_SWITCH(to)]);
+
+            _topo->switches_lp[_topo->HOST_POD_SWITCH(from)]->addHostPort(
+                    from, ndpSrc->flow_id(), ndpSrc);
+            _topo->switches_lp[_topo->HOST_POD_SWITCH(to)]->addHostPort(
+                    to, ndpSrc->flow_id(), ndpSnk);
+        } else {
+            int idx_dc = _topo_inter_dc->get_dc_id(from);
+            int idx_dc_to = _topo_inter_dc->get_dc_id(to);
+            assert(_topo_inter_dc->switches_lp
+                           [idx_dc][_topo_inter_dc->HOST_POD_SWITCH(
+                                   from % _topo_inter_dc->no_of_nodes())]);
+            assert(_topo_inter_dc->switches_lp
+                           [idx_dc_to][_topo_inter_dc->HOST_POD_SWITCH(
+                                   to % _topo_inter_dc->no_of_nodes())]);
+
+            _topo_inter_dc
+                    ->switches_lp[idx_dc][_topo_inter_dc->HOST_POD_SWITCH(
+                            from % _topo_inter_dc->no_of_nodes())]
+                    ->addHostPort(from % _topo_inter_dc->no_of_nodes(),
+                                  ndpSrc->flow_id(), ndpSrc);
+            _topo_inter_dc
+                    ->switches_lp[idx_dc_to][_topo_inter_dc->HOST_POD_SWITCH(
+                            to % _topo_inter_dc->no_of_nodes())]
+                    ->addHostPort(to % _topo_inter_dc->no_of_nodes(),
+                                  ndpSrc->flow_id(), ndpSnk);
+        }
     }
 }
 

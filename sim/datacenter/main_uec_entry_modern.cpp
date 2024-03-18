@@ -139,6 +139,7 @@ int main(int argc, char **argv) {
     double quickadapt_lossless_rtt = 2.0;
     int reaction_delay = 1;
     bool stop_after_quick = false;
+    char *tm_file = NULL;
     bool use_pacing = false;
     int precision_ts = 1;
     int once_per_rtt = 0;
@@ -272,10 +273,9 @@ int main(int argc, char **argv) {
             printf("DisableCase4: %d\n", disable_case_4);
             i++;
         } else if (!strcmp(argv[i], "-stop_after_quick")) {
-            stop_after_quick = atoi(argv[i + 1]);
-            UecSrc::set_stop_after_quick(stop_after_quick);
-            printf("StopAfterQuick: %d\n", stop_after_quick);
-            i++;
+            UecSrc::set_stop_after_quick(true);
+            printf("StopAfterQuick: %d\n", true);
+            
         } else if (!strcmp(argv[i], "-number_entropies")) {
             number_entropies = atoi(argv[i + 1]);
             i++;
@@ -366,11 +366,14 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-phantom_both_queues")) {
             CompositeQueue::set_use_both_queues();
             printf("PhantomUseBothForECNMarking: %d\n", 1);
-            i++;
         } else if (!strcmp(argv[i], "-delay_gain_value_med_inc")) {
             delay_gain_value_med_inc = std::stod(argv[i + 1]);
             // UecSrc::set_delay_gain_value_med_inc(delay_gain_value_med_inc);
             printf("DelayGainValue: %f\n", delay_gain_value_med_inc);
+            i++;
+        } else if (!strcmp(argv[i], "-tm")) {
+            tm_file = argv[i + 1];
+            cout << "traffic matrix input file: " << tm_file << endl;
             i++;
         } else if (!strcmp(argv[i], "-target_rtt_percentage_over_base")) {
             target_rtt_percentage_over_base = atoi(argv[i + 1]);
@@ -540,8 +543,8 @@ int main(int argc, char **argv) {
             } else if (!strcmp(argv[i + 1], "smartt")) {
                 UecSrc::set_alogirthm("smartt");
                 printf("Name Running: SMaRTT\n");
-            } else if (!strcmp(argv[i + 1], "delayB_rtt")) {
-                UecSrc::set_alogirthm("delayB_rtt");
+            } else if (!strcmp(argv[i + 1], "mprdma")) {
+                UecSrc::set_alogirthm("mprdma");
                 printf("Name Running: SMaRTT Per RTT\n");
             } else if (!strcmp(argv[i + 1], "delayC")) {
                 UecSrc::set_alogirthm("delayC");
@@ -758,65 +761,317 @@ int main(int argc, char **argv) {
     // int receiving_node = 127;
     vector<int> subflows_chosen;
 
-    printf("Starting LGS Interface");
-    LogSimInterface *lgs;
-    if (topology_normal) {
-        printf("Normal Topology\n");
-        FatTreeTopology::set_tiers(3);
-        FatTreeTopology::set_os_stage_2(fat_tree_k);
-        FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
-        FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
-        FatTreeTopology::set_bts_threshold(bts_threshold);
-        FatTreeTopology::set_ignore_data_ecn(ignore_ecn_data);
-        FatTreeTopology *top = new FatTreeTopology(
-                no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
-                queue_choice, hop_latency, switch_latency);
-        lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
-    } else {
-        if (interdc_delay != 0) {
-            FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
-            UecSrc::set_interdc_delay(interdc_delay);
+    ConnectionMatrix *conns = NULL;
+    LogSimInterface *lgs = NULL;
+
+    if (tm_file != NULL) {
+
+
+        FatTreeInterDCTopology *top_dc = NULL;
+        FatTreeTopology *top = NULL;
+
+        if (topology_normal) {
+            printf("Normal Topology\n");
+            FatTreeTopology::set_tiers(3);
+            FatTreeTopology::set_os_stage_2(fat_tree_k);
+            FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
+            FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
+            FatTreeTopology::set_bts_threshold(bts_threshold);
+            FatTreeTopology::set_ignore_data_ecn(ignore_ecn_data);
+            top = new FatTreeTopology(
+                    no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+                    queue_choice, hop_latency, switch_latency);
         } else {
-            FatTreeInterDCTopology::set_interdc_delay(hop_latency);
-            UecSrc::set_interdc_delay(hop_latency);
+            if (interdc_delay != 0) {
+                FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
+                UecSrc::set_interdc_delay(interdc_delay);
+            } else {
+                FatTreeInterDCTopology::set_interdc_delay(hop_latency);
+                UecSrc::set_interdc_delay(hop_latency);
+            }
+            FatTreeInterDCTopology::set_tiers(3);
+            FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
+            FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
+            FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin,
+                                                                        kmax);
+            FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
+            FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
+            top_dc = new FatTreeInterDCTopology(
+                    no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+                    queue_choice, hop_latency, switch_latency);
         }
-        FatTreeInterDCTopology::set_tiers(3);
-        FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
-        FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
-        FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin,
-                                                                       kmax);
-        FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
-        FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
-        FatTreeInterDCTopology *top = new FatTreeInterDCTopology(
-                no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
-                queue_choice, hop_latency, switch_latency);
-        lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
-    }
 
-    lgs->set_protocol(UEC_PROTOCOL);
-    lgs->set_cwd(cwnd);
-    lgs->set_queue_size(queuesize);
-    lgs->setReuse(reuse_entropy);
-    // lgs->setNumberEntropies(number_entropies);
-    lgs->setIgnoreEcnAck(ignore_ecn_ack);
-    lgs->setIgnoreEcnData(ignore_ecn_data);
-    lgs->setNumberPaths(number_entropies);
-    start_lgs(goal_filename, *lgs);
+        conns = new ConnectionMatrix(no_of_nodes);
 
-    /*for (int src = 0; src < dest; ++src) {
-        connID++;
-        if (!net_paths[src][dest]) {
-            vector<const Route *> *paths = top->get_paths(src, dest);
-            net_paths[src][dest] = paths;
-            for (unsigned int i = 0; i < paths->size(); i++) {
-                routes.push_back((*paths)[i]);
+        if (tm_file) {
+            cout << "Loading connection matrix from  " << tm_file << endl;
+
+            if (!conns->load(tm_file)) {
+                cout << "Failed to load connection matrix " << tm_file << endl;
+                exit(-1);
+            }
+        } else {
+            cout << "Loading connection matrix from  standard input" << endl;
+            conns->load(cin);
+        }
+
+        map<flowid_t, TriggerTarget *> flowmap;
+        vector<connection *> *all_conns = conns->getAllConnections();
+        vector<UecSrc *> uec_srcs;
+        UecSrc *uecSrc;
+        UecSink *uecSnk;
+
+        for (size_t c = 0; c < all_conns->size(); c++) {
+            connection *crt = all_conns->at(c);
+            int src = crt->src;
+            int dest = crt->dst;
+            uint64_t rtt = BASE_RTT_MODERN * 1000;
+            uint64_t bdp = BDP_MODERN_UEC;
+            printf("Reaching here1\n");
+            fflush(stdout);
+           
+            /* Route *myin = new Route(*top->get_paths(src, dest)->at(0));
+            int hops = myin->hop_count(); // hardcoded for now */
+
+            uint64_t actual_starting_cwnd = 0;
+            uint64_t base_rtt_max_hops =
+                    (hops * LINK_DELAY_MODERN) +
+                    (PKT_SIZE_MODERN * 8 / LINK_SPEED_MODERN * hops) +
+                    (hops * LINK_DELAY_MODERN) +
+                    (64 * 8 / LINK_SPEED_MODERN * hops);
+            uint64_t bdp_local = base_rtt_max_hops * LINK_SPEED_MODERN / 8;
+
+            if (starting_cwnd_ratio == 0) {
+                actual_starting_cwnd = bdp_local; // Equal to BDP if not other info
+            } else {
+                actual_starting_cwnd = bdp_local * starting_cwnd_ratio;
+            }
+
+            UecSrc::set_starting_cwnd(actual_starting_cwnd * 2);
+            printf("Setting CWND to %lu\n", actual_starting_cwnd);
+
+            printf("Using BDP of %lu - Queue is %lld - Starting Window is %lu\n",
+                bdp_local, queuesize, actual_starting_cwnd);
+
+            uecSrc = new UecSrc(NULL, NULL, eventlist, rtt, bdp, 100,
+                                6);
+
+            uecSrc->setNumberEntropies(256);
+            uec_srcs.push_back(uecSrc);
+            uecSrc->set_dst(dest);
+            printf("Reaching here\n");
+            if (crt->flowid) {
+                uecSrc->set_flowid(crt->flowid);
+                assert(flowmap.find(crt->flowid) ==
+                    flowmap.end()); // don't have dups
+                flowmap[crt->flowid] = uecSrc;
+            }
+
+            if (crt->size > 0) {
+                uecSrc->setFlowSize(crt->size);
+            }
+
+            if (crt->trigger) {
+                Trigger *trig = conns->getTrigger(crt->trigger, eventlist);
+                trig->add_target(*uecSrc);
+            }
+            if (crt->send_done_trigger) {
+                Trigger *trig =
+                        conns->getTrigger(crt->send_done_trigger, eventlist);
+                uecSrc->set_end_trigger(*trig);
+            }
+
+            uecSnk = new UecSink();
+
+            uecSrc->setName("uec_" + ntoa(src) + "_" + ntoa(dest));
+
+            cout << "uec_" + ntoa(src) + "_" + ntoa(dest) << endl;
+            logfile.writeName(*uecSrc);
+
+            uecSnk->set_src(src);
+
+            uecSnk->setName("uec_sink_" + ntoa(src) + "_" + ntoa(dest));
+            logfile.writeName(*uecSnk);
+            if (crt->recv_done_trigger) {
+                Trigger *trig =
+                        conns->getTrigger(crt->recv_done_trigger, eventlist);
+                uecSnk->set_end_trigger(*trig);
+            }
+
+            // uecRtxScanner->registerUec(*uecSrc);
+
+            switch (route_strategy) {
+            case ECMP_FIB:
+            case ECMP_FIB_ECN:
+            case ECMP_RANDOM2_ECN:
+            case REACTIVE_ECN: {
+                Route *srctotor = new Route();
+                Route *dsttotor = new Route();
+
+                if (top != NULL) {
+                    srctotor->push_back(
+                            top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)]);
+                    srctotor->push_back(
+                            top->pipes_ns_nlp[src][top->HOST_POD_SWITCH(src)]);
+                    srctotor->push_back(
+                            top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)]
+                                    ->getRemoteEndpoint());
+
+                    dsttotor->push_back(
+                            top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]);
+                    dsttotor->push_back(
+                            top->pipes_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]);
+                    dsttotor->push_back(
+                            top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]
+                                    ->getRemoteEndpoint());
+
+                } else if (top_dc != NULL) {
+                    int idx_dc = top_dc->get_dc_id(src);
+                    int idx_dc_to = top_dc->get_dc_id(dest);
+                    uecSrc->src_dc = top_dc->get_dc_id(src);
+                    uecSrc->dest_dc = top_dc->get_dc_id(dest);
+                    uecSrc->updateParams();
+
+                    printf("Source in Datacenter %d - Dest in Datacenter %d\n", idx_dc,
+                        idx_dc_to);
+
+                    srctotor->push_back(
+                            top_dc->queues_ns_nlp
+                                    [idx_dc][src % top_dc->no_of_nodes()]
+                                    [top_dc->HOST_POD_SWITCH(
+                                            src % top_dc->no_of_nodes())]);
+                    srctotor->push_back(
+                            top_dc->pipes_ns_nlp
+                                    [idx_dc][src % top_dc->no_of_nodes()]
+                                    [top_dc->HOST_POD_SWITCH(
+                                            src % top_dc->no_of_nodes())]);
+                    srctotor->push_back(
+                            top_dc
+                                    ->queues_ns_nlp
+                                            [idx_dc]
+                                            [src % top_dc->no_of_nodes()]
+                                            [top_dc->HOST_POD_SWITCH(
+                                                    src %
+                                                    top_dc->no_of_nodes())]
+                                    ->getRemoteEndpoint());
+
+                    dsttotor->push_back(
+                            top_dc->queues_ns_nlp
+                                    [idx_dc_to][dest % top_dc->no_of_nodes()]
+                                    [top_dc->HOST_POD_SWITCH(
+                                            dest % top_dc->no_of_nodes())]);
+                    dsttotor->push_back(
+                            top_dc->pipes_ns_nlp
+                                    [idx_dc_to][dest % top_dc->no_of_nodes()]
+                                    [top_dc->HOST_POD_SWITCH(
+                                            dest % top_dc->no_of_nodes())]);
+                    dsttotor->push_back(
+                            top_dc
+                                    ->queues_ns_nlp
+                                            [idx_dc_to]
+                                            [dest % top_dc->no_of_nodes()]
+                                            [top_dc->HOST_POD_SWITCH(
+                                                    dest % top_dc->no_of_nodes())]
+                                    ->getRemoteEndpoint());
+                }
+
+                uecSrc->from = src;
+                uecSnk->to = dest;
+                uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
+                uecSrc->set_paths(number_entropies);
+                uecSnk->set_paths(number_entropies);
+
+                // register src and snk to receive packets src their respective
+                // TORs.
+                if (top != NULL) {
+                    top->switches_lp[top->HOST_POD_SWITCH(src)]->addHostPort(
+                            src, uecSrc->flow_id(), uecSrc);
+                    top->switches_lp[top->HOST_POD_SWITCH(dest)]->addHostPort(
+                            dest, uecSrc->flow_id(), uecSnk);
+                } else {
+                    int idx_dc = top_dc->get_dc_id(src);
+                    int idx_dc_to = top_dc->get_dc_id(dest);
+
+                    top_dc
+                            ->switches_lp[idx_dc][top_dc->HOST_POD_SWITCH(
+                                    src % top_dc->no_of_nodes())]
+                            ->addHostPort(src % top_dc->no_of_nodes(),
+                                        uecSrc->flow_id(), uecSrc);
+                    top_dc
+                            ->switches_lp[idx_dc_to][top_dc->HOST_POD_SWITCH(
+                                    dest % top_dc->no_of_nodes())]
+                            ->addHostPort(dest % top_dc->no_of_nodes(),
+                                        uecSrc->flow_id(), uecSnk);
+                }
+                break;
+            }
+            case NOT_SET: {
+                abort();
+                break;
+            }
+            default: {
+                abort();
+                break;
+            }
             }
         }
-        if (!net_paths[dest][src]) {
-            vector<const Route *> *paths = top->get_paths(dest, src);
-            net_paths[dest][src] = paths;
+
+        while (eventlist.doNextEvent()) {
         }
-    }*/
+
+        for (std::size_t i = 0; i < uec_srcs.size(); ++i) {
+        delete uec_srcs[i];
+    }
+
+
+    } else if (goal_filename.size() > 0) {
+        printf("Starting LGS Interface");
+    
+        if (topology_normal) {
+            printf("Normal Topology\n");
+            FatTreeTopology::set_tiers(3);
+            FatTreeTopology::set_os_stage_2(fat_tree_k);
+            FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
+            FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
+            FatTreeTopology::set_bts_threshold(bts_threshold);
+            FatTreeTopology::set_ignore_data_ecn(ignore_ecn_data);
+            FatTreeTopology *top = new FatTreeTopology(
+                    no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+                    queue_choice, hop_latency, switch_latency);
+            lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+        } else {
+            if (interdc_delay != 0) {
+                FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
+                UecSrc::set_interdc_delay(interdc_delay);
+            } else {
+                FatTreeInterDCTopology::set_interdc_delay(hop_latency);
+                UecSrc::set_interdc_delay(hop_latency);
+            }
+            FatTreeInterDCTopology::set_tiers(3);
+            FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
+            FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
+            FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin,
+                                                                        kmax);
+            FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
+            FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
+            FatTreeInterDCTopology *top = new FatTreeInterDCTopology(
+                    no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+                    queue_choice, hop_latency, switch_latency);
+            lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+        }
+
+        lgs->set_protocol(UEC_PROTOCOL);
+        lgs->set_cwd(cwnd);
+        lgs->set_queue_size(queuesize);
+        lgs->setReuse(reuse_entropy);
+        // lgs->setNumberEntropies(number_entropies);
+        lgs->setIgnoreEcnAck(ignore_ecn_ack);
+        lgs->setIgnoreEcnData(ignore_ecn_data);
+        lgs->setNumberPaths(number_entropies);
+        start_lgs(goal_filename, *lgs);
+    }
+
+    
 
     // Record the setup
     int pktsize = Packet::data_packet_size();

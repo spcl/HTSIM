@@ -47,7 +47,12 @@ void FatTreeInterDCSwitch::receivePacket(Packet &pkt) {
         return;
     }
 
-    // printf("Node %s - Packet Received\n", nodename().c_str());
+    /* if (nodename() == "Switch_LowerPod_7" && pkt.size() > 100) {
+        printf("Node %s - Pkt %d %d - Packet Received at %lu\n", nodename().c_str(), pkt.from, pkt.id(), GLOBAL_TIME/1000);
+    } else if (pkt.size() > 100) {
+        printf("Node %s - Pkt %d %d - Packet Received at %lu\n", nodename().c_str(), pkt.from, pkt.id(), GLOBAL_TIME/1000);
+    } */
+    
 
     // printf("Packet Destination is 3 %d\n", pkt.dst());
 
@@ -77,7 +82,7 @@ void FatTreeInterDCSwitch::receivePacket(Packet &pkt) {
 
         if ((pkt.hop_count == 1) &&
             (pkt.type() == UEC || pkt.type() == NDP ||
-             pkt.type() == SWIFTTRIMMING || pkt.type() == UEC_DROP)) {
+             pkt.type() == SWIFTTRIMMING || pkt.type() == UEC_DROP|| pkt.type() == BBR)) {
 
             simtime_picosec my_time =
                     (GLOBAL_TIME - (4160 * 8 / LINK_SPEED_MODERN * 1000) -
@@ -455,9 +460,9 @@ Route *FatTreeInterDCSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
     if (_type == TOR) {
         if (_ft->HOST_POD_SWITCH(pkt.dst() % _ft->no_of_nodes()) == _id &&
             dc_id == _ft->get_dc_id(pkt.dst())) {
-            printf("TOR - PACKET %d@%d@%d DOWN - DC ID %d - TOT DC %d\n",
+            /* printf("TOR - PACKET %d@%d@%d DOWN - DC ID %d - TOT DC %d\n",
                    pkt.id(), pkt.from, pkt.size(), dc_id,
-                   _ft->no_of_border_switches());
+                   _ft->no_of_border_switches()); */
             // this host is directly connected and we are in the same DC
             HostFibEntry *fe = _fib->getHostRoute(
                     pkt.dst() % _ft->no_of_nodes(), pkt.flow_id());
@@ -466,10 +471,10 @@ Route *FatTreeInterDCSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
             return fe->getEgressPort();
         } else {
             // route packet up!
-            printf("TOR - PACKET %d@%d@%d UP - DC ID %d - TOT DC %d\n",
+            /* printf("TOR - PACKET %d@%d@%d UP - DC ID %d - TOT DC %d\n",
                    pkt.id(), pkt.from, pkt.size(), dc_id,
                    _ft->no_of_border_switches());
-            fflush(stdout);
+            fflush(stdout); */
             if (_uproutes)
                 _fib->setRoutes(pkt.dst(), _uproutes);
             else {
@@ -501,9 +506,9 @@ Route *FatTreeInterDCSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
             (_ft->HOST_POD(pkt.dst() % _ft->no_of_nodes()) ==
                      2 * _id / _ft->getK() &&
              dc_id == _ft->get_dc_id(pkt.dst()))) {
-            printf("AGG - PACKET %d@%d@%d DOWN - DC ID %d - TOT DC %d\n",
+            /* printf("AGG - PACKET %d@%d@%d DOWN - DC ID %d - TOT DC %d\n",
                    pkt.id(), pkt.from, pkt.size(), dc_id,
-                   _ft->no_of_border_switches());
+                   _ft->no_of_border_switches()); */
             // must go down!
             // target NLP id is 2 * pkt.dst()/K
             uint32_t target_tor =
@@ -516,10 +521,10 @@ Route *FatTreeInterDCSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
 
             _fib->addRoute(pkt.dst(), r, 1, DOWN);
         } else {
-            printf("AGG - PACKET %d@%d@%d UP - DC ID %d - TOT DC %d\n",
+            /* printf("AGG - PACKET %d@%d@%d UP - DC ID %d - TOT DC %d\n",
                    pkt.id(), pkt.from, pkt.size(), dc_id,
                    _ft->no_of_border_switches());
-            fflush(stdout);
+            fflush(stdout); */
             // go up!
             if (_uproutes)
                 _fib->setRoutes(pkt.dst() % _ft->no_of_nodes(), _uproutes);
@@ -588,9 +593,9 @@ Route *FatTreeInterDCSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                                                          _ft->no_of_nodes())) +
                            2 * _id / (_ft->getK() / _ft->getOS());
             Route *r = new Route();
-            printf("CORE - PACKET %d@%d@%d DOWN - DC ID %d - TOT DC %d\n",
+            /* printf("CORE - PACKET %d@%d@%d DOWN - DC ID %d - TOT DC %d\n",
                    pkt.id(), pkt.from, pkt.size(), dc_id,
-                   _ft->no_of_border_switches());
+                   _ft->no_of_border_switches()); */
 
             assert(_ft->queues_nc_nup[dc_id][_id][nup]);
             r->push_back(_ft->queues_nc_nup[dc_id][_id][nup]);
@@ -601,10 +606,10 @@ Route *FatTreeInterDCSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                     _ft->queues_nc_nup[dc_id][_id][nup]->getRemoteEndpoint());
             _fib->addRoute(pkt.dst(), r, 1, DOWN);
         } else {
-            printf("CORE - PACKET %d@%d@%d UP - DC ID %d - TOT DC %d\n",
+            /* printf("CORE - PACKET %d@%d@%d UP - DC ID %d - TOT DC %d\n",
                    pkt.id(), pkt.from, pkt.size(), dc_id,
                    _ft->no_of_border_switches());
-            fflush(stdout);
+            fflush(stdout); */
             // route packet up!
             if (_uproutes)
                 _fib->setRoutes(pkt.dst(), _uproutes);
@@ -633,10 +638,10 @@ Route *FatTreeInterDCSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
     } else if (_type == BORDER) {
         if (dc_id == _ft->get_dc_id(pkt.dst())) {
             // We are already at the right border switch
-            printf("BORDER - PACKET %d@%d@%d (%d) DOWN - DC ID %d - TOT DC "
+            /* printf("BORDER - PACKET %d@%d@%d (%d) DOWN - DC ID %d - TOT DC "
                    "%d\n",
                    pkt.id(), pkt.from, pkt.to, pkt.dst(), dc_id,
-                   _ft->no_of_border_switches());
+                   _ft->no_of_border_switches()); */
             uint32_t nup = _ft->MIN_POD_ID(_ft->HOST_POD(pkt.dst() %
                                                          _ft->no_of_nodes())) +
                            2 * _id / (_ft->getK() / _ft->getOS());
@@ -649,9 +654,9 @@ Route *FatTreeInterDCSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                      link_id++) {
                     Route *r = new Route();
 
-                    printf("DC ID %d - ID %d - NUP %d - LINK ID %d\n", dc_id,
+                    /* printf("DC ID %d - ID %d - NUP %d - LINK ID %d\n", dc_id,
                            _id, nup, link_id);
-                    fflush(stdout);
+                    fflush(stdout); */
 
                     r->push_back(
                             _ft->queues_nborder_nc[dc_id][_id][nup][link_id]);
@@ -665,16 +670,16 @@ Route *FatTreeInterDCSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
             }
         } else {
             // We need to cross the DC
-            printf("BORDER - PACKET %d@%d@%d UP - DC ID %d - TOT DC %d\n",
+            /* printf("BORDER - PACKET %d@%d@%d UP - DC ID %d - TOT DC %d\n",
                    pkt.id(), pkt.from, pkt.size(), dc_id,
                    _ft->no_of_border_switches());
-            fflush(stdout);
+            fflush(stdout); */
             if (_uproutes)
                 _fib->setRoutes(pkt.dst(), _uproutes);
             else {
                 for (uint32_t k = 0; k < _ft->no_of_border_switches(); k++) {
                     for (int link_id = 0;
-                         link_id < _ft->no_of_links_between_border();
+                         link_id < 1/*_ft->no_of_links_between_border()*/;
                          link_id++) {
                         Route *r = new Route();
                         if (dc_id == 0) {

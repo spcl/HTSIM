@@ -103,15 +103,20 @@ bool CompositeQueue::decide_ECN() {
     // ECN mark on deque
     if (_use_both_queues) {
 
+        //printf("Using both Queues - Size Real %lu\n", _maxsize);
+
         bool real_queue_ecn = false;
-        _ecn_maxthresh = _maxsize / 100 * 50;
-        _ecn_minthresh = _maxsize / 100 * 80;
+        _ecn_maxthresh = _maxsize / 100 * 80;
+        _ecn_minthresh = _maxsize / 100 * 20;
         if (_queuesize_low > _ecn_minthresh) {
+        printf("Using both Queues1 %s - Size Real %lu %lu - ECN %lu %lu\n",_nodename.c_str(),  _maxsize, _queuesize_low, _ecn_minthresh, _ecn_maxthresh);
+
             uint64_t p = (0x7FFFFFFF * (_queuesize_low - _ecn_minthresh)) /
                          (_ecn_maxthresh - _ecn_minthresh);
+            
             if ((uint64_t)random() < p) {
                 real_queue_ecn = true;
-                printf("Using both Queues - Size Real %lu\n", _maxsize);
+                printf("Using both Queues2 - Size Real %lu\n", _maxsize);
             }
         }
 
@@ -145,6 +150,7 @@ bool CompositeQueue::decide_ECN() {
         }
         return false;
     } else {
+        printf("Using both Queues1 %s - Time %lu - Size Real %lu %lu - ECN %lu %lu\n",_nodename.c_str(), GLOBAL_TIME / 1000, _maxsize, _queuesize_low, _ecn_minthresh, _ecn_maxthresh);
         if (_queuesize_low > _ecn_maxthresh) {
             return true;
         } else if (_queuesize_low > _ecn_minthresh) {
@@ -213,10 +219,15 @@ void CompositeQueue::completeService() {
         /*printf("Budget From %d - ID %d - Budget %li\n", pkt->from, pkt->id(),
                pkt->timeout_budget);*/
 
-        printf("Send: Queue %s - From %d to %d - time %lu - Last %f\n",
-               _nodename.c_str(), pkt->from, pkt->to, GLOBAL_TIME / 1000,
-               GLOBAL_TIME / 1000.0 - last_send / 1000.0);
-        last_send = GLOBAL_TIME;
+
+        if (_nodename == "compqueue(50000Mb/s,1250000bytes)DC1-DST15->LS7") {
+                printf("Sending: Queue %s - From %d to %d size %d - time %lu - "
+                       "Last %f\n",
+                       _nodename.c_str(), pkt->from, pkt->to, pkt->size(),
+                       GLOBAL_TIME / 1000,
+                       GLOBAL_TIME / 1000.0 - last_recv / 1000.0);
+                last_recv = GLOBAL_TIME;
+            }
 
         packets_seen++;
         _queuesize_low -= pkt->size();
@@ -242,6 +253,14 @@ void CompositeQueue::completeService() {
         trimmed_seen++;
         // printf("Queue %s - %d@%d\n", _nodename.c_str(), pkt->from, pkt->to);
         _queuesize_high -= pkt->size();
+        if (_nodename == "compqueue(50000Mb/s,1250000bytes)DC1-DST15->LS7" || true) {
+                printf("Sending: Queue %s - From %d to %d size %d - time %lu - "
+                       "Last %f\n",
+                       _nodename.c_str(), pkt->from, pkt->to, pkt->size(),
+                       GLOBAL_TIME / 1000,
+                       GLOBAL_TIME / 1000.0 - last_recv / 1000.0);
+                last_recv = GLOBAL_TIME;
+            }
         if (_logger)
             _logger->logQueue(*this, QueueLogger::PKT_SERVICE, *pkt);
         if (pkt->type() == NDPACK)
@@ -328,6 +347,8 @@ void CompositeQueue::receivePacket(Packet &pkt) {
                        << int(_ecn_minthresh * 8 / (_bitrate / 1e9)) / (1)
                        << ","
                        << int(_ecn_maxthresh * 8 / (_bitrate / 1e9)) / (1)
+                       << ","
+                       << int(_maxsize * 8 / (_bitrate / 1e9)) / (1)
                        << std::endl;
 
                 MyFile.close();
@@ -380,17 +401,14 @@ void CompositeQueue::receivePacket(Packet &pkt) {
             pkt_p->enter_timestamp = GLOBAL_TIME;
             _enqueued_low.push(pkt_p);
 
-            if (_nodename == "compqueue(50000Mb/s,1250000bytes)DC1-LS7->DST15") {
+            /* if (_nodename == "compqueue(50000Mb/s,1250000bytes)DC1-LS7->DST15") {
                 printf("Receive: Queue %s - From %d to %d size %d - time %lu - "
                        "Last %f\n",
                        _nodename.c_str(), pkt_p->from, pkt_p->to, pkt_p->size(),
                        GLOBAL_TIME / 1000,
                        GLOBAL_TIME / 1000.0 - last_recv / 1000.0);
-                if (pkt_p->from == 30) {
-                    last_recv = GLOBAL_TIME;
-                    printf("Updating at %lu\n", GLOBAL_TIME / 1000);
-                }
-            }
+                last_recv = GLOBAL_TIME;
+            } */
 
             // Increase PQ on data packet, if in parallel
             if (!_phantom_in_series) {

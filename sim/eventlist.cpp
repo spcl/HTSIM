@@ -44,7 +44,7 @@ void EventList::sourceIsPending(EventSource &src, simtime_picosec when) {
       }
     */
 
-    // printf("When %lu vs Now %lu\n", when, now());
+    //printf("When %lu vs Now %lu\n", when, now());
     // fflush(stdout);
     assert(when >= now());
     if (_endtime == 0 || when < _endtime)

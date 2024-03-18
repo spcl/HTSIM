@@ -1,15 +1,15 @@
 num_ranks 32
 
 rank 0 {
-l1: send 32000000b to 15 tag 0
+l1: send 128000000b to 15 tag 0
 }
 
 rank 1 {
-l1: send 32000000b to 15 tag 0
+l1: send 128000000b to 15 tag 0
 }
 
 rank 2 {
-l1: send 32000000b to 15 tag 0
+l1: send 128000000b to 15 tag 0
 }
 
 rank 3 {
@@ -49,9 +49,9 @@ rank 14 {
 }
 
 rank 15 {
-l1: recv 32000000b from 0 tag 0
-l2: recv 32000000b from 1 tag 0
-l3: recv 32000000b from 2 tag 0
+l1: recv 128000000b from 0 tag 0
+l2: recv 128000000b from 1 tag 0
+l3: recv 128000000b from 2 tag 0
 }
 
 rank 16 {

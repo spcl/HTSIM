@@ -34,6 +34,8 @@ def main(args):
     os.system("rm -r case2/")
     os.system("rm -r case3/")
     os.system("rm -r case4/")
+    os.system("rm -r ecn_rate/")
+    os.system("rm -r sending_rate/")
 
     os.system("cp -a ../sim/output/cwd/. cwd/")
     os.system("cp -a ../sim/output/rtt/. rtt/")
@@ -52,6 +54,8 @@ def main(args):
     os.system("cp -a ../sim/output/case2/. case2/")
     os.system("cp -a ../sim/output/case3/. case3/")
     os.system("cp -a ../sim/output/case4/. case4/")
+    os.system("cp -a ../sim/output/ecn_rate/. ecn_rate/")
+    os.system("cp -a ../sim/output/sending_rate/. sending_rate/")
 
     # RTT Data
     colnames=['Time', 'RTT', 'seqno', 'ackno', 'base', 'target']
@@ -126,7 +130,7 @@ def main(args):
         df30.reset_index(drop=True, inplace=True)
 
     # Queue Data
-    colnames=['Time', 'Queue', 'KMin', 'KMax'] 
+    colnames=['Time', 'Queue', 'KMin', 'KMax', 'MaxQueueSize'] 
     df3= pd.DataFrame(columns =colnames)
     name = ['0'] * df3.shape[0]
     df3 = df3.assign(Node=name)
@@ -143,6 +147,8 @@ def main(args):
         name = [str(path_in_str)] * temp_df3.shape[0]
         temp_df3 = temp_df3.assign(Node=name)
         temp_df3.drop_duplicates('Time', inplace = True)
+        temp_df3['Queue'] = temp_df3['Queue']/temp_df3['MaxQueueSize']*100
+
         df3 = pd.concat([df3, temp_df3])
 
     kmin = df3["KMin"].max()
@@ -154,6 +160,53 @@ def main(args):
         df3 = df3.iloc[::int(ratio)]
         # Reset the index of the new dataframe
         df3.reset_index(drop=True, inplace=True)
+
+    # Sending Rate Data
+    colnames=['Time', 'SendingRate'] 
+    df_sending= pd.DataFrame(columns =colnames)
+    name = ['0'] * df_sending.shape[0]
+    df_sending = df_sending.assign(Node=name)
+    df_sending.drop_duplicates('Time', inplace = True)
+
+    pathlist = Path('sending_rate').glob('**/*.txt')
+    for files in natsort.natsorted(pathlist,reverse=False):
+        path_in_str = str(files)
+        temp_df_sending = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
+        name = [str(path_in_str)] * temp_df_sending.shape[0]
+        temp_df_sending = temp_df_sending.assign(Node=name)
+        temp_df_sending.drop_duplicates('Time', inplace = True)
+        df_sending = pd.concat([df_sending, temp_df_sending])
+
+    if (len(df_sending) > 100000):
+        ratio = len(df_sending) / 50000
+        # DownScale
+        df_sending = df_sending.iloc[::int(ratio)]
+        # Reset the index of the new dataframe
+        df_sending.reset_index(drop=True, inplace=True)
+
+     # Queue Data
+    colnames=['Time', 'ECN_Rate'] 
+    df_ecn_rate= pd.DataFrame(columns =colnames)
+    name = ['0'] * df_ecn_rate.shape[0]
+    df_ecn_rate = df_ecn_rate.assign(Node=name)
+    df_ecn_rate.drop_duplicates('Time', inplace = True)
+
+    pathlist = Path('ecn_rate').glob('**/*.txt')
+    for files in natsort.natsorted(pathlist,reverse=False):
+
+        path_in_str = str(files)
+        temp_df_ecn_rate = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
+        name = [str(path_in_str)] * temp_df_ecn_rate.shape[0]
+        temp_df_ecn_rate = temp_df_ecn_rate.assign(Node=name)
+        temp_df_ecn_rate.drop_duplicates('Time', inplace = True)
+        df_ecn_rate = pd.concat([df_ecn_rate, temp_df_ecn_rate])
+
+    if (len(df_ecn_rate) > 100000):
+        ratio = len(df_ecn_rate) / 50000
+        # DownScale
+        df_ecn_rate = df_ecn_rate.iloc[::int(ratio)]
+        # Reset the index of the new dataframe
+        df_ecn_rate.reset_index(drop=True, inplace=True)
 
     # ECN Data
     colnames=['Time', 'ECN'] 
@@ -519,78 +572,12 @@ def main(args):
     y_mediumi =max_rtt * 0.65
     mean_rtt = 10000
     count = 0
-    for i in df['Node'].unique():
-        sub_df = df.loc[df['Node'] == str(i)]
+    for i in df2['Node'].unique():
+        sub_df = df2.loc[df2['Node'] == str(i)]
         fig.add_trace(
-            go.Scatter(x=sub_df["Time"], y=sub_df['RTT'], mode='markers', marker=dict(size=2), name=str(i), line=dict(color=color[0]), opacity=0.9, showlegend=True),
-            secondary_y=False,
-        )
-        '''
-        fig.add_trace(
-            go.Scatter(x=sub_df["Time"], y=sub_df['RTT'], mode='markers', marker=dict(size=10), name=str(i), line=dict(color=color[0]), opacity=0.9, showlegend=True, marker_symbol="triangle-up"),
-            secondary_y=False,
-        )
-        '''
-        if (args.show_triangles is not None):
-            fig.add_trace(
-                go.Scatter(x=sub_df["Time"], y=sub_df['RTT'], mode="markers", marker_symbol="triangle-up", name="Mark Packet", marker=dict(size=6, color=color[1]), showlegend=True),
-                secondary_y=False
-            )
-        if (args.num_to_show == 1):
-            break
-
-    print("Congestion Plot")
-    if (args.show_case):
-        fig.add_trace(
-            go.Scatter(x=df30["Time"], y=df30['Case1'], name="Case1", line=dict(dash='dot', color='violet'), showlegend=True),
+            go.Scatter(x=sub_df["Time"], y=sub_df['Congestion Window'], name="CWD " + str(i), line=dict(dash='dot'), showlegend=True),
             secondary_y=True,
         )
-
-        fig.add_trace(
-            go.Scatter(x=df31["Time"], y=df31['Case2'], name="Case2", line=dict(dash='dot', color='orange'), showlegend=True),
-            secondary_y=True,
-        )
-
-        fig.add_trace(
-            go.Scatter(x=df32["Time"], y=df32['Case3'], name="Case3", line=dict(dash='dot', color='blue'), showlegend=True),
-            secondary_y=True,
-        )
-
-        fig.add_trace(
-            go.Scatter(x=df33["Time"], y=df33['Case4'], name="Case4", line=dict(dash='dot', color='brown'), showlegend=True),
-            secondary_y=True,
-        )
-    else:
-        for i in df2['Node'].unique():
-            sub_df = df2.loc[df2['Node'] == str(i)]
-            fig.add_trace(
-                go.Scatter(x=sub_df["Time"], y=sub_df['Congestion Window'], name="CWD " + str(i), line=dict(dash='dot'), showlegend=True),
-                secondary_y=True,
-            )
-    # Trimming RTT Bytes
-    '''for i in df14['Node'].unique():
-        sub_df = df14.loc[df14['Node'] == str(i)]
-        fig.add_trace(
-            go.Scatter(x=sub_df["Time"], y=sub_df['TrimmedRTT'], name="TrimmedRTT " + str(i), line=dict(dash='longdashdot'), showlegend=True),
-            secondary_y=True,
-        )
-
-    # ECN RTT Bytes
-    for i in df13['Node'].unique():
-        sub_df = df13.loc[df13['Node'] == str(i)]
-        fig.add_trace(
-            go.Scatter(x=sub_df["Time"], y=sub_df['ECNRTT'], name="ECNRTT " + str(i), line=dict(dash='longdashdot'), showlegend=True),
-            secondary_y=True,
-        )
-    
-    # Acked Bytes
-    print(df8)
-    for i in df8['Node'].unique():
-        sub_df = df8.loc[df8['Node'] == str(i)]
-        fig.add_trace(
-            go.Scatter(x=sub_df["Time"], y=sub_df['AckedBytes'], name="Acked " + str(i), line=dict(dash='longdashdot'), showlegend=True),
-            secondary_y=True,
-        )'''
 
     # Queue
     print("Queue Plot")
@@ -609,7 +596,43 @@ def main(args):
         )
         count += 1
 
+
+    # Sending Rate
+    print("Sending Rate Plot")
+    count = 0
+    df_sending['SendingRate'] = pd.to_numeric(df_sending['SendingRate'])
+    max_ele = df_sending[['SendingRate']].idxmax(1)
+    for i in df_sending['Node'].unique():
+        sub_df = df_sending.loc[df_sending['Node'] == str(i)]
+        if (skip_small_value is True and sub_df['SendingRate'].max() < 1):
+            count += 1
+            continue
+
+        fig.add_trace(
+            go.Scatter(x=sub_df["Time"], y=sub_df['SendingRate'], name="SendingRate " + str(i),   marker=dict(size=1.4), line=dict(dash='solid', width=3),  showlegend=True),
+            secondary_y=False,
+        )
+        count += 1
+
+    # ECN Rate
+    print("ECN Rate Plot")
+    count = 0
+    df_ecn_rate['ECN_Rate'] = pd.to_numeric(df_ecn_rate['ECN_Rate'])
+    max_ele = df_ecn_rate[['ECN_Rate']].idxmax(1)
+    for i in df_ecn_rate['Node'].unique():
+        sub_df = df_ecn_rate.loc[df_ecn_rate['Node'] == str(i)]
+        if (skip_small_value is True and sub_df['ECN_Rate'].max() < 1):
+            count += 1
+            continue
+
+        fig.add_trace(
+            go.Scatter(x=sub_df["Time"], y=sub_df['ECN_Rate'], name="ECN_Rate " + str(i),   marker=dict(size=1.4), line=dict(dash='solid', width=3),  showlegend=True),
+            secondary_y=False,
+        )
+        count += 1
+
     # Phantom Queue
+    '''mean_ecn = df4["Time"].mean()
     print("Queue Plot")
     count = 0
     df30['Queue'] = pd.to_numeric(df30['Queue'])
@@ -628,7 +651,6 @@ def main(args):
 
     print("ECN Plot")
     # ECN
-    mean_ecn = df4["Time"].mean()
     for i in df4['Node'].unique():
         df4['ECN'] = y_ecn
         sub_df4 = df4.loc[df4['Node'] == str(i)]
@@ -645,11 +667,11 @@ def main(args):
         fig.add_trace(
             go.Scatter(x=sub_df5["Time"], y=sub_df5["Sent"], mode="markers", marker_symbol="triangle-up", name="Sent Packet", marker=dict(size=5, color="green"), showlegend=True),
             secondary_y=False
-        )
+        )'''
 
     print("NACK Plot")
     # NACK
-    mean_sent = df6["Time"].mean()
+    '''mean_sent = df6["Time"].mean()
     df6['Nack'] = df6['Nack'].multiply(y_nack)
     for i in df6['Node'].unique():
         sub_df6 = df6.loc[df6['Node'] == str(i)]
@@ -679,18 +701,7 @@ def main(args):
             go.Scatter(x=sub_df10["Time"], y=sub_df10["FastD"], mode="markers", marker_symbol="triangle-up", name="FastD Packet", marker=dict(size=5, color="black"), showlegend=True),
             secondary_y=False
         )
-
-    print("MediumI Plot")
-    # MediumI
-    mean_sent = df11["Time"].mean()
-    df11['MediumI'] = df11['MediumI'].multiply(y_mediumi)
-    for i in df11['Node'].unique():
-        sub_df11 = df11.loc[df11['Node'] == str(i)]
-        fig.add_trace(
-            go.Scatter(x=sub_df11["Time"], y=sub_df11["MediumI"], mode="markers", marker_symbol="triangle-up", name="MediumI Packet", marker=dict(size=5, color="white"), showlegend=True),
-            secondary_y=False
-        )
-
+    '''
 
     if args.name is not None:
         my_title=args.name
@@ -701,11 +712,12 @@ def main(args):
     # Add figure title
     fig.update_layout(title_text=my_title)
 
+    fig.update_layout(yaxis_range=[0,100])
 
     if (args.x_limit is not None):
         fig.update_layout(xaxis_range=[0,args.x_limit])
 
-    if (args.annotations is not None):
+    '''if (args.annotations is not None):
         fig.add_annotation(
         xref="x domain",
         yref="y domain",
@@ -814,7 +826,7 @@ def main(args):
         text="KMax",          # The text label you want to display
         showarrow=False,               # No arrow pointing to the label
         font=dict(size=12, color="green"),  # Customize the font size and color
-    )
+    )'''
 
     config = {
     'toImageButtonOptions': {

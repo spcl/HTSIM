@@ -8,6 +8,8 @@
 #include <sstream>
 #include <string.h>
 //#include "subflow_control.h"
+#include "fat_tree_interdc_topology.h"
+
 #include "clock.h"
 #include "compositequeue.h"
 #include "connection_matrix.h"
@@ -98,6 +100,9 @@ int main(int argc, char **argv) {
     int kmax = -1;
     int ratio_os_stage_1 = 1;
     int flowsize = -1;
+    bool topology_normal = true;
+    uint64_t interdc_delay = 0;
+    uint64_t max_queue_size = 0;
 
     int i = 1;
     filename << "logout.dat";
@@ -122,7 +127,14 @@ int main(int argc, char **argv) {
             goal_filename = argv[i + 1];
             i++;
 
-        } else if (!strcmp(argv[i], "-number_entropies")) {
+        } else if (!strcmp(argv[i], "-interdc_delay")) {
+            interdc_delay = atoi(argv[i + 1]);
+            interdc_delay *= 1000;
+            i++;
+        } else if (!strcmp(argv[i], "-max_queue_size")) {
+            max_queue_size = atoi(argv[i + 1]);
+            i++;
+        }else if (!strcmp(argv[i], "-number_entropies")) {
             number_entropies = atoi(argv[i + 1]);
             i++;
         } else if (!strcmp(argv[i], "-kmax")) {
@@ -130,7 +142,14 @@ int main(int argc, char **argv) {
             kmax = atoi(argv[i + 1]);
             printf("KMax: %d\n", atoi(argv[i + 1]));
             i++;
-        } else if (!strcmp(argv[i], "-kmin")) {
+        } else if (!strcmp(argv[i], "-topology")) {
+            if (!strcmp(argv[i + 1], "normal")) {
+                topology_normal = true;
+            } else if (!strcmp(argv[i + 1], "interdc")) {
+                topology_normal = false;
+            }
+            i++;
+        }else if (!strcmp(argv[i], "-kmin")) {
             // kmin as percentage of queue size (0..100)
             kmin = atoi(argv[i + 1]);
             printf("KMin: %d\n", atoi(argv[i + 1]));
@@ -192,12 +211,15 @@ int main(int argc, char **argv) {
             } else if (!strcmp(argv[i + 1], "ecmp_host")) {
                 route_strategy = ECMP_FIB;
                 FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+                FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
             } else if (!strcmp(argv[i + 1], "ecmp_host_random_ecn")) {
                 route_strategy = ECMP_RANDOM_ECN;
                 FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+                FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
             } else if (!strcmp(argv[i + 1], "ecmp_host_random2_ecn")) {
                 route_strategy = ECMP_RANDOM2_ECN;
                 FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+                FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
             }
             i++;
         } else
@@ -347,8 +369,35 @@ int main(int argc, char **argv) {
     // int connID = 0;
 
     printf("Starting LGS Interface");
-    LogSimInterface *lgs = new LogSimInterface(NULL, &traffic_logger, eventlist,
-                                               top, net_paths);
+    LogSimInterface *lgs;
+    if (topology_normal) {
+        printf("Normal Topology\n");
+        FatTreeTopology::set_tiers(3);
+        FatTreeTopology::set_os_stage_2(fat_tree_k);
+        FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
+        FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
+        FatTreeTopology *top = new FatTreeTopology(
+                no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+                COMPOSITE, hop_latency, switch_latency);
+        lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+    } else {
+        if (interdc_delay != 0) {
+            FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
+            UecSrc::set_interdc_delay(interdc_delay);
+        } else {
+            FatTreeInterDCTopology::set_interdc_delay(hop_latency);
+            UecSrc::set_interdc_delay(hop_latency);
+        }
+        FatTreeInterDCTopology::set_tiers(3);
+        FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
+        FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
+        FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin,
+                                                                       kmax);
+        FatTreeInterDCTopology *top = new FatTreeInterDCTopology(
+                no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+                COMPOSITE, hop_latency, switch_latency);
+        lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+    }
 
     lgs->set_protocol(NDP_PROTOCOL);
     lgs->set_cwd(cwnd);

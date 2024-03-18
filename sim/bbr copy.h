@@ -1,24 +1,24 @@
 // -*- c-basic-offset: 4; tab-width: 8; indent-tabs-mode: t -*-
 
-#ifndef UEC_H
-#define UEC_H
+#ifndef BBR_H
+#define BBR_H
 
 /*
- * A UEC source and sink
+ * A BBR source and sink
  */
 #include "config.h"
 #include "eventlist.h"
 #include "fairpullqueue.h"
 #include "smartt_pacer.h"
 //#include "datacenter/logsim-interface.h"
+#include "bbrpacket.h"
 #include "network.h"
 #include "trigger.h"
-#include "uecpacket.h"
 #include <functional>
 #include <list>
 #include <map>
 
-class UecSink;
+class BBRSink;
 // class LogSimInterface;
 
 class SentPacket {
@@ -35,22 +35,22 @@ class SentPacket {
     bool timedOut;
 };
 
-class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
-    friend class UecSink;
+class BBRSrc : public PacketSink, public EventSource, public TriggerTarget {
+    friend class BBRSink;
 
   public:
-    UecSrc(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList,
+    BBRSrc(BBRLogger *logger, TrafficLogger *pktLogger, EventList &eventList,
            uint64_t rtt, uint64_t bdp, uint64_t queueDrainTime, int hops);
-    // UecSrc(UecLogger *logger, TrafficLogger* pktLogger, EventList& eventList,
+    // BBRSrc(UecLogger *logger, TrafficLogger* pktLogger, EventList& eventList,
     // uint64_t rtt=timeFromUs(5.25), uint64_t bdp=63000);
-    ~UecSrc();
+    ~BBRSrc();
 
     virtual void doNextEvent() override;
 
     void receivePacket(Packet &pkt) override;
     const string &nodename() override;
 
-    virtual void connect(Route *routeout, Route *routeback, UecSink &sink,
+    virtual void connect(Route *routeout, Route *routeback, BBRSink &sink,
                          simtime_picosec startTime);
     void startflow();
     void set_paths(vector<const Route *> *rt);
@@ -78,10 +78,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     void setNumberEntropies(int num_entropies) {
         _num_entropies = num_entropies;
     };
-    void setHopCount(int hops) {
-        _hop_count = hops;
-        printf("Hop Count is %d\n", hops);
-    };
+    void setHopCount(int hops) { _hop_count = hops; };
     void setFlowSize(uint64_t flow_size) { _flow_size = flow_size; }
     void setKeepAcksInTargetRtt(bool keep) { _target_based_received = keep; }
     // void setLgs(LogSimInterface *lgs) { _lgs = lgs; };
@@ -103,8 +100,6 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     int next_route();
 
     void set_traffic_logger(TrafficLogger *pktlogger);
-    static void set_kmax(double value) { kmax_double = value; }
-    static void set_kmin(double value) { kmin_double = value; }
     static void set_queue_type(std::string value) { queue_type = value; }
     static void set_alogirthm(std::string value) { algorithm_type = value; }
     static void set_fast_drop(bool value) { use_fast_drop = value; }
@@ -114,24 +109,9 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
         pacing_delay = value * 1000;
     }
 
-    static void set_exp_avg_ecn(bool value) { use_exp_avg_ecn = value; }
-    static void set_exp_avg_rtt(bool value) { use_exp_avg_rtt = value; }
-
-    static void set_exp_avg_ecn_value(double value) {
-        exp_avg_ecn_value = value;
-    }
-    static void set_decrease_on_nack(double value) { decrease_on_nack = value; }
-    static void set_exp_avg_rtt_value(double value) {
-        exp_avg_rtt_value = value;
-    }
-    static void set_exp_avg_alpha(double value) { exp_avg_alpha = value; }
-
-    static void set_explicit_rtt(uint64_t value) { explicit_base_rtt = value; }
+    static void set_explicit_rtt(int value) { explicit_base_rtt = value; }
     static void set_explicit_bdp(int value) { explicit_bdp = value; }
-    static void set_switch_queue_size(uint64_t value) {
-        _switch_queue_size = value;
-    }
-    static void set_explicit_target_rtt(uint64_t value) {
+    static void set_explicit_target_rtt(int value) {
         explicit_target_rtt = value;
     }
 
@@ -143,7 +123,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static void set_use_super_fast_increase(bool value) {
         use_super_fast_increase = value;
     }
-    /*static void set_gain_value_med_inc(double value) {
+    static void set_gain_value_med_inc(double value) {
         exp_gain_value_med_inc = value;
     }
     static void set_jitter_value_med_inc(double value) {
@@ -151,7 +131,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     }
     static void set_delay_gain_value_med_inc(double value) {
         delay_gain_value_med_inc = value;
-    }*/
+    }
     static void set_target_rtt_percentage_over_base(int value) {
         target_rtt_percentage_over_base = value;
     }
@@ -166,17 +146,13 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
         quickadapt_lossless_rtt = value;
     }
     static void set_disable_case_3(double value) { disable_case_3 = value; }
-    static void set_reaction_delay(int value) {
-        reaction_delay = value;
-        adjust_packet_counts = value;
-    }
+    static void set_reaction_delay(int value) { reaction_delay = value; }
     static void set_precision_ts(int value) { precision_ts = value; }
     static void set_disable_case_4(double value) { disable_case_4 = value; }
     static void set_starting_cwnd(double value) { starting_cwnd = value; }
     static void set_bonus_drop(double value) { bonus_drop = value; }
     static void set_buffer_drop(double value) { buffer_drop = value; }
     static void set_stop_after_quick(bool value) { stop_after_quick = value; }
-    static void set_stop_pacing(int value) { stop_pacing_after_rtt = value; }
     static void setRouteStrategy(RouteStrategy strat) {
         _route_strategy = strat;
     }
@@ -185,15 +161,8 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
         f_flow_over_hook = hook;
     }
 
-    simtime_picosec targetDelay(uint32_t cwnd);
-
     virtual void rtx_timer_hook(simtime_picosec now, simtime_picosec period);
     void pacedSend();
-    static void set_interdc_delay(uint64_t delay) { _interdc_delay = delay; }
-    void updateParams();
-
-    void track_sending_rate();
-    void track_ecn_rate();
 
     Trigger *_end_trigger = 0;
     // should really be private, but loggers want to see:
@@ -204,7 +173,6 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     uint64_t _rtx_packets_sent;
     uint64_t _acks_received;
     uint64_t _nacks_received;
-    static uint64_t _interdc_delay;
     uint64_t _pulls_received;
     uint64_t _implicit_pulls;
     uint64_t _bounces_received;
@@ -236,33 +204,15 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     int count_trimmed_in_rtt = 0;
     uint32_t counter_consecutive_good_bytes = 0;
     bool increasing = false;
-
     int total_routes;
-    // simtime_picosec internal_stop_pacing_rtt;
     int routes_changed = 0;
     int exp_avg_bts = 0;
     int exp_avg_route = 0;
     double alpha_route = 0.0625;
     int current_pkt = 0;
     bool pause_send = false;
-    int total_pkt = 0;
-    int total_nack = 0;
-    uint64_t send_size = 0;
-    bool did_qa = false;
-    bool changed_once = false;
-
-
-    // Gemini stuff
-    bool congested_dcn = false;
-    bool congested_wan = false;
-    simtime_picosec last_gemini_decrease = 0;
-    double F_gemini, k_gemini, c_gemini, f_dcn_gemini, f_wan_gemini, alpha_gemini, beta_gemini = 0;
-    double h_gemini, H_gemini = 0;
-
-
 
     // Custom Parameters
-    static int adjust_packet_counts;
     static std::string queue_type;
     static std::string algorithm_type;
     static int precision_ts;
@@ -271,65 +221,34 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     bool was_zero_before = false;
     double ideal_x = 0;
     static bool do_jitter;
-    static int jump_to;
-    int qa_count = 0;
     static bool do_exponential_gain;
     static bool use_fast_increase;
     static bool use_super_fast_increase;
+    static double exp_gain_value_med_inc;
+    static double jitter_value_med_inc;
+    static double delay_gain_value_med_inc;
     static int target_rtt_percentage_over_base;
     static int ratio_os_stage_1;
     static int once_per_rtt;
-    static double kmax_double;
-    static double kmin_double;
-    double phantom_size_calc = 0;
-    simtime_picosec last_phantom_increase = 0;
-    simtime_picosec last_qa_event = 0;
-    simtime_picosec next_increase_at = 0;
-    int increasing_for = 1;
-    int src_dc = 0;
-    int dest_dc = 0;
 
-    static uint64_t explicit_target_rtt;
-    static uint64_t explicit_base_rtt;
-    static uint64_t explicit_bdp;
-    static uint64_t _switch_queue_size;
-    simtime_picosec last_adjust_ts;
-    int current_packet_adjust = 0;
-    uint64_t adjust_value = 0;
-    uint64_t fd_bytes = 0;
-    uint64_t accumulated_delay = 0;
-    int packets_seen_md = 0;
-    simtime_picosec last_decrease_ts = 0;
-    uint64_t asdas = 0;
-    vector<int> _good_entropies_list;
-    int curr_entropy = 0;
-
-    int adjust_current_packet = 0;
-
-    static double exp_avg_ecn_value;
-    static double exp_avg_rtt_value;
-    static bool use_exp_avg_ecn;
-    static bool use_exp_avg_rtt;
-    static double exp_avg_alpha;
+    static int explicit_target_rtt;
+    static int explicit_base_rtt;
+    static int explicit_bdp;
 
     static double y_gain;
     static double x_gain;
     double initial_x_gain = 0;
-    double initial_z_gain = 0;
-    double scaling_factor = 1;
     static double z_gain;
     static double w_gain;
     static bool disable_case_3;
     static bool disable_case_4;
     static double quickadapt_lossless_rtt;
     static int reaction_delay;
-    static double decrease_on_nack;
 
     static double starting_cwnd;
     static double bonus_drop;
     static double buffer_drop;
     static bool stop_after_quick;
-    static simtime_picosec stop_pacing_after_rtt;
     static RouteStrategy _route_strategy;
     static bool use_pacing;
     static simtime_picosec pacing_delay;
@@ -360,7 +279,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     uint64_t _queue_size;
     uint32_t _consecutive_low_rtt;
     uint32_t _consecutive_no_ecn;
-    uint64_t last_pac_change = 0;
+    uint64_t _ignore_ecn_until = 0;
     uint64_t previous_window_end = 0;
     bool _target_based_received;
     bool _using_lgs = false;
@@ -381,8 +300,8 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     uint64_t avg_rtt;
     int rx_count = 0;
     uint32_t achieved_bdp = 0;
-    UecLogger *_logger;
-    UecSink *_sink;
+    BBRLogger *_logger;
+    BBRSink *_sink;
 
     uint16_t _crt_direction;
     vector<int> _path_ids;                 // path IDs to be used for ECMP FIB.
@@ -401,17 +320,6 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     SmarttPacer *generic_pacer = NULL;
     simtime_picosec pacer_start_time = 0;
     PacketFlow _flow;
-
-    double exp_avg_ecn = 0;
-    double exp_avg_rtt = 0;
-
-    bool track_rate = true;
-    simtime_picosec tracking_period = 0;
-    simtime_picosec qa_period = 0;
-    int qa_mult = 0;
-    simtime_picosec ecn_rate_period = 0;
-    simtime_picosec last_track_ts = 0;
-    uint64_t tracking_bytes = 0;
 
     string _nodename;
     std::function<void(const Packet &p)> f_flow_over_hook;
@@ -452,42 +360,11 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     int _next_pathid;
     int _hop_count;
     int data_count_idx = 0;
-    int pkt_with_ecn_rtt;
-    int total_pkt_seen_rtt;
-    double current_ecn_rate = 0;
-    simtime_picosec count_rtt = 0;
-    int counter_ecn_without_rtt = 0;
-    int count_gentle_decrease = 0;
-    simtime_picosec timestamp_zero_ecn = 0;
-    simtime_picosec timestamp_kmin = 0;
-    bool started_increasing = false;
-    enum InterState { NEUTRAL, GENTLE_DECREASE, INCREASE, UNDO_DECREASE };
-    InterState current_state = NEUTRAL;
-    simtime_picosec state_end = 0;
-    simtime_picosec next_qa = 0;
-    simtime_picosec near_base_rtt = 0;
-    int increase_since_last_zero = 0;
-    int should_decrease = 0;
-    bool is_first_ecn = true;
-    simtime_picosec ecn_rtt_end = 0;
-    int count_add_from_zero_ecn = 0;
-    simtime_picosec last_ecn_seen = 0;
-    simtime_picosec last_freeze = 0;
-    simtime_picosec current_fd_end = 0;
-    int gent_dec_amount = 0;
-    simtime_picosec current_bonus_end = 0;
-    double bonus_rand = 0;
-    double previous_ecn_rate = 0;
-    bool rate_increasing = false;
-
-    static double kmax, kmin;
 
     vector<pair<simtime_picosec, int>> count_case_1;
     vector<pair<simtime_picosec, int>> count_case_2;
     vector<pair<simtime_picosec, int>> count_case_3;
     vector<pair<simtime_picosec, int>> count_case_4;
-    vector<pair<simtime_picosec, int>> list_ecn_rate;
-    vector<pair<simtime_picosec, int>> list_sending_rate;
 
     void send_packets();
     void quick_adapt(bool);
@@ -501,28 +378,28 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     bool ecn_congestion();
     void drop_old_received();
     const Route *get_path();
-    void mark_received(UecAck &pkt);
+    void mark_received(BBRAck &pkt);
     void add_ack_path(const Route *rt);
     bool resend_packet(std::size_t i);
     void retransmit_packet();
-    void processAck(UecAck &pkt, bool);
+    void processAck(BBRAck &pkt, bool);
     std::size_t get_sent_packet_idx(uint32_t pkt_seqno);
 
     void update_rtx_time();
     void reduce_cwnd(uint64_t amount);
-    void processNack(UecNack &nack);
-    void processBts(UecPacket *nack);
-    void simulateTrimEvent(UecAck &nack);
+    void processNack(BBRNack &nack);
+    void processBts(BBRPacket *nack);
+    void simulateTrimEvent(BBRAck &nack);
     void reduce_unacked(uint64_t amount);
     void check_limits_cwnd();
     void apply_timeout_penalty();
 };
 
-class UecSink : public PacketSink, public DataReceiver {
-    friend class UecSrc;
+class BBRSink : public PacketSink, public DataReceiver {
+    friend class BBRSrc;
 
   public:
-    UecSink();
+    BBRSink();
 
     void receivePacket(Packet &pkt) override;
     const string &nodename() override;
@@ -531,11 +408,11 @@ class UecSink : public PacketSink, public DataReceiver {
 
     uint64_t cumulative_ack() override;
     uint32_t drops() override;
-    void connect(UecSrc &src, const Route *route);
+    void connect(BBRSrc &src, const Route *route);
     void set_paths(uint32_t num_paths);
     void set_src(uint32_t s) { _srcaddr = s; }
-    uint32_t from = -1;
-    uint32_t to = -1;
+    uint32_t from = 0;
+    uint32_t to = 0;
     uint32_t tag = 0;
     static void setRouteStrategy(RouteStrategy strat) {
         _route_strategy = strat;
@@ -545,41 +422,40 @@ class UecSink : public PacketSink, public DataReceiver {
     int pfc_just_seen = -10;
 
   private:
-    UecAck::seq_t _cumulative_ack;
+    BBRAck::seq_t _cumulative_ack;
     uint64_t _packets;
     uint32_t _srcaddr;
     uint32_t _drops;
     int ack_count_idx = 0;
     string _nodename;
-    list<UecAck::seq_t> _received; // list of packets received OOO
+    list<BBRAck::seq_t> _received; // list of packets received OOO
     uint16_t _crt_path;
     const Route *_route;
     vector<const Route *> _paths;
     vector<int> _path_ids;                 // path IDs to be used for ECMP FIB.
     vector<const Route *> _original_paths; // paths in original permutation
                                            // order
-    UecSrc *_src;
-    vector<int> _good_entropies_list;
+    BBRSrc *_src;
 
-    void send_ack(simtime_picosec ts, bool marked, UecAck::seq_t seqno,
-                  UecAck::seq_t ackno, const Route *rt, const Route *inRoute,
+    void send_ack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno,
+                  BBRAck::seq_t ackno, const Route *rt, const Route *inRoute,
                   int path_id);
-    void send_nack(simtime_picosec ts, bool marked, UecAck::seq_t seqno,
-                   UecAck::seq_t ackno, const Route *rt, int, bool);
-    bool already_received(UecPacket &pkt);
+    void send_nack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno,
+                   BBRAck::seq_t ackno, const Route *rt, int);
+    bool already_received(BBRPacket &pkt);
 };
 
-class UecRtxTimerScanner : public EventSource {
+class BBRRtxTimerScanner : public EventSource {
   public:
-    UecRtxTimerScanner(simtime_picosec scanPeriod, EventList &eventlist);
+    BBRRtxTimerScanner(simtime_picosec scanPeriod, EventList &eventlist);
     void doNextEvent();
-    void registerUec(UecSrc &uecsrc);
+    void registerBBR(BBRSrc &BBRsrc);
 
   private:
     simtime_picosec _scanPeriod;
     simtime_picosec _lastScan;
-    typedef list<UecSrc *> uecs_t;
-    uecs_t _uecs;
+    typedef list<BBRSrc *> BBRs_t;
+    BBRs_t _uecs;
 };
 
 #endif
