@@ -32,9 +32,8 @@ static bool print = false;
 
 LogSimInterface::LogSimInterface() {}
 
-LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger,
-                                 EventList &eventList, FatTreeTopology *topo,
-                                 std::vector<const Route *> ***routes) {
+LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList,
+                                 FatTreeTopology *topo, std::vector<const Route *> ***routes) {
     _logger = logger;
     _flow = pktLogger;
     _eventlist = &eventList;
@@ -43,15 +42,13 @@ LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger,
     _latest_recv = new graph_node_properties();
     if (compute_events_handler == NULL) {
         compute_events_handler = new ComputeEvent(_logger, *_eventlist);
-        compute_events_handler->set_compute_over_hook(std::bind(
-                &LogSimInterface::compute_over, this, std::placeholders::_1));
+        compute_events_handler->set_compute_over_hook(
+                std::bind(&LogSimInterface::compute_over, this, std::placeholders::_1));
     }
 }
 
-LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger,
-                                 EventList &eventList,
-                                 FatTreeInterDCTopology *topo,
-                                 std::vector<const Route *> ***routes) {
+LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList,
+                                 FatTreeInterDCTopology *topo, std::vector<const Route *> ***routes) {
     _logger = logger;
     _flow = pktLogger;
     _eventlist = &eventList;
@@ -60,27 +57,24 @@ LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger,
     _latest_recv = new graph_node_properties();
     if (compute_events_handler == NULL) {
         compute_events_handler = new ComputeEvent(_logger, *_eventlist);
-        compute_events_handler->set_compute_over_hook(std::bind(
-                &LogSimInterface::compute_over, this, std::placeholders::_1));
+        compute_events_handler->set_compute_over_hook(
+                std::bind(&LogSimInterface::compute_over, this, std::placeholders::_1));
     }
     printf("Running InterDC\n");
 }
 
 void LogSimInterface::set_cwd(int cwd) { _cwd = cwd; }
 
-void LogSimInterface::htsim_schedule(u_int32_t host, int to, int size, int tag,
-                                     u_int64_t start_time_event,
+void LogSimInterface::htsim_schedule(u_int32_t host, int to, int size, int tag, u_int64_t start_time_event,
                                      int my_offset) {
     // Send event to htsim for actual send
     send_event(host, to, size, tag, start_time_event);
 
     // Save Event for internal tracking
-    std::string to_hash = std::to_string(host) + "@" + std::to_string(to) +
-                          "@" + std::to_string(tag);
-    printf("Scheduling Event (%s) of size %d from %d to %d tag %d start_tiem "
+    std::string to_hash = std::to_string(host) + "@" + std::to_string(to) + "@" + std::to_string(tag);
+    /* printf("Scheduling Event (%s) of size %d from %d to %d tag %d start_tiem "
            "%lu - Time is %lu\n ",
-           to_hash.c_str(), size, host, to, tag, start_time_event * 1000,
-           GLOBAL_TIME);
+           to_hash.c_str(), size, host, to, tag, start_time_event * 1000, GLOBAL_TIME); */
     MsgInfo entry;
     entry.start_time = start_time_event * 1;
     entry.total_bytes_msg = size;
@@ -90,21 +84,19 @@ void LogSimInterface::htsim_schedule(u_int32_t host, int to, int size, int tag,
     active_sends[to_hash] = entry;
 }
 
-void LogSimInterface::execute_compute(graph_node_properties comp_elem,
-                                      int size_p) {
+void LogSimInterface::execute_compute(graph_node_properties comp_elem, int size_p) {
     if (_protocolName == UEC_PROTOCOL) {
-        printf("Running Compute of %lu ns\n", comp_elem.size);
+        /* printf("Running Compute of %lu ns\n", comp_elem.size); */
 
         compute_events_handler->setCompute(comp_elem.size);
     }
 }
 
-void LogSimInterface::send_event(int from, int to, int size, int tag,
-                                 u_int64_t start_time_event) {
+void LogSimInterface::send_event(int from, int to, int size, int tag, u_int64_t start_time_event) {
 
-    printf("LGS Send Event - Time %lu - Host %d - Dst %d - Tag %d - Size %d - "
+    /* printf("LGS Send Event - Time %lu - Host %d - Dst %d - Tag %d - Size %d - "
            "StartTime %d\n",
-           GLOBAL_TIME / 1000, from, to, tag, size, start_time_event);
+           GLOBAL_TIME / 1000, from, to, tag, size, start_time_event); */
 
     // Create UEC Src and Dest
     if (_protocolName == UEC_PROTOCOL) {
@@ -116,11 +108,9 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
         // This is updated inside UEC if it doesn't fit the default values
         uint64_t rtt = BASE_RTT_MODERN * 1000;
         uint64_t bdp = BDP_MODERN_UEC;
-        uint64_t queueDrainTime =
-                _queuesize * 8 * 1000 /
-                (LINK_SPEED_MODERN); // convert queuesize to bits, then divide
-                                     // by link speed converted from Mbps to
-                                     // bpps
+        uint64_t queueDrainTime = _queuesize * 8 * 1000 / (LINK_SPEED_MODERN); // convert queuesize to bits, then divide
+                                                                               // by link speed converted from Mbps to
+                                                                               // bpps
 
         // Create Routes from/to Src and Dest
         /*vector<const Route *> *paths = _topo->get_paths(from, to);
@@ -133,26 +123,22 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
 
         Route *routein = new Route(*_topo->get_paths(to, from)->at(choice));*/
 
-        UecSrc *uecSrc = new UecSrc(NULL, NULL, *_eventlist, rtt, bdp,
-                                    queueDrainTime, 6);
+        UecSrc *uecSrc = new UecSrc(NULL, NULL, *_eventlist, rtt, bdp, queueDrainTime, 6);
 
         uecSrc->setFlowSize(size);
         uecSrc->setReuse(_use_good_entropies);
         uecSrc->setIgnoreEcnAck(_ignore_ecn_ack);
         uecSrc->setIgnoreEcnData(_ignore_ecn_data);
         uecSrc->setNumberEntropies(_num_entropies);
-        printf("CWD Start %d - From %d To %d\n", uecSrc->_cwnd, from, to);
-        uecSrc->setName("uec_" + std::to_string(from) + "_" +
-                        std::to_string(to));
-        uecSrc->set_flow_over_hook(std::bind(&LogSimInterface::flow_over, this,
-                                             std::placeholders::_1));
+        /* printf("CWD Start %d - From %d To %d\n", uecSrc->_cwnd, from, to); */
+        uecSrc->setName("uec_" + std::to_string(from) + "_" + std::to_string(to));
+        uecSrc->set_flow_over_hook(std::bind(&LogSimInterface::flow_over, this, std::placeholders::_1));
         uecSrc->from = from;
         uecSrc->to = to;
         uecSrc->tag = tag;
         uecSrc->send_size = size;
         // printf("Setting %d %d %d\n", from, to, tag);
-        std::string to_hash = std::to_string(from) + "@" + std::to_string(to) +
-                              "@" + std::to_string(tag);
+        std::string to_hash = std::to_string(from) + "@" + std::to_string(to) + "@" + std::to_string(tag);
         connection_log[to_hash] = uecSrc;
         _uecSrcVector.push_back(uecSrc);
         UecSink *uecSink = new UecSink();
@@ -168,21 +154,13 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
         Route *dsttotor = new Route();
 
         if (_topo != NULL) {
-            srctotor->push_back(
-                    _topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-            srctotor->push_back(
-                    _topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-            srctotor->push_back(
-                    _topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]
-                            ->getRemoteEndpoint());
+            srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
+            srctotor->push_back(_topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
+            srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]->getRemoteEndpoint());
 
-            dsttotor->push_back(
-                    _topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-            dsttotor->push_back(
-                    _topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-            dsttotor->push_back(
-                    _topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]
-                            ->getRemoteEndpoint());
+            dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
+            dsttotor->push_back(_topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
+            dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]->getRemoteEndpoint());
 
         } else if (_topo_inter_dc != NULL) {
             int idx_dc = _topo_inter_dc->get_dc_id(from);
@@ -191,46 +169,32 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
             uecSrc->dest_dc = _topo_inter_dc->get_dc_id(to);
             uecSrc->updateParams();
 
-            printf("Source in Datacenter %d - Dest in Datacenter %d\n", idx_dc,
-                   idx_dc_to);
+            /* printf("Source in Datacenter %d - Dest in Datacenter %d\n", idx_dc, idx_dc_to); */
 
             srctotor->push_back(
-                    _topo_inter_dc->queues_ns_nlp
-                            [idx_dc][from % _topo_inter_dc->no_of_nodes()]
-                            [_topo_inter_dc->HOST_POD_SWITCH(
-                                    from % _topo_inter_dc->no_of_nodes())]);
-            srctotor->push_back(
-                    _topo_inter_dc->pipes_ns_nlp
-                            [idx_dc][from % _topo_inter_dc->no_of_nodes()]
-                            [_topo_inter_dc->HOST_POD_SWITCH(
-                                    from % _topo_inter_dc->no_of_nodes())]);
+                    _topo_inter_dc
+                            ->queues_ns_nlp[idx_dc][from % _topo_inter_dc->no_of_nodes()]
+                                           [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())]);
             srctotor->push_back(
                     _topo_inter_dc
-                            ->queues_ns_nlp
-                                    [idx_dc]
-                                    [from % _topo_inter_dc->no_of_nodes()]
-                                    [_topo_inter_dc->HOST_POD_SWITCH(
-                                            from %
-                                            _topo_inter_dc->no_of_nodes())]
+                            ->pipes_ns_nlp[idx_dc][from % _topo_inter_dc->no_of_nodes()]
+                                          [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())]);
+            srctotor->push_back(
+                    _topo_inter_dc
+                            ->queues_ns_nlp[idx_dc][from % _topo_inter_dc->no_of_nodes()]
+                                           [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())]
                             ->getRemoteEndpoint());
 
             dsttotor->push_back(
-                    _topo_inter_dc->queues_ns_nlp
-                            [idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
-                            [_topo_inter_dc->HOST_POD_SWITCH(
-                                    to % _topo_inter_dc->no_of_nodes())]);
+                    _topo_inter_dc->queues_ns_nlp[idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
+                                                 [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())]);
             dsttotor->push_back(
-                    _topo_inter_dc->pipes_ns_nlp
-                            [idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
-                            [_topo_inter_dc->HOST_POD_SWITCH(
-                                    to % _topo_inter_dc->no_of_nodes())]);
+                    _topo_inter_dc->pipes_ns_nlp[idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
+                                                [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())]);
             dsttotor->push_back(
                     _topo_inter_dc
-                            ->queues_ns_nlp
-                                    [idx_dc_to]
-                                    [to % _topo_inter_dc->no_of_nodes()]
-                                    [_topo_inter_dc->HOST_POD_SWITCH(
-                                            to % _topo_inter_dc->no_of_nodes())]
+                            ->queues_ns_nlp[idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
+                                           [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())]
                             ->getRemoteEndpoint());
         }
 
@@ -249,35 +213,25 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
             assert(_topo->switches_lp[_topo->HOST_POD_SWITCH(from)]);
             assert(_topo->switches_lp[_topo->HOST_POD_SWITCH(to)]);
 
-            _topo->switches_lp[_topo->HOST_POD_SWITCH(from)]->addHostPort(
-                    from, uecSrc->flow_id(), uecSrc);
-            _topo->switches_lp[_topo->HOST_POD_SWITCH(to)]->addHostPort(
-                    to, uecSrc->flow_id(), uecSink);
+            _topo->switches_lp[_topo->HOST_POD_SWITCH(from)]->addHostPort(from, uecSrc->flow_id(), uecSrc);
+            _topo->switches_lp[_topo->HOST_POD_SWITCH(to)]->addHostPort(to, uecSrc->flow_id(), uecSink);
         } else {
             int idx_dc = _topo_inter_dc->get_dc_id(from);
             int idx_dc_to = _topo_inter_dc->get_dc_id(to);
-            assert(_topo_inter_dc->switches_lp
-                           [idx_dc][_topo_inter_dc->HOST_POD_SWITCH(
-                                   from % _topo_inter_dc->no_of_nodes())]);
-            assert(_topo_inter_dc->switches_lp
-                           [idx_dc_to][_topo_inter_dc->HOST_POD_SWITCH(
-                                   to % _topo_inter_dc->no_of_nodes())]);
+            assert(_topo_inter_dc->switches_lp[idx_dc]
+                                              [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())]);
+            assert(_topo_inter_dc->switches_lp[idx_dc_to]
+                                              [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())]);
 
-            _topo_inter_dc
-                    ->switches_lp[idx_dc][_topo_inter_dc->HOST_POD_SWITCH(
-                            from % _topo_inter_dc->no_of_nodes())]
-                    ->addHostPort(from % _topo_inter_dc->no_of_nodes(),
-                                  uecSrc->flow_id(), uecSrc);
-            _topo_inter_dc
-                    ->switches_lp[idx_dc_to][_topo_inter_dc->HOST_POD_SWITCH(
-                            to % _topo_inter_dc->no_of_nodes())]
-                    ->addHostPort(to % _topo_inter_dc->no_of_nodes(),
-                                  uecSrc->flow_id(), uecSink);
+            _topo_inter_dc->switches_lp[idx_dc][_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())]
+                    ->addHostPort(from % _topo_inter_dc->no_of_nodes(), uecSrc->flow_id(), uecSrc);
+            _topo_inter_dc->switches_lp[idx_dc_to][_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())]
+                    ->addHostPort(to % _topo_inter_dc->no_of_nodes(), uecSrc->flow_id(), uecSink);
         }
 
         // Actually connect src and dest
         //_uecRtxScanner->registerUec(*uecSrc);
-        printf("Finished UEC LGS Setup\n");
+        /* printf("Finished UEC LGS Setup\n"); */
 
     } else if (_protocolName == UEC_DROP_PROTOCOL) {
         if (_uecDropRtxScanner == NULL) {
@@ -287,11 +241,9 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
         // This is updated inside UEC if it doesn't fit the default values
         uint64_t rtt = BASE_RTT_MODERN * 1000;
         uint64_t bdp = BDP_MODERN_UEC;
-        uint64_t queueDrainTime =
-                _queuesize * 8 * 1000 /
-                (LINK_SPEED_MODERN); // convert queuesize to bits, then divide
-                                     // by link speed converted from Mbps to
-                                     // bpps
+        uint64_t queueDrainTime = _queuesize * 8 * 1000 / (LINK_SPEED_MODERN); // convert queuesize to bits, then divide
+                                                                               // by link speed converted from Mbps to
+                                                                               // bpps
 
         // Create Routes from/to Src and Dest
         vector<const Route *> *paths = _topo->get_paths(from, to);
@@ -303,26 +255,21 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
         int choice = rand() % _netPaths[from][to]->size();
 
         Route *routein = new Route(*_topo->get_paths(to, from)->at(choice));
-        UecDropSrc *uecSrc =
-                new UecDropSrc(NULL, _flow, *_eventlist, rtt, bdp,
-                               queueDrainTime, routein->hop_count());
+        UecDropSrc *uecSrc = new UecDropSrc(NULL, _flow, *_eventlist, rtt, bdp, queueDrainTime, routein->hop_count());
 
         uecSrc->setFlowSize(size);
         uecSrc->setReuse(_use_good_entropies);
         uecSrc->setIgnoreEcnAck(_ignore_ecn_ack);
         uecSrc->setIgnoreEcnData(_ignore_ecn_data);
         uecSrc->setNumberEntropies(_num_entropies);
-        printf("CWD Start %d - From %d To %d\n", uecSrc->_cwnd, from, to);
-        uecSrc->setName("uec_" + std::to_string(from) + "_" +
-                        std::to_string(to));
-        uecSrc->set_flow_over_hook(std::bind(&LogSimInterface::flow_over, this,
-                                             std::placeholders::_1));
+        /* printf("CWD Start %d - From %d To %d\n", uecSrc->_cwnd, from, to); */
+        uecSrc->setName("uec_" + std::to_string(from) + "_" + std::to_string(to));
+        uecSrc->set_flow_over_hook(std::bind(&LogSimInterface::flow_over, this, std::placeholders::_1));
         uecSrc->from = from;
         uecSrc->to = to;
         uecSrc->tag = tag;
         // printf("Setting %d %d %d\n", from, to, tag);
-        std::string to_hash = std::to_string(from) + "@" + std::to_string(to) +
-                              "@" + std::to_string(tag);
+        std::string to_hash = std::to_string(from) + "@" + std::to_string(to) + "@" + std::to_string(tag);
         _uecDropSrcVector.push_back(uecSrc);
         UecDropSink *uecSink = new UecDropSink();
         uecSink->setName("uec_sink_Rand");
@@ -334,21 +281,14 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
         uecSink->set_src(from);
 
         Route *srctotor = new Route();
-        srctotor->push_back(
-                _topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-        srctotor->push_back(
-                _topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-        srctotor->push_back(
-                _topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]
-                        ->getRemoteEndpoint());
+        srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
+        srctotor->push_back(_topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
+        srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]->getRemoteEndpoint());
 
         Route *dsttotor = new Route();
-        dsttotor->push_back(
-                _topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-        dsttotor->push_back(
-                _topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-        dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]
-                                    ->getRemoteEndpoint());
+        dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
+        dsttotor->push_back(_topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
+        dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]->getRemoteEndpoint());
 
         if (tag == 989) {
             uecSrc->connect(srctotor, dsttotor, *uecSink, GLOBAL_TIME + 100000);
@@ -362,29 +302,24 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
         // register src and snk to receive packets from their respective TORs.
         assert(_topo->switches_lp[_topo->HOST_POD_SWITCH(from)]);
         assert(_topo->switches_lp[_topo->HOST_POD_SWITCH(to)]);
-        _topo->switches_lp[_topo->HOST_POD_SWITCH(from)]->addHostPort(
-                from, uecSrc->flow_id(), uecSrc);
-        _topo->switches_lp[_topo->HOST_POD_SWITCH(to)]->addHostPort(
-                to, uecSrc->flow_id(), uecSink);
+        _topo->switches_lp[_topo->HOST_POD_SWITCH(from)]->addHostPort(from, uecSrc->flow_id(), uecSrc);
+        _topo->switches_lp[_topo->HOST_POD_SWITCH(to)]->addHostPort(to, uecSrc->flow_id(), uecSink);
 
         // Actually connect src and dest
         _uecDropRtxScanner->registerUecDrop(*uecSrc);
-        printf("Finished UEC LGS Setup\n");
+        /* printf("Finished UEC LGS Setup\n"); */
 
     } else if (_protocolName == SWIFT_PROTOCOL) {
         if (_swiftTrimmingRtxScanner == NULL) {
-            _swiftTrimmingRtxScanner = new SwiftTrimmingRtxTimerScanner(
-                    BASE_RTT_MODERN * 1000, *_eventlist);
+            _swiftTrimmingRtxScanner = new SwiftTrimmingRtxTimerScanner(BASE_RTT_MODERN * 1000, *_eventlist);
         }
 
         // This is updated inside UEC if it doesn't fit the default values
         uint64_t rtt = BASE_RTT_MODERN * 1000;
         uint64_t bdp = BDP_MODERN_UEC;
-        uint64_t queueDrainTime =
-                _queuesize * 8 * 1000 /
-                (LINK_SPEED_MODERN); // convert queuesize to bits, then divide
-                                     // by link speed converted from Mbps to
-                                     // bpps
+        uint64_t queueDrainTime = _queuesize * 8 * 1000 / (LINK_SPEED_MODERN); // convert queuesize to bits, then divide
+                                                                               // by link speed converted from Mbps to
+                                                                               // bpps
 
         // Create Routes from/to Src and Dest
         vector<const Route *> *paths = _topo->get_paths(from, to);
@@ -397,26 +332,21 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
 
         Route *routein = new Route(*_topo->get_paths(to, from)->at(choice));
         SwiftTrimmingSrc *swiftTrimmingSrc =
-                new SwiftTrimmingSrc(NULL, _flow, *_eventlist, rtt, bdp,
-                                     queueDrainTime, routein->hop_count());
+                new SwiftTrimmingSrc(NULL, _flow, *_eventlist, rtt, bdp, queueDrainTime, routein->hop_count());
 
         swiftTrimmingSrc->setFlowSize(size);
         swiftTrimmingSrc->setReuse(_use_good_entropies);
         swiftTrimmingSrc->setIgnoreEcnAck(_ignore_ecn_ack);
         swiftTrimmingSrc->setIgnoreEcnData(_ignore_ecn_data);
         swiftTrimmingSrc->setNumberEntropies(_num_entropies);
-        printf("CWD Start %d - From %d To %d\n", swiftTrimmingSrc->_cwnd, from,
-               to);
-        swiftTrimmingSrc->setName("swiftTrimming_" + std::to_string(from) +
-                                  "_" + std::to_string(to));
-        swiftTrimmingSrc->set_flow_over_hook(std::bind(
-                &LogSimInterface::flow_over, this, std::placeholders::_1));
+        /* printf("CWD Start %d - From %d To %d\n", swiftTrimmingSrc->_cwnd, from, to); */
+        swiftTrimmingSrc->setName("swiftTrimming_" + std::to_string(from) + "_" + std::to_string(to));
+        swiftTrimmingSrc->set_flow_over_hook(std::bind(&LogSimInterface::flow_over, this, std::placeholders::_1));
         swiftTrimmingSrc->from = from;
         swiftTrimmingSrc->to = to;
         swiftTrimmingSrc->tag = tag;
         // printf("Setting %d %d %d\n", from, to, tag);
-        std::string to_hash = std::to_string(from) + "@" + std::to_string(to) +
-                              "@" + std::to_string(tag);
+        std::string to_hash = std::to_string(from) + "@" + std::to_string(to) + "@" + std::to_string(tag);
         _swiftTrimmingSrcVector.push_back(swiftTrimmingSrc);
         SwiftTrimmingSink *swiftTrimmingSink = new SwiftTrimmingSink();
         swiftTrimmingSink->setName("swiftTrimming_sink_Rand");
@@ -428,34 +358,25 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
         swiftTrimmingSink->set_src(from);
 
         Route *srctotor = new Route();
-        srctotor->push_back(
-                _topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-        srctotor->push_back(
-                _topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-        srctotor->push_back(
-                _topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]
-                        ->getRemoteEndpoint());
+        srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
+        srctotor->push_back(_topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
+        srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]->getRemoteEndpoint());
 
         Route *dsttotor = new Route();
-        dsttotor->push_back(
-                _topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-        dsttotor->push_back(
-                _topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-        dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]
-                                    ->getRemoteEndpoint());
+        dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
+        dsttotor->push_back(_topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
+        dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]->getRemoteEndpoint());
 
-        swiftTrimmingSrc->connect(srctotor, dsttotor, *swiftTrimmingSink,
-                                  GLOBAL_TIME);
+        swiftTrimmingSrc->connect(srctotor, dsttotor, *swiftTrimmingSink, GLOBAL_TIME);
         swiftTrimmingSrc->set_paths(path_entropy_size);
         swiftTrimmingSink->set_paths(path_entropy_size);
 
         // register src and snk to receive packets from their respective TORs.
         assert(_topo->switches_lp[_topo->HOST_POD_SWITCH(from)]);
         assert(_topo->switches_lp[_topo->HOST_POD_SWITCH(to)]);
-        _topo->switches_lp[_topo->HOST_POD_SWITCH(from)]->addHostPort(
-                from, swiftTrimmingSrc->flow_id(), swiftTrimmingSrc);
-        _topo->switches_lp[_topo->HOST_POD_SWITCH(to)]->addHostPort(
-                to, swiftTrimmingSrc->flow_id(), swiftTrimmingSink);
+        _topo->switches_lp[_topo->HOST_POD_SWITCH(from)]->addHostPort(from, swiftTrimmingSrc->flow_id(),
+                                                                      swiftTrimmingSrc);
+        _topo->switches_lp[_topo->HOST_POD_SWITCH(to)]->addHostPort(to, swiftTrimmingSrc->flow_id(), swiftTrimmingSink);
 
         // Actually connect src and dest
         connection_log_swift[to_hash] = swiftTrimmingSrc;
@@ -464,8 +385,7 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
 
     } else if (_protocolName == NDP_PROTOCOL) {
         if (_ndpRtxScanner == NULL) {
-            _ndpRtxScanner = new NdpRtxTimerScanner(timeFromUs((uint32_t)1000),
-                                                    *_eventlist);
+            _ndpRtxScanner = new NdpRtxTimerScanner(timeFromUs((uint32_t)1000), *_eventlist);
         }
 
         // NdpSrc::setRouteStrategy(SCATTER_RANDOM);
@@ -476,21 +396,17 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
         ndpSrc->setCwnd(_cwd);
         ndpSrc->set_dst(to);
         ndpSrc->set_flowsize(size);
-        ndpSrc->set_flow_over_hook(std::bind(&LogSimInterface::flow_over, this,
-                                             std::placeholders::_1));
+        ndpSrc->set_flow_over_hook(std::bind(&LogSimInterface::flow_over, this, std::placeholders::_1));
         if (_puller_map.count(to) == 0) {
-            _puller_map[to] = new NdpPullPacer(
-                    *_eventlist, speedFromMbps(LINK_SPEED_MODERN * 1000), 0.99);
+            _puller_map[to] = new NdpPullPacer(*_eventlist, speedFromMbps(LINK_SPEED_MODERN * 1000), 0.99);
         }
         NdpSink *ndpSnk = new NdpSink(_puller_map[to]);
         ndpSrc->from = from;
         ndpSrc->to = to;
         ndpSrc->tag = tag;
-        printf("sink tag is %d\n", ndpSnk->tag);
         ndpSnk->set_src(from);
 
-        ndpSrc->setName("NDP_" + std::to_string(from) + "_" +
-                        std::to_string(to));
+        ndpSrc->setName("NDP_" + std::to_string(from) + "_" + std::to_string(to));
         ndpSnk->setName("NDP_Sink");
         _ndpRtxScanner->registerNdp(*ndpSrc);
 
@@ -498,72 +414,49 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
         Route *dsttotor = new Route();
 
         if (_topo != NULL) {
-            srctotor->push_back(
-                    _topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-            srctotor->push_back(
-                    _topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-            srctotor->push_back(
-                    _topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]
-                            ->getRemoteEndpoint());
+            srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
+            srctotor->push_back(_topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
+            srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]->getRemoteEndpoint());
 
-            dsttotor->push_back(
-                    _topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-            dsttotor->push_back(
-                    _topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-            dsttotor->push_back(
-                    _topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]
-                            ->getRemoteEndpoint());
+            dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
+            dsttotor->push_back(_topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
+            dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]->getRemoteEndpoint());
 
         } else if (_topo_inter_dc != NULL) {
             int idx_dc = _topo_inter_dc->get_dc_id(from);
             int idx_dc_to = _topo_inter_dc->get_dc_id(to);
-            //ndpSrc->src_dc = _topo_inter_dc->get_dc_id(from);
-            //ndpSrc->dest_dc = _topo_inter_dc->get_dc_id(to);
-            //ndpSrc->updateParams();
+            // ndpSrc->src_dc = _topo_inter_dc->get_dc_id(from);
+            // ndpSrc->dest_dc = _topo_inter_dc->get_dc_id(to);
+            // ndpSrc->updateParams();
 
-            printf("Source in Datacenter %d - Dest in Datacenter %d\n", idx_dc,
-                   idx_dc_to);
+            /* printf("Source in Datacenter %d - Dest in Datacenter %d\n", idx_dc, idx_dc_to); */
 
-            srctotor->push_back(
-                    _topo_inter_dc->queues_ns_nlp
-                            [idx_dc][from % _topo_inter_dc->no_of_nodes()]
-                            [_topo_inter_dc->HOST_POD_SWITCH(
-                                    from % _topo_inter_dc->no_of_nodes())]);
-            srctotor->push_back(
-                    _topo_inter_dc->pipes_ns_nlp
-                            [idx_dc][from % _topo_inter_dc->no_of_nodes()]
-                            [_topo_inter_dc->HOST_POD_SWITCH(
-                                    from % _topo_inter_dc->no_of_nodes())]);
             srctotor->push_back(
                     _topo_inter_dc
-                            ->queues_ns_nlp
-                                    [idx_dc]
-                                    [from % _topo_inter_dc->no_of_nodes()]
-                                    [_topo_inter_dc->HOST_POD_SWITCH(
-                                            from %
-                                            _topo_inter_dc->no_of_nodes())]
+                            ->queues_ns_nlp[idx_dc][from % _topo_inter_dc->no_of_nodes()]
+                                           [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())]);
+            srctotor->push_back(
+                    _topo_inter_dc
+                            ->pipes_ns_nlp[idx_dc][from % _topo_inter_dc->no_of_nodes()]
+                                          [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())]);
+            srctotor->push_back(
+                    _topo_inter_dc
+                            ->queues_ns_nlp[idx_dc][from % _topo_inter_dc->no_of_nodes()]
+                                           [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())]
                             ->getRemoteEndpoint());
 
             dsttotor->push_back(
-                    _topo_inter_dc->queues_ns_nlp
-                            [idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
-                            [_topo_inter_dc->HOST_POD_SWITCH(
-                                    to % _topo_inter_dc->no_of_nodes())]);
+                    _topo_inter_dc->queues_ns_nlp[idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
+                                                 [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())]);
             dsttotor->push_back(
-                    _topo_inter_dc->pipes_ns_nlp
-                            [idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
-                            [_topo_inter_dc->HOST_POD_SWITCH(
-                                    to % _topo_inter_dc->no_of_nodes())]);
+                    _topo_inter_dc->pipes_ns_nlp[idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
+                                                [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())]);
             dsttotor->push_back(
                     _topo_inter_dc
-                            ->queues_ns_nlp
-                                    [idx_dc_to]
-                                    [to % _topo_inter_dc->no_of_nodes()]
-                                    [_topo_inter_dc->HOST_POD_SWITCH(
-                                            to % _topo_inter_dc->no_of_nodes())]
+                            ->queues_ns_nlp[idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
+                                           [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())]
                             ->getRemoteEndpoint());
         }
-
 
         ndpSrc->connect(srctotor, dsttotor, *ndpSnk, GLOBAL_TIME);
         ndpSrc->set_paths(path_entropy_size);
@@ -574,30 +467,20 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
             assert(_topo->switches_lp[_topo->HOST_POD_SWITCH(from)]);
             assert(_topo->switches_lp[_topo->HOST_POD_SWITCH(to)]);
 
-            _topo->switches_lp[_topo->HOST_POD_SWITCH(from)]->addHostPort(
-                    from, ndpSrc->flow_id(), ndpSrc);
-            _topo->switches_lp[_topo->HOST_POD_SWITCH(to)]->addHostPort(
-                    to, ndpSrc->flow_id(), ndpSnk);
+            _topo->switches_lp[_topo->HOST_POD_SWITCH(from)]->addHostPort(from, ndpSrc->flow_id(), ndpSrc);
+            _topo->switches_lp[_topo->HOST_POD_SWITCH(to)]->addHostPort(to, ndpSrc->flow_id(), ndpSnk);
         } else {
             int idx_dc = _topo_inter_dc->get_dc_id(from);
             int idx_dc_to = _topo_inter_dc->get_dc_id(to);
-            assert(_topo_inter_dc->switches_lp
-                           [idx_dc][_topo_inter_dc->HOST_POD_SWITCH(
-                                   from % _topo_inter_dc->no_of_nodes())]);
-            assert(_topo_inter_dc->switches_lp
-                           [idx_dc_to][_topo_inter_dc->HOST_POD_SWITCH(
-                                   to % _topo_inter_dc->no_of_nodes())]);
+            assert(_topo_inter_dc->switches_lp[idx_dc]
+                                              [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())]);
+            assert(_topo_inter_dc->switches_lp[idx_dc_to]
+                                              [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())]);
 
-            _topo_inter_dc
-                    ->switches_lp[idx_dc][_topo_inter_dc->HOST_POD_SWITCH(
-                            from % _topo_inter_dc->no_of_nodes())]
-                    ->addHostPort(from % _topo_inter_dc->no_of_nodes(),
-                                  ndpSrc->flow_id(), ndpSrc);
-            _topo_inter_dc
-                    ->switches_lp[idx_dc_to][_topo_inter_dc->HOST_POD_SWITCH(
-                            to % _topo_inter_dc->no_of_nodes())]
-                    ->addHostPort(to % _topo_inter_dc->no_of_nodes(),
-                                  ndpSrc->flow_id(), ndpSnk);
+            _topo_inter_dc->switches_lp[idx_dc][_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())]
+                    ->addHostPort(from % _topo_inter_dc->no_of_nodes(), ndpSrc->flow_id(), ndpSrc);
+            _topo_inter_dc->switches_lp[idx_dc_to][_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())]
+                    ->addHostPort(to % _topo_inter_dc->no_of_nodes(), ndpSrc->flow_id(), ndpSnk);
         }
     }
 }
@@ -605,10 +488,7 @@ void LogSimInterface::send_event(int from, int to, int size, int tag,
 void LogSimInterface::update_active_map(std::string to_hash, int size) {
 
     // Check that the flow actually exists
-    active_sends[to_hash].bytes_left_to_recv =
-            active_sends[to_hash].bytes_left_to_recv -
-            Packet::data_packet_size();
-    printf("Updated is %d\n", active_sends[to_hash].bytes_left_to_recv);
+    active_sends[to_hash].bytes_left_to_recv = active_sends[to_hash].bytes_left_to_recv - Packet::data_packet_size();
     if (active_sends[to_hash].bytes_left_to_recv <= 0) {
 
         // active_sends.erase(to_hash);
@@ -620,10 +500,9 @@ bool LogSimInterface::all_sends_delivered() { return active_sends.size() == 0; }
 void LogSimInterface::flow_over(const Packet &p) {
 
     // Get Unique Hash
-    std::string to_hash = std::to_string(p.from) + "@" + std::to_string(p.to) +
-                          "@" + std::to_string(p.tag);
+    std::string to_hash = std::to_string(p.from) + "@" + std::to_string(p.to) + "@" + std::to_string(p.tag);
     // active_sends[to_hash].bytes_left_to_recv = 0;
-    printf("Flow Finished %d@%d@%d at %lu\n", p.from, p.to, p.tag, GLOBAL_TIME);
+    /* printf("Flow Finished %d@%d@%d at %lu\n", p.from, p.to, p.tag, GLOBAL_TIME); */
 
     // Here we have received a message fully, we need to give control back to
     // LGS
@@ -652,8 +531,7 @@ void LogSimInterface::flow_over(const Packet &p) {
 }
 
 void LogSimInterface::compute_over(int i) {
-    printf("Compute is over, time is %lu vs htsim_time %lu\n", GLOBAL_TIME,
-           htsim_time);
+    /*  printf("Compute is over, time is %lu vs htsim_time %lu\n", GLOBAL_TIME, htsim_time); */
     compute_started--;
     htsim_time = GLOBAL_TIME;
     compute_if_finished = true;
@@ -684,7 +562,7 @@ void LogSimInterface::terminate_sim() {
 
 graph_node_properties LogSimInterface::htsim_simulate_until(u_int64_t until) {
 
-    printf("Simulating Until Called\n");
+    /* printf("Simulating Until Called\n"); */
     // GO!
 
     while (_eventlist->doNextEvent()) {
@@ -692,21 +570,21 @@ graph_node_properties LogSimInterface::htsim_simulate_until(u_int64_t until) {
         // compute_events_handler->startComputations();
 
         if (_latest_recv->updated) {
-            printf("Running - %d - %lu\n", _latest_recv->updated, GLOBAL_TIME);
+            /* printf("Running - %d - %lu\n", _latest_recv->updated, GLOBAL_TIME); */
             break;
         }
 
         if (compute_if_finished) {
-            printf("Compute Finished - Returning Control to LGSD\n");
+            /* printf("Compute Finished - Returning Control to LGS\n"); */
             compute_if_finished = false;
             break;
         }
     }
 
-    if (_latest_recv->updated) {
+    /* if (_latest_recv->updated) {
         printf("Updated - Time %lu\n", _latest_recv->time);
     } else
-        printf("Nothing\n");
+        printf("Nothing\n"); */
     return *_latest_recv;
 }
 
@@ -791,9 +669,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
     }
 
     // the active queue
-    std::priority_queue<graph_node_properties,
-                        std::vector<graph_node_properties>, aqcompare_func>
-            aq;
+    std::priority_queue<graph_node_properties, std::vector<graph_node_properties>, aqcompare_func> aq;
     // the queues for each host
     std::vector<ruq_t> rq(p), uq(p); // receive queue, unexpected queue
     // next available time for o, g(receive) and g(send)
@@ -820,8 +696,8 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
 
     printf("Starting %lu\n", parser.schedules.size());
 
-    for (Parser::schedules_t::iterator sched = parser.schedules.begin();
-         sched != parser.schedules.end(); ++sched, ++host) {
+    for (Parser::schedules_t::iterator sched = parser.schedules.begin(); sched != parser.schedules.end();
+         ++sched, ++host) {
         // initialize free operations (only once per run!)
         // sched->init_free_operations();
 
@@ -836,8 +712,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
         num_events += sched->GetNumNodes();
 
         // walk all new free operations and throw them in the queue
-        for (SerializedGraph::nodelist_t::iterator freeop = free_ops.begin();
-             freeop != free_ops.end(); ++freeop) {
+        for (SerializedGraph::nodelist_t::iterator freeop = free_ops.begin(); freeop != free_ops.end(); ++freeop) {
             // if(print) std::cout << *freeop << " " ;
 
             freeop->host = host;
@@ -849,21 +724,20 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
             switch (freeop->type) {
             case OP_LOCOP:
                 if (0)
-                    printf("init %i (%i,%i) loclop: %lu\n", host, freeop->proc,
-                           freeop->nic, (long unsigned int)freeop->size);
+                    printf("init %i (%i,%i) loclop: %lu\n", host, freeop->proc, freeop->nic,
+                           (long unsigned int)freeop->size);
                 break;
             case OP_SEND:
-                if (1)
-                    printf("init %i (%i,%i) send to: %i, tag: %i, size: %lu\n",
-                           host, freeop->proc, freeop->nic, freeop->target,
-                           freeop->tag, (long unsigned int)freeop->size);
+                if (0)
+                    printf("init %i (%i,%i) send to: %i, tag: %i, size: %lu\n", host, freeop->proc, freeop->nic,
+                           freeop->target, freeop->tag, (long unsigned int)freeop->size);
                 break;
             case OP_RECV:
-                if (1)
+                if (0)
                     printf("init %i (%i,%i) recvs from: %i, tag: %i, size: "
                            "%lu\n",
-                           host, freeop->proc, freeop->nic, freeop->target,
-                           freeop->tag, (long unsigned int)freeop->size);
+                           host, freeop->proc, freeop->nic, freeop->target, freeop->tag,
+                           (long unsigned int)freeop->size);
                 break;
             default:
                 printf("not implemented!\n");
@@ -883,27 +757,25 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
 
     while (!aq.empty() || (size_queue(rq, p) > 0) || (size_queue(uq, p) > 0)/* ||
            !lgs_interface->all_sends_delivered()*/) {
-        if (cycles > 100000) {
+        if (cycles > 50000000) {
             printf("\nERROR: We are in some sort of loop in the main WHILE. "
                    "Breaking after 100k cycles\n\n");
             break;
         }
-        printf("----------------------------    ENTERING WHILE        // "
+        /* printf("----------------------------    ENTERING WHILE        // "
                "---------------------------- | %d - %ld %ld -  %d %d - %d %d "
                "Size AQ %lu - "
                "%d %d %d\n",
-               aq.empty(), aq.top().time, lgs_interface->htsim_time, 1,
-               first_cycle, size_queue(rq, p), size_queue(uq, p), aq.size(),
-               aq.top().host, aq.top().target, aq.top().tag);
+               aq.empty(), aq.top().time, lgs_interface->htsim_time, 1, first_cycle, size_queue(rq, p),
+               size_queue(uq, p), aq.size(), aq.top().host, aq.top().target, aq.top().tag); */
 
         graph_node_properties temp_elem = aq.top();
 
         while (!aq.empty() && aq.top().time <= (lgs_interface->htsim_time)) {
-            printf("Active Queue Size %d - Top Time %lu Type %d - HTSIM Time "
+            /* printf("Active Queue Size %d - Top Time %lu Type %d - HTSIM Time "
                    "%lu\n",
-                   (int)aq.size(), aq.top().time, aq.top().type,
-                   lgs_interface->htsim_time);
-            if (cycles > 100000) {
+                   (int)aq.size(), aq.top().time, aq.top().type, lgs_interface->htsim_time); */
+            if (cycles > 50000000) {
                 printf("\nERROR: We are in some sort of loop in the main "
                        "WHILE. Breaking after 100k cycles\n\n");
                 exit(0);
@@ -912,8 +784,10 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
 
             graph_node_properties elem = aq.top();
 
-            printf("Considering Element Host %d Offset %d\n", elem.host,
-                   elem.offset);
+            if (elem.offset % 1000 == 0) {
+                printf("Considering Element Host %d Offset %d\n", elem.host, elem.offset);
+            }
+
             aq.pop();
 
             // the lists of hosts that actually finished someting -- a host is
@@ -927,8 +801,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                 if (print)
                     printf("[%i] found loclop of length %lu - t: %lu (CPU: "
                            "%i)\n",
-                           elem.host, (ulint)elem.size, (ulint)elem.time,
-                           elem.proc);
+                           elem.host, (ulint)elem.size, (ulint)elem.time, elem.proc);
                 if (nexto[elem.host][elem.proc] <= elem.time || true) {
 
                     // TEMP Change size of compute to 1 if it is zero
@@ -936,12 +809,9 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                         elem.size = 1;
                     }
                     // check if OS Noise occurred
-                    printf("Executing compute of %lu - Host %d\n", elem.size,
-                           elem.host);
-                    osnoise.get_noise(elem.host, elem.time,
-                                      elem.time + elem.size);
-                    nexto[elem.host][elem.proc] =
-                            elem.size + lgs_interface->htsim_time;
+                    /* printf("Executing compute of %lu - Host %d\n", elem.size, elem.host); */
+                    osnoise.get_noise(elem.host, elem.time, elem.time + elem.size);
+                    nexto[elem.host][elem.proc] = elem.size + lgs_interface->htsim_time;
                     // printf("====================== Updated time is %ld
                     // ===============================1\n",
                     // nexto[elem.host][elem.proc]);
@@ -960,10 +830,9 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                     // add to timeline
                     // tlviz.add_loclop(elem.host, elem.time,
                     elem.time += (elem.size * 1000);
-                    printf("Host %d - Scheduling compute - Time %lu - Finish "
+                    /* printf("Host %d - Scheduling compute - Time %lu - Finish "
                            "at %lu vs %lu\n",
-                           elem.host, elem.size, elem.time,
-                           GLOBAL_TIME + (elem.size * 1000));
+                           elem.host, elem.size, elem.time, GLOBAL_TIME + (elem.size * 1000)); */
                     aq.push(elem);
                     lgs_interface->execute_compute(elem, p);
                 } else {
@@ -976,8 +845,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
             } break;
 
             case OP_LOCOP_IN_PROGRESS: {
-                printf("LOCOP Finished - Host %d - Size %d\n", elem.host,
-                       elem.size);
+                /* printf("LOCOP Finished - Host %d - Size %d\n", elem.host, elem.size); */
 
                 parser.schedules[elem.host].MarkNodeAsDone(elem.offset);
             } break;
@@ -986,39 +854,36 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                 // printf("Entering Send");
                 //  lgs_interface->htsim_time = GLOBAL_TIME;
                 if (elem.target == 999999999 || elem.target == 9999999) {
-                    std::cout << "Time at Step " << elem.host << ": "
-                              << lgs_interface->htsim_time << " - Tag "
+                    std::cout << "Time at Step " << elem.host << ": " << lgs_interface->htsim_time << " - Tag "
                               << elem.tag << "\n";
                     parser.schedules[elem.host].MarkNodeAsStarted(elem.offset);
                     parser.schedules[elem.host].MarkNodeAsDone(elem.offset);
                     break;
                 }
 
-                if (1)
-                    printf("[%i] found send to %i - t: %lu (CPU: %i)\n",
-                           elem.host, elem.target, (ulint)elem.time, elem.proc);
+                if (0)
+                    printf("[%i] found send to %i - t: %lu (CPU: %i)\n", elem.host, elem.target, (ulint)elem.time,
+                           elem.proc);
                 if (std::max(nexto[elem.host][elem.proc],
                              nextgs[elem.host][elem.nic]) <= elem.time ||
                     true) { // local o,g available!
-                    if (1)
+                    if (0)
                         printf("-- satisfy local irequires\n");
 
                     parser.schedules[elem.host].MarkNodeAsStarted(elem.offset);
 
-                    lgs_interface->htsim_schedule(elem.host, elem.target,
-                                                  elem.size, elem.tag,
-                                                  GLOBAL_TIME, elem.offset);
+                    lgs_interface->htsim_schedule(elem.host, elem.target, elem.size, elem.tag, GLOBAL_TIME,
+                                                  elem.offset);
 
-                    printf("Send host %d - offset %d\n", elem.host,
-                           elem.offset);
-                    // parser.schedules[elem.host].MarkNodeAsDone(elem.offset);
+                    // printf("Send host %d - offset %d\n", elem.host, elem.offset);
+                    //  parser.schedules[elem.host].MarkNodeAsDone(elem.offset);
                 }
             } break;
             case OP_RECV: {
                 // printf("OP_RECV\n");
-                if (1)
-                    printf("[%i] found recv from %i - t: %lu (CPU: %i)\n",
-                           elem.host, elem.target, (ulint)elem.time, elem.proc);
+                if (0)
+                    printf("[%i] found recv from %i - t: %lu (CPU: %i)\n", elem.host, elem.target, (ulint)elem.time,
+                           elem.proc);
 
                 parser.schedules[elem.host].MarkNodeAsStarted(elem.offset);
                 check_hosts.push_back(elem.host);
@@ -1031,7 +896,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
 
                 match_attempts = match(elem, &uq[elem.host], &matched_elem);
                 if (match_attempts >= 0) { // found it in local UQ
-                    if (1)
+                    if (0)
                         printf("-- found in local UQ\n");
                     // satisfy local requires
                     parser.schedules[elem.host].MarkNodeAsDone(elem.offset);
@@ -1046,7 +911,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                         printf("-- satisfy local requires\n");
                 } else { // not found in local UQ - add to RQ
 
-                    if (1)
+                    if (0)
                         printf("-- not found in local UQ -- add to RQ\n");
                     ruqelem_t nelem;
                     nelem.size = elem.size;
@@ -1057,19 +922,16 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                     // printf("############ Host added is %d\n\n", elem.host);
                     rq[elem.host].push_back(nelem);
 #else
-                    rq[elem.host][std::make_pair(nelem.tag, nelem.src)].push(
-                            nelem);
+                    rq[elem.host][std::make_pair(nelem.tag, nelem.src)].push(nelem);
 #endif
                 }
             } break;
 
             case OP_MSG: {
-                printf("OP MSG");
                 if (print)
                     printf("[%i] found msg from %i, t: %lu (CPU: %i) - %d %d "
                            "%d\n",
-                           elem.host, elem.target, (ulint)elem.time, elem.proc,
-                           elem.nic, elem.proc, elem.offset);
+                           elem.host, elem.target, (ulint)elem.time, elem.proc, elem.nic, elem.proc, elem.offset);
                 uint64_t earliestfinish = 0;
                 // NUMBER of elements that were searched during message matching
                 int32_t match_attempts;
@@ -1078,8 +940,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                        nexto[elem.host][elem.proc], elem.host, elem.proc,
                        nextgr[elem.host][elem.nic], elem.host, elem.nic,
                        elem.time);*/
-                if (std::max(nexto[elem.host][elem.proc],
-                             nextgr[elem.host][elem.nic]) <=
+                if (std::max(nexto[elem.host][elem.proc], nextgr[elem.host][elem.nic]) <=
                     elem.time /* local o,g available! */) {
                     // if (print) {
                     // printf("Reaching here %d %d - %d %d\n", nexto.size(),
@@ -1089,11 +950,9 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                     //  check if OS Noise occurred
                     // btime_t noise = osnoise.get_noise(elem.host, elem.time,
                     // elem.time+o);
-                    nexto[elem.host][elem.proc] =
-                            elem.time +
-                            0; /* message is only received after G is charged !!
-                                  TODO: consuming o seems a bit odd in the LogGP
-                                  model but well in practice */
+                    nexto[elem.host][elem.proc] = elem.time + 0; /* message is only received after G is charged !!
+                                                                    TODO: consuming o seems a bit odd in the LogGP
+                                                                    model but well in practice */
                     ;
                     nextgr[elem.host][elem.nic] = elem.time + 0;
                     // printf("====================== Updated time is %ld
@@ -1113,29 +972,25 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                     if (match_attempts >= 0) { // found it in RQ
                         if (0) {
                             // RECORD match queue statistics
-                            std::pair<int, btime_t> match =
-                                    std::make_pair(match_attempts, elem.time);
+                            std::pair<int, btime_t> match = std::make_pair(match_attempts, elem.time);
                             rq_matches[elem.host].push_back(match);
                             /* Amount of time spent in queue */
-                            rq_times[elem.host].push_back(
-                                    elem.time - matched_elem.starttime);
+                            rq_times[elem.host].push_back(elem.time - matched_elem.starttime);
                         }
 
-                        if (1)
+                        if (0)
                             printf("-- Found in RQ\n");
-                        parser.schedules[elem.host].MarkNodeAsDone(
-                                matched_elem.offset);
-                        parser.schedules[elem.target].MarkNodeAsDone(
-                                elem.offset);
-                        printf("Unlocking also Elem.Target %d and "
+                        parser.schedules[elem.host].MarkNodeAsDone(matched_elem.offset);
+                        parser.schedules[elem.target].MarkNodeAsDone(elem.offset);
+                        /* printf("Unlocking also Elem.Target %d and "
                                "Elem.offset "
                                "%d\n",
-                               elem.target, elem.offset);
+                               elem.target, elem.offset); */
                         // check_hosts.push_back(elem.host);
                         // printf("Reached after DONE \n"
 
                     } else { // not in RQ
-                        if (1)
+                        if (0)
                             printf("-- not found in RQ - add to UQ\n");
                         ruqelem_t nelem;
                         nelem.size = elem.size;
@@ -1143,19 +998,16 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                         nelem.tag = elem.tag;
                         nelem.offset = elem.offset;
                         nelem.starttime = elem.time; // when it was started
-                        parser.schedules[elem.target].MarkNodeAsDone(
-                                elem.offset);
+                        parser.schedules[elem.target].MarkNodeAsDone(elem.offset);
 
 #ifdef LIST_MATCH
                         uq[elem.host].push_back(nelem);
 #else
-                        uq[elem.host][std::make_pair(nelem.tag, nelem.src)]
-                                .push(nelem);
+                        uq[elem.host][std::make_pair(nelem.tag, nelem.src)].push(nelem);
 #endif
                     }
                 } else {
-                    elem.time = std::max(std::max(nexto[elem.host][elem.proc],
-                                                  nextgr[elem.host][elem.nic]),
+                    elem.time = std::max(std::max(nexto[elem.host][elem.proc], nextgr[elem.host][elem.nic]),
                                          earliestfinish);
                     if (0)
                         printf("-- msg o,g not available -- reinserting\n");
@@ -1185,13 +1037,12 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
         recev_msg.updated = false;
         // We Run NS-3 if we have a compute message or if we have still some
         // data in the network
-        printf("Current elem time is %ld while htsim %ld\n", temp_elem.time,
-               lgs_interface->htsim_time);
-
+        /*         printf("Current elem time is %ld while htsim %ld\n", temp_elem.time, lgs_interface->htsim_time);
+         */
         host = 0;
         bool unlocked_elem = false;
-        for (Parser::schedules_t::iterator sched = parser.schedules.begin();
-             sched != parser.schedules.end(); ++sched, ++host) {
+        for (Parser::schedules_t::iterator sched = parser.schedules.begin(); sched != parser.schedules.end();
+             ++sched, ++host) {
             // printf("Starting to parse new ops %d\n", 1);
 
             //  host = *iter;
@@ -1207,9 +1058,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
             // printf("Free Op Size %d\n", free_ops.size());
 
             // walk all new free operations and throw them in the queue
-            for (SerializedGraph::nodelist_t::iterator freeop =
-                         free_ops.begin();
-                 freeop != free_ops.end(); ++freeop) {
+            for (SerializedGraph::nodelist_t::iterator freeop = free_ops.begin(); freeop != free_ops.end(); ++freeop) {
                 // if(print) std::cout << *freeop << " " ;
                 // new_events = true;
 
@@ -1227,8 +1076,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                     if (print)
                         printf("%i (%i,%i) loclop: %lu, time: %lu, offset: "
                                "%i\n",
-                               host, freeop->proc, freeop->nic,
-                               (long unsigned int)freeop->size,
+                               host, freeop->proc, freeop->nic, (long unsigned int)freeop->size,
                                (long unsigned int)freeop->time, freeop->offset);
                     break;
                 case OP_SEND:
@@ -1238,9 +1086,8 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                     if (0)
                         printf("%i (%i,%i) send to: %i, tag: %i, size: %lu, "
                                "time: %lu, offset: %i\n",
-                               host, freeop->proc, freeop->nic, freeop->target,
-                               freeop->tag, (long unsigned int)freeop->size,
-                               (long unsigned int)freeop->time, freeop->offset);
+                               host, freeop->proc, freeop->nic, freeop->target, freeop->tag,
+                               (long unsigned int)freeop->size, (long unsigned int)freeop->time, freeop->offset);
 
                     break;
                 case OP_RECV:
@@ -1248,9 +1095,8 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                     if (0)
                         printf("%i (%i,%i) recvs from: %i, tag: %i, size: %lu, "
                                "time: %lu, offset: %i\n",
-                               host, freeop->proc, freeop->nic, freeop->target,
-                               freeop->tag, (long unsigned int)freeop->size,
-                               (long unsigned int)freeop->time, freeop->offset);
+                               host, freeop->proc, freeop->nic, freeop->target, freeop->tag,
+                               (long unsigned int)freeop->size, (long unsigned int)freeop->time, freeop->offset);
                     break;
                 default:
                     printf("not implemented!\n");
@@ -1295,15 +1141,13 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
             }
         }*/
 
-        if (!lgs_interface->all_sends_delivered() ||
-            lgs_interface->compute_started != 0) {
+        if (!lgs_interface->all_sends_delivered() || lgs_interface->compute_started != 0) {
             if (!unlocked_elem) {
-                printf("Running infinite - AQ Size %d - Temp Time %lu vs "
+                /* printf("Running infinite - AQ Size %d - Temp Time %lu vs "
                        "Htsim "
                        "%lu - Global %lu ---- Time Now %lu vs Top %lu\n",
-                       (int)aq.size(), temp_elem.time,
-                       lgs_interface->htsim_time, GLOBAL_TIME, GLOBAL_TIME,
-                       aq.top().time);
+                       (int)aq.size(), temp_elem.time, lgs_interface->htsim_time, GLOBAL_TIME, GLOBAL_TIME,
+                       aq.top().time); */
                 recev_msg = lgs_interface->htsim_simulate_until(100);
                 lgs_interface->htsim_time = GLOBAL_TIME;
             }
@@ -1320,28 +1164,26 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
 
         // If the OP is NULL then we just continue
         if (recev_msg.updated) {
-            printf("..... Received a MSG -- host %d to target %d size %d, proc "
+            /* printf("..... Received a MSG -- host %d to target %d size %d, proc "
                    "%d - "
                    "Type %d\n",
-                   recev_msg.host, recev_msg.target, recev_msg.size,
-                   recev_msg.proc, temp_elem.type);
+                   recev_msg.host, recev_msg.target, recev_msg.size, recev_msg.proc, temp_elem.type); */
             aq.push(recev_msg);
             lgs_interface->reset_latest_receive();
         } else {
             // If not NULL, we add it to the AQ
-            printf("..... NOT Received a MSG\n");
+            /* printf("..... NOT Received a MSG\n"); */
         }
 
         first_cycle = false;
         cycles++;
 
-        printf("----------------------------    LEAVING TOP WHILE        // "
+        /* printf("----------------------------    LEAVING TOP WHILE        // "
                "---------------------------- | %d - %ld %ld -  %d %d - %d %d "
                "Size AQ %lu - "
                "%d %d %d\n",
-               aq.empty(), aq.top().time, lgs_interface->htsim_time, 1,
-               first_cycle, size_queue(rq, p), size_queue(uq, p), aq.size(),
-               aq.top().host, aq.top().target, aq.top().tag);
+               aq.empty(), aq.top().time, lgs_interface->htsim_time, 1, first_cycle, size_queue(rq, p),
+               size_queue(uq, p), aq.size(), aq.top().host, aq.top().target, aq.top().tag); */
     }
 
     std::cout << "\n\nRunTime Total LGS -> " << global_time.count() << "ms\n";
@@ -1358,8 +1200,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
 #endif
     printf("PERFORMANCE: Processes: %i \t Events: %lu \t Time: %lu s \t Speed: "
            "%.2f ev/s\n",
-           p, (long unsigned int)aqtime, (long unsigned int)diff,
-           (float)aqtime / (float)diff);
+           p, (long unsigned int)aqtime, (long unsigned int)diff, (float)aqtime / (float)diff);
     printf("AQ is %lu\n", aq.size());
     // check if all queues are empty!!
     bool ok = true;
@@ -1367,19 +1208,15 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
 
 #ifdef LIST_MATCH
         if (!uq[i].empty()) {
-            printf("unexpected queue on host %i contains %lu elements!\n", i,
-                   (ulint)uq[i].size());
-            for (ruq_t::iterator iter = uq[i].begin(); iter != uq[i].end();
-                 ++iter) {
+            printf("unexpected queue on host %i contains %lu elements!\n", i, (ulint)uq[i].size());
+            for (ruq_t::iterator iter = uq[i].begin(); iter != uq[i].end(); ++iter) {
                 printf(" src: %i, tag: %i\n", iter->src, iter->tag);
             }
             ok = false;
         }
         if (!rq[i].empty()) {
-            printf("receive queue on host %i contains %lu elements!\n", i,
-                   (ulint)rq[i].size());
-            for (ruq_t::iterator iter = rq[i].begin(); iter != rq[i].end();
-                 ++iter) {
+            printf("receive queue on host %i contains %lu elements!\n", i, (ulint)rq[i].size());
+            for (ruq_t::iterator iter = rq[i].begin(); iter != rq[i].end(); ++iter) {
                 printf(" src: %i, tag: %i\n", iter->src, iter->tag);
             }
             ok = false;
@@ -1392,8 +1229,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
             printf("Times: \n");
             host = 0;
             for (uint i = 0; i < p; ++i) {
-                btime_t maxo =
-                        *(std::max_element(nexto[i].begin(), nexto[i].end()));
+                btime_t maxo = *(std::max_element(nexto[i].begin(), nexto[i].end()));
                 // btime_t maxgr=*(std::max_element(nextgr[i].begin(),
                 // nextgr[i].end())); btime_t
                 // maxgs=*(std::max_element(nextgs[i].begin(),
@@ -1405,8 +1241,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
             long long unsigned int max = 0;
             int host = 0;
             for (uint i = 0; i < p; ++i) { // find maximum end time
-                btime_t maxo =
-                        *(std::max_element(nexto[i].begin(), nexto[i].end()));
+                btime_t maxo = *(std::max_element(nexto[i].begin(), nexto[i].end()));
                 // btime_t maxgr=*(std::max_element(nextgr[i].begin(),
                 // nextgr[i].end())); btime_t
                 // maxgs=*(std::max_element(nextgs[i].begin(),
@@ -1418,8 +1253,8 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                     max = cur;
                 }
             }
-            std::cout << "Maximum finishing time at host " << host << ": "
-                      << max << " (" << (double)max / 1e9 << " s)\n";
+            std::cout << "Maximum finishing time at host " << host << ": " << max << " (" << (double)max / 1e9
+                      << " s)\n";
         }
 
         // WRITE match queue statistics
@@ -1460,17 +1295,14 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
             std::ofstream rq_hit_file(filename);
 
             if (!rq_hit_file.is_open()) {
-                std::cerr << "Can't open rq-hit data file (" << filename << ")"
-                          << std::endl;
+                std::cerr << "Can't open rq-hit data file (" << filename << ")" << std::endl;
             } else {
                 // WRITE one line per rank
-                for (auto per_rank_matches = rq_matches.begin();
-                     per_rank_matches != rq_matches.end(); per_rank_matches++) {
-                    for (auto match_pair = (*per_rank_matches).begin();
-                         match_pair != (*per_rank_matches).end();
+                for (auto per_rank_matches = rq_matches.begin(); per_rank_matches != rq_matches.end();
+                     per_rank_matches++) {
+                    for (auto match_pair = (*per_rank_matches).begin(); match_pair != (*per_rank_matches).end();
                          match_pair++) {
-                        rq_hit_file << (*match_pair).first << ","
-                                    << (*match_pair).second << " ";
+                        rq_hit_file << (*match_pair).first << "," << (*match_pair).second << " ";
                     }
                     rq_hit_file << std::endl;
                 }
@@ -1483,17 +1315,14 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
             std::ofstream uq_hit_file(filename);
 
             if (!uq_hit_file.is_open()) {
-                std::cerr << "Can't open uq-hit data file (" << filename << ")"
-                          << std::endl;
+                std::cerr << "Can't open uq-hit data file (" << filename << ")" << std::endl;
             } else {
                 // WRITE one line per rank
-                for (auto per_rank_matches = uq_matches.begin();
-                     per_rank_matches != uq_matches.end(); per_rank_matches++) {
-                    for (auto match_pair = (*per_rank_matches).begin();
-                         match_pair != (*per_rank_matches).end();
+                for (auto per_rank_matches = uq_matches.begin(); per_rank_matches != uq_matches.end();
+                     per_rank_matches++) {
+                    for (auto match_pair = (*per_rank_matches).begin(); match_pair != (*per_rank_matches).end();
                          match_pair++) {
-                        uq_hit_file << (*match_pair).first << ","
-                                    << (*match_pair).second << " ";
+                        uq_hit_file << (*match_pair).first << "," << (*match_pair).second << " ";
                     }
                     uq_hit_file << std::endl;
                 }
@@ -1506,16 +1335,13 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
             std::ofstream rq_miss_file(filename);
 
             if (!rq_miss_file.is_open()) {
-                std::cerr << "Can't open rq-miss data file (" << filename << ")"
-                          << std::endl;
+                std::cerr << "Can't open rq-miss data file (" << filename << ")" << std::endl;
             } else {
                 // WRITE one line per rank
-                for (auto per_rank_misses = rq_misses.begin();
-                     per_rank_misses != rq_misses.end(); per_rank_misses++) {
-                    for (auto miss_pair = (*per_rank_misses).begin();
-                         miss_pair != (*per_rank_misses).end(); miss_pair++) {
-                        rq_miss_file << (*miss_pair).first << ","
-                                     << (*miss_pair).second << " ";
+                for (auto per_rank_misses = rq_misses.begin(); per_rank_misses != rq_misses.end(); per_rank_misses++) {
+                    for (auto miss_pair = (*per_rank_misses).begin(); miss_pair != (*per_rank_misses).end();
+                         miss_pair++) {
+                        rq_miss_file << (*miss_pair).first << "," << (*miss_pair).second << " ";
                     }
                     rq_miss_file << std::endl;
                 }
@@ -1528,16 +1354,13 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
             std::ofstream uq_miss_file(filename);
 
             if (!uq_miss_file.is_open()) {
-                std::cerr << "Can't open uq-miss data file (" << filename << ")"
-                          << std::endl;
+                std::cerr << "Can't open uq-miss data file (" << filename << ")" << std::endl;
             } else {
                 // WRITE one line per rank
-                for (auto per_rank_misses = uq_misses.begin();
-                     per_rank_misses != uq_misses.end(); per_rank_misses++) {
-                    for (auto miss_pair = (*per_rank_misses).begin();
-                         miss_pair != (*per_rank_misses).end(); miss_pair++) {
-                        uq_miss_file << (*miss_pair).first << ","
-                                     << (*miss_pair).second << " ";
+                for (auto per_rank_misses = uq_misses.begin(); per_rank_misses != uq_misses.end(); per_rank_misses++) {
+                    for (auto miss_pair = (*per_rank_misses).begin(); miss_pair != (*per_rank_misses).end();
+                         miss_pair++) {
+                        uq_miss_file << (*miss_pair).first << "," << (*miss_pair).second << " ";
                     }
                     uq_miss_file << std::endl;
                 }

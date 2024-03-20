@@ -123,11 +123,11 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList
     target_window = _cwnd;
     _target_based_received = true;
 
-    printf("Link Delay %d - Link Speed %lu - Pkt Size %d - Base RTT %lu - "
+    /* printf("Link Delay %d - Link Speed %lu - Pkt Size %d - Base RTT %lu - "
            "Target RTT is %lu - BDP %lu - CWND %u - Hops %d - Stop Pacing "
            "%lu\n",
            LINK_DELAY_MODERN, LINK_SPEED_MODERN, PKT_SIZE_MODERN, _base_rtt, _target_rtt, _bdp, _cwnd, _hop_count,
-           stop_pacing_after_rtt);
+           stop_pacing_after_rtt); */
 
     _max_good_entropies = 10; // TODO: experimental value
     _enableDistanceBasedRtx = false;
@@ -415,11 +415,11 @@ void UecSrc::updateParams() {
 
     qa_period = (100000 * 1000);
     qa_mult = _base_rtt / qa_period;
-    printf("QA MULT is %d\n", qa_mult);
+    /* printf("QA MULT is %d\n", qa_mult); */
 
     near_base_rtt = _base_rtt * 1.05;
 
-    printf("UPDATING VALUES - Link Delay %d (InterDC %lu) - Link Speed %lu - "
+    /* printf("UPDATING VALUES - Link Delay %d (InterDC %lu) - Link Speed %lu - "
            "Pkt Size %d - "
            "Base RTT %lu - "
            "Target RTT is %lu - Drain Queue %lu - BDP %lu - CWND %u - Queue "
@@ -427,7 +427,7 @@ void UecSrc::updateParams() {
            "%lu\n",
            LINK_DELAY_MODERN, _interdc_delay / 1000, LINK_SPEED_MODERN, PKT_SIZE_MODERN, _base_rtt, _target_rtt,
            time_to_drain_queue, _bdp, _cwnd, _switch_queue_size, _hop_count, stop_pacing_after_rtt);
-    fflush(stdout);
+    fflush(stdout); */
     _max_good_entropies = 10; // TODO: experimental value
     _enableDistanceBasedRtx = false;
     last_pac_change = 0;
@@ -1081,13 +1081,14 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
             f_flow_over_hook(pkt);
         }
 
-        cout << "Flow " << nodename() << " finished at " << timeAsMs(eventlist().now()) << endl;
+        /* cout << "Flow " << nodename() << " finished at " << timeAsMs(eventlist().now()) << endl;
         cout << "Flow " << nodename() << " completion time is " << timeAsMs(eventlist().now() - _flow_start_time)
-             << endl;
+             << endl; */
 
-        printf("Completion Time Flow is %lu - Overall Time %lu\n", eventlist().now() - _flow_start_time, GLOBAL_TIME);
+        // printf("Completion Time Flow is %lu - Overall Time %lu\n", eventlist().now() - _flow_start_time,
+        // GLOBAL_TIME);
 
-        printf("Overall Completion at %lu\n", GLOBAL_TIME);
+        /* printf("Overall Completion at %lu\n", GLOBAL_TIME); */
         if (_end_trigger) {
             _end_trigger->activate();
         }
@@ -1599,7 +1600,7 @@ void UecSrc::connect(Route *routeout, Route *routeback, UecSink &sink, simtime_p
     _flow._name = _name;
     _sink->connect(*this, routeback);
 
-    printf("StartTime %s is %lu\n", _name.c_str(), starttime);
+    /* printf("StartTime %s is %lu\n", _name.c_str(), starttime); */
 
     eventlist().sourceIsPending(*this, starttime);
 }
@@ -1608,10 +1609,10 @@ void UecSrc::startflow() {
     ideal_x = x_gain;
     _flow_start_time = eventlist().now();
 
-    printf("Starting Flow from %d to %d tag %d - RTT %lu - Target %lu - "
+    /* printf("Starting Flow from %d to %d tag %d - RTT %lu - Target %lu - "
            "Time "
            "%lu\n",
-           from, to, tag, _base_rtt, _target_rtt, GLOBAL_TIME / 1000);
+           from, to, tag, _base_rtt, _target_rtt, GLOBAL_TIME / 1000); */
     send_packets();
 }
 

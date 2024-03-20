@@ -49,9 +49,9 @@ The main files that have been changed/added to support this CC are:
 We currently provide two entry points to run the simulator with the support of LogGOPSim: htsim_uec_entry_modern and htsim_ndp_entry_modern. The idea here is that these entry points will execute the GOAL input file (in binary format) that is given as part of the ```-goal``` command. The input file should be inside ```sim/lgs/input/```.
 We include two sample input files (```incast_1024_100_4194304.bin``` and ```incast_1024_8_4194304.bin```).
 
-To actually run the application a typical command line would look like this (from inside the /plotting folder and for SMaRTT protocol):
+To actually run the application a typical command line would look like this (from inside the /datacenter folder and for SMaRTT protocol):
 ```
-../sim/datacenter/htsim_uec_entry_modern -o uec_entry -k 1 -algorithm delayB -nodes 1024 -q 4452000 -strat ecmp_host_random2_ecn -number_entropies 256 -kmin 20 -kmax 80 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite  -hop_latency 700 -reuse_entropy 1 -goal incast_1024_8_4194304.bin -x_gain 2 -y_gain 2.5 -w_gain 2 -z_gain 0.8  -collect_data 1 > out.tmp
+./htsim_uec_entry_modern -o uec_entry -k 1 -algorithm smartt -nodes 16 -q 4452000 -strat ecmp_host_random2_ecn -number_entropies 1024 -kmin 2 -kmax 80 -use_fast_increase 0 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 700 -switch_latency 0 -reuse_entropy 1 -goal lulesh_slimfly_8.bin -x_gain 0.25 -y_gain 2 -w_gain 2 -z_gain 0.8 -bonus_drop 1.5 -collect_data 0 -use_pacing 0 -decrease_on_nack 1 -topology normal -max_queue_size 1000000 > out2.tmp
 ```
 
 ## Generating GOAL input files

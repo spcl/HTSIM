@@ -12,8 +12,8 @@
 #define STRICT_ORDER // this is needed to keep order between Send/Recv and
                      // LocalOps in NBC case :-/
 #define LIST_MATCH   // enables debugging the queues (check if empty)
-#define HOSTSYNC // this is experimental to count synchronization times induced
-                 // by message transmissions
+#define HOSTSYNC     // this is experimental to count synchronization times induced
+                     // by message transmissions
 
 #include <algorithm>
 #include <iostream>
@@ -45,7 +45,7 @@ class graph_node_properties {
                   order of elements in the queue, it is increased for every new
                   element, not for re-insertions! Needed for correctness. */
 #endif
-    uint64_t size; // number of bytes to send, recv, or time to spend in loclop
+    uint64_t size;   // number of bytes to send, recv, or time to spend in loclop
     uint32_t target; // partner for send/recv
     uint32_t host;   // owning host
     uint32_t offset; // for Parser (to identify schedule element)
@@ -113,8 +113,7 @@ typedef unsigned long long int ullint;
 // TODO this is really slow - reconsider design of rq and uq!
 // matches and removes element from list if found, otherwise returns
 // false
-static inline int match(const graph_node_properties &elem, ruq_t *q,
-                        ruqelem_t *retelem = NULL) {
+static inline int match(const graph_node_properties &elem, ruq_t *q, ruqelem_t *retelem = NULL) {
 
     // MATCH attempts (i.e., number of elements searched to find a matching
     // element)
@@ -130,14 +129,10 @@ static inline int match(const graph_node_properties &elem, ruq_t *q,
                q->size(), elem.host, elem.target, elem.tag);
     for (ruq_t::iterator iter = q->begin(); iter != q->end(); ++iter) {
         match_attempts++;
-        if (1)
-            printf("Compared element is -> %d %d vs %d %d\n", iter->src,
-                   iter->tag, elem.target, elem.tag);
-        fflush(stdout);
-        if (elem.target == ANY_SOURCE || iter->src == ANY_SOURCE ||
-            iter->src == elem.target) {
-            if (elem.tag == ANY_TAG || iter->tag == ANY_TAG ||
-                iter->tag == elem.tag) {
+        if (0)
+            printf("Compared element is -> %d %d vs %d %d\n", iter->src, iter->tag, elem.target, elem.tag);
+        if (elem.target == ANY_SOURCE || iter->src == ANY_SOURCE || iter->src == elem.target) {
+            if (elem.tag == ANY_TAG || iter->tag == ANY_TAG || iter->tag == elem.tag) {
                 if (retelem)
                     *retelem = *iter;
                 q->erase(iter);
@@ -150,19 +145,13 @@ static inline int match(const graph_node_properties &elem, ruq_t *q,
 #else
 class myhash { // I WANT LAMBDAS! :)
   public:
-    size_t operator()(const std::pair<int, int> &x) const {
-        return (x.first >> 16) + x.second;
-    }
+    size_t operator()(const std::pair<int, int> &x) const { return (x.first >> 16) + x.second; }
 };
-typedef std::hash_map<std::pair</*tag*/ int, int /*src*/>,
-                      std::queue<ruqelem_t>, myhash>
-        ruq_t;
-static inline int match(const graph_node_properties &elem, ruq_t *q,
-                        ruqelem_t *retelem = NULL) {
+typedef std::hash_map<std::pair</*tag*/ int, int /*src*/>, std::queue<ruqelem_t>, myhash> ruq_t;
+static inline int match(const graph_node_properties &elem, ruq_t *q, ruqelem_t *retelem = NULL) {
 
     if (print)
-        printf("++ [%i] searching matching queue for src %i tag %i\n",
-               elem.host, elem.target, elem.tag);
+        printf("++ [%i] searching matching queue for src %i tag %i\n", elem.host, elem.target, elem.tag);
 
     ruq_t::iterator iter = q->find(std::make_pair(elem.tag, elem.target));
     if (iter == q->end()) {

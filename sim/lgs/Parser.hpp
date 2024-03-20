@@ -80,8 +80,7 @@ class Graph {
 
         RootNodes.clear();
 
-        for (std::vector<Node *>::iterator it = allNodes.begin();
-             it != allNodes.end(); it++) {
+        for (std::vector<Node *>::iterator it = allNodes.begin(); it != allNodes.end(); it++) {
             if ((**it).DependenciesCnt == 0)
                 RootNodes.push_back(*it);
         }
@@ -89,8 +88,7 @@ class Graph {
 
   public:
     ~Graph() {
-        for (std::vector<Node *>::iterator it = allNodes.begin();
-             it != allNodes.end(); it++) {
+        for (std::vector<Node *>::iterator it = allNodes.begin(); it != allNodes.end(); it++) {
             delete *it;
         }
     }
@@ -152,8 +150,7 @@ class Graph {
         fprintf(fd, "graph [rankdir=LR];\n");
         fprintf(fd, "node [shape=record];\n");
 
-        for (std::vector<Node *>::iterator it = allNodes.begin();
-             it != allNodes.end(); it++) {
+        for (std::vector<Node *>::iterator it = allNodes.begin(); it != allNodes.end(); it++) {
             char typestr[5];
             if ((**it).Type == OPTYPE_SEND)
                 strcpy(typestr, "Send");
@@ -166,22 +163,17 @@ class Graph {
             fprintf(fd,
                     "%i [label=\"<f0> Type: %s | <f1> Peer: %i | <f2> Size: "
                     "%lu | <f3> Tag: %i | <f4> Proc: %i | <f5> Nic: %i \"]\n",
-                    (**it).offset, typestr, (**it).Peer,
-                    (unsigned long int)(**it).Size, (**it).Tag, (**it).Proc,
+                    (**it).offset, typestr, (**it).Peer, (unsigned long int)(**it).Size, (**it).Tag, (**it).Proc,
                     (**it).Nic);
         }
 
-        for (std::vector<Node *>::iterator it = allNodes.begin();
-             it != allNodes.end(); it++) {
-            for (std::vector<Node *>::iterator dit = (**it).DependOnMe.begin();
-                 dit != (**it).DependOnMe.end(); dit++) {
+        for (std::vector<Node *>::iterator it = allNodes.begin(); it != allNodes.end(); it++) {
+            for (std::vector<Node *>::iterator dit = (**it).DependOnMe.begin(); dit != (**it).DependOnMe.end(); dit++) {
                 fprintf(fd, "%i:f0 -> %i:f0\n", (**it).offset, (**dit).offset);
             }
-            for (std::vector<Node *>::iterator dit =
-                         (**it).StartDependOnMe.begin();
+            for (std::vector<Node *>::iterator dit = (**it).StartDependOnMe.begin();
                  dit != (**it).StartDependOnMe.end(); dit++) {
-                fprintf(fd, "%i:f0 -> %i:f0 [arrowhead=diamond]\n",
-                        (**it).offset, (**dit).offset);
+                fprintf(fd, "%i:f0 -> %i:f0 [arrowhead=diamond]\n", (**it).offset, (**dit).offset);
             }
         }
 
@@ -320,8 +312,7 @@ class Graph {
 
     */
 
-    void serialize_mmap(int fd, uint32_t rank, uint32_t num_ranks,
-                        uint8_t max_cpu, uint8_t max_nic) {
+    void serialize_mmap(int fd, uint32_t rank, uint32_t num_ranks, uint8_t max_cpu, uint8_t max_nic) {
 
         char *start_rankdata;
         uint64_t end_of_lastrank;
@@ -333,17 +324,15 @@ class Graph {
         if (rank == 0) {
             // calculate the size of the file
             filesize = 0;
-            filesize += sizeof(uint64_t);                 // magic cookie
-            filesize += sizeof(uint32_t);                 // num ranks
-            filesize += sizeof(uint8_t);                  // max_cpu
-            filesize += sizeof(uint8_t);                  // max_nic
-            filesize += sizeof(uint64_t) * 2 * num_ranks; // jumptable
-            filesize += sizeof(uint32_t);                 // num nodes
-            filesize += sizeof(uint32_t);                 // num indp actions
-            filesize +=
-                    (sizeof(uint32_t) * RootNodes.size()); // rootnodes offsets
-            filesize += (sizeof(char) + sizeof(uint8_t) * 2 +
-                         sizeof(uint32_t) * 7 + sizeof(uint64_t)) *
+            filesize += sizeof(uint64_t);                      // magic cookie
+            filesize += sizeof(uint32_t);                      // num ranks
+            filesize += sizeof(uint8_t);                       // max_cpu
+            filesize += sizeof(uint8_t);                       // max_nic
+            filesize += sizeof(uint64_t) * 2 * num_ranks;      // jumptable
+            filesize += sizeof(uint32_t);                      // num nodes
+            filesize += sizeof(uint32_t);                      // num indp actions
+            filesize += (sizeof(uint32_t) * RootNodes.size()); // rootnodes offsets
+            filesize += (sizeof(char) + sizeof(uint8_t) * 2 + sizeof(uint32_t) * 7 + sizeof(uint64_t)) *
                         allNodes.size();                // nodeinfo
             filesize += (sizeof(uint32_t) * num_edges); // appendix
 
@@ -353,29 +342,23 @@ class Graph {
             assert(r == 1);
 
             // mmap the file
-            mapping_start = (char *)mmap(NULL, filesize, PROT_READ | PROT_WRITE,
-                                         MAP_SHARED, fd, 0);
+            mapping_start = (char *)mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
             if (mapping_start == MAP_FAILED) {
                 perror("couldn't mmap the output file");
                 exit(EXIT_FAILURE);
             }
             *((uint64_t *)mapping_start) = (uint64_t)MAGIC_COOKIE;
             mapping_start += sizeof(uint64_t); // jump over magic cookie
-            end_of_lastrank = sizeof(uint32_t) + sizeof(uint8_t) * 2 +
-                              sizeof(uint64_t) * 2 * num_ranks;
-            start_rankdata = mapping_start + sizeof(uint32_t) +
-                             sizeof(uint8_t) * 2 +
-                             sizeof(uint64_t) * 2 *
-                                     num_ranks; // our rankdata starts right
-                                                // after the jumptable
+            end_of_lastrank = sizeof(uint32_t) + sizeof(uint8_t) * 2 + sizeof(uint64_t) * 2 * num_ranks;
+            start_rankdata = mapping_start + sizeof(uint32_t) + sizeof(uint8_t) * 2 +
+                             sizeof(uint64_t) * 2 * num_ranks; // our rankdata starts right
+                                                               // after the jumptable
 
         } else {
-            filesize += sizeof(uint32_t); // num nodes
-            filesize += sizeof(uint32_t); // num indp actions
-            filesize +=
-                    sizeof(uint32_t) * RootNodes.size(); // rootnodes offsets
-            filesize += (sizeof(char) + sizeof(uint8_t) * 2 +
-                         sizeof(uint32_t) * 7 + sizeof(uint64_t)) *
+            filesize += sizeof(uint32_t);                    // num nodes
+            filesize += sizeof(uint32_t);                    // num indp actions
+            filesize += sizeof(uint32_t) * RootNodes.size(); // rootnodes offsets
+            filesize += (sizeof(char) + sizeof(uint8_t) * 2 + sizeof(uint32_t) * 7 + sizeof(uint64_t)) *
                         allNodes.size();              // nodeinfo
             filesize += sizeof(uint32_t) * num_edges; // appendix
 
@@ -385,8 +368,7 @@ class Graph {
             assert(r == 1);
 
             // mmap the file
-            mapping_start = (char *)mmap(NULL, filesize, PROT_READ | PROT_WRITE,
-                                         MAP_SHARED, fd, 0);
+            mapping_start = (char *)mmap(NULL, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
             if (mapping_start == MAP_FAILED) {
                 perror("mmap failed");
                 exit(EXIT_FAILURE);
@@ -394,10 +376,8 @@ class Graph {
 
             mapping_start += sizeof(uint64_t); // jump over magic cookie
 
-            end_of_lastrank =
-                    *((uint64_t *)(mapping_start + sizeof(uint32_t) +
-                                   sizeof(uint8_t) * 2 +
-                                   sizeof(uint64_t) * (2 * (rank - 1) + 1)));
+            end_of_lastrank = *((uint64_t *)(mapping_start + sizeof(uint32_t) + sizeof(uint8_t) * 2 +
+                                             sizeof(uint64_t) * (2 * (rank - 1) + 1)));
             start_rankdata = mapping_start + end_of_lastrank;
         }
 
@@ -410,16 +390,14 @@ class Graph {
         pos += sizeof(uint32_t); // number of independent actions
 
         // independent action offsets
-        for (std::vector<Node *>::iterator it = RootNodes.begin();
-             it != RootNodes.end(); it++) {
+        for (std::vector<Node *>::iterator it = RootNodes.begin(); it != RootNodes.end(); it++) {
             *((uint32_t *)pos) = (**it).offset;
             pos += sizeof(uint32_t);
         }
 
         // node data
 
-        for (std::vector<Node *>::iterator it = allNodes.begin();
-             it != allNodes.end(); it++) {
+        for (std::vector<Node *>::iterator it = allNodes.begin(); it != allNodes.end(); it++) {
 
             *((uint32_t *)pos) = (**it).DependenciesCnt;
             pos += sizeof(uint32_t); // number of actions this action depends on
@@ -440,8 +418,7 @@ class Graph {
             pos += sizeof(uint32_t); // number of actions that depend on this
                                      // actions termination
             *((uint32_t *)pos) = num_in_appendix;
-            pos += sizeof(
-                    uint32_t); // start index of dependent actions (in appendix)
+            pos += sizeof(uint32_t); // start index of dependent actions (in appendix)
             num_in_appendix += (**it).DependOnMe.size();
             *((uint32_t *)pos) = (**it).StartDependOnMe.size();
             pos += sizeof(uint32_t); // number of actions that depend on this
@@ -454,15 +431,12 @@ class Graph {
 
         // appendix data
 
-        for (std::vector<Node *>::iterator it = allNodes.begin();
-             it != allNodes.end(); it++) {
-            for (std::vector<Node *>::iterator dit = (**it).DependOnMe.begin();
-                 dit != (**it).DependOnMe.end(); dit++) {
+        for (std::vector<Node *>::iterator it = allNodes.begin(); it != allNodes.end(); it++) {
+            for (std::vector<Node *>::iterator dit = (**it).DependOnMe.begin(); dit != (**it).DependOnMe.end(); dit++) {
                 *((uint32_t *)pos) = (**dit).offset;
                 pos += sizeof(uint32_t); // offset of dependent action
             }
-            for (std::vector<Node *>::iterator dit =
-                         (**it).StartDependOnMe.begin();
+            for (std::vector<Node *>::iterator dit = (**it).StartDependOnMe.begin();
                  dit != (**it).StartDependOnMe.end(); dit++) {
                 *((uint32_t *)pos) = (**dit).offset;
                 pos += sizeof(uint32_t); // offset of start-dependent action
@@ -470,29 +444,23 @@ class Graph {
         }
 
         // jumptable info
-        *((uint32_t *)mapping_start) =
-                num_ranks; // number of ranks in this schedule-file
+        *((uint32_t *)mapping_start) = num_ranks; // number of ranks in this schedule-file
 
-        *((uint8_t *)(mapping_start + sizeof(uint32_t))) =
-                max_cpu; // minimal number of cpu required to simulate this
-                         // schedule
-        *((uint8_t *)(mapping_start + sizeof(uint32_t) + sizeof(uint8_t))) =
-                max_nic; // minimal number of nics required to simulate this
-                         // schedule
+        *((uint8_t *)(mapping_start + sizeof(uint32_t))) = max_cpu; // minimal number of cpu required to simulate this
+                                                                    // schedule
+        *((uint8_t *)(mapping_start + sizeof(uint32_t) + sizeof(uint8_t))) = max_nic; // minimal number of nics required
+                                                                                      // to simulate this schedule
 
-        *((uint64_t *)(mapping_start + sizeof(uint32_t) + sizeof(uint8_t) * 2 +
-                       sizeof(uint64_t) * 2 * rank)) =
+        *((uint64_t *)(mapping_start + sizeof(uint32_t) + sizeof(uint8_t) * 2 + sizeof(uint64_t) * 2 * rank)) =
                 end_of_lastrank; // start of this ranks info
-        *((uint64_t *)(mapping_start + sizeof(uint32_t) + sizeof(uint8_t) * 2 +
-                       sizeof(uint64_t) * (2 * rank + 1))) =
+        *((uint64_t *)(mapping_start + sizeof(uint32_t) + sizeof(uint8_t) * 2 + sizeof(uint64_t) * (2 * rank + 1))) =
                 pos - mapping_start; // end of this ranks info
 
         // printf("s: %llu e: %llu\n", (long long unsigned int) end_of_lastrank,
         // (long long unsigned int) (pos - mapping_start));
 
         // munmap the files so that the contents get written
-        int r = munmap(mapping_start - sizeof(uint64_t),
-                       (size_t)(pos - mapping_start));
+        int r = munmap(mapping_start - sizeof(uint64_t), (size_t)(pos - mapping_start));
         assert(r == 0);
     }
 };
@@ -511,16 +479,13 @@ class SerializedGraph {
 
     void add_root_nodes() {
 
-        uint32_t num_root_nodes =
-                (uint32_t) * ((uint32_t *)(mapping_start + sizeof(uint32_t)));
+        uint32_t num_root_nodes = (uint32_t) * ((uint32_t *)(mapping_start + sizeof(uint32_t)));
 
         for (uint32_t cnt = 0; cnt < num_root_nodes; cnt++) {
 
             // printf("[timos] trying to get root node number %i\n", cnt);
             uint32_t offset =
-                    (uint32_t) *
-                    ((uint32_t *)(mapping_start + sizeof(uint32_t) * 2 +
-                                  cnt * sizeof(uint32_t)));
+                    (uint32_t) * ((uint32_t *)(mapping_start + sizeof(uint32_t) * 2 + cnt * sizeof(uint32_t)));
             // printf("[timos] is's offset is %i\n", offset);
             DeserializedNode N = get_node_by_offset(offset);
             executableNodes.push_back(N);
@@ -534,70 +499,50 @@ class SerializedGraph {
         uint32_t num_nodes = (uint32_t) * ((uint32_t *)mapping_start);
 
         if (offset > num_nodes) {
-            fprintf(stderr, "[rank %i] got offset %i, have %i nodes\n", my_rank,
-                    offset, num_nodes);
+            fprintf(stderr, "[rank %i] got offset %i, have %i nodes\n", my_rank, offset, num_nodes);
             exit(EXIT_FAILURE);
         }
         // printf("yyy 1\n");
-        int SIZEOF_NODE_INFO = sizeof(char) + sizeof(uint64_t) +
-                               sizeof(uint32_t) * 7 + sizeof(uint8_t) * 2;
-        char *start_of_node = mapping_start + sizeof(uint32_t) * 2 +
-                              sizeof(uint32_t) * num_root_nodes +
-                              SIZEOF_NODE_INFO * offset;
+        int SIZEOF_NODE_INFO = sizeof(char) + sizeof(uint64_t) + sizeof(uint32_t) * 7 + sizeof(uint8_t) * 2;
+        char *start_of_node =
+                mapping_start + sizeof(uint32_t) * 2 + sizeof(uint32_t) * num_root_nodes + SIZEOF_NODE_INFO * offset;
         DeserializedNode N;
         // printf("yyy 2\n");
 
         N.DependenciesCnt = (uint32_t) * ((uint32_t *)start_of_node);
-        N.Type = (char)*(start_of_node + sizeof(uint32_t)); // after depcnt
-        N.Peer = (uint32_t) *
-                 ((uint32_t *)(start_of_node + sizeof(uint32_t) +
-                               sizeof(char))); // after depcnt + type
-        N.Size = (uint64_t) * ((uint64_t *)(start_of_node + sizeof(uint32_t) +
-                                            sizeof(char) + sizeof(uint32_t)));
+        N.Type = (char)*(start_of_node + sizeof(uint32_t));                                    // after depcnt
+        N.Peer = (uint32_t) * ((uint32_t *)(start_of_node + sizeof(uint32_t) + sizeof(char))); // after depcnt + type
+        N.Size = (uint64_t) * ((uint64_t *)(start_of_node + sizeof(uint32_t) + sizeof(char) + sizeof(uint32_t)));
         N.Tag = (uint32_t) *
-                ((uint32_t *)(start_of_node + sizeof(uint32_t) + sizeof(char) +
-                              sizeof(uint32_t) + sizeof(uint64_t)));
-        N.Proc = (uint8_t) * ((uint8_t *)(start_of_node + sizeof(uint32_t) +
-                                          sizeof(char) + sizeof(uint32_t) +
+                ((uint32_t *)(start_of_node + sizeof(uint32_t) + sizeof(char) + sizeof(uint32_t) + sizeof(uint64_t)));
+        N.Proc = (uint8_t) * ((uint8_t *)(start_of_node + sizeof(uint32_t) + sizeof(char) + sizeof(uint32_t) +
                                           sizeof(uint64_t) + sizeof(uint32_t)));
-        N.Nic = (uint8_t) *
-                ((uint8_t *)(start_of_node + sizeof(uint32_t) + sizeof(char) +
-                             sizeof(uint32_t) + sizeof(uint64_t) +
-                             sizeof(uint32_t) + sizeof(uint8_t)));
+        N.Nic = (uint8_t) * ((uint8_t *)(start_of_node + sizeof(uint32_t) + sizeof(char) + sizeof(uint32_t) +
+                                         sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint8_t)));
         N.offset = (uint32_t)offset;
-        uint32_t num_deps =
-                (uint32_t) *
-                ((uint32_t *)(start_of_node + sizeof(char) + sizeof(uint64_t) +
-                              sizeof(uint32_t) * 3 + sizeof(uint8_t) * 2));
-        uint32_t deps_startoffset_in_apdx =
-                (uint32_t) *
-                ((uint32_t *)(start_of_node + sizeof(char) + sizeof(uint64_t) +
-                              sizeof(uint32_t) * 4 + sizeof(uint8_t) * 2));
-        uint32_t num_startdeps =
-                (uint32_t) *
-                ((uint32_t *)(start_of_node + sizeof(char) + sizeof(uint64_t) +
-                              sizeof(uint32_t) * 5 + sizeof(uint8_t) * 2));
+        uint32_t num_deps = (uint32_t) * ((uint32_t *)(start_of_node + sizeof(char) + sizeof(uint64_t) +
+                                                       sizeof(uint32_t) * 3 + sizeof(uint8_t) * 2));
+        uint32_t deps_startoffset_in_apdx = (uint32_t) * ((uint32_t *)(start_of_node + sizeof(char) + sizeof(uint64_t) +
+                                                                       sizeof(uint32_t) * 4 + sizeof(uint8_t) * 2));
+        uint32_t num_startdeps = (uint32_t) * ((uint32_t *)(start_of_node + sizeof(char) + sizeof(uint64_t) +
+                                                            sizeof(uint32_t) * 5 + sizeof(uint8_t) * 2));
         uint32_t startdeps_startoffset_in_apdx =
-                (uint32_t) *
-                ((uint32_t *)(start_of_node + sizeof(char) + sizeof(uint64_t) +
-                              sizeof(uint32_t) * 6 + sizeof(uint8_t) * 2));
+                (uint32_t) * ((uint32_t *)(start_of_node + sizeof(char) + sizeof(uint64_t) + sizeof(uint32_t) * 6 +
+                                           sizeof(uint8_t) * 2));
         // printf("yyy 3\n");
         // printf("yyy 3 start of apdx = mapping start + %i\n",
         // sizeof(uint32_t)*2 + sizeof(uint32_t)*num_root_nodes +
         // SIZEOF_NODE_INFO*num_nodes); printf("yyy 3 numrootnodes = %i,
         // SIZEOFNODEINFO = %i, num_nodes = %i\n", num_root_nodes,
         // SIZEOF_NODE_INFO, num_nodes);
-        char *start_of_apdx = mapping_start + sizeof(uint32_t) * 2 +
-                              sizeof(uint32_t) * num_root_nodes +
-                              SIZEOF_NODE_INFO * num_nodes;
+        char *start_of_apdx =
+                mapping_start + sizeof(uint32_t) * 2 + sizeof(uint32_t) * num_root_nodes + SIZEOF_NODE_INFO * num_nodes;
         for (uint32_t cnt = 0; cnt < num_deps; cnt++) {
             // printf("yyy 3.5 (%i, %i)\n", num_deps, cnt);
             // printf("yyy (start of appendix: %i, deps startoffset in apdx %i,
             // cnt %i)\n", start_of_apdx, deps_startoffset_in_apdx, cnt);
             uint32_t depnode =
-                    (uint32_t) *
-                    ((uint32_t *)(start_of_apdx + (deps_startoffset_in_apdx +
-                                                   cnt) * sizeof(uint32_t)));
+                    (uint32_t) * ((uint32_t *)(start_of_apdx + (deps_startoffset_in_apdx + cnt) * sizeof(uint32_t)));
 
             // printf("num_root_nodes: %u\n", num_root_nodes);
             // printf("SIZEOF_NODE_INFO: %i\n", SIZEOF_NODE_INFO);
@@ -613,10 +558,8 @@ class SerializedGraph {
         }
         // printf("yyy 4\n");
         for (uint32_t cnt = 0; cnt < num_startdeps; cnt++) {
-            N.StartDependOnMe.push_back(
-                    (uint32_t) * ((uint32_t *)(start_of_apdx +
-                                               (startdeps_startoffset_in_apdx +
-                                                cnt) * sizeof(uint32_t))));
+            N.StartDependOnMe.push_back((uint32_t) * ((uint32_t *)(start_of_apdx + (startdeps_startoffset_in_apdx +
+                                                                                    cnt) * sizeof(uint32_t))));
         }
         // printf("yyy 5\n");
 
@@ -652,8 +595,7 @@ class SerializedGraph {
         fprintf(fd, "graph [rankdir=LR];\n");
         fprintf(fd, "node [shape=record];\n");
 
-        for (std::vector<DeserializedNode>::iterator it = allNodes.begin();
-             it != allNodes.end(); it++) {
+        for (std::vector<DeserializedNode>::iterator it = allNodes.begin(); it != allNodes.end(); it++) {
             char typestr[5];
             if ((*it).Type == OPTYPE_SEND)
                 strcpy(typestr, "Send");
@@ -666,22 +608,17 @@ class SerializedGraph {
             fprintf(fd,
                     "%i [label=\"<f0> Type: %s | <f1> Peer: %i | <f2> Size: "
                     "%llu | <f3> Tag: %i | <f4> Proc: %i | <f5> Nic: %i \"]\n",
-                    (*it).offset, typestr, (*it).Peer,
-                    (unsigned long long)(*it).Size, (*it).Tag, (*it).Proc,
+                    (*it).offset, typestr, (*it).Peer, (unsigned long long)(*it).Size, (*it).Tag, (*it).Proc,
                     (*it).Nic);
         }
 
-        for (std::vector<DeserializedNode>::iterator it = allNodes.begin();
-             it != allNodes.end(); it++) {
-            for (std::vector<uint32_t>::iterator dit = (*it).DependOnMe.begin();
-                 dit != (*it).DependOnMe.end(); dit++) {
+        for (std::vector<DeserializedNode>::iterator it = allNodes.begin(); it != allNodes.end(); it++) {
+            for (std::vector<uint32_t>::iterator dit = (*it).DependOnMe.begin(); dit != (*it).DependOnMe.end(); dit++) {
                 fprintf(fd, "%i:f0 -> %i:f0\n", (*it).offset, (*dit));
             }
-            for (std::vector<uint32_t>::iterator dit =
-                         (*it).StartDependOnMe.begin();
+            for (std::vector<uint32_t>::iterator dit = (*it).StartDependOnMe.begin();
                  dit != (*it).StartDependOnMe.end(); dit++) {
-                fprintf(fd, "%i:f0 -> %i:f0 [arrowhead=diamond]\n",
-                        (*it).offset, (*dit));
+                fprintf(fd, "%i:f0 -> %i:f0 [arrowhead=diamond]\n", (*it).offset, (*dit));
             }
         }
 
@@ -701,8 +638,7 @@ class SerializedGraph {
         num_ranks_in_schedule = *(((uint32_t *)mapping_start));
 
         // printf("xxx 2\n");
-        char *tmp = mapping_start + sizeof(uint32_t) + sizeof(uint8_t) * 2 +
-                    sizeof(uint64_t) * 2 * rank;
+        char *tmp = mapping_start + sizeof(uint32_t) + sizeof(uint8_t) * 2 + sizeof(uint64_t) * 2 * rank;
         ssched = *((uint64_t *)tmp); // jumping over num_schedules +
                                      // max_cpu/max_nic + jumptable
 
@@ -730,12 +666,9 @@ class SerializedGraph {
         for (uint32_t cnt = 0; cnt < N.StartDependOnMe.size(); cnt++) {
             uint32_t offset = N.StartDependOnMe[cnt];
 
-            int SIZEOF_NODE_INFO = sizeof(char) + sizeof(uint64_t) +
-                                   sizeof(uint32_t) * 7 + sizeof(uint8_t) * 2;
-            uint32_t *dep_cnt =
-                    (uint32_t *)(mapping_start + sizeof(uint32_t) * 2 +
-                                 sizeof(uint32_t) * num_root_nodes +
-                                 SIZEOF_NODE_INFO * offset);
+            int SIZEOF_NODE_INFO = sizeof(char) + sizeof(uint64_t) + sizeof(uint32_t) * 7 + sizeof(uint8_t) * 2;
+            uint32_t *dep_cnt = (uint32_t *)(mapping_start + sizeof(uint32_t) * 2 + sizeof(uint32_t) * num_root_nodes +
+                                             SIZEOF_NODE_INFO * offset);
             (*dep_cnt)--;
             if ((*dep_cnt) == 0) {
                 executableNodes.push_back(get_node_by_offset(offset));
@@ -749,12 +682,9 @@ class SerializedGraph {
         for (uint32_t cnt = 0; cnt < N.DependOnMe.size(); cnt++) {
             uint32_t offset = N.DependOnMe[cnt];
 
-            int SIZEOF_NODE_INFO = sizeof(char) + sizeof(uint64_t) +
-                                   sizeof(uint32_t) * 7 + sizeof(uint8_t) * 2;
-            uint32_t *dep_cnt =
-                    (uint32_t *)(mapping_start + sizeof(uint32_t) * 2 +
-                                 sizeof(uint32_t) * num_root_nodes +
-                                 SIZEOF_NODE_INFO * offset);
+            int SIZEOF_NODE_INFO = sizeof(char) + sizeof(uint64_t) + sizeof(uint32_t) * 7 + sizeof(uint8_t) * 2;
+            uint32_t *dep_cnt = (uint32_t *)(mapping_start + sizeof(uint32_t) * 2 + sizeof(uint32_t) * num_root_nodes +
+                                             SIZEOF_NODE_INFO * offset);
             (*dep_cnt)--;
             if ((*dep_cnt) == 0) {
                 executableNodes.push_back(get_node_by_offset(offset));
@@ -803,12 +733,9 @@ class SerializedGraph {
             uint32_t offset = N.StartDependOnMe[cnt];
             assert(offset < num_nodes);
 
-            int SIZEOF_NODE_INFO = sizeof(char) + sizeof(uint64_t) +
-                                   sizeof(uint32_t) * 7 + sizeof(uint8_t) * 2;
-            uint32_t *dep_cnt =
-                    (uint32_t *)(mapping_start + sizeof(uint32_t) * 2 +
-                                 sizeof(uint32_t) * num_root_nodes +
-                                 SIZEOF_NODE_INFO * offset);
+            int SIZEOF_NODE_INFO = sizeof(char) + sizeof(uint64_t) + sizeof(uint32_t) * 7 + sizeof(uint8_t) * 2;
+            uint32_t *dep_cnt = (uint32_t *)(mapping_start + sizeof(uint32_t) * 2 + sizeof(uint32_t) * num_root_nodes +
+                                             SIZEOF_NODE_INFO * offset);
             (*dep_cnt)--;
             if ((*dep_cnt) == 0) {
                 executableNodes.push_back(get_node_by_offset(offset));
@@ -820,20 +747,17 @@ class SerializedGraph {
 
         DeserializedNode N = get_node_by_offset(offset);
 
-        if (N.Type == OP_LOCOP_IN_PROGRESS || N.Type == OP_LOCOP) {
+        /* if (N.Type == OP_LOCOP_IN_PROGRESS || N.Type == OP_LOCOP) {
             printf("Size depending on me %d - Rank %d Offset %d\n",
                    N.DependOnMe.size(), my_rank, offset);
-        }
+        } */
 
         for (uint32_t cnt = 0; cnt < N.DependOnMe.size(); cnt++) {
             uint32_t offset = N.DependOnMe[cnt];
 
-            int SIZEOF_NODE_INFO = sizeof(char) + sizeof(uint64_t) +
-                                   sizeof(uint32_t) * 7 + sizeof(uint8_t) * 2;
-            uint32_t *dep_cnt =
-                    (uint32_t *)(mapping_start + sizeof(uint32_t) * 2 +
-                                 sizeof(uint32_t) * num_root_nodes +
-                                 SIZEOF_NODE_INFO * offset);
+            int SIZEOF_NODE_INFO = sizeof(char) + sizeof(uint64_t) + sizeof(uint32_t) * 7 + sizeof(uint8_t) * 2;
+            uint32_t *dep_cnt = (uint32_t *)(mapping_start + sizeof(uint32_t) * 2 + sizeof(uint32_t) * num_root_nodes +
+                                             SIZEOF_NODE_INFO * offset);
             (*dep_cnt)--;
 
             if ((*dep_cnt) == 0) {
@@ -894,8 +818,7 @@ class Parser {
             exit(EXIT_FAILURE);
         }
 
-        result = fread(&num_ranks_in_schedule, sizeof(uint32_t), 1,
-                       schedules_fd);
+        result = fread(&num_ranks_in_schedule, sizeof(uint32_t), 1, schedules_fd);
         if (result == 0) {
             exit(0);
         }
@@ -914,16 +837,14 @@ class Parser {
             // back to map_shared. This destroys the schedule, so we invalidate
             // the magic cookie if we do this
             mapping_start =
-                    (char *)mmap(NULL, mapping_length, PROT_READ | PROT_WRITE,
-                                 MAP_SHARED, fileno(schedules_fd), 0);
+                    (char *)mmap(NULL, mapping_length, PROT_READ | PROT_WRITE, MAP_SHARED, fileno(schedules_fd), 0);
             *((uint64_t *)mapping_start) = MAGIC_COOKIE_INVALID;
             printf("The schedule will be invalid after this simulation!\n");
         }
 
         else if (save_mem == false) {
             mapping_start =
-                    (char *)mmap(NULL, mapping_length, PROT_READ | PROT_WRITE,
-                                 MAP_PRIVATE, fileno(schedules_fd), 0);
+                    (char *)mmap(NULL, mapping_length, PROT_READ | PROT_WRITE, MAP_PRIVATE, fileno(schedules_fd), 0);
             // THIS NEEDS MORE MEMORY - but it is also more convinient for
             // interacrive use because it preserves the schedules Note that
             // there is no fall-through to MAP_SHARED, we put the user in charge
@@ -938,8 +859,7 @@ class Parser {
 
         for (uint32_t cnt = 0; cnt < num_ranks_in_schedule; cnt++) {
             schedules.push_back(
-                    SerializedGraph(mapping_start + sizeof(uint64_t),
-                                    mapping_length - sizeof(uint64_t), cnt));
+                    SerializedGraph(mapping_start + sizeof(uint64_t), mapping_length - sizeof(uint64_t), cnt));
         }
     }
 

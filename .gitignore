@@ -49,3 +49,4 @@ plotting/us_to_cs
 !sim/lgs/input/*.bin
 !utilities/goal_converter/*.goal
 !traffic_gen/cdf_files/*.txt
+lulesh_slimfly_8.bin

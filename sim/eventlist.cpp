@@ -44,16 +44,14 @@ void EventList::sourceIsPending(EventSource &src, simtime_picosec when) {
       }
     */
 
-    //printf("When %lu vs Now %lu\n", when, now());
-    // fflush(stdout);
+    // printf("When %lu vs Now %lu - EndTime %lu\n", when, now(), _endtime);
+    //  fflush(stdout);
     assert(when >= now());
     if (_endtime == 0 || when < _endtime)
         _pendingsources.insert(make_pair(when, &src));
 }
 
-void EventList::triggerIsPending(TriggerTarget &target) {
-    _pending_triggers.push_back(&target);
-}
+void EventList::triggerIsPending(TriggerTarget &target) { _pending_triggers.push_back(&target); }
 
 void EventList::cancelPendingSource(EventSource &src) {
     pendingsources_t::iterator i = _pendingsources.begin();
@@ -66,8 +64,7 @@ void EventList::cancelPendingSource(EventSource &src) {
     }
 }
 
-void EventList::reschedulePendingSource(EventSource &src,
-                                        simtime_picosec when) {
+void EventList::reschedulePendingSource(EventSource &src, simtime_picosec when) {
     cancelPendingSource(src);
     sourceIsPending(src, when);
 }

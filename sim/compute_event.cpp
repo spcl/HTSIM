@@ -16,9 +16,9 @@ ComputeEvent::ComputeEvent(UecLogger *logger, EventList &eventList)
         : EventSource(eventList, "compute_event") {} // Fix the name
 
 void ComputeEvent::doNextEvent() {
-    printf("ComputeEvent at %lu\n", GLOBAL_TIME);
+    /* printf("ComputeEvent at %lu\n", GLOBAL_TIME);
 
-    fflush(stdout);
+    fflush(stdout); */
     if (f_compute_over_hook) {
         f_compute_over_hook(1);
     }
@@ -27,7 +27,7 @@ void ComputeEvent::doNextEvent() {
 }
 
 void ComputeEvent::setCompute(simtime_picosec computation_time) {
-    printf("ComputeEvent::setCompute at %lu\n", computation_time * 1000);
+    /* printf("ComputeEvent::setCompute at %lu\n", computation_time * 1000); */
     eventlist().sourceIsPendingRel(*this, computation_time * 1000); // ns to ps
     // eventlist().doNextEvent();
 }
