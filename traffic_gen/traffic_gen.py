@@ -24,6 +24,7 @@ DEFAULT_SEED = None
 
 # Constants.
 NS_IN_S = 1e9
+US_IN_S = 1e6
 BYTE_TO_BIT = 8.0
 
 
@@ -213,7 +214,7 @@ def main():
                     src_idc,
                     dst_idx_,
                     flow_size_bytes,
-                    flow_start_time_ns / NS_IN_S,
+                    int(flow_start_time_ns / 1000),
                 )
             )
             flow_start_time_ns += int(

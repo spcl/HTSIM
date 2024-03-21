@@ -156,6 +156,7 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList
 // Add deconstructor and save data once we are done.
 UecSrc::~UecSrc() {
     // If we are collecting specific logs
+    printf("Total NACKs: %lu\n", num_trim);
     if (COLLECT_DATA) {
         // RTT
         std::string file_name = PROJECT_ROOT_PATH / ("sim/output/rtt/rtt" + _name + "_" + std::to_string(tag) + ".txt");
@@ -404,16 +405,16 @@ void UecSrc::updateParams() {
 
     tracking_period = 250000 * 1000;
     if (_hop_count == 6) {
-        ecn_rate_period = _base_rtt * 1;
-        initial_x_gain /= 1;
-        initial_z_gain /= 1;
+        ecn_rate_period = _base_rtt * 5;
+        initial_x_gain /= 5;
+        initial_z_gain /= 5;
     } else if (_hop_count == 9) {
         ecn_rate_period = _base_rtt / 1;
         initial_x_gain *= 1;
         initial_z_gain *= 1;
     }
 
-    qa_period = (100000 * 1000);
+    qa_period = _base_rtt;
     qa_mult = _base_rtt / qa_period;
     /* printf("QA MULT is %d\n", qa_mult); */
 
@@ -613,6 +614,7 @@ void UecSrc::quick_adapt(bool trimmed) {
                         (double)_mss); // 1.5 is the amount of target_rtt over
                                        // base_rtt. Simplified here for this
                                        // code share.
+            last_ecn_seen = eventlist().now() + _base_rtt * 1;
             printf("After Update Saved CWD is %lu \n", _cwnd);
 
             if (eventlist().now() < _base_rtt * 5 && jump_to != 0) {
@@ -655,16 +657,14 @@ void UecSrc::quick_adapt(bool trimmed) {
             pause_send = false;
             last_qa_event = eventlist().now();
 
-            // Go into pacing mode after QuickAdapt
-            if (use_pacing && generic_pacer == NULL) {
-                generic_pacer = new SmarttPacer(eventlist(), *this);
-                pacer_start_time = eventlist().now();
-                pacing_delay = ((4160 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
-                // pacing_delay -= (4160 * 8 / LINK_SPEED_MODERN);
-                printf("Setting the pacing delay %d %lu to %lu at %lu\n", _cwnd, (_base_rtt / 1000), pacing_delay,
-                       GLOBAL_TIME / 1000);
-                pacing_delay *= 1000; // ps
-            }
+            pacing_delay = (4160 * 8) / ((_cwnd * 8.0) / (_base_rtt / 1000.0));
+            //  pacing_delay -= (4160 * 8 / 80);
+            /* printf("Setting the pacing delay update %d %lu to %lu at %lu\n", _cwnd, (_base_rtt / 1000), pacing_delay,
+                   GLOBAL_TIME / 1000); */
+            pacing_delay *= 1000; // ps
+            generic_pacer->cancel();
+            // generic_pacer->schedule_send(pacing_delay);
+            last_pac_change = eventlist().now();
 
             // Print
 
@@ -689,6 +689,7 @@ void UecSrc::quick_adapt(bool trimmed) {
 
 void UecSrc::processNack(UecNack &pkt) {
 
+    num_trim++;
     count_trimmed_in_rtt++;
     consecutive_nack++;
     trimmed_last_rtt++;
@@ -711,6 +712,10 @@ void UecSrc::processNack(UecNack &pkt) {
                     pause_send = true;
                 }
                 changed_once = true;
+
+                if (_hop_count < 7) {
+                    pause_send = false;
+                }
 
                 if (generic_pacer != NULL) {
                     generic_pacer->cancel();
@@ -751,6 +756,7 @@ void UecSrc::processNack(UecNack &pkt) {
     if (!_rtx_pending && !success) {
         _rtx_pending = true;
     }
+    send_packets();
 }
 
 void UecSrc::simulateTrimEvent(UecAck &pkt) {
@@ -1035,8 +1041,8 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
     if (use_pacing && generic_pacer != NULL /*&& did_qa*/ && ((eventlist().now() - last_pac_change) > _base_rtt / 20)) {
         pacing_delay = (4160 * 8) / ((_cwnd * 8.0) / (_base_rtt / 1000.0));
         //  pacing_delay -= (4160 * 8 / 80);
-        printf("Setting the pacing delay update %d %lu to %lu at %lu\n", _cwnd, (_base_rtt / 1000), pacing_delay,
-               GLOBAL_TIME / 1000);
+        /* printf("Setting the pacing delay update %d %lu to %lu at %lu\n", _cwnd, (_base_rtt / 1000), pacing_delay,
+               GLOBAL_TIME / 1000); */
         pacing_delay *= 1000; // ps
         generic_pacer->cancel();
         // generic_pacer->schedule_send(pacing_delay);
@@ -1081,14 +1087,15 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
             f_flow_over_hook(pkt);
         }
 
-        /* cout << "Flow " << nodename() << " finished at " << timeAsMs(eventlist().now()) << endl;
+        cout << "Flow " << nodename() << " finished at " << timeAsMs(eventlist().now()) << endl;
         cout << "Flow " << nodename() << " completion time is " << timeAsMs(eventlist().now() - _flow_start_time)
-             << endl; */
+             << endl;
 
-        // printf("Completion Time Flow is %lu - Overall Time %lu\n", eventlist().now() - _flow_start_time,
-        // GLOBAL_TIME);
+        printf("Flow Completion time is %f - Flow Finishing Time %lu - Flow "
+               "Start Time %lu\n",
+               timeAsUs(eventlist().now()) - timeAsUs(_flow_start_time), eventlist().now(), _flow_start_time);
 
-        /* printf("Overall Completion at %lu\n", GLOBAL_TIME); */
+        printf("Overall Completion at %lu\n", GLOBAL_TIME);
         if (_end_trigger) {
             _end_trigger->activate();
         }
@@ -1367,11 +1374,14 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
             total_pkt_seen_rtt++;
             quick_adapt(false);
 
-            x_gain = (_bdp / 100 * initial_x_gain) / _mss;
+            if (_hop_count < 7)
+                x_gain = min((_bdp / 100 * initial_x_gain) / _mss, (_switch_queue_size * 2.5 / 100) / _mss);
             z_gain = initial_z_gain;
-            printf("X Gain updated is %f - z gain is %f\n", x_gain, z_gain);
+            printf("Two Possible X Gains are %f - %f\n", (_bdp / 100 * initial_x_gain) / _mss,
+                   (_switch_queue_size * 5.0 / 100) / _mss);
+            /* printf("X Gain updated is %f - z gain is %f\n", x_gain, z_gain);
             printf("Flow3 %d - Time %lu vs End %lu - First ECN %d \n", from, GLOBAL_TIME / 1000, ecn_rtt_end / 1000,
-                   is_first_ecn);
+                   is_first_ecn); */
 
             if (current_ecn_rate > previous_ecn_rate) {
                 last_phantom_increase = eventlist().now();
@@ -1420,7 +1430,7 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
 
             if (ecn) {
                 // Quick Adapt if the ECN rate is above a certain %
-                if (current_ecn_rate > 65 || (_hop_count < 9 && rtt > _base_rtt * 2.2)) {
+                if ((current_ecn_rate > 65 && _hop_count == 0) || (_hop_count < 9 && rtt > _base_rtt * 2.2)) {
                     printf("ECN Rate HIGH %f - Time %lu\n", current_ecn_rate, GLOBAL_TIME / 1000);
                     if (eventlist().now() > next_qa) {
                         need_quick_adapt = true;
@@ -1440,18 +1450,18 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
 
                 if (eventlist().now() > last_qa_event + _base_rtt) {
                     if (current_ecn_rate > 30 && current_ecn_rate >= previous_ecn_rate) {
-                        printf("From2 %d - Time %lu - Current Rate %f vs %f - "
+                        /* printf("From2 %d - Time %lu - Current Rate %f vs %f - "
                                "Phantom "
                                "Queue Size %f "
                                "- Pkts %d\n",
                                from, GLOBAL_TIME / 1000, current_ecn_rate, previous_ecn_rate, phantom_size_calc,
-                               count_add_from_zero_ecn);
+                               count_add_from_zero_ecn); */
                         _cwnd -= 4160 * initial_z_gain / 100;
                         //_cwnd -= ((x_gain / 1) * _mss * ((double)_mss / _cwnd)) * scaling_factor;
-                        printf("Decrease above %d 30 at %lu\n", from, GLOBAL_TIME / 1000);
+                        /* printf("Decrease above %d 30 at %lu\n", from, GLOBAL_TIME / 1000); */
                     } else if (current_ecn_rate > 30 && current_ecn_rate <= previous_ecn_rate) {
-                        _cwnd += (((double)_mss / _cwnd) * (x_gain)*_mss) * scaling_factor;
-                        printf("Increase above %d 30 at %lu\n", from, GLOBAL_TIME / 1000);
+                        //_cwnd += (((double)_mss / _cwnd) * (x_gain)*_mss) * scaling_factor;
+                        /* printf("Increase above %d 30 at %lu\n", from, GLOBAL_TIME / 1000); */
                     }
                 }
                 last_ecn_seen = eventlist().now();
@@ -1463,10 +1473,10 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
                     // current_ecn_rate = 0;
                 }
 
-                printf("%d Doing fast Increase - %d - %d - %d - %d - %lu\n", from,
+                /* printf("%d Doing fast Increase - %d - %d - %d - %d - %lu\n", from,
                        eventlist().now() > last_ecn_seen + (_base_rtt * 1.5),
                        eventlist().now() > last_phantom_increase + (_base_rtt * 2),
-                       (eventlist().now() > (_base_rtt * 3)), rtt < near_base_rtt, last_phantom_increase);
+                       (eventlist().now() > (_base_rtt * 3)), rtt < near_base_rtt, last_phantom_increase); */
 
                 if (use_fast_increase && eventlist().now() > last_ecn_seen + (_base_rtt * 10.5) &&
                     rtt < near_base_rtt && eventlist().now() > last_phantom_increase + (_base_rtt * 2) &&
@@ -1490,15 +1500,15 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
                     }
 
                     if (current_ecn_rate > previous_ecn_rate) {
-                        gent_dec_amount = (x_gain / 2.5) * _mss * ((double)_mss / _cwnd);
-                        gent_dec_amount += (x_gain / 2.5) * _mss * ((double)_mss / _cwnd) * ((double)_cwnd) / _bdp;
+                        gent_dec_amount = (x_gain / 2.2) * _mss * ((double)_mss / _cwnd);
+                        gent_dec_amount += (x_gain / 2.2) * _mss * ((double)_mss / _cwnd) * ((double)_cwnd) / _bdp;
                         /* gent_dec_amount =
                                 ((double)_mss) *
                                 (((double)_cwnd) / _bdp * (z_gain / 1)); */
                         _cwnd -= gent_dec_amount * scaling_factor;
-                        printf("Decrease below %d 30 at %lu\n", from, GLOBAL_TIME / 1000);
+                        /* printf("Decrease below %d 30 at %lu\n", from, GLOBAL_TIME / 1000); */
                     } else {
-                        printf("Increase below %d 30 at %lu\n", from, GLOBAL_TIME / 1000);
+                        /* printf("Increase below %d 30 at %lu\n", from, GLOBAL_TIME / 1000); */
                         _cwnd += (((double)_mss / _cwnd) * (x_gain / 1) * _mss) * scaling_factor;
                     }
                 }
@@ -1522,7 +1532,7 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
 
         } else if (algorithm_type == "mprdma") {
             if (ecn) {
-                _cwnd -= _mss / 10;
+                _cwnd -= _mss / 2;
             } else {
                 _cwnd += _mss * _mss / _cwnd;
             }
@@ -1676,7 +1686,7 @@ void UecSrc::send_packets() {
         // Check pacer and set timeout
         if (!_paced_packet && use_pacing) {
             if (generic_pacer != NULL && !generic_pacer->is_pending()) {
-                printf("scheduling send\n");
+                /* printf("scheduling send\n"); */
                 generic_pacer->schedule_send(pacing_delay);
                 return;
             } else if (generic_pacer != NULL) {
