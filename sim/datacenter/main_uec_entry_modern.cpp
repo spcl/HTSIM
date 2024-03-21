@@ -83,8 +83,8 @@ void print_path(std::ofstream &paths, const Route *rt) {
 
 int main(int argc, char **argv) {
     Packet::set_packet_size(PKT_SIZE_MODERN);
-    // eventlist.setEndtime(timeFromSec(1));
-    Clock c(timeFromSec(5 / 100.), eventlist);
+    eventlist.setEndtime(timeFromSec(1));
+    Clock c(timeFromSec(50 / 100.), eventlist);
     mem_b queuesize = INFINITE_BUFFER_SIZE;
     int no_of_conns = 0, cwnd = MAX_CWD_MODERN_UEC, no_of_nodes = DEFAULT_NODES;
     stringstream filename(ios_base::out);

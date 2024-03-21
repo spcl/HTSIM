@@ -44,14 +44,19 @@ The main files that have been changed/added to support this CC are:
 - ```fat_tree_interdc_topology.cpp``` and ```fat_tree_interdc_topology.h``` --> here we define the topology.
 - ```fat_tree_interdc_switch.cpp``` and ```fat_tree_interdc_switch.h``` --> here we define the custom routing for the topology.
 
-## Basic Instructions for LGS
+## Basic Instructions
 
 We currently provide two entry points to run the simulator with the support of LogGOPSim: htsim_uec_entry_modern and htsim_ndp_entry_modern. The idea here is that these entry points will execute the GOAL input file (in binary format) that is given as part of the ```-goal``` command. The input file should be inside ```sim/lgs/input/```.
 We include two sample input files (```incast_1024_100_4194304.bin``` and ```incast_1024_8_4194304.bin```).
 
 To actually run the application a typical command line would look like this (from inside the /datacenter folder and for SMaRTT protocol):
 ```
-./htsim_uec_entry_modern -o uec_entry -k 1 -algorithm smartt -nodes 16 -q 4452000 -strat ecmp_host_random2_ecn -number_entropies 1024 -kmin 2 -kmax 80 -use_fast_increase 0 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 700 -switch_latency 0 -reuse_entropy 1 -goal lulesh_slimfly_8.bin -x_gain 0.25 -y_gain 2 -w_gain 2 -z_gain 0.8 -bonus_drop 1.5 -collect_data 0 -use_pacing 0 -decrease_on_nack 1 -topology normal -max_queue_size 1000000 > out2.tmp
+./htsim_uec_entry_modern -o uec_entry -k 1 -algorithm smartt -nodes 16 -q 4452000 -strat ecmp_host_random2_ecn -number_entropies 1024 -kmin 2 -kmax 80 -use_fast_increase 0 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 700 -switch_latency 0 -reuse_entropy 1 -goal one_send.bin -x_gain 0.25 -y_gain 2 -w_gain 2 -z_gain 0.8 -bonus_drop 1.5 -collect_data 0 -use_pacing 0 -decrease_on_nack 1 -topology normal -max_queue_size 1000000 > out2.tmp
+```
+
+We can also run the same example using connection matrices by doing
+```
+./htsim_uec_entry_modern -o uec_entry -k 1 -algorithm smartt -nodes 16 -q 4452000 -strat ecmp_host_random2_ecn -number_entropies 1024 -kmin 2 -kmax 80 -use_fast_increase 0 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 700 -switch_latency 0 -reuse_entropy 1 -tm connection_matrices/one_send -x_gain 0.25 -y_gain 2 -w_gain 2 -z_gain 0.8 -bonus_drop 1.5 -collect_data 0 -use_pacing 0 -decrease_on_nack 1 -topology normal -max_queue_size 1000000 > out2.tmp
 ```
 
 ## Generating GOAL input files
