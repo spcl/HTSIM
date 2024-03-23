@@ -14,7 +14,7 @@
 #include "topology.h"
 #include <ostream>
 
-//#define N K*K*K/4
+// #define N K*K*K/4
 
 #ifndef QT
 #define QT
@@ -73,35 +73,26 @@ class FatTreeInterDCTopology : public Topology {
     queue_type _qt;
     queue_type _sender_qt;
 
-    FatTreeInterDCTopology(uint32_t no_of_nodes, linkspeed_bps linkspeed,
-                           mem_b queuesize, QueueLoggerFactory *logger_factory,
-                           EventList *ev, FirstFit *f, queue_type qt,
-                           simtime_picosec latency,
-                           simtime_picosec switch_latency,
-                           queue_type snd = FAIR_PRIO);
-    FatTreeInterDCTopology(uint32_t no_of_nodes, linkspeed_bps linkspeed,
-                           mem_b queuesize, QueueLoggerFactory *logger_factory,
-                           EventList *ev, FirstFit *f, queue_type qt);
-    FatTreeInterDCTopology(uint32_t no_of_nodes, linkspeed_bps linkspeed,
-                           mem_b queuesize, QueueLoggerFactory *logger_factory,
-                           EventList *ev, FirstFit *f, queue_type qt,
+    FatTreeInterDCTopology(uint32_t no_of_nodes, linkspeed_bps linkspeed, mem_b queuesize,
+                           QueueLoggerFactory *logger_factory, EventList *ev, FirstFit *f, queue_type qt,
+                           simtime_picosec latency, simtime_picosec switch_latency, queue_type snd = FAIR_PRIO);
+    FatTreeInterDCTopology(uint32_t no_of_nodes, linkspeed_bps linkspeed, mem_b queuesize,
+                           QueueLoggerFactory *logger_factory, EventList *ev, FirstFit *f, queue_type qt);
+    FatTreeInterDCTopology(uint32_t no_of_nodes, linkspeed_bps linkspeed, mem_b queuesize,
+                           QueueLoggerFactory *logger_factory, EventList *ev, FirstFit *f, queue_type qt,
                            uint32_t fail);
-    FatTreeInterDCTopology(uint32_t no_of_nodes, linkspeed_bps linkspeed,
-                           mem_b queuesize, QueueLoggerFactory *logger_factory,
-                           EventList *ev, FirstFit *f, queue_type qt,
+    FatTreeInterDCTopology(uint32_t no_of_nodes, linkspeed_bps linkspeed, mem_b queuesize,
+                           QueueLoggerFactory *logger_factory, EventList *ev, FirstFit *f, queue_type qt,
                            queue_type sender_qt, uint32_t fail);
 
     void init_network();
-    virtual vector<const Route *> *get_bidir_paths(uint32_t src, uint32_t dest,
-                                                   bool reverse);
+    virtual vector<const Route *> *get_bidir_paths(uint32_t src, uint32_t dest, bool reverse);
 
     BaseQueue *alloc_src_queue(QueueLogger *q);
-    BaseQueue *alloc_queue(QueueLogger *q, mem_b queuesize, link_direction dir,
-                           bool tor);
-    BaseQueue *alloc_queue(QueueLogger *q, uint64_t speed, mem_b queuesize,
-                           link_direction dir, bool tor);
-    BaseQueue *alloc_queue(QueueLogger *q, uint64_t speed, mem_b queuesize,
-                           link_direction dir, bool tor, bool is_failed);
+    BaseQueue *alloc_queue(QueueLogger *q, mem_b queuesize, link_direction dir, bool tor);
+    BaseQueue *alloc_queue(QueueLogger *q, uint64_t speed, mem_b queuesize, link_direction dir, bool tor);
+    BaseQueue *alloc_queue(QueueLogger *q, uint64_t speed, mem_b queuesize, link_direction dir, bool tor,
+                           bool is_failed);
     static void set_tiers(uint32_t tiers) { _tiers = tiers; }
     static void set_interdc_delay(uint64_t delay) { _interdc_delay = delay; }
     static void set_os_stage_2(uint32_t os) { _os = os; }
@@ -114,15 +105,9 @@ class FatTreeInterDCTopology : public Topology {
     void print_path(std::ofstream &paths, uint32_t src, const Route *route);
     vector<uint32_t> *get_neighbours(uint32_t src) { return NULL; };
     uint32_t no_of_nodes() const { return _no_of_nodes; }
-    uint32_t no_of_links_core_to_border() const {
-        return _no_of_core_to_border;
-    }
-    uint32_t no_of_links_core_to_same_border() const {
-        return _num_links_same_border_from_core;
-    }
-    uint32_t no_of_links_between_border() const {
-        return _num_links_between_borders;
-    }
+    uint32_t no_of_links_core_to_border() const { return _no_of_core_to_border; }
+    uint32_t no_of_links_core_to_same_border() const { return _num_links_same_border_from_core; }
+    uint32_t no_of_links_between_border() const { return _num_links_between_borders; }
     uint32_t no_of_cores() const { return NCORE; }
     uint32_t no_of_servers() const { return NSRV; }
     uint32_t no_of_pods() const { return NPOD; }
@@ -132,11 +117,9 @@ class FatTreeInterDCTopology : public Topology {
     void add_failed_link(uint32_t type, uint32_t switch_id, uint32_t link_id);
 
     // add loggers to record total queue size at switches
-    virtual void add_switch_loggers(Logfile &log,
-                                    simtime_picosec sample_period);
+    virtual void add_switch_loggers(Logfile &log, simtime_picosec sample_period);
 
-    static void set_ecn_thresholds_as_queue_percentage(int min_thresh,
-                                                       int max_thresh) {
+    static void set_ecn_thresholds_as_queue_percentage(int min_thresh, int max_thresh) {
         kmin = min_thresh;
         kmax = max_thresh;
     }
@@ -188,8 +171,7 @@ class FatTreeInterDCTopology : public Topology {
     static uint32_t _tiers;
     static uint64_t _interdc_delay;
     static uint32_t _os, _os_ratio_stage_1;
-    uint32_t _no_of_nodes, _no_of_core_to_border,
-            _num_links_same_border_from_core, _num_links_between_borders;
+    uint32_t _no_of_nodes, _no_of_core_to_border, _num_links_same_border_from_core, _num_links_between_borders;
     mem_b _queuesize;
     linkspeed_bps _linkspeed;
     simtime_picosec _hop_latency, _switch_latency;
@@ -199,7 +181,7 @@ class FatTreeInterDCTopology : public Topology {
     static bool bts_ignore_data;
     static int num_failing_links;
     int curr_failed_link = 0;
-    int number_border_switches = 2;
+    int number_border_switches = 1;
     int number_datacenters = 2;
     static int os_ratio_border;
 };

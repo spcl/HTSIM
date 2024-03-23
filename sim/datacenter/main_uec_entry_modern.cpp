@@ -541,10 +541,10 @@ int main(int argc, char **argv) {
             } else if (!strcmp(argv[i + 1], "mprdma")) {
                 UecSrc::set_alogirthm("mprdma");
                 printf("Name Running: SMaRTT Per RTT\n");
-            } else if (!strcmp(argv[i + 1], "delayC")) {
-                UecSrc::set_alogirthm("delayC");
-            } else if (!strcmp(argv[i + 1], "delayD")) {
-                UecSrc::set_alogirthm("delayD");
+            } else if (!strcmp(argv[i + 1], "mprdma2")) {
+                UecSrc::set_alogirthm("mprdma2");
+            } else if (!strcmp(argv[i + 1], "mprdma3")) {
+                UecSrc::set_alogirthm("mprdma3");
                 printf("Name Running: STrack\n");
             } else if (!strcmp(argv[i + 1], "standard_trimming")) {
                 UecSrc::set_alogirthm("standard_trimming");

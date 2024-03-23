@@ -127,7 +127,10 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-goal")) {
             goal_filename = argv[i + 1];
             i++;
-
+        } else if (!strcmp(argv[i], "-os_border")) {
+            int os_b = atoi(argv[i + 1]);
+            FatTreeInterDCTopology::set_os_ratio_border(os_b);
+            i++;
         } else if (!strcmp(argv[i], "-interdc_delay")) {
             interdc_delay = atoi(argv[i + 1]);
             interdc_delay *= 1000;

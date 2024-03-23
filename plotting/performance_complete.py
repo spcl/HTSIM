@@ -192,6 +192,9 @@ def main(args):
     if (len(df5) > 100000):
         ratio = len(df) / 50000
         # DownScale
+        if (ratio <= 1):
+            ratio = int(1)
+        print(ratio)
         df5 = df5.iloc[::int(ratio)]
         # Reset the index of the new dataframe
         df5.reset_index(drop=True, inplace=True)

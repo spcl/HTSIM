@@ -187,6 +187,8 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     uint32_t last_decrease = 0;
     uint32_t drop_amount = 0;
     uint32_t count_total_ecn = 0;
+    bool tried_qa = false;
+    bool stop_decrease = false;
     uint32_t count_total_ack = 0;
     uint64_t _last_acked;
     uint32_t _flight_size;
@@ -198,7 +200,6 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     bool update_next_window = true;
     bool _start_timer_window = true;
     bool _paced_packet = false;
-    bool stop_decrease = false;
     bool fast_drop = false;
     int ignore_for = 0;
     int count_received = 0;

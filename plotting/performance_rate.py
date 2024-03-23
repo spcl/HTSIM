@@ -223,31 +223,11 @@ def main(args):
         df4 = pd.concat([df4, temp_df4])
     if (len(df4) > 100000):
         ratio = len(df) / 50000
+        
         # DownScale
         df4 = df4.iloc[::int(ratio)]
         # Reset the index of the new dataframe
         df4.reset_index(drop=True, inplace=True)
-
-    # Sent data
-    colnames=['Time', 'Sent', 'Other'] 
-    df5 = pd.DataFrame(columns =colnames)
-    name = ['0'] * df5.shape[0]
-    df5 = df5.assign(Node=name)
-
-    pathlist = Path('sent').glob('*')
-    for files in sorted(pathlist):
-        path_in_str = str(files)
-        temp_df5 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
-        name = [str(path_in_str)] * temp_df5.shape[0]
-        temp_df5 = temp_df5.assign(Node=name)
-        df5 = pd.concat([df5, temp_df5])
-
-    if (len(df5) > 100000):
-        ratio = len(df) / 50000
-        # DownScale
-        df5 = df5.iloc[::int(ratio)]
-        # Reset the index of the new dataframe
-        df5.reset_index(drop=True, inplace=True)
 
     if (args.show_case):
         # Case1 Data
