@@ -721,8 +721,9 @@ void NdpSrc::processAck(const NdpAck &ack) {
         printf("Completion Time Flow is %lu - Overall Time %lu\n", eventlist().now() - _flow_start_time, GLOBAL_TIME);
 
         printf("Flow Completion time is %f - Flow Finishing Time %lu - Flow "
-               "Start Time %lu\n",
-               timeAsUs(eventlist().now()) - timeAsUs(_flow_start_time), eventlist().now(), _flow_start_time);
+               "Start Time %lu - Size Finished Flow %lu\n",
+               timeAsUs(eventlist().now()) - timeAsUs(_flow_start_time), eventlist().now(), _flow_start_time,
+               _flow_size);
 
         printf("Total NACKs: %lu\n", count_nack_num);
 

@@ -1121,8 +1121,9 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
              << endl;
 
         printf("Flow Completion time is %f - Flow Finishing Time %lu - Flow "
-               "Start Time %lu\n",
-               timeAsUs(eventlist().now()) - timeAsUs(_flow_start_time), eventlist().now(), _flow_start_time);
+               "Start Time %lu - Size Finished Flow %lu\n",
+               timeAsUs(eventlist().now()) - timeAsUs(_flow_start_time), eventlist().now(), _flow_start_time,
+               _flow_size);
 
         printf("Overall Completion at %lu\n", GLOBAL_TIME);
         if (_end_trigger) {
@@ -1400,7 +1401,7 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
             total_pkt_seen_rtt++;
             quick_adapt(false);
 
-            if (_hop_count < 7) {
+            if (_hop_count < 7 && false) {
                 if (tried_qa && eventlist().now() > last_qa_event + (_base_rtt * 1.5) && ecn) {
                     _cwnd = _maxcwnd * 100.0 / 100;
                     tried_qa = false;

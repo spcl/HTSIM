@@ -22,7 +22,7 @@ int CompositeQueue::_phantom_queue_slowdown = 10;
 
 CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize, EventList &eventlist, QueueLogger *logger)
         : Queue(bitrate, maxsize, eventlist, logger) {
-    _ratio_high = 10;
+    _ratio_high = 20;
     _ratio_low = 1;
     _crt = 0;
     _num_headers = 0;

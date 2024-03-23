@@ -1081,8 +1081,9 @@ void BBRSrc::processAck(BBRAck &pkt, bool force_marked) {
              << endl;
 
         printf("Flow Completion time is %f - Flow Finishing Time %lu - Flow "
-               "Start Time %lu\n",
-               timeAsUs(eventlist().now()) - timeAsUs(_flow_start_time), eventlist().now(), _flow_start_time);
+               "Start Time %lu - Size Finished Flow %lu\n",
+               timeAsUs(eventlist().now()) - timeAsUs(_flow_start_time), eventlist().now(), _flow_start_time,
+               _flow_size);
 
         printf("Overall Completion at %lu\n", GLOBAL_TIME);
         if (_end_trigger) {
