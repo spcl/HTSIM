@@ -101,6 +101,7 @@ int main(int argc, char **argv) {
     int ratio_os_stage_1 = 1;
     int flowsize = -1;
     bool topology_normal = true;
+    char *topo_file = NULL;
     char *tm_file = NULL;
     uint64_t interdc_delay = 0;
     uint64_t max_queue_size = 0;
@@ -165,6 +166,10 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-flowsize")) {
             flowsize = atoi(argv[i + 1]);
             cout << "flowsize " << flowsize << endl;
+            i++;
+        } else if (!strcmp(argv[i], "-topo")) {
+            topo_file = argv[i + 1];
+            cout << "FatTree topology input file: " << topo_file << endl;
             i++;
         } else if (!strcmp(argv[i], "-ratio_os_stage_1")) {
             ratio_os_stage_1 = atoi(argv[i + 1]);
@@ -396,17 +401,27 @@ int main(int argc, char **argv) {
         } else {
             if (interdc_delay != 0) {
                 FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
-                UecSrc::set_interdc_delay(interdc_delay);
+                NdpSrc::set_interdc_delay(interdc_delay);
             } else {
                 FatTreeInterDCTopology::set_interdc_delay(hop_latency);
-                UecSrc::set_interdc_delay(hop_latency);
+                NdpSrc::set_interdc_delay(hop_latency);
             }
             FatTreeInterDCTopology::set_tiers(3);
             FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
             FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
             FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
-            top_dc = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, COMPOSITE,
-                                                hop_latency, switch_latency);
+            if (topo_file) {
+                top_dc = FatTreeInterDCTopology::load(topo_file, NULL, eventlist, queuesize, COMPOSITE, FAIR_PRIO);
+                if (top_dc->no_of_nodes() != no_of_nodes) {
+                    cerr << "Mismatch between connection matrix (" << no_of_nodes << " nodes) and topology ("
+                         << top_dc->no_of_nodes() << " nodes)" << endl;
+                    exit(1);
+                }
+            } else {
+                FatTreeInterDCTopology::set_tiers(3);
+                top_dc = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, NULL,
+                                                    COMPOSITE, hop_latency, switch_latency, FAIR_PRIO);
+            }
         }
 
         conns = new ConnectionMatrix(no_of_nodes);
@@ -452,10 +467,9 @@ int main(int argc, char **argv) {
 
             actual_starting_cwnd = bdp_local; // Equal to BDP if not other info
 
-            printf("Setting CWND to %lu\n", actual_starting_cwnd);
+            printf("Setting CWND to %lu\n", cwnd);
 
-            printf("Using BDP of %lu - Queue is %lld - Starting Window is %lu\n", bdp_local, queuesize,
-                   actual_starting_cwnd);
+            printf("Using BDP of %lu - Queue is %lld - Starting Window is %lu\n", bdp_local, queuesize, cwnd);
 
             uecSrc = new NdpSrc(NULL, NULL, eventlist);
             uecSrc->setCwnd(cwnd);
@@ -521,23 +535,27 @@ int main(int argc, char **argv) {
                 } else if (top_dc != NULL) {
                     int idx_dc = top_dc->get_dc_id(src);
                     int idx_dc_to = top_dc->get_dc_id(dest);
+                    uecSrc->src_dc = top_dc->get_dc_id(src);
+                    uecSrc->dest_dc = top_dc->get_dc_id(dest);
+                    uecSrc->updateParams();
 
                     printf("Source in Datacenter %d - Dest in Datacenter %d\n", idx_dc, idx_dc_to);
 
                     srctotor->push_back(top_dc->queues_ns_nlp[idx_dc][src % top_dc->no_of_nodes()]
-                                                             [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]);
+                                                             [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())][0]);
                     srctotor->push_back(top_dc->pipes_ns_nlp[idx_dc][src % top_dc->no_of_nodes()]
-                                                            [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]);
+                                                            [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())][0]);
                     srctotor->push_back(top_dc->queues_ns_nlp[idx_dc][src % top_dc->no_of_nodes()]
-                                                             [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]
+                                                             [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())][0]
                                                                      ->getRemoteEndpoint());
 
-                    dsttotor->push_back(top_dc->queues_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
-                                                             [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]);
+                    dsttotor->push_back(
+                            top_dc->queues_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
+                                                 [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())][0]);
                     dsttotor->push_back(top_dc->pipes_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
-                                                            [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]);
+                                                            [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())][0]);
                     dsttotor->push_back(top_dc->queues_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
-                                                             [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]
+                                                             [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())][0]
                                                                      ->getRemoteEndpoint());
                 }
 

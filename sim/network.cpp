@@ -24,8 +24,7 @@ void Packet::set_attrs(PacketFlow &flow, int pkt_size, packetid_t id) {
     _next_routed_hop = 0;
 }
 
-void Packet::set_route(PacketFlow &flow, const Route &route, int pkt_size,
-                       packetid_t id) {
+void Packet::set_route(PacketFlow &flow, const Route &route, int pkt_size, packetid_t id) {
     _flow = &flow;
     _size = pkt_size;
     _oldsize = pkt_size;
@@ -51,8 +50,10 @@ PacketSink *Packet::sendOn() {
         nextsink = _detour;
         _detour = NULL;
         }else*/
+    // printf("Send on Hrere - %d %d\n", size(), is_bts_pkt);
 
     if (_route) {
+        /* printf("Next Hop %s - Switch ID\n", _route->at(_nexthop)->nodename().c_str()); */
         if (_bounced) {
             /*printf("ID %d - From %d - Route Size is %d - Hops %d - Size %d - "
                    "Full %d\n",
@@ -80,6 +81,7 @@ PacketSink *Packet::sendOn() {
                    nextsink->nodename().c_str());*/
         }
     } else if (_next_routed_hop) {
+        printf("Next RoutedHop %s\n", _next_routed_hop->nodename().c_str());
         nextsink = _next_routed_hop;
         // printf("Test\n");
     } else {
@@ -253,10 +255,7 @@ string Packet::str() const {
 #define FLOW_ID_DYNAMIC_BASE 1000000000
 flowid_t PacketFlow::_max_flow_id = FLOW_ID_DYNAMIC_BASE;
 
-PacketFlow::PacketFlow(TrafficLogger *logger)
-        : Logged("PacketFlow"), _logger(logger) {
-    _flow_id = _max_flow_id++;
-}
+PacketFlow::PacketFlow(TrafficLogger *logger) : Logged("PacketFlow"), _logger(logger) { _flow_id = _max_flow_id++; }
 
 void PacketFlow::set_flowid(flowid_t id) {
     if (id >= FLOW_ID_DYNAMIC_BASE) {
@@ -269,8 +268,7 @@ void PacketFlow::set_flowid(flowid_t id) {
 
 void PacketFlow::set_logger(TrafficLogger *logger) { _logger = logger; }
 
-void PacketFlow::logTraffic(Packet &pkt, Logged &location,
-                            TrafficLogger::TrafficEvent ev) {
+void PacketFlow::logTraffic(Packet &pkt, Logged &location, TrafficLogger::TrafficEvent ev) {
     if (_logger)
         _logger->logTraffic(pkt, location, ev);
 }

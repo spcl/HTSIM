@@ -1,18 +1,18 @@
 Nodes 16
 Connections 16
-0->8 id 1 start 0 size 4000000
-1->9 id 2 start 0 size 4000000
-2->14 id 3 start 0 size 4000000
-3->11 id 4 start 0 size 4000000
-4->10 id 5 start 0 size 4000000
-5->12 id 6 start 0 size 4000000
-6->13 id 7 start 0 size 4000000
-7->15 id 8 start 0 size 4000000
-8->6 id 9 start 0 size 4000000
-9->0 id 10 start 0 size 4000000
-10->2 id 11 start 0 size 4000000
-11->5 id 12 start 0 size 4000000
-12->4 id 13 start 0 size 4000000
-13->1 id 14 start 0 size 4000000
-14->3 id 15 start 0 size 4000000
-15->7 id 16 start 0 size 4000000
+0->11 id 1 start 0 size 8000000
+1->12 id 2 start 0 size 8000000
+2->10 id 3 start 0 size 8000000
+3->9 id 4 start 0 size 8000000
+4->14 id 5 start 0 size 8000000
+5->13 id 6 start 0 size 8000000
+6->15 id 7 start 0 size 8000000
+7->8 id 8 start 0 size 8000000
+8->1 id 9 start 0 size 8000000
+9->4 id 10 start 0 size 8000000
+10->7 id 11 start 0 size 8000000
+11->0 id 12 start 0 size 8000000
+12->3 id 13 start 0 size 8000000
+13->6 id 14 start 0 size 8000000
+14->5 id 15 start 0 size 8000000
+15->2 id 16 start 0 size 8000000

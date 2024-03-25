@@ -28,9 +28,13 @@ ecn_max = int(tot_capacity/size_1/5*4)
 queue_size = int(tot_capacity/size_1)
 initial_cwnd = int(tot_capacity/size_1*1.25)
 
-os_ratio = 1
-eqds_cwnd = 50000
+os_ratio = 8
+eqds_cwnd = 100000
 inter_dc_delay = 500000
+phantom_size = 6500000
+custom_queue_size = 100000
+
+show_plots = False
 
 print("Queue in PKT {} - Initial CWND {} - ECN {}".format(int(tot_capacity/size_1), initial_cwnd, ecn_min, ecn_max))
 
@@ -56,49 +60,89 @@ def getNumTrimmed(name_file_to_use):
     return num_nack
 
 
-def run_experiment(experiment_name, experiment_cm, name_title, msg_size):
+def run_experiment(experiment_name, experiment_cm, topo_name, name_title, msg_size):
     
     os.system("rm -rf experiments/{}".format(experiment_name))
     os.system("mkdir experiments/{}".format(experiment_name))
 
     # PhantomCC
     out_name = "experiments/{}/out.txt".format(experiment_name)
-    string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -k 1 -algorithm intersmartt -nodes 16 -q 4452000 -strat ecmp_host_random2_ecn -number_entropies 1024 -kmin 2 -kmax 80 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 50000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -os_border {} -tm ../sim/datacenter/connection_matrices/{} -x_gain 4 -y_gain 0 -w_gain 0 -z_gain 4 -bonus_drop 1.0 -collect_data 1 -use_pacing 1 -use_phantom 1 -phantom_slowdown 10 -phantom_size 2600000 -decrease_on_nack 0 -topology interdc -max_queue_size 175000 -interdc_delay {} -phantom_both_queues -stop_after_quick > {}".format(os_ratio, experiment_cm, inter_dc_delay, out_name)
-    os.system(string_to_run)
+    string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -k 1 -topo ../sim/datacenter/topologies/{} -algorithm intersmartt -nodes 16 -q 4452000 -strat ecmp_host_random2_ecn -number_entropies 1024 -kmin 2 -kmax 80 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 50000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -os_border {} -tm ../sim/datacenter/connection_matrices/{} -x_gain 4 -y_gain 0 -w_gain 0 -z_gain 4 -bonus_drop 1.0 -collect_data 1 -use_pacing 1 -use_phantom 1 -phantom_slowdown 10 -phantom_size {} -decrease_on_nack 0 -topology interdc -max_queue_size {} -interdc_delay {} -phantom_both_queues > {}".format(topo_name, os_ratio, experiment_cm,phantom_size, custom_queue_size, inter_dc_delay, out_name)
     print(string_to_run)
+    os.system(string_to_run)
+    
     list_smartt1 = getListFCT(out_name)
     num_nack_smartt = getNumTrimmed(out_name)
     print("PhantomCC: Flow Diff {} - Total {}".format(max(list_smartt1) - min(list_smartt1), max(list_smartt1)))
-    #os.system("python3 performance_complete.py")
+    if (show_plots):
+        os.system("python3 performance_complete.py --name {}{}".format(experiment_cm, "__PhantomCC"))
+
+    # PhantomCC
+    out_name = "experiments/{}/out.txt".format(experiment_name)
+    string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -k 1 -topo ../sim/datacenter/topologies/{} -enable_bts -algorithm intersmartt_test -nodes 16 -q 4452000 -strat ecmp_host_random2_ecn -number_entropies 1024 -kmin 2 -kmax 80 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 50000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -os_border {} -tm ../sim/datacenter/connection_matrices/{} -x_gain 4 -y_gain 0 -w_gain 0 -z_gain 4 -bonus_drop 1.0 -collect_data 1 -use_pacing 1 -use_phantom 1 -phantom_slowdown 10 -phantom_size {} -decrease_on_nack 1 -topology interdc -max_queue_size {} -interdc_delay {} -phantom_both_queues > {}".format(topo_name, os_ratio, experiment_cm,phantom_size, custom_queue_size, inter_dc_delay, out_name)
+    os.system(string_to_run)
+    print(string_to_run)
+    list_phantombts = getListFCT(out_name)
+    num_nack_phantombts = getNumTrimmed(out_name)
+    print("PhantomCCBTS: Flow Diff {} - Total {}".format(max(list_phantombts) - min(list_phantombts), max(list_phantombts)))
+    if (show_plots):
+        os.system("python3 performance_complete.py --name {}{}".format(experiment_cm, "__PhantomCCBTS"))
+
+    # PhantomCC
+    out_name = "experiments/{}/out.txt".format(experiment_name)
+    string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -k 1 -topo ../sim/datacenter/topologies/{} -algorithm intersmartt_test -nodes 16 -q 4452000 -strat ecmp_host_random2_ecn -number_entropies 1024 -kmin 2 -kmax 80 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 50000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -os_border {} -tm ../sim/datacenter/connection_matrices/{} -x_gain 4 -y_gain 0 -w_gain 0 -z_gain 4 -bonus_drop 1.0 -collect_data 1 -use_pacing 1 -use_phantom 1 -phantom_slowdown 10 -phantom_size {} -decrease_on_nack 0 -topology interdc -max_queue_size {} -interdc_delay {} -phantom_both_queues > {}".format(topo_name, os_ratio, experiment_cm,phantom_size, custom_queue_size,inter_dc_delay, out_name)
+    os.system(string_to_run)
+    print(string_to_run)
+    list_phantom = getListFCT(out_name)
+    num_nack_phantom_simple = getNumTrimmed(out_name)
+    print("PhantomCCSimple: Flow Diff {} - Total {}".format(max(list_phantom) - min(list_phantom), max(list_phantom)))
+    if (show_plots):
+        os.system("python3 performance_complete.py --name {}{}".format(experiment_cm, "__PhantomCCSimple"))
 
     # MPRDMA
     out_name = "experiments/{}/out.txt".format(experiment_name)
-    string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -k 1 -algorithm mprdma -nodes 16 -q 4452000 -strat ecmp_host_random2_ecn -number_entropies 1024 -kmin 20 -kmax 80 -use_fast_increase 0 -use_super_fast_increase 1 -fast_drop 0 -linkspeed 50000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -os_border {} -tm ../sim/datacenter/connection_matrices/{} -x_gain 4 -y_gain 0 -w_gain 0 -z_gain 4 -bonus_drop 1.0 -collect_data 1 -use_pacing 0 -use_phantom 0 -phantom_slowdown 3 -phantom_size 2600000 -decrease_on_nack 1 -topology interdc -max_queue_size 175000 -interdc_delay {} > {}".format(os_ratio, experiment_cm, inter_dc_delay, out_name) 
+    string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -k 1 -algorithm mprdma -topo ../sim/datacenter/topologies/{} -nodes 16 -q 4452000 -strat ecmp_host_random2_ecn -number_entropies 1024 -kmin 20 -kmax 80 -use_fast_increase 0 -use_super_fast_increase 1 -fast_drop 0 -linkspeed 50000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -os_border {} -tm ../sim/datacenter/connection_matrices/{} -x_gain 4 -y_gain 0 -w_gain 0 -z_gain 4 -bonus_drop 1.0 -collect_data 1 -use_pacing 0 -use_phantom 0 -phantom_slowdown 3 -phantom_size 2600000 -decrease_on_nack 1 -topology interdc -max_queue_size {} -interdc_delay {} > {}".format(topo_name, os_ratio, experiment_cm, custom_queue_size,inter_dc_delay, out_name) 
     os.system(string_to_run)
     print(string_to_run)
     list_smartt2 = getListFCT(out_name)
-    num_nack_smartt = getNumTrimmed(out_name)
+    num_nack_mprdma = getNumTrimmed(out_name)
     print("MPRDMA: Flow Diff {} - Total {}".format(max(list_smartt2) - min(list_smartt2), max(list_smartt2)))
-    #os.system("python3 performance_complete.py")
+    if (show_plots):
+        os.system("python3 performance_complete.py --name {}{}".format(experiment_cm, "__MPRDMA"))
+
+    # MPRDMA2
+    out_name = "experiments/{}/out.txt".format(experiment_name)
+    string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -k 1 -algorithm mprdma2 -topo ../sim/datacenter/topologies/{} -nodes 16 -q 4452000 -strat ecmp_host_random2_ecn -number_entropies 1024 -kmin 20 -kmax 80 -use_fast_increase 0 -use_super_fast_increase 1 -fast_drop 0 -linkspeed 50000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -os_border {} -tm ../sim/datacenter/connection_matrices/{} -x_gain 4 -y_gain 0 -w_gain 0 -z_gain 4 -bonus_drop 1.0 -collect_data 1 -use_pacing 0 -use_phantom 0 -phantom_slowdown 3 -phantom_size 2600000 -decrease_on_nack 1 -topology interdc -max_queue_size {} -interdc_delay {} > {}".format(topo_name, os_ratio, experiment_cm,custom_queue_size, inter_dc_delay, out_name) 
+    os.system(string_to_run)
+    print(string_to_run)
+    list_mprdma2 = getListFCT(out_name)
+    num_nack_mprdma2 = getNumTrimmed(out_name)
+    print("MPRDMA: Flow Diff {} - Total {}".format(max(list_mprdma2) - min(list_mprdma2), max(list_mprdma2)))
+    if (show_plots):
+        os.system("python3 performance_complete.py --name {}{}".format(experiment_cm, "__MPRDMA2"))
 
     # EQDS
     out_name = "experiments/{}/out.txt".format(experiment_name)
-    string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o uec_entry -k 1 -nodes 16 -q 4452000 -strat ecmp_host_random2_ecn -linkspeed 50000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -os_border {} -tm ../sim/datacenter/connection_matrices/{} -collect_data 1 -topology interdc  -max_queue_size 175000 -interdc_delay {} -cwnd {} > {}".format(os_ratio, experiment_cm, eqds_cwnd, inter_dc_delay, out_name)
+    string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o uec_entry -k 1 -nodes 16 -q 4452000 -topo ../sim/datacenter/topologies/{} -strat ecmp_host_random2_ecn -linkspeed 50000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -os_border {} -tm ../sim/datacenter/connection_matrices/{} -collect_data 1 -topology interdc  -max_queue_size {} -interdc_delay {} -cwnd {} > {}".format(topo_name, os_ratio, experiment_cm, custom_queue_size,inter_dc_delay, eqds_cwnd, out_name)
     os.system(string_to_run)
     print(string_to_run)
     list_smartt3 = getListFCT(out_name)
-    num_nack_smartt = getNumTrimmed(out_name)
+    num_nack_eqds = getNumTrimmed(out_name)
     print("EQDS: Flow Diff {} - Total {}".format(max(list_smartt3) - min(list_smartt3), max(list_smartt3)))
-    #os.system("python3 performance_complete.py")
+    if (show_plots):
+        os.system("python3 performance_complete.py --name {}{}".format(experiment_cm, "__EQDS"))
 
     # Combine all data into a list of lists
     list_smartt1 = [x / 1000 for x in list_smartt1]
     list_smartt2 = [x / 1000 for x in list_smartt2]
     list_smartt3 = [x / 1000 for x in list_smartt3]
+    list_phantom = [x / 1000 for x in list_phantom]
+    list_mprdma2 = [x / 1000 for x in list_mprdma2]
+    list_phantombts = [x / 1000 for x in list_phantombts]
 
-    all_data = [list_smartt1, list_smartt2, list_smartt3]
+    all_data = [list_smartt1, list_phantom, list_phantombts, list_smartt2, list_mprdma2, list_smartt3]
     # Create a list of labels for each dataset
-    labels = ['PhantomCC', 'MPRDMA', 'EQDS']
+    labels = ['PhantomCC', 'PhantomCCSimple', 'PhantomBTS', 'MPRDMA', 'MPRDMA2', 'EQDS']
     # Initialize an empty list to store cumulative probabilities
 
     unit = "μs"
@@ -148,7 +192,7 @@ def run_experiment(experiment_name, experiment_cm, name_title, msg_size):
     averages = [sum(lst) / len(lst) for lst in all_data]
 
     # Create a bar plot using Seaborn
-    sns.barplot(x=['List 1', 'List 2', 'List 3'], y=averages, ci=None)  # Setting ci=None disables the default error bars
+    sns.barplot(x=labels, y=averages, ci=None)  # Setting ci=None disables the default error bars
     
     plt.grid()  #just add this
     plt.legend([],[], frameon=False)
@@ -190,6 +234,29 @@ def run_experiment(experiment_name, experiment_cm, name_title, msg_size):
     plt.savefig("experiments/{}/cdf.pdf".format(experiment_name), bbox_inches='tight')
     plt.close()
 
+    # PLOT 2 (NACK)
+    # Your list of 5 numbers and corresponding labels
+    plt.figure(figsize=(7, 5))
+    numbers = [num_nack_smartt, num_nack_phantom_simple, num_nack_phantombts, num_nack_mprdma, num_nack_mprdma2, num_nack_eqds]
+    labels = ['PhantomCC', 'PhantomSimple', 'PhantomBTS', 'MPRDMA', 'MPRDMA2','EQDS']
+
+    # Create a DataFrame from the lists
+    data = pd.DataFrame({'Packets Trimmed': numbers, 'Algorithm': labels})
+
+    # Create a bar chart using Seaborn
+    ax3 = sns.barplot(x='Algorithm', y='Packets Trimmed', data=data)
+    ax3.tick_params(labelsize=9.5)
+    # Format y-axis tick labels without scientific notation
+    
+    ax3.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))# Show the plot
+    plt.title('{}\n1024 Nodes - Link Speed 800Gbps - 4KiB MTU'.format(experiment_name), fontsize=16.5)
+    plt.grid()  #just add this
+    
+    plt.savefig("experiments/{}/nack.svg".format(experiment_name), bbox_inches='tight')
+    plt.savefig("experiments/{}/nack.png".format(experiment_name), bbox_inches='tight')
+    plt.savefig("experiments/{}/nack.pdf".format(experiment_name), bbox_inches='tight')
+    plt.close()
+
 
     # PLOT 4 (FLOW DISTR)
     # Your list of 5 numbers and corresponding labels
@@ -226,13 +293,15 @@ def run_experiment(experiment_name, experiment_cm, name_title, msg_size):
 
 def main():
     # General Exp Settings
-    list_title_names = ["Permutation Test InterDC"]
-    list_custom_names = ["Permutation_InterDC"]
-    list_exp = ["perm32_both"]
-    msg_sizes = [2**25]
+    list_title_names = ["Permutation Test InterDC", "Incast Test InterDC", "Incast Test InterDC Mixed"]
+    list_custom_names = ["Permutation_InterDC", "Incast_InterDC", "Incast_InterDC_Mixed"]
+    list_exp = ["perm16", "incast_inter_dc_large", "incast_mixed_interdc_large"]
+    list_exp = ["perm16"]
+    list_topo = ["fat_tree_16_s.topo", "fat_tree_16.topo", "fat_tree_16.topo"]
+    msg_sizes = [2**25, 2**25, 2**25]
     for idx, item in enumerate(list_exp):
         print("Running Experiment Named {}".format(list_custom_names[idx]))
-        run_experiment(list_custom_names[idx], list_exp[idx],  list_title_names[idx], msg_sizes[idx])
+        run_experiment(list_custom_names[idx], list_exp[idx],  list_topo[idx], list_title_names[idx], msg_sizes[idx])
 
 
 if __name__ == "__main__":

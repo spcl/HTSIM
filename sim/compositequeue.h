@@ -20,8 +20,7 @@
 
 class CompositeQueue : public Queue {
   public:
-    CompositeQueue(linkspeed_bps bitrate, mem_b maxsize, EventList &eventlist,
-                   QueueLogger *logger);
+    CompositeQueue(linkspeed_bps bitrate, mem_b maxsize, EventList &eventlist, QueueLogger *logger);
     virtual void receivePacket(Packet &pkt);
     virtual void doNextEvent();
     // should really be private, but loggers want to see
@@ -54,28 +53,19 @@ class CompositeQueue : public Queue {
 
     static void set_kMax(int value) { _kmax_from_input = value; }
 
-    void set_bts_threshold(mem_b bts_triggers_at) {
-        _bts_triggering = bts_triggers_at;
-    }
+    void set_bts_threshold(mem_b bts_triggers_at) { _bts_triggering = bts_triggers_at; }
+    static void set_bts(bool use_b) { use_bts = use_b; }
 
-    static void set_drop_when_full(bool do_drop_full) {
-        _drop_when_full = do_drop_full;
-    }
+    static void set_drop_when_full(bool do_drop_full) { _drop_when_full = do_drop_full; }
     static void set_use_mixed(bool use_m) { _use_mixed = use_m; }
 
-    static void set_use_phantom_queue(bool use_phantom) {
-        _use_phantom = use_phantom;
-    }
+    static void set_use_phantom_queue(bool use_phantom) { _use_phantom = use_phantom; }
 
     static void set_use_both_queues() { _use_both_queues = true; }
 
-    static void set_phantom_queue_size(int phantom_size) {
-        _phantom_queue_size = phantom_size;
-    }
+    static void set_phantom_queue_size(int phantom_size) { _phantom_queue_size = phantom_size; }
 
-    static void set_phantom_queue_slowdown(int phantom_size_slow) {
-        _phantom_queue_slowdown = phantom_size_slow;
-    }
+    static void set_phantom_queue_slowdown(int phantom_size_slow) { _phantom_queue_slowdown = phantom_size_slow; }
 
     /*void set_os_link_ratio(int os_link_ratio) {
         _os_link_ratio = os_link_ratio;
@@ -122,6 +112,7 @@ class CompositeQueue : public Queue {
     mem_b _ecn_minthresh;
     mem_b _ecn_maxthresh;
     mem_b _bts_triggering;
+    static bool use_bts;
 
     CircularBuffer<Packet *> _enqueued_low;
     CircularBuffer<Packet *> _enqueued_high;

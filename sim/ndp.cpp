@@ -57,6 +57,7 @@ bool NdpSink::_oversubscribed_congestion_control = false;
 double NdpSink::_g = 1.0 / 16.0;
 
 int ooo_distance = 0;
+uint64_t NdpSrc::_interdc_delay = 0;
 
 NdpSrc::NdpSrc(NdpLogger *logger, TrafficLogger *pktlogger, EventList &eventlist, bool rts, NdpRTSPacer *rts_pacer)
         : EventSource(eventlist, "ndp"), _logger(logger), _flow(pktlogger) {
@@ -744,6 +745,29 @@ void NdpSrc::processAck(const NdpAck &ack) {
     }
 }
 
+// Update Network Parameters
+void NdpSrc::updateParams() {
+    if (src_dc != dest_dc) {
+        _hop_count = 9;
+        _base_rtt = ((((_hop_count - 2) * LINK_DELAY_MODERN) + (_interdc_delay / 1000) * 2) +
+                     ((PKT_SIZE_MODERN + 64) * 8 / LINK_SPEED_MODERN * _hop_count) + +(_hop_count * LINK_DELAY_MODERN) +
+                     (64 * 8 / LINK_SPEED_MODERN * _hop_count)) *
+                    1000;
+    } else {
+        _hop_count = 6;
+        _base_rtt = ((_hop_count * LINK_DELAY_MODERN) + ((PKT_SIZE_MODERN + 64) * 8 / LINK_SPEED_MODERN * _hop_count) +
+                     +(_hop_count * LINK_DELAY_MODERN) + (64 * 8 / LINK_SPEED_MODERN * _hop_count)) *
+                    1000;
+    }
+
+    _bdp = (_base_rtt * LINK_SPEED_MODERN / 8) / 1000;
+
+    _maxcwnd = _bdp;
+    _cwnd = _bdp;
+
+    printf("Updating CWND to %d\n", _cwnd);
+}
+
 void NdpSrc::receivePacket(Packet &pkt) {
     pkt.flow().logTraffic(pkt, *this, TrafficLogger::PKT_RCVDESTROY);
     if (_stop_time && eventlist().now() >= _stop_time) {
@@ -768,6 +792,7 @@ void NdpSrc::receivePacket(Packet &pkt) {
         } else {
             printf("NACK\n");
         }*/
+        printf("NACK\n");
         count_nack_num++;
         _list_nack.push_back(std::make_pair(eventlist().now() / 1000, 1));
         processNack((const NdpNack &)pkt);

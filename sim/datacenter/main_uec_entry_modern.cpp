@@ -142,12 +142,14 @@ int main(int argc, char **argv) {
     bool use_pacing = false;
     int precision_ts = 1;
     int once_per_rtt = 0;
+    bool enable_bts = false;
     bool use_mixed = false;
     int phantom_size;
     int phantom_slowdown = 10;
     bool use_phantom = false;
     double exp_avg_ecn_value = .3;
     double exp_avg_rtt_value = .3;
+    char *topo_file = NULL;
     double exp_avg_alpha = 0.125;
     bool use_exp_avg_ecn = false;
     bool use_exp_avg_rtt = false;
@@ -190,6 +192,10 @@ int main(int argc, char **argv) {
             // UecSrc::set_use_mixed(use_mixed);
             CompositeQueue::set_use_mixed(use_mixed);
             printf("UseMixed: %d\n", use_mixed);
+            i++;
+        } else if (!strcmp(argv[i], "-topo")) {
+            topo_file = argv[i + 1];
+            cout << "FatTree topology input file: " << topo_file << endl;
             i++;
         } else if (!strcmp(argv[i], "-once_per_rtt")) {
             once_per_rtt = atoi(argv[i + 1]);
@@ -358,6 +364,11 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-phantom_in_series")) {
             CompositeQueue::set_use_phantom_in_series();
             printf("PhantomQueueInSeries: %d\n", 1);
+            // i++;
+        } else if (!strcmp(argv[i], "-enable_bts")) {
+            CompositeQueue::set_bts(true);
+            UecSrc::set_bts(true);
+            printf("BTS: %d\n", 1);
             // i++;
         } else if (!strcmp(argv[i], "-phantom_both_queues")) {
             CompositeQueue::set_use_both_queues();
@@ -573,8 +584,8 @@ int main(int argc, char **argv) {
             } else if (!strcmp(argv[i + 1], "intersmartt_composed")) {
                 UecSrc::set_alogirthm("intersmartt_composed");
                 printf("Name Running: SMaRTT InterDataCenter\n");
-            } else if (!strcmp(argv[i + 1], "smartt_2")) {
-                UecSrc::set_alogirthm("smartt_2");
+            } else if (!strcmp(argv[i + 1], "intersmartt_test")) {
+                UecSrc::set_alogirthm("intersmartt_test");
                 printf("Name Running: SMaRTT smartt_2\n");
             } else {
                 printf("Wrong Algorithm Name\n");
@@ -787,8 +798,21 @@ int main(int argc, char **argv) {
             FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
             FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
             FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
-            top_dc = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, queue_choice,
-                                                hop_latency, switch_latency);
+            /* top_dc = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+               queue_choice, hop_latency, switch_latency); */
+
+            if (topo_file) {
+                top_dc = FatTreeInterDCTopology::load(topo_file, NULL, eventlist, queuesize, COMPOSITE, FAIR_PRIO);
+                if (top_dc->no_of_nodes() != no_of_nodes) {
+                    cerr << "Mismatch between connection matrix (" << no_of_nodes << " nodes) and topology ("
+                         << top_dc->no_of_nodes() << " nodes)" << endl;
+                    exit(1);
+                }
+            } else {
+                FatTreeInterDCTopology::set_tiers(3);
+                top_dc = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, NULL,
+                                                    COMPOSITE, hop_latency, switch_latency, FAIR_PRIO);
+            }
         }
 
         conns = new ConnectionMatrix(no_of_nodes);
@@ -910,19 +934,20 @@ int main(int argc, char **argv) {
                     printf("Source in Datacenter %d - Dest in Datacenter %d\n", idx_dc, idx_dc_to);
 
                     srctotor->push_back(top_dc->queues_ns_nlp[idx_dc][src % top_dc->no_of_nodes()]
-                                                             [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]);
+                                                             [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())][0]);
                     srctotor->push_back(top_dc->pipes_ns_nlp[idx_dc][src % top_dc->no_of_nodes()]
-                                                            [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]);
+                                                            [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())][0]);
                     srctotor->push_back(top_dc->queues_ns_nlp[idx_dc][src % top_dc->no_of_nodes()]
-                                                             [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]
+                                                             [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())][0]
                                                                      ->getRemoteEndpoint());
 
-                    dsttotor->push_back(top_dc->queues_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
-                                                             [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]);
+                    dsttotor->push_back(
+                            top_dc->queues_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
+                                                 [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())][0]);
                     dsttotor->push_back(top_dc->pipes_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
-                                                            [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]);
+                                                            [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())][0]);
                     dsttotor->push_back(top_dc->queues_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
-                                                             [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]
+                                                             [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())][0]
                                                                      ->getRemoteEndpoint());
                 }
 
@@ -937,7 +962,7 @@ int main(int argc, char **argv) {
                 if (top != NULL) {
                     top->switches_lp[top->HOST_POD_SWITCH(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
                     top->switches_lp[top->HOST_POD_SWITCH(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
-                } else {
+                } else if (top_dc != NULL) {
                     int idx_dc = top_dc->get_dc_id(src);
                     int idx_dc_to = top_dc->get_dc_id(dest);
 

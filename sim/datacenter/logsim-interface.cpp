@@ -174,27 +174,29 @@ void LogSimInterface::send_event(int from, int to, int size, int tag, u_int64_t 
             srctotor->push_back(
                     _topo_inter_dc
                             ->queues_ns_nlp[idx_dc][from % _topo_inter_dc->no_of_nodes()]
-                                           [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())]);
+                                           [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())][0]);
             srctotor->push_back(
                     _topo_inter_dc
                             ->pipes_ns_nlp[idx_dc][from % _topo_inter_dc->no_of_nodes()]
-                                          [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())]);
+                                          [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())][0]);
             srctotor->push_back(
                     _topo_inter_dc
                             ->queues_ns_nlp[idx_dc][from % _topo_inter_dc->no_of_nodes()]
-                                           [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())]
+                                           [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())][0]
                             ->getRemoteEndpoint());
 
             dsttotor->push_back(
-                    _topo_inter_dc->queues_ns_nlp[idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
-                                                 [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())]);
+                    _topo_inter_dc
+                            ->queues_ns_nlp[idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
+                                           [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())][0]);
             dsttotor->push_back(
-                    _topo_inter_dc->pipes_ns_nlp[idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
-                                                [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())]);
+                    _topo_inter_dc
+                            ->pipes_ns_nlp[idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
+                                          [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())][0]);
             dsttotor->push_back(
                     _topo_inter_dc
                             ->queues_ns_nlp[idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
-                                           [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())]
+                                           [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())][0]
                             ->getRemoteEndpoint());
         }
 
@@ -434,27 +436,29 @@ void LogSimInterface::send_event(int from, int to, int size, int tag, u_int64_t 
             srctotor->push_back(
                     _topo_inter_dc
                             ->queues_ns_nlp[idx_dc][from % _topo_inter_dc->no_of_nodes()]
-                                           [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())]);
+                                           [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())][0]);
             srctotor->push_back(
                     _topo_inter_dc
                             ->pipes_ns_nlp[idx_dc][from % _topo_inter_dc->no_of_nodes()]
-                                          [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())]);
+                                          [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())][0]);
             srctotor->push_back(
                     _topo_inter_dc
                             ->queues_ns_nlp[idx_dc][from % _topo_inter_dc->no_of_nodes()]
-                                           [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())]
+                                           [_topo_inter_dc->HOST_POD_SWITCH(from % _topo_inter_dc->no_of_nodes())][0]
                             ->getRemoteEndpoint());
 
             dsttotor->push_back(
-                    _topo_inter_dc->queues_ns_nlp[idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
-                                                 [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())]);
+                    _topo_inter_dc
+                            ->queues_ns_nlp[idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
+                                           [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())][0]);
             dsttotor->push_back(
-                    _topo_inter_dc->pipes_ns_nlp[idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
-                                                [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())]);
+                    _topo_inter_dc
+                            ->pipes_ns_nlp[idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
+                                          [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())][0]);
             dsttotor->push_back(
                     _topo_inter_dc
                             ->queues_ns_nlp[idx_dc_to][to % _topo_inter_dc->no_of_nodes()]
-                                           [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())]
+                                           [_topo_inter_dc->HOST_POD_SWITCH(to % _topo_inter_dc->no_of_nodes())][0]
                             ->getRemoteEndpoint());
         }
 

@@ -148,6 +148,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static void set_disable_case_4(double value) { disable_case_4 = value; }
     static void set_starting_cwnd(double value) { starting_cwnd = value; }
     static void set_bonus_drop(double value) { bonus_drop = value; }
+    static void set_bts(bool use_b) { use_bts = use_b; }
     static void set_buffer_drop(double value) { buffer_drop = value; }
     static void set_stop_after_quick(bool value) { stop_after_quick = value; }
     static void set_stop_pacing(int value) { stop_pacing_after_rtt = value; }
@@ -197,6 +198,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     uint64_t _flow_start_time;
     uint64_t _next_check_window;
     uint64_t next_window_end = 0;
+    uint64_t qa_window_start = 0;
     bool update_next_window = true;
     bool _start_timer_window = true;
     bool _paced_packet = false;
@@ -207,6 +209,8 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     int count_trimmed_in_rtt = 0;
     uint32_t counter_consecutive_good_bytes = 0;
     bool increasing = false;
+    int bts_received = 0;
+    int tot_pkt_seen_qa = 0;
 
     int total_routes;
     // simtime_picosec internal_stop_pacing_rtt;
@@ -248,6 +252,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static int ratio_os_stage_1;
     static int once_per_rtt;
     static double kmax_double;
+    static bool use_bts;
     static double kmin_double;
     double phantom_size_calc = 0;
     simtime_picosec last_phantom_increase = 0;

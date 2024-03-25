@@ -20,7 +20,7 @@
 #define timeInf 0
 #define NDP_PACKET_SCATTER
 
-//#define LOAD_BALANCED_SCATTER
+// #define LOAD_BALANCED_SCATTER
 
 // min RTO bound in us
 //  *** don't change this default - override it by calling NdpSrc::setMinRTO()
@@ -39,8 +39,7 @@ class ReorderBufferLogger;
 class ReceiptEvent {
   public:
     ReceiptEvent() : _path_id(-1), _is_header(false){};
-    ReceiptEvent(uint32_t path_id, bool is_header)
-            : _path_id(path_id), _is_header(is_header) {}
+    ReceiptEvent(uint32_t path_id, bool is_header) : _path_id(path_id), _is_header(is_header) {}
     inline int32_t path_id() const { return _path_id; }
     inline bool is_header() const { return _is_header; }
     int32_t _path_id;
@@ -52,30 +51,22 @@ class NdpSrc : public PacketSink, public EventSource, public TriggerTarget {
 
   public:
     ~NdpSrc();
-    NdpSrc(NdpLogger *logger, TrafficLogger *pktlogger, EventList &eventlist,
-           bool rts = false, NdpRTSPacer *pacer = NULL);
-    virtual void connect(Route *routeout, Route *routeback, NdpSink &sink,
-                         simtime_picosec startTime);
+    NdpSrc(NdpLogger *logger, TrafficLogger *pktlogger, EventList &eventlist, bool rts = false,
+           NdpRTSPacer *pacer = NULL);
+    virtual void connect(Route *routeout, Route *routeback, NdpSink &sink, simtime_picosec startTime);
 
     void set_dst(uint32_t dst) { _dstaddr = dst; }
     void set_traffic_logger(TrafficLogger *pktlogger);
     void startflow();
+    void updateParams();
     void setCwnd(uint32_t cwnd) {
         _cwnd = cwnd;
         _maxcwnd = cwnd;
     }
-    static void setMinRTO(uint32_t min_rto_in_us) {
-        _min_rto = timeFromUs((uint32_t)min_rto_in_us);
-    }
-    static void setRouteStrategy(RouteStrategy strat) {
-        _route_strategy = strat;
-    }
-    static void setPathEntropySize(uint32_t path_entropy_size) {
-        _path_entropy_size = path_entropy_size;
-    }
-    void set_flowsize(uint64_t flow_size_in_bytes) {
-        _flow_size = flow_size_in_bytes;
-    }
+    static void setMinRTO(uint32_t min_rto_in_us) { _min_rto = timeFromUs((uint32_t)min_rto_in_us); }
+    static void setRouteStrategy(RouteStrategy strat) { _route_strategy = strat; }
+    static void setPathEntropySize(uint32_t path_entropy_size) { _path_entropy_size = path_entropy_size; }
+    void set_flowsize(uint64_t flow_size_in_bytes) { _flow_size = flow_size_in_bytes; }
 
     void set_stoptime(simtime_picosec stop_time) {
         _stop_time = stop_time;
@@ -93,6 +84,7 @@ class NdpSrc : public PacketSink, public EventSource, public TriggerTarget {
     virtual void processRTS(NdpPacket &pkt);
     virtual void processAck(const NdpAck &ack);
     virtual void processNack(const NdpNack &nack);
+    static void set_interdc_delay(uint64_t delay) { _interdc_delay = delay; }
 
     void replace_route(Route *newroute);
 
@@ -149,6 +141,11 @@ class NdpSrc : public PacketSink, public EventSource, public TriggerTarget {
     vector<int16_t> _avoid_ratio; // keeps path scores
     vector<int16_t> _avoid_score; // keeps path scores
     vector<bool> _bad_path;       // keeps path scores
+    uint64_t _bdp;
+    int _hop_count;
+    int dest_dc;
+    int src_dc;
+    static uint64_t _interdc_delay;
 
     map<NdpPacket::seq_t, simtime_picosec> _sent_times;
     map<NdpPacket::seq_t, simtime_picosec> _first_sent_times;
@@ -181,13 +178,10 @@ class NdpSrc : public PacketSink, public EventSource, public TriggerTarget {
     int choose_route();
     int next_route();
 
-    void set_flow_over_hook(std::function<void(const Packet &)> hook) {
-        f_flow_over_hook = hook;
-    }
+    void set_flow_over_hook(std::function<void(const Packet &)> hook) { f_flow_over_hook = hook; }
 
     void pull_packets(NdpPull::seq_t pull_no, NdpPull::seq_t pacer_no);
-    int send_packet(
-            NdpPull::seq_t pacer_no); // returns number of packets actually sent
+    int send_packet(NdpPull::seq_t pacer_no); // returns number of packets actually sent
 
     virtual const string &nodename() { return _nodename; }
     inline void set_flowid(flowid_t flow_id) { _flow.set_flowid(flow_id); }
@@ -201,8 +195,7 @@ class NdpSrc : public PacketSink, public EventSource, public TriggerTarget {
                                        // timeouts across all srcs
     static simtime_picosec _min_rto;
     static RouteStrategy _route_strategy;
-    static uint32_t
-            _path_entropy_size; // now many paths do we include in our path set
+    static uint32_t _path_entropy_size; // now many paths do we include in our path set
     static int _global_node_count;
     static int _rtt_hist[10000000];
     int _node_num;
@@ -233,9 +226,7 @@ class NdpSrc : public PacketSink, public EventSource, public TriggerTarget {
     void process_cumulative_ack(NdpPacket::seq_t cum_ackno);
     inline void count_ack(int32_t path_id) { count_feedback(path_id, ACK); }
     inline void count_nack(int32_t path_id) { count_feedback(path_id, NACK); }
-    inline void count_bounce(int32_t path_id) {
-        count_feedback(path_id, BOUNCE);
-    }
+    inline void count_bounce(int32_t path_id) { count_feedback(path_id, BOUNCE); }
     void count_ecn(int32_t path_id);
     void count_feedback(int32_t path_id, FeedbackType fb);
     bool is_bad_path();
@@ -245,8 +236,7 @@ class NdpSrc : public PacketSink, public EventSource, public TriggerTarget {
     uint64_t _flow_size; // The flow size in bytes.  Stop sending after this
                          // amount.
     simtime_picosec _stop_time;
-    map<NdpPacket::seq_t, NdpPacket *>
-            _rtx_queue; // Packets queued for (hopefuly) imminent retransmission
+    map<NdpPacket::seq_t, NdpPacket *> _rtx_queue; // Packets queued for (hopefuly) imminent retransmission
 
     std::function<void(const Packet &p)> f_flow_over_hook;
     vector<pair<simtime_picosec, uint64_t>> _list_rtt;
@@ -264,9 +254,7 @@ class NdpSink : public PacketSink, public DataReceiver {
     NdpSink(EventList &ev, linkspeed_bps linkspeed, double pull_rate_modifier);
     NdpSink(NdpPullPacer *pacer);
 
-    void add_buffer_logger(ReorderBufferLogger *logger) {
-        _buffer_logger = logger;
-    }
+    void add_buffer_logger(ReorderBufferLogger *logger) { _buffer_logger = logger; }
 
     void receivePacket(Packet &pkt);
     void process_request_to_send(NdpRTS *rts);
@@ -277,22 +265,17 @@ class NdpSink : public PacketSink, public DataReceiver {
 
     NdpAck::seq_t _cumulative_ack; // the packet we have cumulatively acked
     uint32_t _drops;
-    uint64_t cumulative_ack() {
-        return _cumulative_ack + _received.size() * 9000;
-    }
+    uint64_t cumulative_ack() { return _cumulative_ack + _received.size() * 9000; }
     uint64_t total_received() const { return _total_received; }
     uint32_t drops() { return _src->_drops; }
     virtual const string &nodename() { return _nodename; }
     void increase_window() { _pull_no++; }
-    static void setRouteStrategy(RouteStrategy strat) {
-        _route_strategy = strat;
-    }
+    static void setRouteStrategy(RouteStrategy strat) { _route_strategy = strat; }
 
     void set_src(uint32_t s) { _srcaddr = s; }
     void set_end_trigger(Trigger &trigger);
 
-    list<NdpAck::seq_t>
-            _received; // list of packets above a hole, that we've received
+    list<NdpAck::seq_t> _received; // list of packets above a hole, that we've received
 
     NdpSrc *_src;
 
@@ -343,10 +326,9 @@ class NdpSink : public PacketSink, public DataReceiver {
     ReorderBufferLogger *_buffer_logger;
 
     NdpPullPacer *_pacer;
-    NdpPull::seq_t _pull_no; // pull sequence number (local to connection)
-    NdpPacket::seq_t
-            _last_packet_seqno; // sequence number of the last
-                                // packet in the connection (or 0 if not known)
+    NdpPull::seq_t _pull_no;             // pull sequence number (local to connection)
+    NdpPacket::seq_t _last_packet_seqno; // sequence number of the last
+                                         // packet in the connection (or 0 if not known)
     uint64_t _total_received;
     NdpPacket::seq_t _highest_seqno;
     int _priority; // this receiver's priority relative to others on same pacer
@@ -361,34 +343,31 @@ class NdpSink : public PacketSink, public DataReceiver {
     double _alpha;
 
     // Mechanism
-    void send_ack(simtime_picosec ts, bool, NdpPacket::seq_t ackno,
-                  NdpPacket::seq_t pacer_no, bool ecn_marked, bool enqueue_pull,
-                  int);
-    void send_nack(simtime_picosec ts, NdpPacket::seq_t ackno,
-                   NdpPacket::seq_t pacer_no, bool enqueue_pull,
+    void send_ack(simtime_picosec ts, bool, NdpPacket::seq_t ackno, NdpPacket::seq_t pacer_no, bool ecn_marked,
+                  bool enqueue_pull, int);
+    void send_nack(simtime_picosec ts, NdpPacket::seq_t ackno, NdpPacket::seq_t pacer_no, bool enqueue_pull,
                    bool ecn_marked, int);
     void permute_paths();
 
     // Path History
     void update_path_history(const NdpPacket &p);
-#define HISTORY_PER_PATH                                                       \
-    1 // how much history to hold - we hold an
-      // average of HISTORY_PER_PATH entries for
-      // each possible path
+#define HISTORY_PER_PATH                                                                                               \
+    1                                   // how much history to hold - we hold an
+                                        // average of HISTORY_PER_PATH entries for
+                                        // each possible path
     vector<ReceiptEvent> _path_history; // this is a bit heavyweight,
                                         // but it will let us
                                         // experiment with different
                                         // algorithms
-    int _path_hist_index; // index of last entry to be added to _path_history
-    int _path_hist_first; // index of oldest entry added to _path_history
+    int _path_hist_index;               // index of last entry to be added to _path_history
+    int _path_hist_first;               // index of oldest entry added to _path_history
     int _no_of_paths;
     uint64_t _ooo;
 };
 
 class NdpPullPacer : public EventSource {
   public:
-    NdpPullPacer(EventList &ev, linkspeed_bps linkspeed,
-                 double pull_rate_modifier);
+    NdpPullPacer(EventList &ev, linkspeed_bps linkspeed, double pull_rate_modifier);
     NdpPullPacer(EventList &ev, char *fn);
     // pull_rate_modifier is the multiplier of link speed used when
     // determining pull rate.  Generally 1 for FatTree, probable 2 for BCube
@@ -410,7 +389,7 @@ class NdpPullPacer : public EventSource {
   private:
     void set_pacerno(Packet *pkt, NdpPull::seq_t pacer_no);
 
-    //#define FIFO_PULL_QUEUE
+    // #define FIFO_PULL_QUEUE
 #define FAIR_PULL_QUEUE
 #ifdef FIFO_PULL_QUEUE
     FifoPullQueue<NdpPull> _pull_queue;
@@ -436,8 +415,7 @@ class NdpPullPacer : public EventSource {
 
 class NdpRTSPacer : public EventSource {
   public:
-    NdpRTSPacer(EventList &ev, linkspeed_bps linkspeed,
-                double pull_rate_modifier);
+    NdpRTSPacer(EventList &ev, linkspeed_bps linkspeed, double pull_rate_modifier);
 
     // pull_rate_modifier is the multiplier of link speed used when
     // determining pull rate.  Generally 1 for FatTree, probable 2 for BCube
@@ -448,7 +426,7 @@ class NdpRTSPacer : public EventSource {
     void enqueue_rts(NdpRTS *pkt);
 
   private:
-    //#define RTS_FIFO_PULL_QUEUE
+    // #define RTS_FIFO_PULL_QUEUE
 
 #ifdef RTS_FIFO_PULL_QUEUE
     FifoPullQueue<NdpRTS> _rts_queue;

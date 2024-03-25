@@ -115,8 +115,8 @@ def main(args):
         temp_df30.drop_duplicates('Time', inplace = True)
         df30 = pd.concat([df30, temp_df30])
 
-    kmin = df30["KMin"].max()
-    kmax = df30["KMax"].max()
+    kmin = df30["KMin"].min()
+    kmax = df30["KMax"].min()
 
     if (len(df30) > 100000):
         ratio = len(df30) / 50000

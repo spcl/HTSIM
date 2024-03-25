@@ -44,6 +44,9 @@ void FatTreeInterDCSwitch::receivePacket(Packet &pkt) {
         return;
     }
 
+    /*  */
+    pkt.previous_switch_id = _id;
+
     /* if (nodename() == "Switch_LowerPod_7" && pkt.size() > 100) {
         printf("Node %s - Pkt %d %d - Packet Received at %lu\n", nodename().c_str(), pkt.from, pkt.id(),
     GLOBAL_TIME/1000); } else if (pkt.size() > 100) { printf("Node %s - Pkt %d %d - Packet Received at %lu\n",
@@ -105,8 +108,8 @@ void FatTreeInterDCSwitch::receivePacket(Packet &pkt) {
 
 void FatTreeInterDCSwitch::addHostPort(int addr, int flowid, PacketSink *transport) {
     Route *rt = new Route();
-    rt->push_back(_ft->queues_nlp_ns[dc_id][_ft->HOST_POD_SWITCH(addr)][addr]);
-    rt->push_back(_ft->pipes_nlp_ns[dc_id][_ft->HOST_POD_SWITCH(addr)][addr]);
+    rt->push_back(_ft->queues_nlp_ns[dc_id][_ft->HOST_POD_SWITCH(addr)][addr][0]);
+    rt->push_back(_ft->pipes_nlp_ns[dc_id][_ft->HOST_POD_SWITCH(addr)][addr][0]);
     rt->push_back(transport);
     _fib->addHostRoute(addr, rt, flowid);
 }
@@ -314,6 +317,10 @@ double FatTreeInterDCSwitch::_ecn_threshold_fraction = 1.0;
 int8_t (*FatTreeInterDCSwitch::fn)(FibEntry *, FibEntry *) = &FatTreeInterDCSwitch::compare_queuesize;
 
 Route *FatTreeInterDCSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
+
+    /* if (pkt.is_bts_pkt && pkt.id() == 356350 && pkt.from == 1) {
+        printf("Get Next Hop BTS - %s - DC %d - Switch ID %d\n", nodename().c_str(), dc_id, id);
+    } */
     vector<FibEntry *> *available_hops = _fib->getRoutes(pkt.dst());
 
     if (available_hops) {
@@ -448,27 +455,31 @@ Route *FatTreeInterDCSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 uint32_t podid, agg_min, agg_max;
 
                 if (_ft->get_tiers() == 3) {
-                    podid = 2 * _id / _ft->getK();
-                    agg_min = _ft->MIN_POD_ID(podid);
-                    agg_max = _ft->MAX_POD_ID(podid);
+                    podid = _id / _ft->tor_switches_per_pod();
+                    agg_min = _ft->MIN_POD_AGG_SWITCH(podid);
+                    agg_max = _ft->MAX_POD_AGG_SWITCH(podid);
                 } else {
                     agg_min = 0;
                     agg_max = _ft->getNAGG() - 1;
                 }
 
                 for (uint32_t k = agg_min; k <= agg_max; k++) {
-                    Route *r = new Route();
-                    r->push_back(_ft->queues_nlp_nup[dc_id][_id][k]);
-                    r->push_back(_ft->pipes_nlp_nup[dc_id][_id][k]);
-                    r->push_back(_ft->queues_nlp_nup[dc_id][_id][k]->getRemoteEndpoint());
-                    _fib->addRoute(pkt.dst(), r, 1, UP);
+                    for (uint32_t b = 0; b < _ft->bundlesize(AGG_TIER); b++) {
+                        Route *r = new Route();
+                        r->push_back(_ft->queues_nlp_nup[dc_id][_id][k][b]);
+                        assert(((BaseQueue *)r->at(0))->getSwitch() == this);
+
+                        r->push_back(_ft->pipes_nlp_nup[dc_id][_id][k][b]);
+                        r->push_back(_ft->queues_nlp_nup[dc_id][_id][k][b]->getRemoteEndpoint());
+                        _fib->addRoute(pkt.dst(), r, 1, UP);
+                    }
                 }
                 _uproutes = _fib->getRoutes(pkt.dst());
                 permute_paths(_uproutes);
             }
         }
     } else if (_type == AGG) {
-        if (_ft->get_tiers() == 2 || (_ft->HOST_POD(pkt.dst() % _ft->no_of_nodes()) == 2 * _id / _ft->getK() &&
+        if (_ft->get_tiers() == 2 || (_ft->HOST_POD(pkt.dst() % _ft->no_of_nodes()) == _ft->AGG_SWITCH_POD_ID(_id) &&
                                       dc_id == _ft->get_dc_id(pkt.dst()))) {
             /* printf("AGG - PACKET %d@%d@%d DOWN - DC ID %d - TOT DC %d\n",
                    pkt.id(), pkt.from, pkt.size(), dc_id,
@@ -476,12 +487,16 @@ Route *FatTreeInterDCSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
             // must go down!
             // target NLP id is 2 * pkt.dst()/K
             uint32_t target_tor = _ft->HOST_POD_SWITCH(pkt.dst() % _ft->no_of_nodes());
-            Route *r = new Route();
-            r->push_back(_ft->queues_nup_nlp[dc_id][_id][target_tor]);
-            r->push_back(_ft->pipes_nup_nlp[dc_id][_id][target_tor]);
-            r->push_back(_ft->queues_nup_nlp[dc_id][_id][target_tor]->getRemoteEndpoint());
+            for (uint32_t b = 0; b < _ft->bundlesize(AGG_TIER); b++) {
+                Route *r = new Route();
+                r->push_back(_ft->queues_nup_nlp[dc_id][_id][target_tor][b]);
+                assert(((BaseQueue *)r->at(0))->getSwitch() == this);
 
-            _fib->addRoute(pkt.dst(), r, 1, DOWN);
+                r->push_back(_ft->pipes_nup_nlp[dc_id][_id][target_tor][b]);
+                r->push_back(_ft->queues_nup_nlp[dc_id][_id][target_tor][b]->getRemoteEndpoint());
+
+                _fib->addRoute(pkt.dst(), r, 1, DOWN);
+            }
         } else {
             /* printf("AGG - PACKET %d@%d@%d UP - DC ID %d - TOT DC %d\n",
                    pkt.id(), pkt.from, pkt.size(), dc_id,
@@ -491,75 +506,47 @@ Route *FatTreeInterDCSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
             if (_uproutes)
                 _fib->setRoutes(pkt.dst() % _ft->no_of_nodes(), _uproutes);
             else {
-                uint32_t podpos = _id % (_ft->getK() / 2);
+                uint32_t podpos = _id % _ft->agg_switches_per_pod();
+                uint32_t uplink_bundles = _ft->radix_up(AGG_TIER) / _ft->bundlesize(CORE_TIER);
 
-                for (uint32_t l = 0; l < _ft->getK() / 2 / _ft->getOS(); l++) {
-                    uint32_t k = (podpos * _ft->getK() / 2 + l) / _ft->getOS();
+                for (uint32_t l = 0; l < uplink_bundles; l++) {
+                    uint32_t core = l * _ft->agg_switches_per_pod() + podpos;
+                    for (uint32_t b = 0; b < _ft->bundlesize(CORE_TIER); b++) {
+                        Route *r = new Route();
+                        r->push_back(_ft->queues_nup_nc[dc_id][_id][core][b]);
+                        assert(((BaseQueue *)r->at(0))->getSwitch() == this);
 
-                    uint32_t next_upper_pod = _ft->MIN_POD_ID(_ft->HOST_POD(pkt.dst() % _ft->no_of_nodes())) +
-                                              2 * k / (_ft->getK() / _ft->getOS());
+                        r->push_back(_ft->pipes_nup_nc[dc_id][_id][core][b]);
+                        r->push_back(_ft->queues_nup_nc[dc_id][_id][core][b]->getRemoteEndpoint());
 
-                    /*printf("Dest %d - FTK %d - k %d - HOSTPOD %d - %d - ID %d
-                    "
-                           "- PoDPos %d -------- %d -> %d\n",
-                           pkt.dst(), _ft->getK(), k, _ft->HOST_POD(pkt.dst()),
-                           pkt.size(), _id, podpos, (_ft->HOST_POD(pkt.dst())),
-                           _ft->MIN_POD_ID(_ft->HOST_POD(pkt.dst())));
-                    printf("1) ID %d - K %d  2) k %d Next Upper %d\n\n", _id, k,
-                           k, next_upper_pod);
-                    fflush(stdout);*/
-
-                    if (_ft->queues_nup_nc[dc_id][_id][k] == NULL ||
-                        _ft->queues_nc_nup[dc_id][k][next_upper_pod] == NULL) {
-                        // failed link, continue to next one. !
-                        cout << "Skipping path with failed link AGG" << _id << "-CORE" << k << "("
-                             << (_ft->queues_nup_nc[dc_id][_id][k] == NULL ? "FAILED)" : " OK)");
-                        cout << " CORE" << k << "-AGG" << next_upper_pod << "("
-                             << (_ft->queues_nc_nup[dc_id][k][next_upper_pod] == NULL ? "FAILED)" : "OK)") << endl;
-                        continue;
+                        _fib->addRoute(pkt.dst(), r, 1, UP);
                     }
-
-                    Route *r = new Route();
-                    r->push_back(_ft->queues_nup_nc[dc_id][_id][k]);
-                    r->push_back(_ft->pipes_nup_nc[dc_id][_id][k]);
-                    r->push_back(_ft->queues_nup_nc[dc_id][_id][k]->getRemoteEndpoint());
-
-                    /*
-                      FatTreeInterDCSwitch* next =
-                      (FatTreeInterDCSwitch*)_ft->queues_nup_nc[_id][k]->getRemoteEndpoint();
-                      assert (next->getType()==CORE && next->getID() == k);
-                    */
-
-                    _fib->addRoute(pkt.dst(), r, 1, UP);
-
-                    // cout << "AGG switch " << _id << " adding route to " <<
-                    // pkt.dst() << " via CORE " << k << endl;
                 }
-                //_uproutes = _fib->getRoutes(pkt.dst());
                 permute_paths(_fib->getRoutes(pkt.dst()));
             }
         }
     } else if (_type == CORE) {
         if (dc_id == _ft->get_dc_id(pkt.dst())) {
-            uint32_t nup = _ft->MIN_POD_ID(_ft->HOST_POD(pkt.dst() % _ft->no_of_nodes())) +
-                           2 * _id / (_ft->getK() / _ft->getOS());
-            Route *r = new Route();
-            /* printf("CORE - PACKET %d@%d@%d DOWN - DC ID %d - TOT DC %d\n",
-                   pkt.id(), pkt.from, pkt.size(), dc_id,
-                   _ft->no_of_border_switches()); */
+            uint32_t nup = _ft->MIN_POD_AGG_SWITCH(_ft->HOST_POD(pkt.dst() % _ft->no_of_nodes())) +
+                           (_id % _ft->agg_switches_per_pod());
+            for (uint32_t b = 0; b < _ft->bundlesize(CORE_TIER); b++) {
+                Route *r = new Route();
 
-            assert(_ft->queues_nc_nup[dc_id][_id][nup]);
-            r->push_back(_ft->queues_nc_nup[dc_id][_id][nup]);
-            assert(_ft->pipes_nc_nup[dc_id][_id][nup]);
-            r->push_back(_ft->pipes_nc_nup[dc_id][_id][nup]);
+                /* printf("Queue params are %d %d %d %d\n", dc_id, _id, nup, b);
+                fflush(stdout); */
 
-            r->push_back(_ft->queues_nc_nup[dc_id][_id][nup]->getRemoteEndpoint());
-            _fib->addRoute(pkt.dst(), r, 1, DOWN);
+                assert(_ft->queues_nc_nup[dc_id][_id][nup][b]);
+                r->push_back(_ft->queues_nc_nup[dc_id][_id][nup][b]);
+                assert(((BaseQueue *)r->at(0))->getSwitch() == this);
+
+                assert(_ft->pipes_nc_nup[dc_id][_id][nup][b]);
+                r->push_back(_ft->pipes_nc_nup[dc_id][_id][nup][b]);
+
+                r->push_back(_ft->queues_nc_nup[dc_id][_id][nup][b]->getRemoteEndpoint());
+                _fib->addRoute(pkt.dst(), r, 1, DOWN);
+            }
         } else {
-            /* printf("CORE - PACKET %d@%d@%d UP - DC ID %d - TOT DC %d\n",
-                   pkt.id(), pkt.from, pkt.size(), dc_id,
-                   _ft->no_of_border_switches());
-            fflush(stdout); */
+
             // route packet up!
             if (_uproutes)
                 _fib->setRoutes(pkt.dst(), _uproutes);
@@ -586,19 +573,10 @@ Route *FatTreeInterDCSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                    "%d\n",
                    pkt.id(), pkt.from, pkt.to, pkt.dst(), dc_id,
                    _ft->no_of_border_switches()); */
-            uint32_t nup = _ft->MIN_POD_ID(_ft->HOST_POD(pkt.dst() % _ft->no_of_nodes())) +
-                           2 * _id / (_ft->getK() / _ft->getOS());
-
-            nup = (pkt.dst() / _ft->no_of_pods()) % _ft->no_of_cores();
 
             for (int nup = 0; nup < _ft->no_of_cores(); nup++) {
                 for (int link_id = 0; link_id < _ft->no_of_links_core_to_same_border(); link_id++) {
                     Route *r = new Route();
-
-                    /* printf("DC ID %d - ID %d - NUP %d - LINK ID %d\n", dc_id,
-                           _id, nup, link_id);
-                    fflush(stdout); */
-
                     r->push_back(_ft->queues_nborder_nc[dc_id][_id][nup][link_id]);
                     r->push_back(_ft->pipes_nborder_nc[dc_id][_id][nup][link_id]);
                     r->push_back(_ft->queues_nborder_nc[dc_id][_id][nup][link_id]->getRemoteEndpoint());
