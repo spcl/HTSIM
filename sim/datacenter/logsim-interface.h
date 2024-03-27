@@ -6,6 +6,7 @@
 #include "eventlist.h"
 #include "fat_tree_interdc_topology.h"
 #include "fat_tree_topology.h"
+#include "dragonfly_topology.h"
 #include "lgs/logsim.h"
 #include "uec.h"
 #include "uec_drop.h"
@@ -49,6 +50,8 @@ class LogSimInterface {
     LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger,
                     EventList &eventList, FatTreeInterDCTopology *,
                     std::vector<const Route *> ***);
+    LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList, DragonflyTopology *topo,
+                    std::vector<const Route *> ***routes);
     std::unordered_map<std::string, MsgInfo> active_sends;
     int compute_started = 0;
     std::unordered_map<std::string, UecSrc *> connection_log;
@@ -92,6 +95,7 @@ class LogSimInterface {
     EventList *_eventlist;
     FatTreeTopology *_topo = NULL;
     FatTreeInterDCTopology *_topo_inter_dc = NULL;
+    DragonflyTopology *_topo_df = NULL;
     std::vector<const Route *> ***_netPaths;
     int _cwd;
     ComputeEvent *compute_events_handler;

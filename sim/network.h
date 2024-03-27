@@ -43,6 +43,12 @@ class PacketFlow : public Logged {
     TrafficLogger *_logger;
 };
 
+enum TopologyCase {
+    FAT_TREE_CASE,
+    FAT_TREE_DC_CASE,
+    DRAGONFLY_CASE
+};
+
 enum RouteStrategy {
     NOT_SET,
     SINGLE_PATH,

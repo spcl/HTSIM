@@ -307,6 +307,18 @@ int main(int argc, char **argv) {
             COMPOSITE, hop_latency, switch_latency);
 #endif
 
+#ifdef DRAGONFLY
+    /*
+    sth like this
+    FatTreeTopology *top = new FatTreeTopology(
+            no_of_nodes, linkspeed, queuesize, NULL, &eventlist, NULL,
+            COMPOSITE, hop_latency, switch_latency);
+    */
+   DragonflyTopology *top = new DragonflyTopology(
+            no_of_nodes, linkspeed, queuesize, NULL, &eventlist, NULL,
+            COMPOSITE, hop_latency, switch_latency);
+#endif
+
 #ifdef OV_FAT_TREE
     OversubscribedFatTreeTopology *top =
             new OversubscribedFatTreeTopology(lf, &eventlist, ff);

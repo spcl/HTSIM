@@ -497,7 +497,7 @@ void FatTreeInterDCTopology::init_network() {
     }
 
     for (int i = 0; i < number_datacenters; i++) {
-        for (uint32_t j = 0; j < number_border_switches; j++) {
+        for (uint32_t j = 0; j < (uint32_t)number_border_switches; j++) {
             for (uint32_t k = 0; k < NCORE; k++) {
                 for (uint32_t p = 0; p < _num_links_same_border_from_core;
                      p++) {
@@ -510,8 +510,8 @@ void FatTreeInterDCTopology::init_network() {
         }
     }
 
-    for (uint32_t j = 0; j < number_border_switches; j++) {
-        for (uint32_t k = 0; k < number_border_switches; k++) {
+    for (uint32_t j = 0; j < (uint32_t)number_border_switches; j++) {
+        for (uint32_t k = 0; k < (uint32_t)number_border_switches; k++) {
             for (uint32_t p = 0; p < _num_links_between_borders; p++) {
                 queues_nborderl_nborderu[j][k][p] = NULL;
                 pipes_nborderl_nborderu[j][k][p] = NULL;
@@ -564,7 +564,7 @@ void FatTreeInterDCTopology::init_network() {
                     *_eventlist, "Switch_Core_" + ntoa(j),
                     FatTreeInterDCSwitch::CORE, j, _switch_latency, this, i);
         }
-        for (uint32_t j = 0; j < number_border_switches; j++) {
+        for (uint32_t j = 0; j < (uint32_t)number_border_switches; j++) {
             switches_border[i][j] = new FatTreeInterDCSwitch(
                     *_eventlist, "Switch_Border_" + ntoa(j),
                     FatTreeInterDCSwitch::BORDER, j, _switch_latency, this, i);
@@ -842,12 +842,12 @@ void FatTreeInterDCTopology::init_network() {
     // Core to Border
     for (int i = 0; i < number_datacenters; i++) {
         for (uint32_t core = 0; core < NCORE; core++) {
-            uint32_t uplink_numbers = number_border_switches;
-            for (uint32_t border_sw = 0; border_sw < number_border_switches;
+            //uint32_t uplink_numbers = number_border_switches;
+            for (uint32_t border_sw = 0; border_sw < (uint32_t)number_border_switches;
                  border_sw++) {
 
                 for (int link_num = 0;
-                     link_num < _num_links_same_border_from_core; link_num++) {
+                     (uint32_t)link_num < _num_links_same_border_from_core; link_num++) {
 
                     // UpLinks Queues and Pipes
                     queues_nc_nborder[i][core][border_sw][link_num] =
@@ -915,10 +915,10 @@ void FatTreeInterDCTopology::init_network() {
     }
 
     // Between border switches
-    for (uint32_t border_l = 0; border_l < number_border_switches; border_l++) {
-        for (uint32_t border_u = 0; border_u < number_border_switches;
+    for (uint32_t border_l = 0; border_l < (uint32_t)number_border_switches; border_l++) {
+        for (uint32_t border_u = 0; border_u < (uint32_t)number_border_switches;
              border_u++) {
-            for (int link_num = 0; link_num < _num_links_between_borders;
+            for (int link_num = 0; (uint32_t)link_num < _num_links_between_borders;
                  link_num++) {
 
                 // UpLinks Queues and Pipes
@@ -993,7 +993,7 @@ void FatTreeInterDCTopology::count_queue(Queue *queue) {
 }
 
 int FatTreeInterDCTopology::get_dc_id(int node) {
-    if (node < NSRV) {
+    if ((uint32_t)node < NSRV) {
         return 0;
     } else {
         return 1;

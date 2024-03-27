@@ -614,11 +614,11 @@ Route *FatTreeInterDCSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
             if (_uproutes)
                 _fib->setRoutes(pkt.dst(), _uproutes);
             else {
-                uint32_t podid, agg_min, agg_max;
+                //uint32_t podid, agg_min, agg_max;
 
                 for (uint32_t k = 0; k < _ft->no_of_border_switches(); k++) {
                     for (int link_id = 0;
-                         link_id < _ft->no_of_links_core_to_same_border();
+                         (uint32_t)link_id < _ft->no_of_links_core_to_same_border();
                          link_id++) {
                         Route *r = new Route();
                         r->push_back(
@@ -642,15 +642,15 @@ Route *FatTreeInterDCSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                    "%d\n",
                    pkt.id(), pkt.from, pkt.to, pkt.dst(), dc_id,
                    _ft->no_of_border_switches()); */
-            uint32_t nup = _ft->MIN_POD_ID(_ft->HOST_POD(pkt.dst() %
+            /* uint32_t nup = _ft->MIN_POD_ID(_ft->HOST_POD(pkt.dst() %
                                                          _ft->no_of_nodes())) +
                            2 * _id / (_ft->getK() / _ft->getOS());
 
-            nup = (pkt.dst() / _ft->no_of_pods()) % _ft->no_of_cores();
+            nup = (pkt.dst() / _ft->no_of_pods()) % _ft->no_of_cores(); */
 
-            for (int nup = 0; nup < _ft->no_of_cores(); nup++) {
+            for (int nup = 0; (uint32_t)nup < _ft->no_of_cores(); nup++) {
                 for (int link_id = 0;
-                     link_id < _ft->no_of_links_core_to_same_border();
+                     (uint32_t)link_id < _ft->no_of_links_core_to_same_border();
                      link_id++) {
                     Route *r = new Route();
 

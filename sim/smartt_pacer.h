@@ -2,6 +2,12 @@
 #include "eventlist.h"
 
 class SmarttPacer : public EventSource {
+    private:
+    UecSrc *flow;
+    simtime_picosec _last_send; // when the last packet was sent (always set,
+                                // even when we're not pacing)
+    simtime_picosec _next_send; // when the next scheduled packet should be sent
+
   public:
     SmarttPacer(EventList &eventlist, UecSrc &flow);
     bool is_pending() const {
@@ -14,10 +20,4 @@ class SmarttPacer : public EventSource {
     void cancel();
     simtime_picosec _interpacket_delay; // the interpacket delay, or zero if
                                         // we're not pacing
-
-  private:
-    UecSrc *flow;
-    simtime_picosec _last_send; // when the last packet was sent (always set,
-                                // even when we're not pacing)
-    simtime_picosec _next_send; // when the next scheduled packet should be sent
 };

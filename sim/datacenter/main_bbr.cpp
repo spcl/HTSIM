@@ -124,19 +124,19 @@ int main(int argc, char **argv) {
     int ratio_os_stage_1 = 1;
     bool log_tor_downqueue = false;
     bool log_tor_upqueue = false;
-    bool log_switches = false;
+    //bool log_switches = false;
     bool log_queue_usage = false;
     double explicit_starting_cwnd = 0;
     bool use_exp_avg_rtt = false;
     bool use_exp_avg_ecn = false;
-    bool use_reps = false;
+    //bool use_reps = false;
     bool ecn = false;
     mem_b ecn_low = 0, ecn_high = 0;
     char *topo_file = NULL;
     int end_time = 1000; // in microseconds
     bool topology_normal = true;
     uint64_t interdc_delay = 0;
-    uint64_t max_queue_size = 0;
+    //uint64_t max_queue_size = 0;
 
     int i = 1;
     filename << "logout.dat";
@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-explicit_starting_cwnd_bonus")) {
             explicit_starting_cwnd = std::stod(argv[i + 1]);
-            printf("StartingWindowForcedBonus: %d\n", explicit_starting_cwnd);
+            printf("StartingWindowForcedBonus: %f\n", explicit_starting_cwnd);
             i++;
         } else if (!strcmp(argv[i], "-end")) {
             end_time = atoi(argv[i + 1]);
@@ -373,10 +373,10 @@ int main(int argc, char **argv) {
             interdc_delay = atoi(argv[i + 1]);
             interdc_delay *= 1000;
             i++;
-        } else if (!strcmp(argv[i], "-max_queue_size")) {
+        } /* else if (!strcmp(argv[i], "-max_queue_size")) {
             max_queue_size = atoi(argv[i + 1]);
             i++;
-        } else if (!strcmp(argv[i], "-topology")) {
+        } */ else if (!strcmp(argv[i], "-topology")) {
             if (!strcmp(argv[i + 1], "normal")) {
                 topology_normal = true;
             } else if (!strcmp(argv[i + 1], "interdc")) {
@@ -484,7 +484,7 @@ int main(int argc, char **argv) {
     BBRSrc *BBR_Src;
     BBRSink *uecSnk;
 
-    Route *routeout, *routein;
+    // Route *routeout, *routein;
 
     QueueLoggerFactory *qlf = 0;
     if (log_tor_downqueue || log_tor_upqueue) {
@@ -512,7 +512,7 @@ int main(int argc, char **argv) {
         conns->load(cin);
     }
 
-    if (conns->N != no_of_nodes && no_of_nodes != 0) {
+    if (conns->N != (uint32_t)no_of_nodes && no_of_nodes != 0) {
         cout << "Connection matrix numbefr of nodes is " << conns->N
              << " while I am using " << no_of_nodes << endl;
         //exit(-1);

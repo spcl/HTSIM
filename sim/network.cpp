@@ -71,6 +71,7 @@ PacketSink *Packet::sendOn() {
             // printf("Bounced\n");
             _nexthop++;
         } else {
+            printf("_nexthop: %u;\n_route->size(): %lu;\n", _nexthop, _route->size());
             assert(_nexthop < _route->size());
 
             nextsink = _route->at(_nexthop);

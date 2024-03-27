@@ -569,8 +569,8 @@ void BBRSrc::updateParams() {
            "Size %lu - Hops %d - Stop Pacing "
            "%lu\n",
            LINK_DELAY_MODERN, _interdc_delay / 1000, LINK_SPEED_MODERN,
-           PKT_SIZE_MODERN, _base_rtt, _target_rtt, 1, _bdp,
-           _cwnd, 1, _hop_count, 1);
+           PKT_SIZE_MODERN, _base_rtt, _target_rtt, 1lu, _bdp,
+           _cwnd, 1lu, _hop_count, 1lu);
     fflush(stdout);
     _max_good_entropies = 10; // TODO: experimental value
     _enableDistanceBasedRtx = false;
@@ -1332,7 +1332,7 @@ void BBRSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
     if (t_last_decrease == 0) {
         t_last_decrease = eventlist().now();
     }
-    bool time_enough = (eventlist().now() - t_last_decrease) > _base_rtt;
+    //bool time_enough = (eventlist().now() - t_last_decrease) > _base_rtt;
 
     if (count_received < ignore_for && ecn) {
         return;

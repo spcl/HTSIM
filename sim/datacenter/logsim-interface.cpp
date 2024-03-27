@@ -63,6 +63,22 @@ LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger, Ev
     printf("Running InterDC\n");
 }
 
+LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList,
+                                 DragonflyTopology *topo, std::vector<const Route *> ***routes) {
+    _logger = logger;
+    _flow = pktLogger;
+    _eventlist = &eventList;
+    _topo_df = topo;
+    _netPaths = routes;
+    _latest_recv = new graph_node_properties();
+    if (compute_events_handler == NULL) {
+        compute_events_handler = new ComputeEvent(_logger, *_eventlist);
+        compute_events_handler->set_compute_over_hook(
+                std::bind(&LogSimInterface::compute_over, this, std::placeholders::_1));
+    }
+    printf("Running Dragonfly.\n");
+}
+
 void LogSimInterface::set_cwd(int cwd) { _cwd = cwd; }
 
 void LogSimInterface::htsim_schedule(u_int32_t host, int to, int size, int tag, u_int64_t start_time_event,
@@ -751,7 +767,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
     // printf("Initial AQ Size is %d\n\n", aq.size());
 
     // bool new_events = true;
-    bool first_cycle = true;
+    //bool first_cycle = true;
     // uint lastperc = 0;
     int cycles = 0;
 
@@ -769,7 +785,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                aq.empty(), aq.top().time, lgs_interface->htsim_time, 1, first_cycle, size_queue(rq, p),
                size_queue(uq, p), aq.size(), aq.top().host, aq.top().target, aq.top().tag); */
 
-        graph_node_properties temp_elem = aq.top();
+        //graph_node_properties temp_elem = aq.top();
 
         while (!aq.empty() && aq.top().time <= (lgs_interface->htsim_time)) {
             /* printf("Active Queue Size %d - Top Time %lu Type %d - HTSIM Time "
@@ -1175,7 +1191,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
             /* printf("..... NOT Received a MSG\n"); */
         }
 
-        first_cycle = false;
+        //first_cycle = false;
         cycles++;
 
         /* printf("----------------------------    LEAVING TOP WHILE        // "

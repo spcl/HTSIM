@@ -130,12 +130,12 @@ int main(int argc, char **argv) {
     bool disable_case_3 = false;
     int ratio_os_stage_1 = 1;
     bool use_mixed = false;
-    int jump_to = 0;
-    int stop_pacing_after_rtt = 0;
+    //int jump_to = 0;
+    //int stop_pacing_after_rtt = 0;
     int num_failed_links = 0;
     int reaction_delay = 0;
-    int do_pacing = 0;
-    int do_early_termination = 0;
+    //int do_pacing = 0;
+    //int do_early_termination = 0;
 
     int i = 1;
     filename << "logout.dat";
@@ -265,10 +265,10 @@ int main(int argc, char **argv) {
             UecDropSrc::set_use_mixed(use_mixed);
             printf("UseMixed: %d\n", use_mixed);
             i++;
-        } else if (!strcmp(argv[i], "-jump_to")) {
+        } /* else if (!strcmp(argv[i], "-jump_to")) {
             UecSrc::jump_to = atoi(argv[i + 1]);
             i++;
-        } else if (!strcmp(argv[i], "-num_failed_links")) {
+        } */ else if (!strcmp(argv[i], "-num_failed_links")) {
             num_failed_links = atoi(argv[i + 1]);
             FatTreeTopology::set_failed_links(num_failed_links);
             i++;

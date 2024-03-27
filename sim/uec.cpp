@@ -602,7 +602,7 @@ void UecSrc::quick_adapt(bool trimmed) {
                      (eventlist().now() - previous_window_end + _base_rtt));*/
 
             // Update window and ignore count
-            printf("Before Update Saved CWD is %lu \n", saved_acked_bytes);
+            printf("Before Update Saved CWD is %u \n", saved_acked_bytes);
             if (send_size <= _bdp) {
                 // saved_acked_bytes =
                 //         saved_acked_bytes * (_bdp / (double)send_size);
@@ -613,7 +613,7 @@ void UecSrc::quick_adapt(bool trimmed) {
                         (double)_mss); // 1.5 is the amount of target_rtt over
                                        // base_rtt. Simplified here for this
                                        // code share.
-            printf("After Update Saved CWD is %lu \n", _cwnd);
+            printf("After Update Saved CWD is %u \n", _cwnd);
 
             if (eventlist().now() < _base_rtt * 5 && jump_to != 0) {
                 int coin = rand() % 2;
@@ -839,7 +839,7 @@ int UecSrc::choose_route() {
     case ECMP_RANDOM2_ECN: {
 
         if (false) {
-            uint64_t allpathssizes = _mss * _paths.size();
+            //uint64_t allpathssizes = _mss * _paths.size();
             if (_highest_sent < max(_maxcwnd, (uint64_t)1)) {
                 curr_entropy++;
                 _crt_path++;
@@ -857,7 +857,7 @@ int UecSrc::choose_route() {
             }
             break;
         } else {
-            uint64_t allpathssizes = _mss * _paths.size();
+            //uint64_t allpathssizes = _mss * _paths.size();
             if (_highest_sent < max(_maxcwnd, (uint64_t)1)) {
                 /*printf("Trying this for %d // Highest Sent %d - cwnd %d - "
                        "allpathsize %d\n",
@@ -1305,7 +1305,7 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
             if (t_last_decrease == 0) {
                 t_last_decrease = eventlist().now();
             }
-            bool time_enough = (eventlist().now() - t_last_decrease) > _base_rtt;
+            //bool time_enough = (eventlist().now() - t_last_decrease) > _base_rtt;
 
             if (count_received < ignore_for && ecn) {
                 return;
@@ -1401,18 +1401,18 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
                 // 4 cases
                 if (current_ecn_rate >= 30) {
                     if (current_ecn_rate >= previous_ecn_rate) {
-                        printf("Flow2 %d %u - Above 30 - Decrease - Current Rate %f vs %f - Scaling %f\n", from,
+                        printf("Flow2 %d %lu - Above 30 - Decrease - Current Rate %f vs %f - Scaling %f\n", from,
                                GLOBAL_TIME / 1000, current_ecn_rate, previous_ecn_rate, scaling_factor);
                     } else {
-                        printf("Flow2 %d %u - Above 30 - Increase - Current Rate %f vs %f - Scaling %f\n", from,
+                        printf("Flow2 %d %lu - Above 30 - Increase - Current Rate %f vs %f - Scaling %f\n", from,
                                GLOBAL_TIME / 1000, current_ecn_rate, previous_ecn_rate, scaling_factor);
                     }
                 } else {
                     if (current_ecn_rate >= previous_ecn_rate) {
-                        printf("Flow2 %d %u - Below 30 - Decrease - Current Rate %f vs %f - Scaling %f\n", from,
+                        printf("Flow2 %d %lu - Below 30 - Decrease - Current Rate %f vs %f - Scaling %f\n", from,
                                GLOBAL_TIME / 1000, current_ecn_rate, previous_ecn_rate, scaling_factor);
                     } else {
-                        printf("Flow2 %d %u - Below 30 - Increase - Current Rate %f vs %f - Scaling %f\n", from,
+                        printf("Flow2 %d %lu - Below 30 - Increase - Current Rate %f vs %f - Scaling %f\n", from,
                                GLOBAL_TIME / 1000, current_ecn_rate, previous_ecn_rate, scaling_factor);
                     }
                 }

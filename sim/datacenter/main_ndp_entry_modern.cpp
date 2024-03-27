@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
     int flowsize = -1;
     bool topology_normal = true;
     uint64_t interdc_delay = 0;
-    uint64_t max_queue_size = 0;
+    //uint64_t max_queue_size = 0;
 
     int i = 1;
     filename << "logout.dat";
@@ -131,10 +131,10 @@ int main(int argc, char **argv) {
             interdc_delay = atoi(argv[i + 1]);
             interdc_delay *= 1000;
             i++;
-        } else if (!strcmp(argv[i], "-max_queue_size")) {
+        } /* else if (!strcmp(argv[i], "-max_queue_size")) {
             max_queue_size = atoi(argv[i + 1]);
             i++;
-        }else if (!strcmp(argv[i], "-number_entropies")) {
+        } */ else if (!strcmp(argv[i], "-number_entropies")) {
             number_entropies = atoi(argv[i + 1]);
             i++;
         } else if (!strcmp(argv[i], "-kmax")) {
