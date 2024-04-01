@@ -24,7 +24,7 @@ bool CompositeQueue::use_bts = false;
 
 CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize, EventList &eventlist, QueueLogger *logger)
         : Queue(bitrate, maxsize, eventlist, logger) {
-    _ratio_high = 100;
+    _ratio_high = 20;
     _ratio_low = 1;
     _crt = 0;
     _num_headers = 0;
@@ -100,7 +100,7 @@ void CompositeQueue::beginService() {
 bool CompositeQueue::decide_ECN() {
 
     // ECN mark on deque
-    if (_use_both_queues) {
+    if (_use_both_queues && _use_phantom) {
 
         // printf("Using both Queues - Size Real %lu\n", _maxsize);
 
@@ -115,7 +115,7 @@ bool CompositeQueue::decide_ECN() {
 
             if ((uint64_t)random() < p) {
                 real_queue_ecn = true;
-                printf("Using both Queues2 - Size Real %lu\n", _maxsize);
+                /* printf("Using both Queues2 - Size Real %lu\n", _maxsize); */
             }
         }
 
@@ -349,8 +349,8 @@ void CompositeQueue::receivePacket(Packet &pkt) {
                 std::ofstream MyFile(file_name, std::ios_base::app);
 
                 MyFile << eventlist().now() / 1000 << "," << int(_current_queuesize_phatom * 8 / (_bitrate / 1e9)) / (1)
-                       << "," << int((_phantom_queue_size / 100 * 40) * 8 / (_bitrate / 1e9)) / (1) << ","
-                       << int((_phantom_queue_size / 100 * 70) * 8 / (_bitrate / 1e9)) / (1) << std::endl;
+                       << "," << int((_phantom_queue_size / 100 * _kmin_from_input) * 8 / (_bitrate / 1e9)) / (1) << ","
+                       << int((_phantom_queue_size / 100 * _kmax_from_input) * 8 / (_bitrate / 1e9)) / (1) << std::endl;
 
                 MyFile.close();
             }

@@ -84,7 +84,7 @@ void print_path(std::ofstream &paths, const Route *rt) {
 int main(int argc, char **argv) {
     Packet::set_packet_size(PKT_SIZE_MODERN);
     // eventlist.setEndtime(timeFromSec(1));
-    Clock c(timeFromSec(50 / 100.), eventlist);
+    Clock c(timeFromSec(100 / 100.), eventlist);
     mem_b queuesize = INFINITE_BUFFER_SIZE;
     int no_of_conns = 0, cwnd = MAX_CWD_MODERN_UEC, no_of_nodes = DEFAULT_NODES;
     stringstream filename(ios_base::out);
@@ -159,6 +159,8 @@ int main(int argc, char **argv) {
     bool topology_normal = true;
     uint64_t interdc_delay = 0;
     uint64_t max_queue_size = 0;
+    double def_end_time = 0.1;
+    int num_periods = 1;
 
     int i = 1;
     filename << "logout.dat";
@@ -250,6 +252,10 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-reuse_entropy")) {
             reuse_entropy = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-num_periods")) {
+            num_periods = atoi(argv[i + 1]);
+            UecSrc::set_frequency(num_periods);
             i++;
         } else if (!strcmp(argv[i], "-disable_case_3")) {
             disable_case_3 = atoi(argv[i + 1]);
@@ -408,6 +414,10 @@ int main(int argc, char **argv) {
             z_gain = std::stod(argv[i + 1]);
             UecSrc::set_z_gain(z_gain);
             printf("ZGain: %f\n", z_gain);
+            i++;
+        } else if (!strcmp(argv[i], "-end_time")) {
+            def_end_time = std::stod(argv[i + 1]);
+            printf("def_end_time: %f\n", def_end_time);
             i++;
         } else if (!strcmp(argv[i], "-w_gain")) {
             w_gain = std::stod(argv[i + 1]);
@@ -769,7 +779,7 @@ int main(int argc, char **argv) {
 
     if (tm_file != NULL) {
 
-        eventlist.setEndtime(timeFromSec(1));
+        eventlist.setEndtime(timeFromSec(def_end_time));
 
         FatTreeInterDCTopology *top_dc = NULL;
         FatTreeTopology *top = NULL;
@@ -952,7 +962,10 @@ int main(int argc, char **argv) {
                 }
 
                 uecSrc->from = src;
+                uecSrc->to = dest;
+                uecSnk->from = src;
                 uecSnk->to = dest;
+                printf("Creating2 Flow from %d to %d\n", uecSrc->from, uecSrc->to);
                 uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
                 uecSrc->set_paths(number_entropies);
                 uecSnk->set_paths(number_entropies);

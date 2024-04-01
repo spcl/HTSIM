@@ -5,6 +5,8 @@
 #include "clock.h"
 #include "compositequeue.h"
 #include "connection_matrix.h"
+#include "fat_tree_interdc_topology.h"
+
 #include "eventlist.h"
 #include "firstfit.h"
 #include "logfile.h"
@@ -33,15 +35,14 @@
 #define PERIODIC 0
 #include "main.h"
 
-uint32_t RTT =
-        1; // this is per link delay in us; identical RTT microseconds = 0.02 ms
+uint32_t RTT = 1; // this is per link delay in us; identical RTT microseconds = 0.02 ms
 int DEFAULT_NODES = 432;
 #define DEFAULT_QUEUE_SIZE 15
 
 string ntoa(double n);
 string itoa(uint64_t n);
 
-//#define SWITCH_BUFFER (SERVICE * RTT / 1000)
+// #define SWITCH_BUFFER (SERVICE * RTT / 1000)
 #define USE_FIRST_FIT 0
 #define FIRST_FIT_INTERVAL 100
 
@@ -76,16 +77,14 @@ void print_path(std::ofstream &paths, const Route *rt) {
     paths << endl;
 }
 
-void filter_paths(uint32_t src_id, vector<const Route *> &paths,
-                  FatTreeTopology *top) {
+void filter_paths(uint32_t src_id, vector<const Route *> &paths, FatTreeTopology *top) {
     uint32_t num_servers = top->no_of_servers();
     uint32_t num_cores = top->no_of_cores();
     uint32_t num_pods = top->no_of_pods();
     uint32_t pod_switches = top->no_of_switches_per_pod();
 
     uint32_t path_classes = pod_switches / 2;
-    cout << "srv: " << num_servers << " cores: " << num_cores
-         << " pods: " << num_pods << " pod_sw: " << pod_switches
+    cout << "srv: " << num_servers << " cores: " << num_cores << " pods: " << num_pods << " pod_sw: " << pod_switches
          << " classes: " << path_classes << endl;
     uint32_t pclass = src_id % path_classes;
     cout << "src: " << src_id << " class: " << pclass << endl;
@@ -94,8 +93,7 @@ void filter_paths(uint32_t src_id, vector<const Route *> &paths,
         const Route *rt = paths.at(r);
         if (rt->size() == 12) {
             BaseQueue *q = dynamic_cast<BaseQueue *>(rt->at(6));
-            cout << "Q:" << atoi(q->str().c_str() + 2) << " " << q->str()
-                 << endl;
+            cout << "Q:" << atoi(q->str().c_str() + 2) << " " << q->str() << endl;
             uint32_t core = atoi(q->str().c_str() + 2);
             if (core % path_classes != pclass) {
                 paths[r] = NULL;
@@ -111,6 +109,7 @@ int main(int argc, char **argv) {
     mem_b queuesize = INFINITE_BUFFER_SIZE;
     int no_of_conns = 0, cwnd = 40, no_of_nodes = DEFAULT_NODES;
     stringstream filename(ios_base::out);
+    bool topology_normal = true;
     RouteStrategy route_strategy = ECMP_FIB;
     std::string goal_filename;
     linkspeed_bps linkspeed = speedFromMbps((double)HOST_NIC);
@@ -126,9 +125,11 @@ int main(int argc, char **argv) {
     int kmax = -1;
     int ratio_os_stage_1 = 1;
     int flowsize = -1;
+    char *topo_file = NULL;
     char *tm_file = NULL;
     bool rts = false;
     bool log_tor_downqueue = false;
+    uint64_t interdc_delay = 0;
     bool log_tor_upqueue = false;
     bool log_switches = false;
     bool log_queue_usage = false;
@@ -153,6 +154,10 @@ int main(int argc, char **argv) {
             goal_filename = argv[i + 1];
             i++;
 
+        } else if (!strcmp(argv[i], "-topo")) {
+            topo_file = argv[i + 1];
+            cout << "FatTree topology input file: " << topo_file << endl;
+            i++;
         } else if (!strcmp(argv[i], "-number_entropies")) {
             number_entropies = atoi(argv[i + 1]);
             i++;
@@ -160,6 +165,13 @@ int main(int argc, char **argv) {
             // kmin as percentage of queue size (0..100)
             kmax = atoi(argv[i + 1]);
             printf("KMax: %d\n", atoi(argv[i + 1]));
+            i++;
+        } else if (!strcmp(argv[i], "-topology")) {
+            if (!strcmp(argv[i + 1], "normal")) {
+                topology_normal = true;
+            } else if (!strcmp(argv[i + 1], "interdc")) {
+                topology_normal = false;
+            }
             i++;
         } else if (!strcmp(argv[i], "-kmin")) {
             // kmin as percentage of queue size (0..100)
@@ -198,16 +210,14 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-mtu")) {
             packet_size = atoi(argv[i + 1]);
-            PKT_SIZE_MODERN =
-                    packet_size; // Saving this for UEC reference, Bytes
+            PKT_SIZE_MODERN = packet_size; // Saving this for UEC reference, Bytes
             i++;
         } else if (!strcmp(argv[i], "-switch_latency")) {
             switch_latency = timeFromNs(atof(argv[i + 1]));
             i++;
         } else if (!strcmp(argv[i], "-hop_latency")) {
             hop_latency = timeFromNs(atof(argv[i + 1]));
-            LINK_DELAY_MODERN = hop_latency /
-                                1000; // Saving this for UEC reference, ps to ns
+            LINK_DELAY_MODERN = hop_latency / 1000; // Saving this for UEC reference, ps to ns
             i++;
         } else if (!strcmp(argv[i], "-seed")) {
             seed = atoi(argv[i + 1]);
@@ -287,12 +297,10 @@ int main(int argc, char **argv) {
 
     QueueLoggerFactory *qlf = 0;
     if (log_tor_downqueue || log_tor_upqueue) {
-        qlf = new QueueLoggerFactory(
-                &logfile, QueueLoggerFactory::LOGGER_SAMPLING, eventlist);
+        qlf = new QueueLoggerFactory(&logfile, QueueLoggerFactory::LOGGER_SAMPLING, eventlist);
         qlf->set_sample_period(timeFromUs(10.0));
     } else if (log_queue_usage) {
-        qlf = new QueueLoggerFactory(&logfile, QueueLoggerFactory::LOGGER_EMPTY,
-                                     eventlist);
+        qlf = new QueueLoggerFactory(&logfile, QueueLoggerFactory::LOGGER_EMPTY, eventlist);
         qlf->set_sample_period(timeFromUs(10.0));
     }
 #ifdef FAT_TREE
@@ -302,19 +310,16 @@ int main(int argc, char **argv) {
     if (kmin != -1 && kmax != -1) {
         FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
     }
-    FatTreeTopology *top = new FatTreeTopology(
-            no_of_nodes, linkspeed, queuesize, NULL, &eventlist, NULL,
-            COMPOSITE, hop_latency, switch_latency);
+    FatTreeTopology *top = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, NULL, COMPOSITE,
+                                               hop_latency, switch_latency);
 #endif
 
 #ifdef OV_FAT_TREE
-    OversubscribedFatTreeTopology *top =
-            new OversubscribedFatTreeTopology(lf, &eventlist, ff);
+    OversubscribedFatTreeTopology *top = new OversubscribedFatTreeTopology(lf, &eventlist, ff);
 #endif
 
 #ifdef MH_FAT_TREE
-    MultihomedFatTreeTopology *top =
-            new MultihomedFatTreeTopology(lf, &eventlist, ff);
+    MultihomedFatTreeTopology *top = new MultihomedFatTreeTopology(lf, &eventlist, ff);
 #endif
 
 #ifdef STAR
@@ -352,6 +357,43 @@ int main(int argc, char **argv) {
         }
     }
 
+    /* FatTreeInterDCTopology *top_dc = NULL;
+    FatTreeTopology *top = NULL;
+
+    if (topology_normal) {
+        printf("Normal Topology\n");
+        FatTreeTopology::set_tiers(3);
+        FatTreeTopology::set_os_stage_2(fat_tree_k);
+        FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
+        FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
+        top = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, COMPOSITE, hop_latency,
+                                  switch_latency);
+    } else {
+        if (interdc_delay != 0) {
+            FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
+            NdpSrc::set_interdc_delay(interdc_delay);
+        } else {
+            FatTreeInterDCTopology::set_interdc_delay(hop_latency);
+            NdpSrc::set_interdc_delay(hop_latency);
+        }
+        FatTreeInterDCTopology::set_tiers(3);
+        FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
+        FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
+        FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
+        if (topo_file) {
+            top_dc = FatTreeInterDCTopology::load(topo_file, NULL, eventlist, queuesize, COMPOSITE, FAIR_PRIO);
+            if (top_dc->no_of_nodes() != no_of_nodes) {
+                cerr << "Mismatch between connection matrix (" << no_of_nodes << " nodes) and topology ("
+                     << top_dc->no_of_nodes() << " nodes)" << endl;
+                exit(1);
+            }
+        } else {
+            FatTreeInterDCTopology::set_tiers(3);
+            top_dc = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, NULL, COMPOSITE,
+                                                hop_latency, switch_latency, FAIR_PRIO);
+        }
+    } */
+
     ConnectionMatrix *conns = new ConnectionMatrix(no_of_nodes);
 
     if (tm_file) {
@@ -367,8 +409,7 @@ int main(int argc, char **argv) {
     }
 
     if ((int)conns->N != no_of_nodes) {
-        cout << "Connection matrix number of nodes is " << conns->N
-             << " while I am using " << no_of_nodes << endl;
+        cout << "Connection matrix number of nodes is " << conns->N << " while I am using " << no_of_nodes << endl;
         exit(-1);
     }
 
@@ -376,9 +417,8 @@ int main(int argc, char **argv) {
     for (size_t c = 0; c < conns->failures.size(); c++) {
         failure *crt = conns->failures.at(c);
 
-        cout << "Adding link failure switch type" << crt->switch_type
-             << " Switch ID " << crt->switch_id << " link ID " << crt->link_id
-             << endl;
+        cout << "Adding link failure switch type" << crt->switch_type << " Switch ID " << crt->switch_id << " link ID "
+             << crt->link_id << endl;
         top->add_failed_link(crt->switch_type, crt->switch_id, crt->link_id);
     }
 
@@ -400,11 +440,9 @@ int main(int argc, char **argv) {
         path_refcounts[src][dest]++;
         path_refcounts[dest][src]++;
 
-        if (!net_paths[src][dest] && route_strategy != ECMP_FIB &&
-            route_strategy != ECMP_FIB_ECN && route_strategy != REACTIVE_ECN &&
-            route_strategy != ECMP_RANDOM2_ECN) {
-            vector<const Route *> *paths =
-                    top->get_bidir_paths(src, dest, false);
+        if (!net_paths[src][dest] && route_strategy != ECMP_FIB && route_strategy != ECMP_FIB_ECN &&
+            route_strategy != REACTIVE_ECN && route_strategy != ECMP_RANDOM2_ECN) {
+            vector<const Route *> *paths = top->get_bidir_paths(src, dest, false);
             net_paths[src][dest] = paths;
             /*
               for (unsigned int i = 0; i < paths->size(); i++) {
@@ -412,11 +450,9 @@ int main(int argc, char **argv) {
               }
             */
         }
-        if (!net_paths[dest][src] && route_strategy != ECMP_FIB &&
-            route_strategy != ECMP_FIB_ECN && route_strategy != REACTIVE_ECN &&
-            route_strategy != ECMP_RANDOM2_ECN) {
-            vector<const Route *> *paths =
-                    top->get_bidir_paths(dest, src, false);
+        if (!net_paths[dest][src] && route_strategy != ECMP_FIB && route_strategy != ECMP_FIB_ECN &&
+            route_strategy != REACTIVE_ECN && route_strategy != ECMP_RANDOM2_ECN) {
+            vector<const Route *> *paths = top->get_bidir_paths(dest, src, false);
             net_paths[dest][src] = paths;
         }
     }
@@ -436,8 +472,7 @@ int main(int argc, char **argv) {
         ndpSrc->set_dst(dest);
         if (crt->flowid) {
             ndpSrc->set_flowid(crt->flowid);
-            assert(flowmap.find(crt->flowid) ==
-                   flowmap.end()); // don't have dups
+            assert(flowmap.find(crt->flowid) == flowmap.end()); // don't have dups
             flowmap[crt->flowid] = ndpSrc;
         }
 
@@ -450,8 +485,7 @@ int main(int argc, char **argv) {
             trig->add_target(*ndpSrc);
         }
         if (crt->send_done_trigger) {
-            Trigger *trig =
-                    conns->getTrigger(crt->send_done_trigger, eventlist);
+            Trigger *trig = conns->getTrigger(crt->send_done_trigger, eventlist);
             ndpSrc->set_end_trigger(*trig);
         }
 
@@ -467,8 +501,7 @@ int main(int argc, char **argv) {
         ndpSnk->setName("ndp_sink_" + ntoa(src) + "_" + ntoa(dest));
         logfile.writeName(*ndpSnk);
         if (crt->recv_done_trigger) {
-            Trigger *trig =
-                    conns->getTrigger(crt->recv_done_trigger, eventlist);
+            Trigger *trig = conns->getTrigger(crt->recv_done_trigger, eventlist);
             ndpSnk->set_end_trigger(*trig);
         }
 
@@ -490,22 +523,14 @@ int main(int argc, char **argv) {
         case ECMP_RANDOM2_ECN:
         case REACTIVE_ECN: {
             Route *srctotor = new Route();
-            srctotor->push_back(
-                    top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)]);
-            srctotor->push_back(
-                    top->pipes_ns_nlp[src][top->HOST_POD_SWITCH(src)]);
-            srctotor->push_back(
-                    top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)]
-                            ->getRemoteEndpoint());
+            srctotor->push_back(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)]);
+            srctotor->push_back(top->pipes_ns_nlp[src][top->HOST_POD_SWITCH(src)]);
+            srctotor->push_back(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)]->getRemoteEndpoint());
 
             Route *dsttotor = new Route();
-            dsttotor->push_back(
-                    top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]);
-            dsttotor->push_back(
-                    top->pipes_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]);
-            dsttotor->push_back(
-                    top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]
-                            ->getRemoteEndpoint());
+            dsttotor->push_back(top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]);
+            dsttotor->push_back(top->pipes_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]);
+            dsttotor->push_back(top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]->getRemoteEndpoint());
 
             ndpSrc->connect(srctotor, dsttotor, *ndpSnk, crt->start);
             ndpSrc->set_paths(number_entropies);
@@ -515,10 +540,8 @@ int main(int argc, char **argv) {
             // TORs.
             assert(top->switches_lp[top->HOST_POD_SWITCH(src)]);
             assert(top->switches_lp[top->HOST_POD_SWITCH(src)]);
-            top->switches_lp[top->HOST_POD_SWITCH(src)]->addHostPort(
-                    src, ndpSrc->flow_id(), ndpSrc);
-            top->switches_lp[top->HOST_POD_SWITCH(dest)]->addHostPort(
-                    dest, ndpSrc->flow_id(), ndpSnk);
+            top->switches_lp[top->HOST_POD_SWITCH(src)]->addHostPort(src, ndpSrc->flow_id(), ndpSrc);
+            top->switches_lp[top->HOST_POD_SWITCH(dest)]->addHostPort(dest, ndpSrc->flow_id(), ndpSnk);
             break;
         }
         case SINGLE_PATH: {
@@ -527,8 +550,7 @@ int main(int argc, char **argv) {
             routeout = new Route(*(net_paths[src][dest]->at(choice)));
             routeout->add_endpoints(ndpSrc, ndpSnk);
 
-            routein = new Route(
-                    *top->get_bidir_paths(dest, src, false)->at(choice));
+            routein = new Route(*top->get_bidir_paths(dest, src, false)->at(choice));
             routein->add_endpoints(ndpSnk, ndpSrc);
             ndpSrc->connect(routeout, routein, *ndpSnk, crt->start);
             break;
@@ -549,8 +571,7 @@ int main(int argc, char **argv) {
         // free up the routes if no other connection needs them
         if (path_refcounts[src][dest] == 0 && net_paths[src][dest]) {
             vector<const Route *>::iterator i;
-            for (i = net_paths[src][dest]->begin();
-                 i != net_paths[src][dest]->end(); i++) {
+            for (i = net_paths[src][dest]->begin(); i != net_paths[src][dest]->end(); i++) {
                 if ((*i)->reverse())
                     delete (*i)->reverse();
                 delete *i;
@@ -559,8 +580,7 @@ int main(int argc, char **argv) {
         }
         if (path_refcounts[dest][src] == 0 && net_paths[dest][src]) {
             vector<const Route *>::iterator i;
-            for (i = net_paths[dest][src]->begin();
-                 i != net_paths[dest][src]->end(); i++) {
+            for (i = net_paths[dest][src]->begin(); i != net_paths[dest][src]->end(); i++) {
                 if ((*i)->reverse())
                     delete (*i)->reverse();
                 delete *i;
@@ -597,8 +617,7 @@ int main(int argc, char **argv) {
         rtx_pkts += ndp_srcs[ix]->_rtx_packets_sent;
         bounce_pkts += ndp_srcs[ix]->_bounces_received;
     }
-    cout << "New: " << new_pkts << " Rtx: " << rtx_pkts
-         << " Bounced: " << bounce_pkts << endl;
+    cout << "New: " << new_pkts << " Rtx: " << rtx_pkts << " Bounced: " << bounce_pkts << endl;
 
     for (std::size_t i = 0; i < ndp_srcs.size(); ++i) {
         delete ndp_srcs[i];

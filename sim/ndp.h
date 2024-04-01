@@ -62,6 +62,7 @@ class NdpSrc : public PacketSink, public EventSource, public TriggerTarget {
     void setCwnd(uint32_t cwnd) {
         _cwnd = cwnd;
         _maxcwnd = cwnd;
+        printf("Setting CWND TOO %d and %d\n", _cwnd, _maxcwnd);
     }
     static void setMinRTO(uint32_t min_rto_in_us) { _min_rto = timeFromUs((uint32_t)min_rto_in_us); }
     static void setRouteStrategy(RouteStrategy strat) { _route_strategy = strat; }

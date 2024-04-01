@@ -722,9 +722,9 @@ void NdpSrc::processAck(const NdpAck &ack) {
         printf("Completion Time Flow is %lu - Overall Time %lu\n", eventlist().now() - _flow_start_time, GLOBAL_TIME);
 
         printf("Flow Completion time is %f - Flow Finishing Time %lu - Flow "
-               "Start Time %lu - Size Finished Flow %lu\n",
+               "Start Time %lu - Size Finished Flow %lu - From %d - To %d\n",
                timeAsUs(eventlist().now()) - timeAsUs(_flow_start_time), eventlist().now(), _flow_start_time,
-               _flow_size);
+               _flow_size, from, to);
 
         printf("Total NACKs: %lu\n", count_nack_num);
 
@@ -762,8 +762,8 @@ void NdpSrc::updateParams() {
 
     _bdp = (_base_rtt * LINK_SPEED_MODERN / 8) / 1000;
 
-    _maxcwnd = _bdp;
-    _cwnd = _bdp;
+    _maxcwnd = _bdp * 1.2;
+    _cwnd = _bdp * 1.2;
 
     printf("Updating CWND to %d\n", _cwnd);
 }
@@ -792,7 +792,7 @@ void NdpSrc::receivePacket(Packet &pkt) {
         } else {
             printf("NACK\n");
         }*/
-        printf("NACK\n");
+        /* printf("NACK\n"); */
         count_nack_num++;
         _list_nack.push_back(std::make_pair(eventlist().now() / 1000, 1));
         processNack((const NdpNack &)pkt);
@@ -883,7 +883,7 @@ int NdpSrc::choose_route() {
         assert(_avoid_score[path_id] == 0);
         break;
     }
-    case SCATTER_RANDOM:
+    case ECMP_RANDOM_ECN:
         // ECMP
         assert(_paths.size() > 0);
         _crt_path = random() % _paths.size();

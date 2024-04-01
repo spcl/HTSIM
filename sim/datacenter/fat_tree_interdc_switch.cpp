@@ -79,8 +79,9 @@ void FatTreeInterDCSwitch::receivePacket(Packet &pkt) {
         // printf("From %d - At %s - Hop %d - Time %lu - Typr %d\n", pkt.from,
         //        nodename().c_str(), pkt.hop_count, GLOBAL_TIME, pkt.type());
 
-        if ((pkt.hop_count == 1) && (pkt.type() == UEC || pkt.type() == NDP || pkt.type() == SWIFTTRIMMING ||
-                                     pkt.type() == UEC_DROP || pkt.type() == BBR)) {
+        if ((pkt.hop_count == 1 && pkt.size() > 100) &&
+            (pkt.type() == UEC || pkt.type() == NDP || pkt.type() == SWIFTTRIMMING || pkt.type() == UEC_DROP ||
+             pkt.type() == BBR)) {
 
             simtime_picosec my_time =
                     (GLOBAL_TIME - (4160 * 8 / LINK_SPEED_MODERN * 1000) - (LINK_DELAY_MODERN * 1000));

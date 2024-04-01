@@ -9,7 +9,8 @@ import os
 import re
 import natsort 
 from argparse import ArgumentParser
-
+import warnings
+warnings.filterwarnings("ignore")
 
 # Parameters
 skip_small_value = True
@@ -70,8 +71,8 @@ def main(args):
     base_rtt = df["base"].max()
     target_rtt = df["target"].max()
 
-    if (len(df) > 100000):
-        ratio = len(df) / 50000
+    if (len(df) > 10001):
+        ratio = len(df) / 10000
         # DownScale
         df = df.iloc[::int(ratio)]
         # Reset the index of the new dataframe
@@ -92,8 +93,8 @@ def main(args):
         temp_df2 = temp_df2.assign(Node=name)
         temp_df2.drop_duplicates('Time', inplace = True)
         df2 = pd.concat([df2, temp_df2])
-    if (len(df2) > 100000):
-        ratio = len(df2) / 50000
+    if (len(df2) > 10000):
+        ratio = len(df2) / 10000
         # DownScale
         df2 = df2.iloc[::int(ratio)]
         # Reset the index of the new dataframe
@@ -118,8 +119,10 @@ def main(args):
     kmin = df30["KMin"].min()
     kmax = df30["KMax"].min()
 
-    if (len(df30) > 100000):
-        ratio = len(df30) / 50000
+    
+
+    if (len(df30) > 10000):
+        ratio = len(df30) / 10000
         # DownScale
         df30 = df30.iloc[::int(ratio)]
         # Reset the index of the new dataframe
@@ -145,11 +148,9 @@ def main(args):
         temp_df3.drop_duplicates('Time', inplace = True)
         df3 = pd.concat([df3, temp_df3])
 
-    kmin = df3["KMin"].max()
-    kmax = df3["KMax"].max()
 
-    if (len(df3) > 100000):
-        ratio = len(df3) / 50000
+    if (len(df3) > 10000):
+        ratio = len(df3) / 10000
         # DownScale
         df3 = df3.iloc[::int(ratio)]
         # Reset the index of the new dataframe
@@ -168,9 +169,11 @@ def main(args):
         name = [str(path_in_str)] * temp_df4.shape[0]
         temp_df4 = temp_df4.assign(Node=name)
         df4 = pd.concat([df4, temp_df4])
-    if (len(df4) > 100000):
-        ratio = len(df) / 50000
+    if (len(df4) > 10000):
+        ratio = len(df) / 10000
         # DownScale
+        if (ratio < 1):
+            ratio = 1
         df4 = df4.iloc[::int(ratio)]
         # Reset the index of the new dataframe
         df4.reset_index(drop=True, inplace=True)
@@ -189,8 +192,8 @@ def main(args):
         temp_df5 = temp_df5.assign(Node=name)
         df5 = pd.concat([df5, temp_df5])
 
-    if (len(df5) > 100000):
-        ratio = len(df) / 50000
+    if (len(df5) > 10000):
+        ratio = len(df) / 10000
         # DownScale
         if (ratio <= 1):
             ratio = int(1)
@@ -404,6 +407,16 @@ def main(args):
         name = [str(path_in_str)] * temp_df6.shape[0]
         temp_df6 = temp_df6.assign(Node=name)
         df6 = pd.concat([df6, temp_df6])
+
+    if (len(df6) > 10000):
+        ratio = len(df6) / 10000
+        # DownScale
+        if (ratio <= 1):
+            ratio = int(1)
+        print(ratio)
+        df6 = df6.iloc[::int(ratio)]
+        # Reset the index of the new dataframe
+        df6.reset_index(drop=True, inplace=True)
 
 
     # Acked Bytes Data
@@ -782,6 +795,8 @@ def main(args):
         font=dict(size=12, color="black"),  # Customize the font size and color
     )
 
+    print("KMin: ", kmin)
+    print("Kmax: ", kmax)
 
     fig.add_shape(
         type="line",

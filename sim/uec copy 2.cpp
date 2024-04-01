@@ -1,7 +1,7 @@
 // -*- c-basic-offset: 4; tab-width: 8; indent-tabs-mode: t -*-
-#include "uec.h"
 #include "ecn.h"
 #include "queue.h"
+#include "uec.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -1625,6 +1625,7 @@ void UecSrc::connect(Route *routeout, Route *routeback, UecSink &sink, simtime_p
     }
 
     _sink = &sink;
+    printf("Creating Flow from %d to %d\n", from, to);
     _flow.set_id(get_id()); // identify the packet flow with the NDP source
                             // that generated it
     _flow._name = _name;
@@ -1748,6 +1749,7 @@ void UecSrc::send_packets() {
             generic_pacer->just_sent();
             _paced_packet = false;
         }
+
         if (_rtx_timeout == timeInf) {
             update_rtx_time();
         }

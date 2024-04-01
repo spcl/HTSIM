@@ -310,14 +310,6 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef FAT_TREE
-    FatTreeTopology::set_tiers(3);
-    FatTreeTopology::set_os_stage_2(fat_tree_k);
-    FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
-    if (kmin != -1 && kmax != -1) {
-        FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
-    }
-    FatTreeTopology *top = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, COMPOSITE,
-                                               hop_latency, switch_latency);
 #endif
 
 #ifdef OV_FAT_TREE
@@ -341,21 +333,7 @@ int main(int argc, char **argv) {
     VL2Topology *top = new VL2Topology(&logfile, &eventlist, ff);
 #endif
 
-    vector<const Route *> ***net_paths;
-    net_paths = new vector<const Route *> **[no_of_nodes];
-
-    int *is_dest = new int[no_of_nodes];
-
-    for (int i = 0; i < no_of_nodes; i++) {
-        is_dest[i] = 0;
-        net_paths[i] = new vector<const Route *> *[no_of_nodes];
-        for (int j = 0; j < no_of_nodes; j++)
-            net_paths[i][j] = NULL;
-    }
-
 #ifdef USE_FIRST_FIT
-    if (ff)
-        ff->net_paths = net_paths;
 #endif
 
     // vector<int> *destinations;
@@ -412,11 +390,6 @@ int main(int argc, char **argv) {
             FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
             if (topo_file) {
                 top_dc = FatTreeInterDCTopology::load(topo_file, NULL, eventlist, queuesize, COMPOSITE, FAIR_PRIO);
-                if (top_dc->no_of_nodes() != no_of_nodes) {
-                    cerr << "Mismatch between connection matrix (" << no_of_nodes << " nodes) and topology ("
-                         << top_dc->no_of_nodes() << " nodes)" << endl;
-                    exit(1);
-                }
             } else {
                 FatTreeInterDCTopology::set_tiers(3);
                 top_dc = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, NULL,
@@ -444,7 +417,7 @@ int main(int argc, char **argv) {
         NdpSrc *uecSrc;
         NdpSink *uecSnk;
         vector<NdpPullPacer *> pacers;
-        for (int ix = 0; ix < no_of_nodes * 2; ix++)
+        for (int ix = 0; ix <= no_of_nodes * 2; ix++)
             pacers.push_back(new NdpPullPacer(eventlist, linkspeed, 0.99));
 
         for (size_t c = 0; c < all_conns->size(); c++) {
@@ -560,6 +533,7 @@ int main(int argc, char **argv) {
                 }
 
                 uecSrc->from = src;
+                uecSrc->to = dest;
                 uecSnk->to = dest;
                 uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
                 uecSrc->set_paths(number_entropies);

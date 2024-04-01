@@ -136,10 +136,12 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static void set_x_gain(double value) { x_gain = value; }
     static void set_z_gain(double value) { z_gain = value; }
     static void set_w_gain(double value) { w_gain = value; }
+    void resetQACounting();
     static void set_os_ratio_stage_1(double value) { ratio_os_stage_1 = value; }
     static void set_once_per_rtt(int value) { once_per_rtt = value; }
     static void set_quickadapt_lossless_rtt(double value) { quickadapt_lossless_rtt = value; }
     static void set_disable_case_3(double value) { disable_case_3 = value; }
+    static void set_frequency(int value) { freq = value; }
     static void set_reaction_delay(int value) {
         reaction_delay = value;
         adjust_packet_counts = value;
@@ -185,6 +187,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     uint32_t saved_acked_bytes = 0;
     uint32_t saved_good_bytes = 0;
     uint32_t saved_trimmed_bytes = 0;
+    static int freq;
     uint32_t last_decrease = 0;
     uint32_t drop_amount = 0;
     uint32_t count_total_ecn = 0;
@@ -291,6 +294,8 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     double initial_x_gain = 0;
     double initial_z_gain = 0;
     double scaling_factor = 1;
+    double x_gain_up = 1;
+    simtime_picosec ignore_for_time = 0;
     static double z_gain;
     static double w_gain;
     static bool disable_case_3;
@@ -420,6 +425,9 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     bool _enableDistanceBasedRtx;
     bool _trimming_enabled;
     bool _bts_enabled = true;
+    uint64_t sent_bytes_previous_window = 0;
+    uint64_t old_sent_bytes_previous_window = 0;
+    uint64_t cwnd_previous_window = 0;
     int _next_pathid;
     int _hop_count;
     int data_count_idx = 0;
@@ -458,7 +466,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     vector<pair<simtime_picosec, int>> count_case_3;
     vector<pair<simtime_picosec, int>> count_case_4;
     vector<pair<simtime_picosec, int>> list_ecn_rate;
-    vector<pair<simtime_picosec, int>> list_sending_rate;
+    vector<pair<simtime_picosec, double>> list_sending_rate;
 
     void send_packets();
     void quick_adapt(bool);
@@ -506,7 +514,7 @@ class UecSink : public PacketSink, public DataReceiver {
     void set_paths(uint32_t num_paths);
     void set_src(uint32_t s) { _srcaddr = s; }
     uint32_t from = -1;
-    uint32_t to = -1;
+    uint32_t to = -2;
     uint32_t tag = 0;
     static void setRouteStrategy(RouteStrategy strat) { _route_strategy = strat; }
     static RouteStrategy _route_strategy;
