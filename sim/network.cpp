@@ -68,12 +68,14 @@ PacketSink *Packet::sendOn() {
             assert(_nexthop < _route->reverse()->size());
             // assert(_route->size() == _route->reverse()->size());
             nextsink = _route->reverse()->at(_nexthop);
+            //printf("Nextsink 1.\n");
             // printf("Bounced\n");
             _nexthop++;
         } else {
-            printf("_nexthop: %u;\n_route->size(): %lu;\n", _nexthop, _route->size());
+            //printf("_nexthop: %u;\n_route->size(): %lu;\n", _nexthop, _route->size());
             assert(_nexthop < _route->size());
 
+            //printf("Nextsink 2.\n");
             nextsink = _route->at(_nexthop);
             _nexthop++;
 
@@ -81,6 +83,7 @@ PacketSink *Packet::sendOn() {
                    nextsink->nodename().c_str());*/
         }
     } else if (_next_routed_hop) {
+        //printf("Nextsink 3.\n");
         nextsink = _next_routed_hop;
         // printf("Test\n");
     } else {

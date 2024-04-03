@@ -29,6 +29,8 @@
 #include "fat_tree_interdc_topology.h"
 #include "dragonfly_topology.h"
 #include "dragonfly_topology.cpp"
+#include "dragonfly_switch.h"
+#include "dragonfly_switch.cpp"
 // #include "oversubscribed_fat_tree_topology.h"
 // #include "multihomed_fat_tree_topology.h"
 // #include "star_topology.h"
@@ -809,6 +811,7 @@ int main(int argc, char **argv) {
                 // Hier Code einfügen.
                 printf("Case Dragonfly.\n");
                 top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice);
+                no_of_nodes = a * p * (a * h + 1);
                 break;
             }
         }
@@ -839,7 +842,7 @@ int main(int argc, char **argv) {
             int dest = crt->dst;
             uint64_t rtt = BASE_RTT_MODERN * 1000;
             uint64_t bdp = BDP_MODERN_UEC;
-            printf("Reaching here1\n");
+            //printf("Reaching here1\n");
             fflush(stdout);
 
             /* Route *myin = new Route(*top->get_paths(src, dest)->at(0));
@@ -867,7 +870,7 @@ int main(int argc, char **argv) {
             uecSrc->setNumberEntropies(256);
             uec_srcs.push_back(uecSrc);
             uecSrc->set_dst(dest);
-            printf("Reaching here\n");
+            //printf("Reaching here\n");
             if (crt->flowid) {
                 uecSrc->set_flowid(crt->flowid);
                 assert(flowmap.find(crt->flowid) == flowmap.end()); // don't have dups
@@ -968,11 +971,34 @@ int main(int argc, char **argv) {
                         // Hier Code einfügen.
                         // srctotor und dsttotor müssen noch gefüllt werden damit in sendOn() _nexthop > 0
                         // und _nexthop < _route->size().
+
+                        // Anpassen:
+                        srctotor->push_back(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]);
+                        srctotor->push_back(top_df->pipes_host_switch[src][top_df->HOST_TOR_FKT(src)]);
+                        srctotor->push_back(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint());
+                        // Anpassen: Evlt. zu queues/pipes _host_switch ändern.
+                        dsttotor->push_back(top_df->queues_switch_host[dest][top_df->HOST_TOR_FKT(dest)]);
+                        dsttotor->push_back(top_df->pipes_host_switch[dest][top_df->HOST_TOR_FKT(dest)]);
+                        dsttotor->push_back(top_df->queues_switch_host[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint());
+
+                        /* if(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint() == NULL || top_df->queues_switch_host[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint() == NULL){
+                            printf("DINKDONK!!!\n");
+                        } */
+
                         uecSrc->from = src;
                         uecSnk->to = dest;
                         uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
                         uecSrc->set_paths(number_entropies);
                         uecSnk->set_paths(number_entropies);
+
+                        // Anpassen:
+                        DragonflySwitch *src_switch = (DragonflySwitch *)(top_df->switches[top_df->HOST_TOR_FKT(src)]);
+                        DragonflySwitch *dst_switch = (DragonflySwitch *)(top_df->switches[top_df->HOST_TOR_FKT(dest)]);
+                        src_switch->DragonflySwitch::addHostPort(src, uecSrc->flow_id(), uecSrc);
+                        dst_switch->DragonflySwitch::addHostPort(dest, uecSrc->flow_id(), uecSnk);
+                        
+                        //top_df->switches[top_df->HOST_TOR_FKT(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
+                        //top_df->switches[top_df->HOST_TOR_FKT(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
                         break;
                     }
                 }
@@ -1001,7 +1027,7 @@ int main(int argc, char **argv) {
 
         switch (topology) {
             case (FAT_TREE_CASE): {
-                printf("Normal Topology\n");
+                printf("Fat-Tree Topology\n");
                 FatTreeTopology::set_tiers(3);
                 FatTreeTopology::set_os_stage_2(fat_tree_k);
                 FatTreeTopology::set_os_stage_1(ratio_os_stage_1);

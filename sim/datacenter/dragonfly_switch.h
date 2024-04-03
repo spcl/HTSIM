@@ -8,7 +8,7 @@
 #include "dragonfly_topology.h"
 #include "fat_tree_switch.h"
 
-class DragonflySwitch;
+class DragonflyTopology;
 
 // Dragon Fly parameters
 //  p = number of hosts per router.
@@ -57,7 +57,7 @@ class DragonflySwitch : public Switch {
     DragonflySwitch(EventList &eventlist, string s, switch_type t, uint32_t id,
                   simtime_picosec switch_delay, DragonflyTopology *dt);
 
-    virtual void addHostPort(int addr, int flowid, PacketSink *transport);
+    virtual void addHostPort(int addr, uint32_t flowid, PacketSink *transport);
 
     virtual void permute_paths(vector<FibEntry *> *uproutes);
 
@@ -87,10 +87,6 @@ class DragonflySwitch : public Switch {
     Pipe *_pipe;
     DragonflyTopology *_dt;
     vector<pair<simtime_picosec, uint64_t>> _list_sent;
-
-    // CAREFUL: can't always have a single FIB for all up destinations when
-    // there are failures!
-    vector<FibEntry *> *_uproutes;
 
     unordered_map<uint32_t, FlowletInfo *> _flowlet_maps;
     uint32_t _crt_route;

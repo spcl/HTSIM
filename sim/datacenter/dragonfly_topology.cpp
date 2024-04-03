@@ -129,10 +129,8 @@ void DragonflyTopology::init_network() {
 
     // Creates switches if it is a lossless operation.
     // ???
-    if (_qt == LOSSLESS) {
-        for (uint32_t j = 0; j < _no_of_switches; j++) {
-            switches[j] = new Switch(*_eventlist, "Switch_" + ntoa(j));
-        }
+    for (uint32_t j = 0; j < _no_of_switches; j++) {
+        switches[j] = new DragonflySwitch(*_eventlist, "Switch_" + ntoa(j), DragonflySwitch::GENERAL, j, timeFromUs((uint32_t)0), this);
     }
 
     // Creates all links between Switches and Hosts.
@@ -172,6 +170,11 @@ void DragonflyTopology::init_network() {
             pipes_host_switch[k][j] = new Pipe(timeFromUs(RTT), *_eventlist);
             pipes_host_switch[k][j]->setName("Pipe-SRC" + ntoa(k) + "->SW" + ntoa(j));
             //logfile->writeName(*(pipes_host_switch[k][j]));
+
+            switches[j]->addPort(queues_host_switch[j][k]);
+            //switches[k]->addPort(queues_host_switch[k][j]);
+            queues_switch_host[j][k]->setRemoteEndpoint(switches[k]);
+            queues_switch_host[k][j]->setRemoteEndpoint(switches[j]);
         }
     }
 
@@ -216,6 +219,11 @@ void DragonflyTopology::init_network() {
             pipes_switch_switch[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
             pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-I->SW" + ntoa(k));
             //logfile->writeName(*(pipes_switch_switch[j][k]));
+
+            switches[j]->addPort(queues_switch_switch[j][k]);
+            switches[k]->addPort(queues_switch_switch[k][j]);
+            queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
+            queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
         }
 
         // Connect the switch to switches from other groups. Global links.
@@ -265,6 +273,11 @@ void DragonflyTopology::init_network() {
             pipes_switch_switch[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
             pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-G->SW" + ntoa(k));
             //logfile->writeName(*(pipes_switch_switch[j][k]));
+
+            switches[j]->addPort(queues_switch_switch[j][k]);
+            switches[k]->addPort(queues_switch_switch[k][j]);
+            queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
+            queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
         }
     }
 

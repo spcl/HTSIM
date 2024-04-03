@@ -79,6 +79,9 @@ class DragonflyTopology : public Topology {
 
     virtual vector<const Route *> *get_bidir_paths(uint32_t src, uint32_t dest, bool reverse);
     vector<uint32_t> *get_neighbours(uint32_t src) { return NULL; };
+    
+    uint32_t get_group_size() { return _a; }
+    uint32_t get_no_groups() { return _p; }
 
   private:
     void set_params();

@@ -39,7 +39,6 @@ DragonflySwitch::DragonflySwitch(EventList &eventlist, string s, switch_type t,
     _id = id;
     _type = t;
     _pipe = new CallbackPipe(delay, eventlist, this);
-    _uproutes = NULL;
     _dt = dt;
     _crt_route = 0;
     _hash_salt = random();
@@ -147,9 +146,11 @@ void DragonflySwitch::receivePacket(Packet &pkt) {
 };
 
 // !!!
-void DragonflySwitch::addHostPort(int addr, int flowid, PacketSink *transport) {
+void DragonflySwitch::addHostPort(int addr, uint32_t flowid, PacketSink *transport) {
     Route *rt = new Route();
-    rt->push_back(_dt->queues_host_switch[_dt->HOST_TOR_FKT(addr)][addr]);
+    auto help1 = _dt->HOST_TOR_FKT(addr);
+    auto help = _dt->queues_host_switch;
+    rt->push_back(help[help1][addr]);
     rt->push_back(_dt->pipes_host_switch[_dt->HOST_TOR_FKT(addr)][addr]);
     rt->push_back(transport);
     _fib->addHostRoute(addr, rt, flowid);
@@ -176,24 +177,32 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
     // Retrieve available routes for the destination from the Forwarding Information Base (FIB)
     vector<FibEntry *> *available_hops = _fib->getRoutes(pkt.dst());
 
+    // Could it be that "if (available_hops)" and "if (available_hops->size() > 1)" do the same?
     if (available_hops) {
+        // Here possibly taking something from the cache.
         uint32_t ecmp_choice = 0;
 
         if (available_hops->size() > 1){
             switch (_strategy) {
-            case NIX:
-                abort();
-            case MINIMAL:
-                sort(available_hops->begin(), available_hops->end(), [](FibEntry *a, FibEntry *b) {
-                    return a->getCost() < b->getCost();});
-
-            case VALIANTS:
-                if(pkt.hop_count == 0){
-                    permute_paths(available_hops);
+                case NIX: {
+                    abort();
+                    break;
                 }
-                else{
-                    set_strategy(MINIMAL);
-                    return getNextHop(pkt, ingress_port);
+                case MINIMAL: {
+                    sort(available_hops->begin(), available_hops->end(), [](FibEntry *a, FibEntry *b) {
+                        return a->getCost() < b->getCost();});
+                    break;
+                }
+                // Valiants routing is unfinished.
+                case VALIANTS: {
+                    if(pkt.hop_count == 0){
+                        permute_paths(available_hops);
+                    }
+                    else{
+                        sort(available_hops->begin(), available_hops->end(), [](FibEntry *a, FibEntry *b) {
+                            return a->getCost() < b->getCost();});
+                    }
+                    break;
                 }
             }
         }
@@ -203,8 +212,51 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
 
         return e->getEgressPort();
     }
+    else{
+        // Here building the routes for the first time.
+        switch (_strategy) {
+            case NIX: {
+                abort();
+                break;
+            }
+            case MINIMAL: {
+                Route *r = new Route();
 
-    assert(_fib->getRoutes(pkt.dst()));
+                uint32_t _a = _dt->get_group_size();
+                uint32_t _p = _dt->get_no_groups();
 
-    return getNextHop(pkt, ingress_port);
+                uint32_t src_group = _id / _p;
+                uint32_t dst_group = pkt.dst() / _p;
+
+                uint32_t src_intra_group_id = _id % _a;
+                uint32_t dst_intra_group_id = pkt.dst() % _a;
+
+                if (_id == pkt.dst()){
+                    _fib->addRoute(pkt.dst(), r, 0, DOWN);
+                }
+                else if (src_group == dst_group){
+                    r->push_back(_dt->queues_switch_switch[_id][pkt.dst()]);
+                    r->push_back(_dt->pipes_switch_switch[_id][pkt.dst()]);
+                }
+                else if (src_intra_group_id == _a - dst_intra_group_id){
+                    cout << "Not in the same group.\n";
+                    abort();
+                    /* r->push_back(_dt->queues_switch_switch[_id][pkt.dst()]);
+                    r->push_back(_dt->pipes_switch_switch[_id][pkt.dst()]); */
+                }
+                else{
+                    cout << "Not in the same group.\n";
+                    abort();
+                }
+                break;
+            }
+            case VALIANTS:{
+                break;
+            }
+        }
+
+        assert(_fib->getRoutes(pkt.dst()));
+
+        return getNextHop(pkt, ingress_port);
+    }
 };
