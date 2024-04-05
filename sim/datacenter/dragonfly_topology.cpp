@@ -190,6 +190,10 @@ void DragonflyTopology::init_network() {
             queues_host_switch[k][j] = alloc_src_queue(queueLogger);
             queues_host_switch[k][j]->setName("SRC" + ntoa(k) + "->SW" + ntoa(j));
             //logfile->writeName(*(queues_host_switch[k][j]));
+            
+            queues_host_switch[k][j]->setRemoteEndpoint(switches[j]);
+
+            switches[j]->addPort(queues_switch_host[j][k]);
 
             // ???
             if (_qt == LOSSLESS) {
@@ -199,10 +203,6 @@ void DragonflyTopology::init_network() {
                 // No virtual queue is needed at the server.
                 new LosslessInputQueue(*_eventlist, queues_host_switch[k][j]);
             }
-
-            queues_host_switch[k][j]->setRemoteEndpoint(switches[j]);
-
-            switches[j]->addPort(queues_switch_host[j][k]);
 
             pipes_host_switch[k][j] = new Pipe(timeFromUs(RTT), *_eventlist);
             pipes_host_switch[k][j]->setName("Pipe-SRC" + ntoa(k) + "->SW" + ntoa(j));
@@ -237,6 +237,11 @@ void DragonflyTopology::init_network() {
             queues_switch_switch[j][k]->setName("SW" + ntoa(j) + "-I->SW" + ntoa(k));
             //logfile->writeName(*(queues_switch_switch[j][k]));
 
+            switches[j]->addPort(queues_switch_switch[j][k]);
+            switches[k]->addPort(queues_switch_switch[k][j]);
+            queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
+            queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
+
             // ???
             if (_qt == LOSSLESS) {
                 switches[j]->addPort(queues_switch_switch[j][k]);
@@ -247,11 +252,6 @@ void DragonflyTopology::init_network() {
                 new LosslessInputQueue(*_eventlist, queues_switch_switch[j][k]);
                 new LosslessInputQueue(*_eventlist, queues_switch_switch[k][j]);
             }
-
-            switches[j]->addPort(queues_switch_switch[j][k]);
-            switches[k]->addPort(queues_switch_switch[k][j]);
-            queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
-            queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
 
             pipes_switch_switch[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
             pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-I->SW" + ntoa(k));
@@ -292,6 +292,11 @@ void DragonflyTopology::init_network() {
             queues_switch_switch[j][k]->setName("SW" + ntoa(j) + "-G->SW" + ntoa(k));
             //logfile->writeName(*(queues_switch_switch[j][k]));
 
+            switches[k]->addPort(queues_switch_switch[k][j]);
+            switches[j]->addPort(queues_switch_switch[j][k]);
+            queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
+            queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
+
             // ???
             if (_qt == LOSSLESS) {
                 switches[j]->addPort(queues_switch_switch[j][k]);
@@ -302,11 +307,6 @@ void DragonflyTopology::init_network() {
                 new LosslessInputQueue(*_eventlist, queues_switch_switch[j][k]);
                 new LosslessInputQueue(*_eventlist, queues_switch_switch[k][j]);
             }
-
-            switches[k]->addPort(queues_switch_switch[k][j]);
-            switches[j]->addPort(queues_switch_switch[j][k]);
-            queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
-            queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
 
             pipes_switch_switch[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
             pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-G->SW" + ntoa(k));
