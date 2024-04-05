@@ -301,9 +301,9 @@ int main(int argc, char **argv) {
     if (kmin != -1 && kmax != -1) {
         FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
     }
-    FatTreeTopology *top = new FatTreeTopology(
+    /* FatTreeTopology *top = new FatTreeTopology(
             no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, COMPOSITE,
-            hop_latency, switch_latency);
+            hop_latency, switch_latency); */
 #endif
 
 #ifdef OV_FAT_TREE

@@ -56,6 +56,8 @@ class DragonflySwitch : public Switch {
 
     DragonflySwitch(EventList &eventlist, string s, switch_type t, uint32_t id,
                   simtime_picosec switch_delay, DragonflyTopology *dt);
+    DragonflySwitch(EventList &eventlist, string s, switch_type t, uint32_t id,
+                  simtime_picosec switch_delay, DragonflyTopology *dt, uint32_t strat);
 
     virtual void addHostPort(int addr, uint32_t flowid, PacketSink *transport);
 
@@ -65,8 +67,8 @@ class DragonflySwitch : public Switch {
     virtual Route *getNextHop(Packet &pkt, BaseQueue *ingress_port);
 
     static void set_strategy(routing_strategy s) {
-        assert(_strategy == NIX);
-        _strategy = s;
+        assert(_df_strategy == NIX);
+        _df_strategy = s;
     }
     static void set_ar_fraction(uint16_t f) {
         assert(f >= 1);
@@ -75,7 +77,7 @@ class DragonflySwitch : public Switch {
 
     static void set_precision_ts(int ts) { precision_ts = ts; }
 
-    static routing_strategy _strategy;
+    static routing_strategy _df_strategy;
     static uint16_t _ar_fraction;
     static uint16_t _ar_sticky;
     static simtime_picosec _sticky_delta;

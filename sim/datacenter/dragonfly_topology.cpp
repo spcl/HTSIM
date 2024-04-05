@@ -53,6 +53,39 @@ DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b q
 
     init_pipes_queues();
     init_network();
+    printf("Dragonfly1::_p = %u\n", _p);
+}
+
+DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q, uint32_t strat) {
+    _df_routing_strategy = strat;
+    //  p = number of hosts per router.
+    //  a = number of routers per group.
+    //  h = number of links used to connect to other groups.
+    // qt = queue type.
+
+    if (p < 1 || a < 1 || h < 1) {
+        cerr << "p, a, h all have to be positive." << endl;
+    }
+
+    _p = p;
+    _a = a;
+    _h = h;
+
+    _queuesize = queuesize;
+    _eventlist = ev;
+    _qt = q;
+
+    _no_of_groups = _a *_h + 1;
+    _no_of_switches = _no_of_groups * _a;
+    _no_of_nodes = _no_of_switches * _p;
+
+    std::cout << "DragonFly topology with " << _p << " hosts per router, " << _a << " routers per group and "
+         << _no_of_groups << " groups, total nodes " << _no_of_nodes << endl;
+    std::cout << "Queue type " << _qt << endl;
+
+    init_pipes_queues();
+    init_network();
+    printf("Dragonfly2::_p = %u\n", _p);
 }
 
 // Initializes all pipes and queues for the switches.
@@ -130,7 +163,7 @@ void DragonflyTopology::init_network() {
     // Creates switches if it is a lossless operation.
     // ???
     for (uint32_t j = 0; j < _no_of_switches; j++) {
-        switches[j] = new DragonflySwitch(*_eventlist, "Switch_" + ntoa(j), DragonflySwitch::GENERAL, j, timeFromUs((uint32_t)0), this);
+        switches[j] = new DragonflySwitch(*_eventlist, "Switch_" + ntoa(j), DragonflySwitch::GENERAL, j, timeFromUs((uint32_t)0), this, _df_routing_strategy);
     }
 
     // Creates all links between Switches and Hosts.
@@ -167,14 +200,13 @@ void DragonflyTopology::init_network() {
                 new LosslessInputQueue(*_eventlist, queues_host_switch[k][j]);
             }
 
+            queues_host_switch[k][j]->setRemoteEndpoint(switches[j]);
+
+            switches[j]->addPort(queues_switch_host[j][k]);
+
             pipes_host_switch[k][j] = new Pipe(timeFromUs(RTT), *_eventlist);
             pipes_host_switch[k][j]->setName("Pipe-SRC" + ntoa(k) + "->SW" + ntoa(j));
             //logfile->writeName(*(pipes_host_switch[k][j]));
-
-            switches[j]->addPort(queues_host_switch[j][k]);
-            //switches[k]->addPort(queues_host_switch[k][j]);
-            queues_switch_host[j][k]->setRemoteEndpoint(switches[k]);
-            queues_switch_host[k][j]->setRemoteEndpoint(switches[j]);
         }
     }
 
@@ -216,14 +248,15 @@ void DragonflyTopology::init_network() {
                 new LosslessInputQueue(*_eventlist, queues_switch_switch[k][j]);
             }
 
-            pipes_switch_switch[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
-            pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-I->SW" + ntoa(k));
-            //logfile->writeName(*(pipes_switch_switch[j][k]));
-
             switches[j]->addPort(queues_switch_switch[j][k]);
             switches[k]->addPort(queues_switch_switch[k][j]);
             queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
             queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
+
+            pipes_switch_switch[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
+            pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-I->SW" + ntoa(k));
+            //logfile->writeName(*(pipes_switch_switch[j][k]));
+
         }
 
         // Connect the switch to switches from other groups. Global links.
@@ -270,14 +303,14 @@ void DragonflyTopology::init_network() {
                 new LosslessInputQueue(*_eventlist, queues_switch_switch[k][j]);
             }
 
+            switches[k]->addPort(queues_switch_switch[k][j]);
+            switches[j]->addPort(queues_switch_switch[j][k]);
+            queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
+            queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
+
             pipes_switch_switch[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
             pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-G->SW" + ntoa(k));
             //logfile->writeName(*(pipes_switch_switch[j][k]));
-
-            switches[j]->addPort(queues_switch_switch[j][k]);
-            switches[k]->addPort(queues_switch_switch[k][j]);
-            queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
-            queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
         }
     }
 

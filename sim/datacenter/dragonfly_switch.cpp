@@ -46,6 +46,12 @@ DragonflySwitch::DragonflySwitch(EventList &eventlist, string s, switch_type t,
     _fib = new RouteTable();
 }
 
+DragonflySwitch::DragonflySwitch(EventList &eventlist, string s, switch_type t,
+    uint32_t id, simtime_picosec delay, DragonflyTopology *dt, uint32_t strat) : Switch(eventlist, s) {
+    DragonflySwitch(eventlist, s, t, id, delay, dt);
+    _df_strategy = (routing_strategy)strat;
+}
+
 void DragonflySwitch::receivePacket(Packet &pkt) {
 
     if (pkt.type() == ETH_PAUSE) {
@@ -166,11 +172,12 @@ void DragonflySwitch::permute_paths(vector<FibEntry *> *routes) {
     }
 }
 
-DragonflySwitch::routing_strategy DragonflySwitch::_strategy = DragonflySwitch::NIX;
+DragonflySwitch::routing_strategy DragonflySwitch::_df_strategy = DragonflySwitch::NIX;
 uint16_t DragonflySwitch::_ar_fraction = 0;
 uint16_t DragonflySwitch::_ar_sticky = DragonflySwitch::PER_PACKET;
 simtime_picosec DragonflySwitch::_sticky_delta = timeFromUs((uint32_t)10);
 double DragonflySwitch::_ecn_threshold_fraction = 1.0;
+
 
 
 Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
@@ -183,12 +190,13 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
         uint32_t ecmp_choice = 0;
 
         if (available_hops->size() > 1){
-            switch (_strategy) {
+            switch (_df_strategy) {
                 case NIX: {
                     abort();
                     break;
                 }
                 case MINIMAL: {
+                    printf("Minimal.\n");
                     sort(available_hops->begin(), available_hops->end(), [](FibEntry *a, FibEntry *b) {
                         return a->getCost() < b->getCost();});
                     break;
@@ -214,7 +222,7 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
     }
     else{
         // Here building the routes for the first time.
-        switch (_strategy) {
+        switch (_df_strategy) {
             case NIX: {
                 abort();
                 break;

@@ -91,6 +91,7 @@ PacketSink *Packet::sendOn() {
     }
     // cout << "sendOn nextsink is: " << nextsink->nodename() << endl;
     nextsink->receivePacket(*this);
+    printf("receivePacket.\n");
     return nextsink;
 }
 

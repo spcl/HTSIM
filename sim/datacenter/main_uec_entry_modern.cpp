@@ -164,6 +164,7 @@ int main(int argc, char **argv) {
     uint32_t h = 0;
     uint64_t interdc_delay = 0;
     uint64_t max_queue_size = 0;
+    DragonflySwitch::routing_strategy df_routing_strategy = DragonflySwitch::NIX;
 
     int i = 1;
     filename << "logout.dat";
@@ -536,6 +537,17 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-h")) {
             h = atoi(argv[i + 1]);
             i++;
+        } else if (!strcmp(argv[i], "-df_strategy")){
+            if (!strcmp(argv[i + 1], "nix")) {
+                df_routing_strategy = DragonflySwitch::NIX;
+            } else if (!strcmp(argv[i + 1], "minimal")) {
+                df_routing_strategy = DragonflySwitch::MINIMAL;
+            } else if (!strcmp(argv[i + 1], "valiants")) {
+                df_routing_strategy = DragonflySwitch::VALIANTS;
+            } else {
+                cerr << "Wrong strategy for dragonfly chosen.\n";
+            }
+            i++;
         } else if (!strcmp(argv[i], "-queue_type")) {
             if (!strcmp(argv[i + 1], "composite")) {
                 queue_choice = COMPOSITE;
@@ -788,7 +800,6 @@ int main(int argc, char **argv) {
                 top = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, queue_choice, hop_latency, switch_latency);
                 break;
             }
-
             case (FAT_TREE_DC_CASE): {
                 printf("Case Fat-Tree-DC.");
                 if (interdc_delay != 0) {
@@ -809,8 +820,8 @@ int main(int argc, char **argv) {
             }
             case (DRAGONFLY_CASE): {
                 // Hier Code einfügen.
-                printf("Case Dragonfly.\n");
-                top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice);
+                printf("Case Dragonfly.\tp = %u,\ta = %u,\th = %u\n", p, a, h);
+                top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice, df_routing_strategy);
                 no_of_nodes = a * p * (a * h + 1);
                 break;
             }
@@ -926,6 +937,10 @@ int main(int argc, char **argv) {
                         dsttotor->push_back(top->pipes_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]);
                         dsttotor->push_back(top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]->getRemoteEndpoint());
 
+                        /* if(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)]->getRemoteEndpoint() == NULL || top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]->getRemoteEndpoint() == NULL){
+                            printf("DINKDONK!!!\n");
+                        } */
+
                         uecSrc->from = src;
                         uecSnk->to = dest;
                         uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
@@ -971,9 +986,12 @@ int main(int argc, char **argv) {
                         // Hier Code einfügen.
                         // srctotor und dsttotor müssen noch gefüllt werden damit in sendOn() _nexthop > 0
                         // und _nexthop < _route->size().
+                        uint32_t src_switch_number = top_df->HOST_TOR_FKT(src);
+                        auto help = top_df->queues_host_switch[src];
+                        auto help2 = help[src_switch_number];
 
                         // Anpassen:
-                        srctotor->push_back(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]);
+                        srctotor->push_back(help2);
                         srctotor->push_back(top_df->pipes_host_switch[src][top_df->HOST_TOR_FKT(src)]);
                         srctotor->push_back(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint());
                         // Anpassen: Evlt. zu queues/pipes _host_switch ändern.
@@ -981,9 +999,9 @@ int main(int argc, char **argv) {
                         dsttotor->push_back(top_df->pipes_host_switch[dest][top_df->HOST_TOR_FKT(dest)]);
                         dsttotor->push_back(top_df->queues_switch_host[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint());
 
-                        /* if(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint() == NULL || top_df->queues_switch_host[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint() == NULL){
+                        if(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint() == NULL || top_df->queues_switch_host[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint() == NULL){
                             printf("DINKDONK!!!\n");
-                        } */
+                        }
 
                         uecSrc->from = src;
                         uecSnk->to = dest;
@@ -994,8 +1012,8 @@ int main(int argc, char **argv) {
                         // Anpassen:
                         DragonflySwitch *src_switch = (DragonflySwitch *)(top_df->switches[top_df->HOST_TOR_FKT(src)]);
                         DragonflySwitch *dst_switch = (DragonflySwitch *)(top_df->switches[top_df->HOST_TOR_FKT(dest)]);
-                        src_switch->DragonflySwitch::addHostPort(src, uecSrc->flow_id(), uecSrc);
-                        dst_switch->DragonflySwitch::addHostPort(dest, uecSrc->flow_id(), uecSnk);
+                        src_switch->addHostPort(src, uecSrc->flow_id(), uecSrc);
+                        dst_switch->addHostPort(dest, uecSrc->flow_id(), uecSnk);
                         
                         //top_df->switches[top_df->HOST_TOR_FKT(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
                         //top_df->switches[top_df->HOST_TOR_FKT(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
@@ -1063,7 +1081,7 @@ int main(int argc, char **argv) {
             case (DRAGONFLY_CASE): {
                 // Hier Code einfügen.
                 // DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q);
-                DragonflyTopology *top = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice);
+                DragonflyTopology *top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice);
                 break;
             }
         }

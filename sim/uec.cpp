@@ -1132,7 +1132,7 @@ uint64_t UecSrc::get_unacked() {
 
 void UecSrc::receivePacket(Packet &pkt) {
     // every packet received represents one less packet in flight
-
+    printf("UecSrc.\n");
     if (pkt._queue_full || pkt.bounced() == false) {
         reduce_unacked(_mss);
     } else {
@@ -2000,6 +2000,7 @@ bool UecSink::already_received(UecPacket &pkt) {
 
 void UecSink::receivePacket(Packet &pkt) {
     /* printf("Sink Received %d %d - Entropy %d - %lu - \n", pkt.from, pkt.id(), pkt.pathid(), GLOBAL_TIME / 1000); */
+    printf("UecSink.\n");
     if (pkt.pfc_just_happened) {
         pfc_just_seen = 1;
     } else {
