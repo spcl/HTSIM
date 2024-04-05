@@ -488,25 +488,7 @@ void BBRSrc::updateParams() {
                     1000;
     }
 
-    if (precision_ts != 1) {
-        _base_rtt = (((_base_rtt + precision_ts - 1) / precision_ts) * precision_ts);
-    }
-
-    _rtt = _base_rtt;
-    _rto = _base_rtt * 900000;
-    _rto = _base_rtt * 3;
-    _rto_margin = _rtt / 8;
-    _rtx_timeout = timeInf;
-    _rtx_timeout_pending = false;
-    _rtx_pending = false;
-    _crt_path = 0;
-    _trimming_enabled = true;
-
-    _next_pathid = 1;
-
     _bdp = (_base_rtt * LINK_SPEED_MODERN / 8) / 1000;
-
-    _queue_size = _bdp; // Temporary
 
     _maxcwnd = _bdp;
     _cwnd = _bdp;
@@ -526,6 +508,10 @@ void BBRSrc::updateParams() {
     fflush(stdout);
     _max_good_entropies = 10; // TODO: experimental value
     _enableDistanceBasedRtx = false;
+
+    for (int i = 0; i < 10; i++) {
+        best_bdw_window[i] = 0;
+    }
 }
 
 void BBRSrc::processNack(BBRNack &pkt) {
@@ -832,12 +818,12 @@ double BBRSrc::GetBestBw() {
     // storing the largest number to arr[0]
     double max_bw = 0;
     for (int i = 0; i < 10; ++i) {
-        printf("Best BW %d --> %f\n", i, best_bdw_window[i]);
+        /* printf("Best BW %d --> %f\n", i, best_bdw_window[i]); */
         if (best_bdw_window[i] > max_bw) {
             max_bw = best_bdw_window[i];
         }
     }
-    printf("Returning %f\n", max_bw);
+    /* printf("Returning %f\n", max_bw); */
     return max_bw;
 }
 
@@ -975,10 +961,11 @@ void BBRSrc::UpdatePacingRate(double bw) {
         if (pacer_d < 0) {
             pacer_d = (4300 * 8 / LINK_SPEED_MODERN);
         }
-        printf("Pacer D %d - old %d - adapted %d\n", pacer_d, old_pacer_d, pacer_d);
+        /* printf("Pacer D %d - old %d - adapted %d\n", pacer_d, old_pacer_d, pacer_d); */
     }
 
-    printf("Choosing new BW of %f (%f and %f) at %lu\n", current_bw * pacing_gain, bw, pacing_gain, GLOBAL_TIME / 1000);
+    /* printf("Choosing new BW of %f (%f and %f) at %lu\n", current_bw * pacing_gain, bw, pacing_gain, GLOBAL_TIME /
+     * 1000); */
     if (COLLECT_DATA) {
         std::string file_name = PROJECT_ROOT_PATH / ("sim/output/out_bw_paced/out_bw_paced" + _name + ".txt");
         std::ofstream MyFile(file_name, std::ios_base::app);
@@ -1033,6 +1020,9 @@ void BBRSrc::processAck(BBRAck &pkt, bool force_marked) {
     if ((delivered_so_far - (pkt.delivered_so_far + 4153)) > 0) {
         delivery_rate = (delivered_so_far - (pkt.delivered_so_far + 4153)) * 8 / (double)(newRtt / 1000);
     }
+
+    /* printf("From %d - New RTT id %lu - Delivery So Far %d - Rate %f\n", from, newRtt, delivered_so_far,
+     * delivery_rate); */
 
     update_bw_model(delivery_rate);
     CheckCyclePhase();

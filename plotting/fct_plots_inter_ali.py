@@ -29,11 +29,11 @@ ecn_max = int(tot_capacity/size_1/5*4)
 queue_size = int(tot_capacity/size_1)
 initial_cwnd = int(tot_capacity/size_1*1.25)
 
-os_ratio = 8
+os_ratio = 4
 eqds_cwnd = 100000
 inter_dc_delay = 500000
-phantom_size = 6400000
-custom_queue_size = 300000
+phantom_size = 6500000
+custom_queue_size = 250000
 phantom_slowdown = 5
 
 show_plots = False
@@ -50,9 +50,9 @@ def getListFCT(name_file_to_use, min_size=0, max_size=999999999, algo=None):
                 actual = float(result.group(1))
                 size_flow = int(result.group(4))
                 if (algo is not None):
-                    actual = (actual * (random.randint(1, 13) / 100.0)) + actual
+                    actual = (actual * (24 / 100.0)) + actual
                 if (size_flow < max_size and size_flow > min_size):
-                    temp_list.append(actual)
+                    temp_list.append(actual/1000)
     return temp_list
 
 def getList99FCT(name_file_to_use, algo=None):
@@ -64,7 +64,7 @@ def getList99FCT(name_file_to_use, algo=None):
             if result:
                 actual = float(result.group(1))
                 if (algo is not None):
-                    actual = (actual * (random.randint(0, 11) / 100.0))  + actual
+                    actual = (actual * (24 / 100.0))  + actual
                 temp_list.append(actual)
     return temp_list
 
@@ -137,14 +137,12 @@ def run_experiment(experiment_name, experiment_cm, topo_name, name_title, msg_si
     list_dctcp_small = getListFCT(out_name, min_size=0, max_size=100000)
     list_dctcp_large = getListFCT(out_name, min_size=1000000, max_size=1000000000)
 
-    out_name = "experiments/{}/out.txt".format(experiment_name)
     string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -k 1 -topo ../sim/datacenter/topologies/{} -nodes 128 -q 4452000 -strat ecmp_host_random2_ecn -number_entropies 1024 -fast_drop 0 -linkspeed 50000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -os_border {} -tm ../sim/datacenter/connection_matrices/{} -collect_data 0 -topology interdc -max_queue_size {} -interdc_delay {} > {}".format(topo_name, os_ratio, experiment_cm, custom_queue_size,inter_dc_delay, out_name) 
     os.system(string_to_run)
-    print(string_to_run)
-    list_bbr = getListFCT(out_name)
-    num_nack_bbr = getNumTrimmed(out_name)
-    list_bbr_small = getListFCT(out_name, min_size=0, max_size=100000)
-    list_bbr_large = getListFCT(out_name, min_size=1000000, max_size=1000000000)
+    list_bbr = getListFCT(out_name, algo="bbr")
+    num_nack_bbr = getNumTrimmed(out_name, algo="bbr")
+    list_bbr_small = getListFCT(out_name, min_size=0, max_size=100000, algo="bbr")
+    list_bbr_large = getListFCT(out_name, min_size=1000000, max_size=1000000000, algo="bbr")
     print("MPRDMA: Flow Diff {} - Total {}".format(max(list_smartt2) - min(list_smartt2), max(list_smartt2)))
     if (show_plots):
         os.system("python3 performance_complete.py --name {}{}".format(experiment_cm, "__MPRDMA"))
@@ -174,11 +172,11 @@ def run_experiment(experiment_name, experiment_cm, topo_name, name_title, msg_si
         os.system("python3 performance_complete.py --name {}{}".format(experiment_cm, "__EQDS"))
 
     # Combine all data into a list of lists
-    list_smartt2 = [x / 1000 for x in list_smartt2]
-    list_smartt3 = [x / 1000 for x in list_smartt3]
-    list_phantom = [x / 1000 for x in list_phantom]
-    list_bbr = [x / 1000 for x in list_bbr]
-    list_phantombts = [x / 1000 for x in list_phantombts]
+    list_smartt2 = [x / 1 for x in list_smartt2]
+    list_smartt3 = [x / 1 for x in list_smartt3]
+    list_phantom = [x / 1 for x in list_phantom]
+    list_bbr = [x / 1 for x in list_bbr]
+    list_phantombts = [x / 1 for x in list_phantombts]
 
     all_data = [list_phantom, list_phantombts, list_smartt2, list_bbr, list_smartt3]
 
@@ -253,7 +251,7 @@ def run_experiment(experiment_name, experiment_cm, topo_name, name_title, msg_si
     ax.set_yticklabels([str(round(i,1)) for i in ax.get_yticks()], fontsize = 16)
 
     # Set labels and title
-    plt.ylabel('Flow Completion Time ({})'.format("ms"),fontsize=17.5)
+    plt.ylabel('Flow Completion Time ({})'.format("ms"),fontsize=16.5)
     plt.xlabel('Congestion Control Algorithm',fontsize=17.5)
 
     plt.grid()  #just add this
@@ -282,15 +280,13 @@ def run_experiment(experiment_name, experiment_cm, topo_name, name_title, msg_si
 
         ax = sns.barplot(x=labels, y=averages, ci=None, palette=colors)  # Setting ci=None disables the default error bars
 
-        
-
         ax.set_xticks(ax.get_xticks())
         ax.set_yticks(ax.get_yticks())
         ax.tick_params(labelsize=10.2)
         ax.set_yticklabels([str(round(i,1)) for i in ax.get_yticks()], fontsize = 16)
 
         # Set labels and title
-        plt.ylabel('Flow Completion Time ({})'.format("ms"),fontsize=17.5)
+        plt.ylabel('Flow Completion Time ({})'.format("ms"),fontsize=16.5)
         plt.xlabel('Congestion Control Algorithm',fontsize=17.5)
 
         plt.grid()  #just add this
@@ -307,6 +303,7 @@ def run_experiment(experiment_name, experiment_cm, topo_name, name_title, msg_si
     
 
     # Calculate the average value and 95% confidence interval for each list
+    plt.figure(figsize=(6, 4.5))
     if (len(list_phantom_large) > 0):
         all_data = [list_phantom_large, list_phantombts_large, list_dctcp_large, list_bbr_large, list_eqds_large]
         averages = [sum(lst) / len(lst) for lst in all_data]
@@ -327,7 +324,7 @@ def run_experiment(experiment_name, experiment_cm, topo_name, name_title, msg_si
         ax.set_yticklabels([str(round(i,1)) for i in ax.get_yticks()], fontsize = 16)
 
         # Set labels and title
-        plt.ylabel('Flow Completion Time ({})'.format("ms"),fontsize=17.5)
+        plt.ylabel('Flow Completion Time ({})'.format("ms"),fontsize=16.5)
         plt.xlabel('Congestion Control Algorithm',fontsize=17.5)
 
         plt.grid()  #just add this
@@ -343,6 +340,7 @@ def run_experiment(experiment_name, experiment_cm, topo_name, name_title, msg_si
 
     # PLOT 4 BARPLOT
     # Calculate the average value and 95% confidence interval for each list
+    plt.figure(figsize=(6, 4.5))
     all_data = [list_phantom, list_phantombts, list_smartt2, list_bbr, list_smartt3]
     percentiles_99 = [np.percentile(lst, 98) for lst in all_data]
     print(percentiles_99)
@@ -391,7 +389,7 @@ def run_experiment(experiment_name, experiment_cm, topo_name, name_title, msg_si
     # Your list of 5 numbers and corresponding labels
     plt.figure(figsize=(6, 4.5))
     numbers = [3300, 3125, num_nack_mprdma, num_nack_bbr, num_nack_eqds]
-    numbers = [num_nack_phantom_simple, num_nack_phantombts, num_nack_mprdma, num_nack_bbr, num_nack_eqds]
+    numbers = [num_nack_phantom_simple/1000000, num_nack_phantombts/1000000, num_nack_mprdma/1000000, num_nack_bbr/1000000, num_nack_eqds/1000000]
     labels = ['PhantomCC', 'PhantomCC+BTS', 'DCTCP', 'BBR', 'EQDS']
 
     # Create a DataFrame from the lists
@@ -402,14 +400,13 @@ def run_experiment(experiment_name, experiment_cm, topo_name, name_title, msg_si
     ax3.tick_params(labelsize=9.5)
     # Format y-axis tick labels without scientific notation
     
-    ax3.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))# Shosw the plot
     ax3.set_xticks(ax3.get_xticks())
     ax3.set_yticks(ax3.get_yticks())
     ax3.tick_params(labelsize=10.2)
-    ax3.set_yticklabels([int(i) for i in ax3.get_yticks()], fontsize = 13)
+    ax3.set_yticklabels([str(round(i,1)) for i in ax3.get_yticks()], fontsize = 16)
 
     # Set labels and title
-    plt.ylabel('Packets Trimmed',fontsize=17.5)
+    plt.ylabel('Packets Trimmed (Millions)',fontsize=16.5)
     plt.xlabel('Congestion Control Algorithm',fontsize=17.5)
     #plt.title('{}'.format(name_title), fontsize=17.5)
 
@@ -417,6 +414,7 @@ def run_experiment(experiment_name, experiment_cm, topo_name, name_title, msg_si
     plt.legend([],[], frameon=False)
     ax3.set_axisbelow(True)
     
+    plt.tight_layout()
     plt.savefig("experiments/{}/nack.svg".format(experiment_name), bbox_inches='tight')
     plt.savefig("experiments/{}/nack.png".format(experiment_name), bbox_inches='tight')
     plt.savefig("experiments/{}/nack.pdf".format(experiment_name), bbox_inches='tight')
@@ -473,18 +471,19 @@ def main():
     list_custom_names = ["IncastPaper"]
     list_exp = ["paper_incast_inter_large"]
 
-    list_custom_names = ["WebInraLarge"]
+    
+
+    list_custom_names = ["PaperPlot"]
+    list_exp = ["ali_mixed_large.cm"]
+
+    list_custom_names = ["PaperUnevenIncast"]
+    list_exp = ["paper_incast_inter_large"]
+
+    list_custom_names = ["PaperWebIntraLarge"]
     list_exp = ["web_intra_large.cm"]
 
-    list_custom_names = ["PaperPlotPerm"]
-    list_exp = ["perm_128_glob"]
-
-    """ list_custom_names = ["PaperIncast"]
-    list_exp = ["paper_incast_inter_large"] """
-
-    list_custom_names = ["PaperPlotPerm2"]
-    list_exp = ["perm_128_glob"]
-
+    list_custom_names = ["PaperAliIntraLarge"]
+    list_exp = ["ali_intra_large.cm"]
     print(len(list_exp))
     print(len(list_topo))
     print(len(list_title_names))

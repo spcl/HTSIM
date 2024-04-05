@@ -75,6 +75,7 @@ class BBRSrc : public PacketSink, public EventSource, public TriggerTarget {
     void setIgnoreEcnData(bool ignore_ecn_data) { _ignore_ecn_data = ignore_ecn_data; };
     void setNumberEntropies(int num_entropies) { _num_entropies = num_entropies; };
     void setHopCount(int hops) { _hop_count = hops; };
+    // void set_flowsize(uint64_t flow_size_in_bytes) { _flow_size = flow_size_in_bytes; }
     void setFlowSize(uint64_t flow_size) { _flow_size = flow_size; }
     void setKeepAcksInTargetRtt(bool keep) { _target_based_received = keep; }
     // void setLgs(LogSimInterface *lgs) { _lgs = lgs; };
@@ -365,7 +366,7 @@ class BBRSrc : public PacketSink, public EventSource, public TriggerTarget {
     int _next_pathid;
     int _hop_count;
     int data_count_idx = 0;
-    double current_bw = 20;
+    double current_bw = 5;
 
     vector<pair<simtime_picosec, int>> count_case_1;
     vector<pair<simtime_picosec, int>> count_case_2;

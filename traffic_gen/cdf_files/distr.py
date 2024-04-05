@@ -18,7 +18,7 @@ df = pd.read_csv(file_path, header=None, usecols=[0,1], delim_whitespace=True, n
 print(df['X'])
 df['Y'] = df['Y'] / 100
 sns.set(style="whitegrid")
-plt.plot(df.iloc[::1, 0], df.iloc[::1, 1], linewidth=3.5,alpha=1, label='FbHdp_distribution')
+#plt.plot(df.iloc[::1, 0], df.iloc[::1, 1], linewidth=3.5,alpha=1, label='FbHdp_distribution')
 file_path = 'WebSearch_distribution.txt'
 df = pd.read_csv(file_path, header=None, usecols=[0,1], delim_whitespace=True, names=['X', 'Y'])
 print(df['X'])
