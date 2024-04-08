@@ -87,10 +87,11 @@ void DragonflySwitch::receivePacket(Packet &pkt) {
 
     if (_packets.find(&pkt) == _packets.end()) {
         // ingress pipeline processing.
-        printf("receivePacket: Packet arrived.\n");
+        
         _packets[&pkt] = true;
 
         const Route *nh = getNextHop(pkt, NULL);
+        printf("receivePacket: Packet arrived at %d.\tThe route back has length: %ld\n", _id, nh->size());
         // set next hop which is peer switch.
         pkt.set_route(*nh);
 
@@ -155,7 +156,7 @@ void DragonflySwitch::receivePacket(Packet &pkt) {
                    nodename().c_str(), pkt.hop_count, GLOBAL_TIME / 1000);
         }*/
 
-        printf("receivePacket: SendOn.\n");
+        //printf("receivePacket: SendOn.\n");
         pkt.sendOn();
     }
 };
@@ -167,15 +168,6 @@ void DragonflySwitch::addHostPort(int addr, uint32_t flowid, PacketSink *transpo
     printf("addHostPort: %d.\n", addr);
     rt->push_back(_dt->queues_host_switch[hostTorAddr][addr]);
     rt->push_back(_dt->pipes_host_switch[hostTorAddr][addr]);
-    rt->push_back(transport);
-    _fib->addHostRoute(addr, rt, flowid);
-}
-
-void DragonflySwitch::df_addHostPort(int addr, uint32_t flowid, PacketSink *transport, Queue *q, Pipe *pip) {
-    Route *rt = new Route();
-    //printf("df_addHostPort: %d.\n", addr);
-    rt->push_back(q);
-    rt->push_back(pip);
     rt->push_back(transport);
     _fib->addHostRoute(addr, rt, flowid);
 }
@@ -261,11 +253,12 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 uint32_t dst_intra_group_id = pkt.dst() % _a;
 
                 if (_id == pkt.dst()){
-                    _fib->addRoute(pkt.dst(), r, 1, DOWN);
+                    _fib->addRoute(pkt.dst(), r, 0, DOWN);
                 }
                 else if (src_group == dst_group){
                     r->push_back(_dt->queues_switch_switch[_id][pkt.dst()]);
                     r->push_back(_dt->pipes_switch_switch[_id][pkt.dst()]);
+                    printf("getNextHop: routeBack_size = %ld\n", r->size());
                     _fib->addRoute(pkt.dst(), r, 1, DOWN);
                 }
                 else if (src_intra_group_id == _a - dst_intra_group_id){

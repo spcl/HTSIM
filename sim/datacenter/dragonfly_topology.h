@@ -77,7 +77,7 @@ class DragonflyTopology : public Topology {
     Queue *alloc_queue(QueueLogger *q, mem_b queuesize, bool tor);
     Queue *alloc_queue(QueueLogger *q, uint64_t speed, mem_b queuesize, bool tor);
 
-    uint32_t HOST_TOR_FKT(uint32_t src) { printf("Host_Tor_Fkt: %d.\n", src); return (src / _p); }
+    uint32_t HOST_TOR_FKT(uint32_t src) { return (src / _p); }
 
     virtual vector<const Route *> *get_bidir_paths(uint32_t src, uint32_t dest, bool reverse);
     vector<uint32_t> *get_neighbours(uint32_t src) { return NULL; };

@@ -937,10 +937,6 @@ int main(int argc, char **argv) {
                         dsttotor->push_back(top->pipes_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]);
                         dsttotor->push_back(top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]->getRemoteEndpoint());
 
-                        /* if(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)]->getRemoteEndpoint() == NULL || top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]->getRemoteEndpoint() == NULL){
-                            printf("DINKDONK!!!\n");
-                        } */
-
                         uecSrc->from = src;
                         uecSnk->to = dest;
                         uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
@@ -949,7 +945,6 @@ int main(int argc, char **argv) {
 
                         top->switches_lp[top->HOST_POD_SWITCH(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
                         top->switches_lp[top->HOST_POD_SWITCH(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
-                        
                         break;
                     }
                     case (FAT_TREE_DC_CASE): {
@@ -992,9 +987,10 @@ int main(int argc, char **argv) {
                         srctotor->push_back(top_df->pipes_host_switch[src][top_df->HOST_TOR_FKT(src)]);
                         srctotor->push_back(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint());
                         // Anpassen: Evlt. zu queues/pipes _host_switch ändern.
-                        dsttotor->push_back(top_df->queues_switch_host[dest][top_df->HOST_TOR_FKT(dest)]);
+                        dsttotor->push_back(top_df->queues_host_switch[dest][top_df->HOST_TOR_FKT(dest)]);
                         dsttotor->push_back(top_df->pipes_host_switch[dest][top_df->HOST_TOR_FKT(dest)]);
-                        dsttotor->push_back(top_df->queues_switch_host[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint());
+                        dsttotor->push_back(top_df->queues_host_switch[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint());
+                        printf("srctotor_size: %ld\tdsttotor_size: %ld\n", srctotor->size(), dsttotor->size());
 
                         if(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint() == NULL){
                             printf("src-remoteEndpoit is NULL!\n");
@@ -1009,21 +1005,6 @@ int main(int argc, char **argv) {
                         uecSrc->set_paths(number_entropies);
                         uecSnk->set_paths(number_entropies);
 
-                        // Anpassen:
-                        /* DragonflySwitch *src_switch = (top_df->switches[top_df->HOST_TOR_FKT(src)]);
-                        DragonflySwitch *dst_switch = (top_df->switches[top_df->HOST_TOR_FKT(dest)]);
-
-                        int host_tor_addr_src = top_df->HOST_TOR_FKT(src);
-                        int host_tor_addr_dest = top_df->HOST_TOR_FKT(dest);
-                        auto src_queue = top_df->queues_host_switch[host_tor_addr_src][src];
-                        auto dest_queue = top_df->queues_host_switch[host_tor_addr_dest][dest];
-                        auto src_pipe = top_df->pipes_host_switch[host_tor_addr_src][src];
-                        auto dest_pipe = top_df->pipes_host_switch[host_tor_addr_dest][dest];
-                        printf("%d\n", host_tor_addr_dest);
-
-                        src_switch->df_addHostPort(src, uecSrc->flow_id(), uecSrc, src_queue, src_pipe);
-                        dst_switch->df_addHostPort(dest, uecSrc->flow_id(), uecSnk, dest_queue, dest_pipe); */
-                        
                         top_df->switches[top_df->HOST_TOR_FKT(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
                         top_df->switches[top_df->HOST_TOR_FKT(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
                         break;
