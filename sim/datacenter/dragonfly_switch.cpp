@@ -48,8 +48,17 @@ DragonflySwitch::DragonflySwitch(EventList &eventlist, string s, switch_type t,
 
 DragonflySwitch::DragonflySwitch(EventList &eventlist, string s, switch_type t,
     uint32_t id, simtime_picosec delay, DragonflyTopology *dt, uint32_t strat) : Switch(eventlist, s) {
-    DragonflySwitch(eventlist, s, t, id, delay, dt);
+    _id = id;
+    _type = t;
+    _pipe = new CallbackPipe(delay, eventlist, this);
+    _dt = dt;
+    _crt_route = 0;
+    _hash_salt = random();
+    _last_choice = eventlist.now();
+    _fib = new RouteTable();
     _df_strategy = (routing_strategy)strat;
+    if(!_fib == NULL) printf("_fib is initialized.\n");
+    if(!_dt == NULL) printf("_dt is initialized.\n");
 }
 
 void DragonflySwitch::receivePacket(Packet &pkt) {
@@ -78,7 +87,7 @@ void DragonflySwitch::receivePacket(Packet &pkt) {
 
     if (_packets.find(&pkt) == _packets.end()) {
         // ingress pipeline processing.
-
+        printf("receivePacket: Packet arrived.\n");
         _packets[&pkt] = true;
 
         const Route *nh = getNextHop(pkt, NULL);
@@ -146,7 +155,7 @@ void DragonflySwitch::receivePacket(Packet &pkt) {
                    nodename().c_str(), pkt.hop_count, GLOBAL_TIME / 1000);
         }*/
 
-        printf("SendOn.\n");
+        printf("receivePacket: SendOn.\n");
         pkt.sendOn();
     }
 };
@@ -154,10 +163,19 @@ void DragonflySwitch::receivePacket(Packet &pkt) {
 // !!!
 void DragonflySwitch::addHostPort(int addr, uint32_t flowid, PacketSink *transport) {
     Route *rt = new Route();
-    auto help1 = _dt->HOST_TOR_FKT(addr);
-    auto help = _dt->queues_host_switch;
-    rt->push_back(help[help1][addr]);
-    rt->push_back(_dt->pipes_host_switch[_dt->HOST_TOR_FKT(addr)][addr]);
+    uint32_t hostTorAddr = _dt->HOST_TOR_FKT(addr);
+    printf("addHostPort: %d.\n", addr);
+    rt->push_back(_dt->queues_host_switch[hostTorAddr][addr]);
+    rt->push_back(_dt->pipes_host_switch[hostTorAddr][addr]);
+    rt->push_back(transport);
+    _fib->addHostRoute(addr, rt, flowid);
+}
+
+void DragonflySwitch::df_addHostPort(int addr, uint32_t flowid, PacketSink *transport, Queue *q, Pipe *pip) {
+    Route *rt = new Route();
+    //printf("df_addHostPort: %d.\n", addr);
+    rt->push_back(q);
+    rt->push_back(pip);
     rt->push_back(transport);
     _fib->addHostRoute(addr, rt, flowid);
 }
@@ -236,15 +254,19 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 uint32_t src_group = _id / _p;
                 uint32_t dst_group = pkt.dst() / _p;
 
+                printf("getNextHop: src_group = %d\n", src_group);
+                printf("getNextHop: dst_group = %d\n", dst_group);
+
                 uint32_t src_intra_group_id = _id % _a;
                 uint32_t dst_intra_group_id = pkt.dst() % _a;
 
                 if (_id == pkt.dst()){
-                    _fib->addRoute(pkt.dst(), r, 0, DOWN);
+                    _fib->addRoute(pkt.dst(), r, 1, DOWN);
                 }
                 else if (src_group == dst_group){
                     r->push_back(_dt->queues_switch_switch[_id][pkt.dst()]);
                     r->push_back(_dt->pipes_switch_switch[_id][pkt.dst()]);
+                    _fib->addRoute(pkt.dst(), r, 1, DOWN);
                 }
                 else if (src_intra_group_id == _a - dst_intra_group_id){
                     cout << "Not in the same group.\n";

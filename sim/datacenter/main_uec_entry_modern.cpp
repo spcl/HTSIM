@@ -986,12 +986,9 @@ int main(int argc, char **argv) {
                         // Hier Code einfügen.
                         // srctotor und dsttotor müssen noch gefüllt werden damit in sendOn() _nexthop > 0
                         // und _nexthop < _route->size().
-                        uint32_t src_switch_number = top_df->HOST_TOR_FKT(src);
-                        auto help = top_df->queues_host_switch[src];
-                        auto help2 = help[src_switch_number];
 
                         // Anpassen:
-                        srctotor->push_back(help2);
+                        srctotor->push_back(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]);
                         srctotor->push_back(top_df->pipes_host_switch[src][top_df->HOST_TOR_FKT(src)]);
                         srctotor->push_back(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint());
                         // Anpassen: Evlt. zu queues/pipes _host_switch ändern.
@@ -999,8 +996,11 @@ int main(int argc, char **argv) {
                         dsttotor->push_back(top_df->pipes_host_switch[dest][top_df->HOST_TOR_FKT(dest)]);
                         dsttotor->push_back(top_df->queues_switch_host[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint());
 
-                        if(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint() == NULL || top_df->queues_switch_host[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint() == NULL){
-                            printf("DINKDONK!!!\n");
+                        if(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint() == NULL){
+                            printf("src-remoteEndpoit is NULL!\n");
+                        }
+                        if(top_df->queues_switch_host[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint() == NULL){
+                            printf("dst-remoteEndpoint is NULL!\n");
                         }
 
                         uecSrc->from = src;
@@ -1010,13 +1010,22 @@ int main(int argc, char **argv) {
                         uecSnk->set_paths(number_entropies);
 
                         // Anpassen:
-                        DragonflySwitch *src_switch = (DragonflySwitch *)(top_df->switches[top_df->HOST_TOR_FKT(src)]);
-                        DragonflySwitch *dst_switch = (DragonflySwitch *)(top_df->switches[top_df->HOST_TOR_FKT(dest)]);
-                        src_switch->addHostPort(src, uecSrc->flow_id(), uecSrc);
-                        dst_switch->addHostPort(dest, uecSrc->flow_id(), uecSnk);
+                        /* DragonflySwitch *src_switch = (top_df->switches[top_df->HOST_TOR_FKT(src)]);
+                        DragonflySwitch *dst_switch = (top_df->switches[top_df->HOST_TOR_FKT(dest)]);
+
+                        int host_tor_addr_src = top_df->HOST_TOR_FKT(src);
+                        int host_tor_addr_dest = top_df->HOST_TOR_FKT(dest);
+                        auto src_queue = top_df->queues_host_switch[host_tor_addr_src][src];
+                        auto dest_queue = top_df->queues_host_switch[host_tor_addr_dest][dest];
+                        auto src_pipe = top_df->pipes_host_switch[host_tor_addr_src][src];
+                        auto dest_pipe = top_df->pipes_host_switch[host_tor_addr_dest][dest];
+                        printf("%d\n", host_tor_addr_dest);
+
+                        src_switch->df_addHostPort(src, uecSrc->flow_id(), uecSrc, src_queue, src_pipe);
+                        dst_switch->df_addHostPort(dest, uecSrc->flow_id(), uecSnk, dest_queue, dest_pipe); */
                         
-                        //top_df->switches[top_df->HOST_TOR_FKT(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
-                        //top_df->switches[top_df->HOST_TOR_FKT(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
+                        top_df->switches[top_df->HOST_TOR_FKT(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
+                        top_df->switches[top_df->HOST_TOR_FKT(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
                         break;
                     }
                 }

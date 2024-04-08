@@ -192,8 +192,10 @@ void DragonflyTopology::init_network() {
             //logfile->writeName(*(queues_host_switch[k][j]));
             
             queues_host_switch[k][j]->setRemoteEndpoint(switches[j]);
+            queues_switch_host[j][k]->setRemoteEndpoint(switches[k]);
 
             switches[j]->addPort(queues_switch_host[j][k]);
+            switches[k]->addPort(queues_host_switch[k][j]);
 
             // ???
             if (_qt == LOSSLESS) {

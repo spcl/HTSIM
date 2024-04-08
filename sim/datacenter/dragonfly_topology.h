@@ -52,7 +52,7 @@ typedef enum {
 
 class DragonflyTopology : public Topology {
   public:
-    vector<Switch *> switches;
+    vector<DragonflySwitch *> switches;
 
     vector<vector<Pipe *>> pipes_host_switch;
     vector<vector<Pipe *>> pipes_switch_switch;
@@ -77,13 +77,13 @@ class DragonflyTopology : public Topology {
     Queue *alloc_queue(QueueLogger *q, mem_b queuesize, bool tor);
     Queue *alloc_queue(QueueLogger *q, uint64_t speed, mem_b queuesize, bool tor);
 
-    uint32_t HOST_TOR_FKT(uint32_t src) { return (src / _p); }
+    uint32_t HOST_TOR_FKT(uint32_t src) { printf("Host_Tor_Fkt: %d.\n", src); return (src / _p); }
 
     virtual vector<const Route *> *get_bidir_paths(uint32_t src, uint32_t dest, bool reverse);
     vector<uint32_t> *get_neighbours(uint32_t src) { return NULL; };
     
     uint32_t get_group_size() { return _a; }
-    uint32_t get_no_groups() { return _p; }
+    uint32_t get_no_groups() { return _a * _h + 1; }
 
   private:
     void set_params();

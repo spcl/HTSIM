@@ -61,6 +61,8 @@ class DragonflySwitch : public Switch {
 
     virtual void addHostPort(int addr, uint32_t flowid, PacketSink *transport);
 
+    void df_addHostPort(int addr, uint32_t flowid, PacketSink *transport, Queue *q, Pipe *pip);
+
     virtual void permute_paths(vector<FibEntry *> *uproutes);
 
     virtual void receivePacket(Packet &pkt);

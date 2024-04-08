@@ -72,7 +72,7 @@ PacketSink *Packet::sendOn() {
             // printf("Bounced\n");
             _nexthop++;
         } else {
-            //printf("_nexthop: %u;\n_route->size(): %lu;\n", _nexthop, _route->size());
+            printf("_nexthop: %u;\t_route->size(): %lu;\n", _nexthop, _route->size());
             assert(_nexthop < _route->size());
 
             //printf("Nextsink 2.\n");
@@ -91,7 +91,7 @@ PacketSink *Packet::sendOn() {
     }
     // cout << "sendOn nextsink is: " << nextsink->nodename() << endl;
     nextsink->receivePacket(*this);
-    printf("receivePacket.\n");
+    //printf("receivePacket.\n");
     return nextsink;
 }
 
