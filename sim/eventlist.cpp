@@ -8,6 +8,7 @@ EventList::EventList() : _endtime(0), _lasteventtime(0) {}
 void EventList::setEndtime(simtime_picosec endtime) { _endtime = endtime; }
 
 bool EventList::doNextEvent() {
+    printf("Test.\n");
     // triggers happen immediately - no time passes; no guarantee that
     // they happen in any particular order (don't assume FIFO or LIFO).
     if (!_pending_triggers.empty()) {

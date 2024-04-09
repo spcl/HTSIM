@@ -91,7 +91,7 @@ void DragonflySwitch::receivePacket(Packet &pkt) {
         _packets[&pkt] = true;
 
         const Route *nh = getNextHop(pkt, NULL);
-        printf("receivePacket: Packet arrived at %d.\tThe route back has length: %ld\n", _id, nh->size());
+        printf("receivePacket: Packet arrived at %d.\tThe next route has length: %ld\n", _id, nh->size());
         // set next hop which is peer switch.
         pkt.set_route(*nh);
 
@@ -251,13 +251,18 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
 
                 uint32_t src_intra_group_id = _id % _a;
                 uint32_t dst_intra_group_id = pkt.dst() % _a;
+                uint32_t dst_switch = _dt->HOST_TOR_FKT(pkt.dst());
 
-                if (_id == pkt.dst()){
-                    _fib->addRoute(pkt.dst(), r, 0, DOWN);
+                if (_id == dst_switch){
+                    r->push_back(_dt->queues_switch_host[_id][pkt.dst()]);
+                    r->push_back(_dt->pipes_switch_host[_id][pkt.dst()]);
+                    r->push_back(_dt->queues_switch_host[_id][pkt.dst()]->getRemoteEndpoint());
+                    _fib->addRoute(pkt.dst(), r, 1, DOWN);
                 }
                 else if (src_group == dst_group){
                     r->push_back(_dt->queues_switch_switch[_id][pkt.dst()]);
                     r->push_back(_dt->pipes_switch_switch[_id][pkt.dst()]);
+                    r->push_back(_dt->queues_switch_switch[_id][pkt.dst()]->getRemoteEndpoint());
                     printf("getNextHop: routeBack_size = %ld\n", r->size());
                     _fib->addRoute(pkt.dst(), r, 1, DOWN);
                 }
@@ -265,7 +270,8 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                     cout << "Not in the same group.\n";
                     abort();
                     /* r->push_back(_dt->queues_switch_switch[_id][pkt.dst()]);
-                    r->push_back(_dt->pipes_switch_switch[_id][pkt.dst()]); */
+                    r->push_back(_dt->pipes_switch_switch[_id][pkt.dst()]);
+                    r->push_back(_dt->queues_switch_switch[_id][pkt.dst()]->getRemoteEndpoint()); */
                 }
                 else{
                     cout << "Not in the same group.\n";

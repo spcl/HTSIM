@@ -987,9 +987,9 @@ int main(int argc, char **argv) {
                         srctotor->push_back(top_df->pipes_host_switch[src][top_df->HOST_TOR_FKT(src)]);
                         srctotor->push_back(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint());
                         // Anpassen: Evlt. zu queues/pipes _host_switch ändern.
-                        dsttotor->push_back(top_df->queues_host_switch[dest][top_df->HOST_TOR_FKT(dest)]);
-                        dsttotor->push_back(top_df->pipes_host_switch[dest][top_df->HOST_TOR_FKT(dest)]);
-                        dsttotor->push_back(top_df->queues_host_switch[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint());
+                        dsttotor->push_back(top_df->queues_switch_host[dest][top_df->HOST_TOR_FKT(dest)]);
+                        dsttotor->push_back(top_df->pipes_switch_host[dest][top_df->HOST_TOR_FKT(dest)]);
+                        dsttotor->push_back(top_df->queues_switch_host[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint());
                         printf("srctotor_size: %ld\tdsttotor_size: %ld\n", srctotor->size(), dsttotor->size());
 
                         if(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint() == NULL){
