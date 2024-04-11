@@ -45,6 +45,8 @@ CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize, EventList &
     stringstream ss;
     ss << "compqueue(" << bitrate / 1000000 << "Mb/s," << maxsize << "bytes)";
     _nodename = ss.str();
+
+    _failure_generator = new failuregenerator();
 }
 
 void CompositeQueue::decreasePhantom() {
@@ -304,6 +306,12 @@ void CompositeQueue::doNextEvent() {
 }
 
 void CompositeQueue::receivePacket(Packet &pkt) {
+
+    if (_failure_generator->drop_pkt(pkt)) {
+        pkt.free();
+        return;
+    }
+
     pkt.flow().logTraffic(pkt, *this, TrafficLogger::PKT_ARRIVE);
     if (_logger)
         _logger->logQueue(*this, QueueLogger::PKT_ARRIVE, pkt);
