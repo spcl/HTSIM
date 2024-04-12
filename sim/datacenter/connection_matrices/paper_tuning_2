@@ -1,0 +1,10 @@
+Nodes 32
+Connections 8
+0->200 id 1 start 0 size 36000000
+1->200 id 2 start 0 size 36000000
+100->200 id 3 start 0 size 36000000
+101->200 id 4 start 0 size 36000000
+30->200 id 5 start 0 size 36000000
+31->200 id 6 start 0 size 36000000
+70->200 id 7 start 0 size 36000000
+71->200 id 8 start 0 size 36000000

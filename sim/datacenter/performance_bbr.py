@@ -103,7 +103,7 @@ def main(args):
     
 
     color_line = "yellow"
-    for i in df3['Node'].unique():
+    '''for i in df3['Node'].unique():
         sub_df3 = df3.loc[df3['Node'] == str(i)]
 
         for idx, num in (enumerate(sub_df3['Status'])):
@@ -123,7 +123,7 @@ def main(args):
                 opacity=0.4,
                 line=dict(color=color_line, dash="dash"),
             )
-        
+    '''
     fig.update_yaxes(rangemode="tozero")
 
 

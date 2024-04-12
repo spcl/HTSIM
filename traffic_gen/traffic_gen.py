@@ -24,6 +24,7 @@ DEFAULT_SEED = None
 
 # Constants.
 NS_IN_S = 1e9
+US_IN_S = 1e6
 BYTE_TO_BIT = 8.0
 
 
@@ -70,6 +71,15 @@ def add_commandline_options():
         help=(
             "The percentage of the traffic load to the network capacity, by"
             f" default {DEFAULT_LOAD}"
+        ),
+    )
+    arg_parser.add_argument(
+        "-i",
+        "--intra_dc_percentage",
+        default=None,
+        type=int,
+        help=(
+            "Percentage of Traffic Intra DC"
         ),
     )
     arg_parser.add_argument(
@@ -196,8 +206,12 @@ def main():
 
     # Calculate the average inter-arrival time (in ns).
     avg_msg_size_bits = custom_rand.calculate_average_value() * BYTE_TO_BIT
+    print(f"Average message size (in bits): {avg_msg_size_bits}")
     avg_load_bps = bandwidth_bps * load
+    print(f"Average load (in bps): {avg_load_bps}")
     avg_inter_arrival_time_ns = (avg_msg_size_bits / avg_load_bps) * NS_IN_S
+
+    print(f"Average inter-arrival time (in ns): {avg_inter_arrival_time_ns}")
 
     # Generate flows.
     flow_list: list[Flow] = []
@@ -206,14 +220,14 @@ def main():
             exponential_dist_sample(avg_inter_arrival_time_ns)
         )
         while flow_start_time_ns < base_time_ns + sim_duration_ns:
-            dst_idx_ = get_dst(src_idc, nhost)
+            dst_idx_ = get_dst(src_idc, nhost, args.intra_dc_percentage)
             flow_size_bytes = max(int(custom_rand.generate_random_number()), 1)
             flow_list.append(
                 Flow(
                     src_idc,
                     dst_idx_,
                     flow_size_bytes,
-                    flow_start_time_ns / NS_IN_S,
+                    int(flow_start_time_ns / 1000),
                 )
             )
             flow_start_time_ns += int(

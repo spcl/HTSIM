@@ -83,8 +83,8 @@ void print_path(std::ofstream &paths, const Route *rt) {
 
 int main(int argc, char **argv) {
     Packet::set_packet_size(PKT_SIZE_MODERN);
-    eventlist.setEndtime(timeFromSec(1));
-    Clock c(timeFromSec(50 / 100.), eventlist);
+    // eventlist.setEndtime(timeFromSec(1));
+    Clock c(timeFromSec(100 / 100.), eventlist);
     mem_b queuesize = INFINITE_BUFFER_SIZE;
     int no_of_conns = 0, cwnd = MAX_CWD_MODERN_UEC, no_of_nodes = DEFAULT_NODES;
     stringstream filename(ios_base::out);
@@ -142,12 +142,14 @@ int main(int argc, char **argv) {
     bool use_pacing = false;
     int precision_ts = 1;
     int once_per_rtt = 0;
+    bool enable_bts = false;
     bool use_mixed = false;
     int phantom_size;
     int phantom_slowdown = 10;
     bool use_phantom = false;
     double exp_avg_ecn_value = .3;
     double exp_avg_rtt_value = .3;
+    char *topo_file = NULL;
     double exp_avg_alpha = 0.125;
     bool use_exp_avg_ecn = false;
     bool use_exp_avg_rtt = false;
@@ -157,6 +159,8 @@ int main(int argc, char **argv) {
     bool topology_normal = true;
     uint64_t interdc_delay = 0;
     uint64_t max_queue_size = 0;
+    double def_end_time = 0.1;
+    int num_periods = 1;
 
     int i = 1;
     filename << "logout.dat";
@@ -190,6 +194,10 @@ int main(int argc, char **argv) {
             // UecSrc::set_use_mixed(use_mixed);
             CompositeQueue::set_use_mixed(use_mixed);
             printf("UseMixed: %d\n", use_mixed);
+            i++;
+        } else if (!strcmp(argv[i], "-topo")) {
+            topo_file = argv[i + 1];
+            cout << "FatTree topology input file: " << topo_file << endl;
             i++;
         } else if (!strcmp(argv[i], "-once_per_rtt")) {
             once_per_rtt = atoi(argv[i + 1]);
@@ -244,6 +252,10 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-reuse_entropy")) {
             reuse_entropy = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-num_periods")) {
+            num_periods = atoi(argv[i + 1]);
+            UecSrc::set_frequency(num_periods);
             i++;
         } else if (!strcmp(argv[i], "-disable_case_3")) {
             disable_case_3 = atoi(argv[i + 1]);
@@ -359,6 +371,11 @@ int main(int argc, char **argv) {
             CompositeQueue::set_use_phantom_in_series();
             printf("PhantomQueueInSeries: %d\n", 1);
             // i++;
+        } else if (!strcmp(argv[i], "-enable_bts")) {
+            CompositeQueue::set_bts(true);
+            UecSrc::set_bts(true);
+            printf("BTS: %d\n", 1);
+            // i++;
         } else if (!strcmp(argv[i], "-phantom_both_queues")) {
             CompositeQueue::set_use_both_queues();
             printf("PhantomUseBothForECNMarking: %d\n", 1);
@@ -397,6 +414,10 @@ int main(int argc, char **argv) {
             z_gain = std::stod(argv[i + 1]);
             UecSrc::set_z_gain(z_gain);
             printf("ZGain: %f\n", z_gain);
+            i++;
+        } else if (!strcmp(argv[i], "-end_time")) {
+            def_end_time = std::stod(argv[i + 1]);
+            printf("def_end_time: %f\n", def_end_time);
             i++;
         } else if (!strcmp(argv[i], "-w_gain")) {
             w_gain = std::stod(argv[i + 1]);
@@ -541,10 +562,10 @@ int main(int argc, char **argv) {
             } else if (!strcmp(argv[i + 1], "mprdma")) {
                 UecSrc::set_alogirthm("mprdma");
                 printf("Name Running: SMaRTT Per RTT\n");
-            } else if (!strcmp(argv[i + 1], "delayC")) {
-                UecSrc::set_alogirthm("delayC");
-            } else if (!strcmp(argv[i + 1], "delayD")) {
-                UecSrc::set_alogirthm("delayD");
+            } else if (!strcmp(argv[i + 1], "mprdma2")) {
+                UecSrc::set_alogirthm("mprdma2");
+            } else if (!strcmp(argv[i + 1], "mprdma3")) {
+                UecSrc::set_alogirthm("mprdma3");
                 printf("Name Running: STrack\n");
             } else if (!strcmp(argv[i + 1], "standard_trimming")) {
                 UecSrc::set_alogirthm("standard_trimming");
@@ -573,8 +594,8 @@ int main(int argc, char **argv) {
             } else if (!strcmp(argv[i + 1], "intersmartt_composed")) {
                 UecSrc::set_alogirthm("intersmartt_composed");
                 printf("Name Running: SMaRTT InterDataCenter\n");
-            } else if (!strcmp(argv[i + 1], "smartt_2")) {
-                UecSrc::set_alogirthm("smartt_2");
+            } else if (!strcmp(argv[i + 1], "intersmartt_test")) {
+                UecSrc::set_alogirthm("intersmartt_test");
                 printf("Name Running: SMaRTT smartt_2\n");
             } else {
                 printf("Wrong Algorithm Name\n");
@@ -758,6 +779,8 @@ int main(int argc, char **argv) {
 
     if (tm_file != NULL) {
 
+        eventlist.setEndtime(timeFromSec(def_end_time));
+
         FatTreeInterDCTopology *top_dc = NULL;
         FatTreeTopology *top = NULL;
 
@@ -785,8 +808,21 @@ int main(int argc, char **argv) {
             FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
             FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
             FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
-            top_dc = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, queue_choice,
-                                                hop_latency, switch_latency);
+            /* top_dc = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+               queue_choice, hop_latency, switch_latency); */
+
+            if (topo_file) {
+                top_dc = FatTreeInterDCTopology::load(topo_file, NULL, eventlist, queuesize, COMPOSITE, FAIR_PRIO);
+                if (top_dc->no_of_nodes() != no_of_nodes) {
+                    cerr << "Mismatch between connection matrix (" << no_of_nodes << " nodes) and topology ("
+                         << top_dc->no_of_nodes() << " nodes)" << endl;
+                    exit(1);
+                }
+            } else {
+                FatTreeInterDCTopology::set_tiers(3);
+                top_dc = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, NULL,
+                                                    COMPOSITE, hop_latency, switch_latency, FAIR_PRIO);
+            }
         }
 
         conns = new ConnectionMatrix(no_of_nodes);
@@ -908,24 +944,28 @@ int main(int argc, char **argv) {
                     printf("Source in Datacenter %d - Dest in Datacenter %d\n", idx_dc, idx_dc_to);
 
                     srctotor->push_back(top_dc->queues_ns_nlp[idx_dc][src % top_dc->no_of_nodes()]
-                                                             [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]);
+                                                             [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())][0]);
                     srctotor->push_back(top_dc->pipes_ns_nlp[idx_dc][src % top_dc->no_of_nodes()]
-                                                            [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]);
+                                                            [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())][0]);
                     srctotor->push_back(top_dc->queues_ns_nlp[idx_dc][src % top_dc->no_of_nodes()]
-                                                             [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]
+                                                             [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())][0]
                                                                      ->getRemoteEndpoint());
 
-                    dsttotor->push_back(top_dc->queues_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
-                                                             [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]);
+                    dsttotor->push_back(
+                            top_dc->queues_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
+                                                 [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())][0]);
                     dsttotor->push_back(top_dc->pipes_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
-                                                            [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]);
+                                                            [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())][0]);
                     dsttotor->push_back(top_dc->queues_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
-                                                             [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]
+                                                             [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())][0]
                                                                      ->getRemoteEndpoint());
                 }
 
                 uecSrc->from = src;
+                uecSrc->to = dest;
+                uecSnk->from = src;
                 uecSnk->to = dest;
+                printf("Creating2 Flow from %d to %d\n", uecSrc->from, uecSrc->to);
                 uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
                 uecSrc->set_paths(number_entropies);
                 uecSnk->set_paths(number_entropies);
@@ -935,7 +975,7 @@ int main(int argc, char **argv) {
                 if (top != NULL) {
                     top->switches_lp[top->HOST_POD_SWITCH(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
                     top->switches_lp[top->HOST_POD_SWITCH(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
-                } else {
+                } else if (top_dc != NULL) {
                     int idx_dc = top_dc->get_dc_id(src);
                     int idx_dc_to = top_dc->get_dc_id(dest);
 

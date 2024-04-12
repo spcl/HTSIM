@@ -1,6 +1,7 @@
 // -*- c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "compositequeue.h"
 #include "ecn.h"
+#include "uecpacket.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -19,10 +20,11 @@ bool CompositeQueue::_phantom_in_series = false;
 int CompositeQueue::_kmin_from_input = 20;
 int CompositeQueue::_kmax_from_input = 80;
 int CompositeQueue::_phantom_queue_slowdown = 10;
+bool CompositeQueue::use_bts = false;
 
 CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize, EventList &eventlist, QueueLogger *logger)
         : Queue(bitrate, maxsize, eventlist, logger) {
-    _ratio_high = 10;
+    _ratio_high = 20;
     _ratio_low = 1;
     _crt = 0;
     _num_headers = 0;
@@ -98,7 +100,7 @@ void CompositeQueue::beginService() {
 bool CompositeQueue::decide_ECN() {
 
     // ECN mark on deque
-    if (_use_both_queues) {
+    if (_use_both_queues && _use_phantom) {
 
         // printf("Using both Queues - Size Real %lu\n", _maxsize);
 
@@ -147,6 +149,8 @@ bool CompositeQueue::decide_ECN() {
     } else {
         /* printf("Using both Queues1 %s - Time %lu - Size Real %lu %lu - ECN %lu %lu\n",_nodename.c_str(), GLOBAL_TIME
          * / 1000, _maxsize, _queuesize_low, _ecn_minthresh, _ecn_maxthresh); */
+        _ecn_maxthresh = _maxsize / 100 * _kmax_from_input;
+        _ecn_minthresh = _maxsize / 100 * _kmin_from_input;
         if (_queuesize_low > _ecn_maxthresh) {
             return true;
         } else if (_queuesize_low > _ecn_minthresh) {
@@ -325,6 +329,9 @@ void CompositeQueue::receivePacket(Packet &pkt) {
 
     } else if (!pkt.header_only()) {
         //  Queue
+        /* printf("Remote is %s vs %s %d %d - Switch ID - %d %d\n", this->getRemoteEndpoint()->nodename().c_str(),
+               getSwitch()->nodename().c_str(), this->getRemoteEndpoint()->dc_id,
+               ((Switch *)getRemoteEndpoint())->getID(), pkt.previous_switch_id, getSwitch()->getID()); */
         if (COLLECT_DATA) {
             if (_queuesize_low != 0) {
                 std::string file_name = PROJECT_ROOT_PATH /
@@ -348,8 +355,8 @@ void CompositeQueue::receivePacket(Packet &pkt) {
                 std::ofstream MyFile(file_name, std::ios_base::app);
 
                 MyFile << eventlist().now() / 1000 << "," << int(_current_queuesize_phatom * 8 / (_bitrate / 1e9)) / (1)
-                       << "," << int((_phantom_queue_size / 100 * 40) * 8 / (_bitrate / 1e9)) / (1) << ","
-                       << int((_phantom_queue_size / 100 * 70) * 8 / (_bitrate / 1e9)) / (1) << std::endl;
+                       << "," << int((_phantom_queue_size / 100 * _kmin_from_input) * 8 / (_bitrate / 1e9)) / (1) << ","
+                       << int((_phantom_queue_size / 100 * _kmax_from_input) * 8 / (_bitrate / 1e9)) / (1) << std::endl;
 
                 MyFile.close();
             }
@@ -406,12 +413,50 @@ void CompositeQueue::receivePacket(Packet &pkt) {
 
             return;
         } else {
+            // Increase Phantom Queue when also getting a trim
+            if (!_phantom_in_series) {
+                _current_queuesize_phatom += 4160; // We increase as if it was a full pkt, not just
+                                                   // the header of the trim
+                if (_current_queuesize_phatom > _phantom_queue_size) {
+                    _current_queuesize_phatom = _phantom_queue_size;
+                }
+            }
             // strip packet the arriving packet - low priority queue is full
             // cout << "B [ " << _enqueued_low.size() << " " <<
             // _enqueued_high.size() << " ] STRIP" << endl;
             /* printf("Trimming at %s - Packet PathID %d\n", _nodename.c_str(),
                     pkt.pathid());*/
             if (_queuesize_low + pkt.size() > _maxsize) {
+                /* printf("Dropping1 %s Packet From %d-%d \n", nodename().c_str(), pkt.from, pkt.id()); */
+                if (use_bts && !pkt.is_bts_pkt) {
+                    /* printf("Dropping2 %s Packet From %d-%d \n", nodename().c_str(), pkt.from, pkt.id()); */
+                    assert(!pkt.header_only());
+                    UecPacket *bts_pkt = UecPacket::newpkt(dynamic_cast<UecPacket &>(pkt));
+                    bts_pkt->strip_payload();
+                    bts_pkt->is_bts_pkt = true;
+                    bts_pkt->set_dst(bts_pkt->from);
+
+                    /* for (int i = 0; i < bts_pkt->route()->size(); i++) {
+                        printf(" Route is %s -->", bts_pkt->route()->at(i)->nodename().c_str());
+                    }
+                    Route *r = new Route(); */
+
+                    // bts_pkt->set_route bts_pkt->set_next_hop(bts_pkt->route()->at(0));
+                    /* for (int i = 0; i < bts_pkt->route()->size(); i++) {
+                        printf(" Updated Route is %s -->", bts_pkt->route()->at(i)->nodename().c_str());
+                        r->push_back(bts_pkt->route()->at(i));
+                    } */
+                    // bts_pkt->set_route(*r);
+                    /* printf("BTS Event at %s - Now %d-%d-%d to %d - %lu\n", _nodename.c_str(), bts_pkt->from,
+                    pkt.from, bts_pkt->id(), bts_pkt->dst(), GLOBAL_TIME / 1000); printf("\n\n"); */
+
+                    // bts_pkt->sendOn();
+                    pkt.free();
+                    getSwitch()->receivePacket(*bts_pkt);
+
+                    return;
+                }
+
                 if (_drop_when_full) {
                     // Dropping Packet and returning
                     /*printf("Queue Size %d - Max %d\n", _queuesize_low,
@@ -419,15 +464,6 @@ void CompositeQueue::receivePacket(Packet &pkt) {
                     printf("Dropping a PKT\n");
                     pkt.free();
                     return;
-                }
-            }
-
-            // Increase Phantom Queue when also getting a trim
-            if (!_phantom_in_series) {
-                _current_queuesize_phatom += 4160; // We increase as if it was a full pkt, not just
-                                                   // the header of the trim
-                if (_current_queuesize_phatom > _phantom_queue_size) {
-                    _current_queuesize_phatom = _phantom_queue_size;
                 }
             }
 
@@ -443,6 +479,8 @@ void CompositeQueue::receivePacket(Packet &pkt) {
     assert(pkt.header_only());
 
     if (_queuesize_high + pkt.size() > 2000 * _maxsize) {
+
+        /* printf("Dropping a PKT - Max Size %lu - Queue Size %lu \n", _maxsize, _queuesize_high); */
         // drop header
         // cout << "drop!\n";
         if (pkt.reverse_route() && pkt.bounced() == false) {
@@ -470,7 +508,7 @@ void CompositeQueue::receivePacket(Packet &pkt) {
             if (_logger)
                 _logger->logQueue(*this, QueueLogger::PKT_DROP, pkt);
             pkt.flow().logTraffic(pkt, *this, TrafficLogger::PKT_DROP);
-            cout << "B[ " << _enqueued_low.size() << " " << _enqueued_high.size() << " ] DROP " << pkt.flow().get_id()
+            cout << "B1[ " << _enqueued_low.size() << " " << _enqueued_high.size() << " ] DROP " << pkt.flow().get_id()
                  << endl;
             pkt.free();
             _num_drops++;

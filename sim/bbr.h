@@ -10,7 +10,7 @@
 #include "config.h"
 #include "eventlist.h"
 #include "fairpullqueue.h"
-//#include "datacenter/logsim-interface.h"
+// #include "datacenter/logsim-interface.h"
 #include "bbrpacket.h"
 #include "network.h"
 #include "trigger.h"
@@ -26,8 +26,7 @@ class SentPacketBBR {
     SentPacketBBR(simtime_picosec t, uint64_t s, bool a, bool n, bool to)
             : timer{t}, seqno{s}, acked{a}, nacked{n}, timedOut{to} {}
     SentPacketBBR(const SentPacketBBR &sp)
-            : timer{sp.timer}, seqno{sp.seqno}, acked{sp.acked},
-              nacked{sp.nacked}, timedOut{sp.timedOut} {}
+            : timer{sp.timer}, seqno{sp.seqno}, acked{sp.acked}, nacked{sp.nacked}, timedOut{sp.timedOut} {}
     simtime_picosec timer;
     uint64_t seqno;
     bool acked;
@@ -41,8 +40,8 @@ class BBRSrc : public PacketSink, public EventSource, public TriggerTarget {
     friend class BBRSink;
 
   public:
-    BBRSrc(BBRLogger *logger, TrafficLogger *pktLogger, EventList &eventList,
-           uint64_t rtt, uint64_t bdp, uint64_t queueDrainTime, int hops);
+    BBRSrc(BBRLogger *logger, TrafficLogger *pktLogger, EventList &eventList, uint64_t rtt, uint64_t bdp,
+           uint64_t queueDrainTime, int hops);
     // BBRSrc(UecLogger *logger, TrafficLogger* pktLogger, EventList& eventList,
     // uint64_t rtt=timeFromUs(5.25), uint64_t bdp=63000);
     ~BBRSrc();
@@ -52,8 +51,7 @@ class BBRSrc : public PacketSink, public EventSource, public TriggerTarget {
     void receivePacket(Packet &pkt) override;
     const string &nodename() override;
 
-    virtual void connect(Route *routeout, Route *routeback, BBRSink &sink,
-                         simtime_picosec startTime);
+    virtual void connect(Route *routeout, Route *routeback, BBRSink &sink, simtime_picosec startTime);
     void startflow();
     void set_paths(vector<const Route *> *rt);
     void set_paths(uint32_t no_of_paths);
@@ -66,22 +64,18 @@ class BBRSrc : public PacketSink, public EventSource, public TriggerTarget {
     inline flowid_t flowId() const { return _flow.flow_id(); }
 
     void set_end_trigger(Trigger &trigger);
+    // void updateParams();
 
     inline void set_flowid(flowid_t flow_id) { _flow.set_flowid(flow_id); }
     inline flowid_t flow_id() const { return _flow.flow_id(); }
 
     void setCwnd(uint64_t cwnd) { _cwnd = cwnd; };
     void setReuse(bool reuse) { _use_good_entropies = reuse; };
-    void setIgnoreEcnAck(bool ignore_ecn_ack) {
-        _ignore_ecn_ack = ignore_ecn_ack;
-    };
-    void setIgnoreEcnData(bool ignore_ecn_data) {
-        _ignore_ecn_data = ignore_ecn_data;
-    };
-    void setNumberEntropies(int num_entropies) {
-        _num_entropies = num_entropies;
-    };
+    void setIgnoreEcnAck(bool ignore_ecn_ack) { _ignore_ecn_ack = ignore_ecn_ack; };
+    void setIgnoreEcnData(bool ignore_ecn_data) { _ignore_ecn_data = ignore_ecn_data; };
+    void setNumberEntropies(int num_entropies) { _num_entropies = num_entropies; };
     void setHopCount(int hops) { _hop_count = hops; };
+    // void set_flowsize(uint64_t flow_size_in_bytes) { _flow_size = flow_size_in_bytes; }
     void setFlowSize(uint64_t flow_size) { _flow_size = flow_size; }
     void setKeepAcksInTargetRtt(bool keep) { _target_based_received = keep; }
     // void setLgs(LogSimInterface *lgs) { _lgs = lgs; };
@@ -108,36 +102,20 @@ class BBRSrc : public PacketSink, public EventSource, public TriggerTarget {
     static void set_fast_drop(bool value) { use_fast_drop = value; }
     static void set_fast_drop_rtt(int value) { fast_drop_rtt = value; }
     static void set_use_pacing(int value) { use_pacing = value; }
-    static void set_pacing_delay(simtime_picosec value) {
-        pacing_delay = value * 1000;
-    }
+    static void set_pacing_delay(simtime_picosec value) { pacing_delay = value * 1000; }
 
     static void set_explicit_rtt(int value) { explicit_base_rtt = value; }
     static void set_explicit_bdp(int value) { explicit_bdp = value; }
-    static void set_explicit_target_rtt(int value) {
-        explicit_target_rtt = value;
-    }
+    static void set_explicit_target_rtt(int value) { explicit_target_rtt = value; }
 
     static void set_do_jitter(bool value) { do_jitter = value; }
-    static void set_do_exponential_gain(bool value) {
-        do_exponential_gain = value;
-    }
+    static void set_do_exponential_gain(bool value) { do_exponential_gain = value; }
     static void set_use_fast_increase(bool value) { use_fast_increase = value; }
-    static void set_use_super_fast_increase(bool value) {
-        use_super_fast_increase = value;
-    }
-    static void set_gain_value_med_inc(double value) {
-        exp_gain_value_med_inc = value;
-    }
-    static void set_jitter_value_med_inc(double value) {
-        jitter_value_med_inc = value;
-    }
-    static void set_delay_gain_value_med_inc(double value) {
-        delay_gain_value_med_inc = value;
-    }
-    static void set_target_rtt_percentage_over_base(int value) {
-        target_rtt_percentage_over_base = value;
-    }
+    static void set_use_super_fast_increase(bool value) { use_super_fast_increase = value; }
+    static void set_gain_value_med_inc(double value) { exp_gain_value_med_inc = value; }
+    static void set_jitter_value_med_inc(double value) { jitter_value_med_inc = value; }
+    static void set_delay_gain_value_med_inc(double value) { delay_gain_value_med_inc = value; }
+    static void set_target_rtt_percentage_over_base(int value) { target_rtt_percentage_over_base = value; }
 
     static void set_y_gain(double value) { y_gain = value; }
     static void set_x_gain(double value) { x_gain = value; }
@@ -145,9 +123,7 @@ class BBRSrc : public PacketSink, public EventSource, public TriggerTarget {
     static void set_w_gain(double value) { w_gain = value; }
     static void set_os_ratio_stage_1(double value) { ratio_os_stage_1 = value; }
     static void set_once_per_rtt(int value) { once_per_rtt = value; }
-    static void set_quickadapt_lossless_rtt(double value) {
-        quickadapt_lossless_rtt = value;
-    }
+    static void set_quickadapt_lossless_rtt(double value) { quickadapt_lossless_rtt = value; }
     static void set_disable_case_3(double value) { disable_case_3 = value; }
     static void set_reaction_delay(int value) { reaction_delay = value; }
     static void set_precision_ts(int value) { precision_ts = value; }
@@ -157,13 +133,9 @@ class BBRSrc : public PacketSink, public EventSource, public TriggerTarget {
     static void set_interdc_delay(uint64_t delay) { _interdc_delay = delay; }
     static void set_buffer_drop(double value) { buffer_drop = value; }
     static void set_stop_after_quick(bool value) { stop_after_quick = value; }
-    static void setRouteStrategy(RouteStrategy strat) {
-        _route_strategy = strat;
-    }
+    static void setRouteStrategy(RouteStrategy strat) { _route_strategy = strat; }
 
-    void set_flow_over_hook(std::function<void(const Packet &)> hook) {
-        f_flow_over_hook = hook;
-    }
+    void set_flow_over_hook(std::function<void(const Packet &)> hook) { f_flow_over_hook = hook; }
 
     virtual void rtx_timer_hook(simtime_picosec now, simtime_picosec period);
     void pacedSend();
@@ -212,6 +184,7 @@ class BBRSrc : public PacketSink, public EventSource, public TriggerTarget {
     bool increasing = false;
     int total_routes;
     int routes_changed = 0;
+
     int exp_avg_bts = 0;
     int exp_avg_route = 0;
     double alpha_route = 0.0625;
@@ -359,13 +332,10 @@ class BBRSrc : public PacketSink, public EventSource, public TriggerTarget {
     string _nodename;
     std::function<void(const Packet &p)> f_flow_over_hook;
 
-    list<std::tuple<simtime_picosec, bool, uint64_t, uint64_t>>
-            _received_ecn; // list of packets received
+    list<std::tuple<simtime_picosec, bool, uint64_t, uint64_t>> _received_ecn; // list of packets received
     vector<SentPacketBBR> _sent_packets;
     unsigned _nack_rtx_pending;
-    vector<tuple<simtime_picosec, uint64_t, uint64_t, uint64_t, uint64_t,
-                 uint64_t>>
-            _list_rtt;
+    vector<tuple<simtime_picosec, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t>> _list_rtt;
     vector<pair<simtime_picosec, uint64_t>> _list_cwd;
     vector<pair<simtime_picosec, uint64_t>> _list_unacked;
     vector<pair<simtime_picosec, uint64_t>> _list_acked_bytes;
@@ -396,7 +366,7 @@ class BBRSrc : public PacketSink, public EventSource, public TriggerTarget {
     int _next_pathid;
     int _hop_count;
     int data_count_idx = 0;
-    double current_bw = 400;
+    double current_bw = 5;
 
     vector<pair<simtime_picosec, int>> count_case_1;
     vector<pair<simtime_picosec, int>> count_case_2;
@@ -462,9 +432,7 @@ class BBRSink : public PacketSink, public DataReceiver {
     uint32_t from = 0;
     uint32_t to = 0;
     uint32_t tag = 0;
-    static void setRouteStrategy(RouteStrategy strat) {
-        _route_strategy = strat;
-    }
+    static void setRouteStrategy(RouteStrategy strat) { _route_strategy = strat; }
     static RouteStrategy _route_strategy;
     Trigger *_end_trigger = 0;
     int pfc_just_seen = -10;
@@ -485,11 +453,9 @@ class BBRSink : public PacketSink, public DataReceiver {
                                            // order
     BBRSrc *_src;
 
-    void send_ack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno,
-                  BBRAck::seq_t ackno, const Route *rt, const Route *inRoute,
-                  int path_id, int);
-    void send_nack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno,
-                   BBRAck::seq_t ackno, const Route *rt, int);
+    void send_ack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno, BBRAck::seq_t ackno, const Route *rt,
+                  const Route *inRoute, int path_id, int);
+    void send_nack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno, BBRAck::seq_t ackno, const Route *rt, int);
     bool already_received(BBRPacket &pkt);
 };
 

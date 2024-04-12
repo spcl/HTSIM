@@ -100,13 +100,17 @@ double speedAsPktps(linkspeed_bps bps) {
     return pktps;
 }
 
+double speedAsGbps(linkspeed_bps bps) {
+    double gbps = ((double)bps) / 1000000000.0;
+    return gbps;
+}
+
 mem_pkts memFromPkts(double pkts) { return (int)(ceil(pkts)); }
 
 void initializeLoggingFolders() {
 
     // Setup Paths and initialize folders
-    std::string desiredRootDirectoryName =
-            "HTSIM"; // Change this to the desired folder name.
+    std::string desiredRootDirectoryName = "HTSIM"; // Change this to the desired folder name.
     std::filesystem::path rootPath = findRootPath(desiredRootDirectoryName);
 
     if (!rootPath.empty()) {
@@ -114,8 +118,7 @@ void initializeLoggingFolders() {
         PROJECT_ROOT_PATH = dataPath;
         std::cout << "Project Path " << PROJECT_ROOT_PATH << std::endl;
     } else {
-        std::cout << "Root directory '" << desiredRootDirectoryName
-                  << "' not found." << std::endl;
+        std::cout << "Root directory '" << desiredRootDirectoryName << "' not found." << std::endl;
         abort();
     }
 
@@ -141,77 +144,47 @@ void initializeLoggingFolders() {
     std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/case4/");
     std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/sending_rate/");
     std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/ecn_rate/");
-    std::filesystem::remove_all(PROJECT_ROOT_PATH /
-                                "sim/output/queue_phantom/");
+    std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/queue_phantom/");
     std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/status/");
     std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/out_bw_paced/");
     std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/out_bw/");
 
-    bool ret_val =
-            std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/rtt");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/ecn");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/cwd");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/queue");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/queue_phantom");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/acked");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/sent");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/nack");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/bts");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/ls_to_us");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/us_to_cs");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/fastd");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/fasti");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/mediumi");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/ecn_rtt");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/trimmed_rtt");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/case1");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/case2");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/case3");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/case4");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-    "sim/output/sending_rate");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-    "sim/output/ecn_rate");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/out_bw");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/out_bw_paced");
-    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH /
-                                                 "sim/output/status");
-    
+    bool ret_val = std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/rtt");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/ecn");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/cwd");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/queue");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/queue_phantom");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/acked");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/sent");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/nack");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/bts");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/ls_to_us");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/us_to_cs");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/fastd");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/fasti");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/mediumi");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/ecn_rtt");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/trimmed_rtt");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/case1");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/case2");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/case3");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/case4");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/sending_rate");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/ecn_rate");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/out_bw");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/out_bw_paced");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/status");
 }
 
 // Path
 std::filesystem::path findRootPath(const std::string &rootDirectoryName) {
-    std::filesystem::path currentPath =
-            std::filesystem::current_path(); // Get the current working
-                                             // directory.
+    std::filesystem::path currentPath = std::filesystem::current_path(); // Get the current working
+                                                                         // directory.
 
     // Iterate up the directory hierarchy until we find a directory with the
     // desired name.
-    while (!currentPath.empty() &&
-           !std::filesystem::exists(currentPath / rootDirectoryName)) {
+    while (!currentPath.empty() && !std::filesystem::exists(currentPath / rootDirectoryName)) {
         currentPath = currentPath.parent_path();
     }
 

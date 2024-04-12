@@ -69,11 +69,11 @@ linkspeed_bps speedFromMbps(double Mbitps);
 linkspeed_bps speedFromKbps(uint64_t Kbitps);
 linkspeed_bps speedFromPktps(double packetsPerSec);
 double speedAsPktps(linkspeed_bps bps);
+double speedAsGbps(linkspeed_bps bps);
 typedef int mem_pkts;
 void initializeLoggingFolders();
 std::filesystem::path findRootPath(const std::string &rootDirectoryName);
-std::filesystem::path resolvePath(const std::string &root,
-                                  const std::string &relativePath);
+std::filesystem::path resolvePath(const std::string &root, const std::string &relativePath);
 
 typedef uint32_t addr_t;
 typedef uint16_t port_t;

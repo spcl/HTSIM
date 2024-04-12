@@ -53,18 +53,48 @@ def exponential_dist_sample(mean: float) -> float:
     """
     return -math.log(1 - random.random()) * mean
 
+def stay_intra_dc(p):
+    return True if random.random() < p else False
 
-def get_dst(src_idx: int, number_hosts: int) -> int:
+def get_range_dc(src_idx, number_hosts):
+    if (src_idx < number_hosts/2):
+        return 0, number_hosts/2
+    else:
+        return number_hosts/2, number_hosts
+    
+def get_range_remote_dc(src_idx, number_hosts):
+    if (src_idx < number_hosts/2):
+        return number_hosts/2, number_hosts-1
+    else:
+        return 0, number_hosts/2
+
+def get_dst(src_idx: int, number_hosts: int, intra_dc_perc: int) -> int:
     """Get a random destination host index that is not the same as the source host index.
 
     Args:
         src_idx (int): The source host index.
         number_hosts (int): The number of hosts.
+        intra_dc_perc (int): Amount of traffic intra DC (0-100%). None if not using multiple DC
     Returns:
         int: The destination host index.
     """
-    dst_idx = random.randint(0, number_hosts - 1)
-    # Ensure sender is not the same as receiver.
-    while dst_idx == src_idx:
+
+    if (intra_dc_perc is None):
         dst_idx = random.randint(0, number_hosts - 1)
-    return dst_idx
+        # Ensure sender is not the same as receiver.
+        while dst_idx == src_idx:
+            dst_idx = random.randint(0, number_hosts - 1)
+        return dst_idx  
+    else:
+        if (stay_intra_dc(intra_dc_perc/100)):
+            dc_start, dc_end = get_range_dc(src_idx, number_hosts)
+            dst_idx = random.randint(dc_start, dc_end)
+            while dst_idx == src_idx:
+                dst_idx = random.randint(dc_start, dc_end)
+            return dst_idx  
+        else:
+            dc_start, dc_end = get_range_remote_dc(src_idx, number_hosts)
+            dst_idx = random.randint(dc_start, dc_end)
+            while dst_idx == src_idx:
+                dst_idx = random.randint(dc_start, dc_end)
+            return dst_idx  

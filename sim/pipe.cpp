@@ -3,8 +3,7 @@
 #include <iostream>
 #include <sstream>
 
-Pipe::Pipe(simtime_picosec delay, EventList &eventlist)
-        : EventSource(eventlist, "pipe"), _delay(delay) {
+Pipe::Pipe(simtime_picosec delay, EventList &eventlist) : EventSource(eventlist, "pipe"), _delay(delay) {
     _count = 0;
     _next_insert = 0;
     _next_pop = 0;
@@ -18,6 +17,9 @@ Pipe::Pipe(simtime_picosec delay, EventList &eventlist)
 void Pipe::receivePacket(Packet &pkt) {
     // pkt.flow().logTraffic(pkt,*this,TrafficLogger::PKT_ARRIVE);
     // if (_inflight.empty()){
+    if (pkt.is_bts_pkt && pkt.id() == 356350 && pkt.from == 1) {
+        printf("Get Next Hop BTS - %s - DC %d\n", nodename().c_str());
+    }
     if (_count == 0) {
         /* no packets currently inflight; need to notify the eventlist
            we've an event pending */

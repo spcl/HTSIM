@@ -51,8 +51,7 @@ const double PACING_GAIN_CYCLE[8] = {1.25, 0.75, 1, 1, 1, 1, 1, 1};
 RouteStrategy BBRSrc::_route_strategy = NOT_SET;
 RouteStrategy BBRSink::_route_strategy = NOT_SET;
 
-BBRSrc::BBRSrc(BBRLogger *logger, TrafficLogger *pktLogger,
-               EventList &eventList, uint64_t rtt, uint64_t bdp,
+BBRSrc::BBRSrc(BBRLogger *logger, TrafficLogger *pktLogger, EventList &eventList, uint64_t rtt, uint64_t bdp,
                uint64_t queueDrainTime, int hops)
         : EventSource(eventList, "BBR"), _logger(logger), _flow(pktLogger) {
     _mss = Packet::data_packet_size();
@@ -69,23 +68,18 @@ BBRSrc::BBRSrc(BBRLogger *logger, TrafficLogger *pktLogger,
     // new CC variables
     _hop_count = hops;
 
-    _base_rtt = ((_hop_count * LINK_DELAY_MODERN) +
-                 ((PKT_SIZE_MODERN + 64) * 8 / LINK_SPEED_MODERN * _hop_count) +
-                 +(_hop_count * LINK_DELAY_MODERN) +
-                 (64 * 8 / LINK_SPEED_MODERN * _hop_count)) *
+    _base_rtt = ((_hop_count * LINK_DELAY_MODERN) + ((PKT_SIZE_MODERN + 64) * 8 / LINK_SPEED_MODERN * _hop_count) +
+                 +(_hop_count * LINK_DELAY_MODERN) + (64 * 8 / LINK_SPEED_MODERN * _hop_count)) *
                 1000;
 
     if (precision_ts != 1) {
-        _base_rtt = (((_base_rtt + precision_ts - 1) / precision_ts) *
-                     precision_ts);
+        _base_rtt = (((_base_rtt + precision_ts - 1) / precision_ts) * precision_ts);
     }
 
-    _target_rtt =
-            _base_rtt * ((target_rtt_percentage_over_base + 1) / 100.0 + 1);
+    _target_rtt = _base_rtt * ((target_rtt_percentage_over_base + 1) / 100.0 + 1);
 
     if (precision_ts != 1) {
-        _target_rtt = (((_target_rtt + precision_ts - 1) / precision_ts) *
-                       precision_ts);
+        _target_rtt = (((_target_rtt + precision_ts - 1) / precision_ts) * precision_ts);
     }
 
     _rtt = _base_rtt;
@@ -118,8 +112,7 @@ BBRSrc::BBRSrc(BBRLogger *logger, TrafficLogger *pktLogger,
 
     printf("Link Delay %d - Link Speed %lu - Pkt Size %d - Base RTT %lu - "
            "Target RTT is %lu - BDP %lu - CWND %u - Hops %d\n",
-           LINK_DELAY_MODERN, LINK_SPEED_MODERN, PKT_SIZE_MODERN, _base_rtt,
-           _target_rtt, _bdp, _cwnd, _hop_count);
+           LINK_DELAY_MODERN, LINK_SPEED_MODERN, PKT_SIZE_MODERN, _base_rtt, _target_rtt, _bdp, _cwnd, _hop_count);
 
     _max_good_entropies = 10; // TODO: experimental value
     _enableDistanceBasedRtx = false;
@@ -138,22 +131,18 @@ BBRSrc::~BBRSrc() {
     printf("Total NACKs: %lu\n", num_trim);
     if (COLLECT_DATA) {
         // RTT
-        std::string file_name =
-                PROJECT_ROOT_PATH / ("sim/output/rtt/rtt" + _name + "_" +
-                                     std::to_string(tag) + ".txt");
+        std::string file_name = PROJECT_ROOT_PATH / ("sim/output/rtt/rtt" + _name + "_" + std::to_string(tag) + ".txt");
         std::ofstream MyFile(file_name, std::ios_base::app);
 
         for (const auto &p : _list_rtt) {
-            MyFile << get<0>(p) << "," << get<1>(p) << "," << get<2>(p) << ","
-                   << get<3>(p) << "," << get<4>(p) << "," << get<5>(p)
-                   << std::endl;
+            MyFile << get<0>(p) << "," << get<1>(p) << "," << get<2>(p) << "," << get<3>(p) << "," << get<4>(p) << ","
+                   << get<5>(p) << std::endl;
         }
 
         MyFile.close();
 
         // CWD
-        file_name = PROJECT_ROOT_PATH / ("sim/output/cwd/cwd" + _name + "_" +
-                                         std::to_string(tag) + ".txt");
+        file_name = PROJECT_ROOT_PATH / ("sim/output/cwd/cwd" + _name + "_" + std::to_string(tag) + ".txt");
         std::ofstream MyFileCWD(file_name, std::ios_base::app);
 
         for (const auto &p : _list_cwd) {
@@ -163,8 +152,7 @@ BBRSrc::~BBRSrc() {
         MyFileCWD.close();
 
         // Unacked
-        file_name = PROJECT_ROOT_PATH / ("sim/output/unacked/unacked" + _name +
-                                         "_" + std::to_string(tag) + ".txt");
+        file_name = PROJECT_ROOT_PATH / ("sim/output/unacked/unacked" + _name + "_" + std::to_string(tag) + ".txt");
         std::ofstream MyFileUnack(file_name, std::ios_base::app);
 
         for (const auto &p : _list_unacked) {
@@ -174,8 +162,7 @@ BBRSrc::~BBRSrc() {
         MyFileUnack.close();
 
         // NACK
-        file_name = PROJECT_ROOT_PATH / ("sim/output/nack/nack" + _name + "_" +
-                                         std::to_string(tag) + ".txt");
+        file_name = PROJECT_ROOT_PATH / ("sim/output/nack/nack" + _name + "_" + std::to_string(tag) + ".txt");
         std::ofstream MyFileNack(file_name, std::ios_base::app);
 
         for (const auto &p : _list_nack) {
@@ -186,9 +173,7 @@ BBRSrc::~BBRSrc() {
 
         // BTS
         if (_list_bts.size() > 0) {
-            file_name =
-                    PROJECT_ROOT_PATH / ("sim/output/bts/bts" + _name + "_" +
-                                         std::to_string(tag) + ".txt");
+            file_name = PROJECT_ROOT_PATH / ("sim/output/bts/bts" + _name + "_" + std::to_string(tag) + ".txt");
             std::ofstream MyFileBTS(file_name, std::ios_base::app);
 
             for (const auto &p : _list_bts) {
@@ -199,8 +184,7 @@ BBRSrc::~BBRSrc() {
         }
 
         // Acked Bytes
-        file_name = PROJECT_ROOT_PATH / ("sim/output/acked/acked" + _name +
-                                         "_" + std::to_string(tag) + ".txt");
+        file_name = PROJECT_ROOT_PATH / ("sim/output/acked/acked" + _name + "_" + std::to_string(tag) + ".txt");
         std::ofstream MyFileAcked(file_name, std::ios_base::app);
 
         for (const auto &p : _list_acked_bytes) {
@@ -210,8 +194,7 @@ BBRSrc::~BBRSrc() {
         MyFileAcked.close();
 
         // Acked ECN
-        file_name = PROJECT_ROOT_PATH / ("sim/output/ecn_rtt/ecn_rtt" + _name +
-                                         "_" + std::to_string(tag) + ".txt");
+        file_name = PROJECT_ROOT_PATH / ("sim/output/ecn_rtt/ecn_rtt" + _name + "_" + std::to_string(tag) + ".txt");
         std::ofstream MyFileEcnRTT(file_name, std::ios_base::app);
 
         for (const auto &p : _list_ecn_rtt) {
@@ -221,8 +204,7 @@ BBRSrc::~BBRSrc() {
         MyFileEcnRTT.close();
 
         // ECN Received
-        file_name = PROJECT_ROOT_PATH / ("sim/output/ecn/ecn" + _name + "_" +
-                                         std::to_string(tag) + ".txt");
+        file_name = PROJECT_ROOT_PATH / ("sim/output/ecn/ecn" + _name + "_" + std::to_string(tag) + ".txt");
         std::ofstream MyFileEcnReceived(file_name, std::ios_base::app);
 
         for (const auto &p : _list_ecn_received) {
@@ -232,9 +214,8 @@ BBRSrc::~BBRSrc() {
         MyFileEcnReceived.close();
 
         // Acked Trimmed
-        file_name = PROJECT_ROOT_PATH /
-                    ("sim/output/trimmed_rtt/trimmed_rtt" + _name + "_" +
-                     std::to_string(tag) + ".txt");
+        file_name =
+                PROJECT_ROOT_PATH / ("sim/output/trimmed_rtt/trimmed_rtt" + _name + "_" + std::to_string(tag) + ".txt");
         std::ofstream MyFileTrimmedRTT(file_name, std::ios_base::app);
 
         for (const auto &p : _list_trimmed_rtt) {
@@ -244,8 +225,7 @@ BBRSrc::~BBRSrc() {
         MyFileTrimmedRTT.close();
 
         // Fast Increase
-        file_name = PROJECT_ROOT_PATH / ("sim/output/fasti/fasti" + _name +
-                                         "_" + std::to_string(tag) + ".txt");
+        file_name = PROJECT_ROOT_PATH / ("sim/output/fasti/fasti" + _name + "_" + std::to_string(tag) + ".txt");
         std::ofstream MyFileFastInc(file_name, std::ios_base::app);
 
         for (const auto &p : _list_fast_increase_event) {
@@ -255,8 +235,7 @@ BBRSrc::~BBRSrc() {
         MyFileFastInc.close();
 
         // Fast Decrease
-        file_name = PROJECT_ROOT_PATH / ("sim/output/fastd/fastd" + _name +
-                                         "_" + std::to_string(tag) + ".txt");
+        file_name = PROJECT_ROOT_PATH / ("sim/output/fastd/fastd" + _name + "_" + std::to_string(tag) + ".txt");
         std::ofstream MyFileFastDec(file_name, std::ios_base::app);
 
         for (const auto &p : _list_fast_decrease) {
@@ -266,8 +245,7 @@ BBRSrc::~BBRSrc() {
         MyFileFastDec.close();
 
         // Medium Increase
-        file_name = PROJECT_ROOT_PATH / ("sim/output/mediumi/mediumi" + _name +
-                                         "_" + std::to_string(tag) + ".txt");
+        file_name = PROJECT_ROOT_PATH / ("sim/output/mediumi/mediumi" + _name + "_" + std::to_string(tag) + ".txt");
         std::ofstream MyFileMediumInc(file_name, std::ios_base::app);
 
         for (const auto &p : _list_medium_increase_event) {
@@ -277,8 +255,7 @@ BBRSrc::~BBRSrc() {
         MyFileMediumInc.close();
 
         // Case 1
-        file_name = PROJECT_ROOT_PATH / ("sim/output/case1/case1" + _name +
-                                         "_" + std::to_string(tag) + ".txt");
+        file_name = PROJECT_ROOT_PATH / ("sim/output/case1/case1" + _name + "_" + std::to_string(tag) + ".txt");
         std::ofstream MyFileCase1(file_name, std::ios_base::app);
 
         for (const auto &p : count_case_1) {
@@ -288,8 +265,7 @@ BBRSrc::~BBRSrc() {
         MyFileCase1.close();
 
         // Case 2
-        file_name = PROJECT_ROOT_PATH / ("sim/output/case2/case2" + _name +
-                                         "_" + std::to_string(tag) + ".txt");
+        file_name = PROJECT_ROOT_PATH / ("sim/output/case2/case2" + _name + "_" + std::to_string(tag) + ".txt");
         std::ofstream MyFileCase2(file_name, std::ios_base::app);
 
         for (const auto &p : count_case_2) {
@@ -299,8 +275,7 @@ BBRSrc::~BBRSrc() {
         MyFileCase2.close();
 
         // Case 3
-        file_name = PROJECT_ROOT_PATH / ("sim/output/case3/case3" + _name +
-                                         "_" + std::to_string(tag) + ".txt");
+        file_name = PROJECT_ROOT_PATH / ("sim/output/case3/case3" + _name + "_" + std::to_string(tag) + ".txt");
         std::ofstream MyFileCase3(file_name, std::ios_base::app);
 
         for (const auto &p : count_case_3) {
@@ -310,8 +285,7 @@ BBRSrc::~BBRSrc() {
         MyFileCase3.close();
 
         // Case 4
-        file_name = PROJECT_ROOT_PATH / ("sim/output/case4/case4" + _name +
-                                         "_" + std::to_string(tag) + ".txt");
+        file_name = PROJECT_ROOT_PATH / ("sim/output/case4/case4" + _name + "_" + std::to_string(tag) + ".txt");
         std::ofstream MyFileCase4(file_name, std::ios_base::app);
 
         for (const auto &p : count_case_4) {
@@ -324,9 +298,7 @@ BBRSrc::~BBRSrc() {
 
 void BBRSrc::doNextEvent() { startflow(); }
 
-void BBRSrc::set_end_trigger(Trigger &end_trigger) {
-    _end_trigger = &end_trigger;
-}
+void BBRSrc::set_end_trigger(Trigger &end_trigger) { _end_trigger = &end_trigger; }
 
 std::size_t BBRSrc::get_sent_packet_idx(uint32_t pkt_seqno) {
     for (std::size_t i = 0; i < _sent_packets.size(); ++i) {
@@ -341,8 +313,7 @@ void BBRSrc::update_rtx_time() {
     _rtx_timeout = timeInf;
     for (const auto &sp : _sent_packets) {
         auto timeout = sp.timer;
-        if (!sp.acked && !sp.nacked && !sp.timedOut &&
-            (timeout < _rtx_timeout || _rtx_timeout == timeInf)) {
+        if (!sp.acked && !sp.nacked && !sp.timedOut && (timeout < _rtx_timeout || _rtx_timeout == timeInf)) {
             _rtx_timeout = timeout;
         }
     }
@@ -351,9 +322,7 @@ void BBRSrc::update_rtx_time() {
 void BBRSrc::mark_received(BBRAck &pkt) {
     // cummulative ack
     if (pkt.seqno() == 1) {
-        while (!_sent_packets.empty() &&
-               (_sent_packets[0].seqno <= pkt.ackno() ||
-                _sent_packets[0].acked)) {
+        while (!_sent_packets.empty() && (_sent_packets[0].seqno <= pkt.ackno() || _sent_packets[0].acked)) {
             _sent_packets.erase(_sent_packets.begin());
         }
         update_rtx_time();
@@ -427,9 +396,7 @@ void BBRSrc::add_ack_path(const Route *rt) {
     }
 }
 
-void BBRSrc::set_traffic_logger(TrafficLogger *pktlogger) {
-    _flow.set_logger(pktlogger);
-}
+void BBRSrc::set_traffic_logger(TrafficLogger *pktlogger) { _flow.set_logger(pktlogger); }
 
 void BBRSrc::reduce_cwnd(uint64_t amount) {
     if (_cwnd >= amount + _mss) {
@@ -471,9 +438,7 @@ void BBRSrc::quick_adapt(bool trimmed) {
             // Edge case where we get here receiving a packet a long time after
             // the last one (>> base_rtt). Should not matter in most cases.
             saved_acked_bytes =
-                    saved_acked_bytes *
-                    ((double)_base_rtt /
-                     (eventlist().now() - previous_window_end + _base_rtt));
+                    saved_acked_bytes * ((double)_base_rtt / (eventlist().now() - previous_window_end + _base_rtt));
 
             // Update window and ignore count
             _cwnd = max((double)(saved_acked_bytes * bonus_drop),
@@ -486,13 +451,11 @@ void BBRSrc::quick_adapt(bool trimmed) {
             // Reset counters, update logs.
             count_received = 0;
             need_quick_adapt = false;
-            _list_fast_decrease.push_back(
-                    std::make_pair(eventlist().now() / 1000, 1));
+            _list_fast_decrease.push_back(std::make_pair(eventlist().now() / 1000, 1));
 
             // Update x_gain after large incasts. We want to limit its effect if
             // we move to much smaller windows.
-            x_gain = min(initial_x_gain,
-                         (_queue_size / 5.0) / (_mss * ((double)_bdp / _cwnd)));
+            x_gain = min(initial_x_gain, (_queue_size / 5.0) / (_mss * ((double)_bdp / _cwnd)));
 
             // Print
             printf("Using Fast Drop2 - Flow %d@%d@%d, Ecn %d, CWND %d, Saved "
@@ -503,12 +466,9 @@ void BBRSrc::quick_adapt(bool trimmed) {
                    "Time "
                    "%lu\n",
                    from, to, tag, 1, _cwnd, saved_acked_bytes,
-                   max((double)(saved_acked_bytes * bonus_drop),
-                       saved_acked_bytes * bonus_drop + _mss),
-                   bonus_drop, (saved_acked_bytes * bonus_drop),
-                   (saved_acked_bytes * bonus_drop + _mss),
-                   previous_window_end / 1000, next_window_end / 1000,
-                   eventlist().now() / 1000);
+                   max((double)(saved_acked_bytes * bonus_drop), saved_acked_bytes * bonus_drop + _mss), bonus_drop,
+                   (saved_acked_bytes * bonus_drop), (saved_acked_bytes * bonus_drop + _mss),
+                   previous_window_end / 1000, next_window_end / 1000, eventlist().now() / 1000);
         }
     }
 }
@@ -517,43 +477,18 @@ void BBRSrc::quick_adapt(bool trimmed) {
 void BBRSrc::updateParams() {
     if (src_dc != dest_dc) {
         _hop_count = 9;
-        _base_rtt =
-                ((((_hop_count - 2) * LINK_DELAY_MODERN) +
-                  (_interdc_delay / 1000) * 2) +
-                 ((PKT_SIZE_MODERN + 64) * 8 / LINK_SPEED_MODERN * _hop_count) +
-                 +(_hop_count * LINK_DELAY_MODERN) +
-                 (64 * 8 / LINK_SPEED_MODERN * _hop_count)) *
-                1000;
+        _base_rtt = ((((_hop_count - 2) * LINK_DELAY_MODERN) + (_interdc_delay / 1000) * 2) +
+                     ((PKT_SIZE_MODERN + 64) * 8 / LINK_SPEED_MODERN * _hop_count) + +(_hop_count * LINK_DELAY_MODERN) +
+                     (64 * 8 / LINK_SPEED_MODERN * _hop_count)) *
+                    1000;
     } else {
         _hop_count = 6;
-        _base_rtt =
-                ((_hop_count * LINK_DELAY_MODERN) +
-                 ((PKT_SIZE_MODERN + 64) * 8 / LINK_SPEED_MODERN * _hop_count) +
-                 +(_hop_count * LINK_DELAY_MODERN) +
-                 (64 * 8 / LINK_SPEED_MODERN * _hop_count)) *
-                1000;
+        _base_rtt = ((_hop_count * LINK_DELAY_MODERN) + ((PKT_SIZE_MODERN + 64) * 8 / LINK_SPEED_MODERN * _hop_count) +
+                     +(_hop_count * LINK_DELAY_MODERN) + (64 * 8 / LINK_SPEED_MODERN * _hop_count)) *
+                    1000;
     }
-
-    if (precision_ts != 1) {
-        _base_rtt = (((_base_rtt + precision_ts - 1) / precision_ts) *
-                     precision_ts);
-    }
-
-    _rtt = _base_rtt;
-    _rto = _base_rtt * 900000;
-    _rto = _base_rtt * 3;
-    _rto_margin = _rtt / 8;
-    _rtx_timeout = timeInf;
-    _rtx_timeout_pending = false;
-    _rtx_pending = false;
-    _crt_path = 0;
-    _trimming_enabled = true;
-
-    _next_pathid = 1;
 
     _bdp = (_base_rtt * LINK_SPEED_MODERN / 8) / 1000;
-
-    _queue_size = _bdp; // Temporary
 
     _maxcwnd = _bdp;
     _cwnd = _bdp;
@@ -568,14 +503,16 @@ void BBRSrc::updateParams() {
            "Target RTT is %lu - Drain Queue %lu - BDP %lu - CWND %u - Queue "
            "Size %lu - Hops %d - Stop Pacing "
            "%lu\n",
-           LINK_DELAY_MODERN, _interdc_delay / 1000, LINK_SPEED_MODERN,
-           PKT_SIZE_MODERN, _base_rtt, _target_rtt, 1, _bdp,
-           _cwnd, 1, _hop_count, 1);
+           LINK_DELAY_MODERN, _interdc_delay / 1000, LINK_SPEED_MODERN, PKT_SIZE_MODERN, _base_rtt, _target_rtt, 1,
+           _bdp, _cwnd, 1, _hop_count, 1);
     fflush(stdout);
     _max_good_entropies = 10; // TODO: experimental value
     _enableDistanceBasedRtx = false;
-}
 
+    for (int i = 0; i < 10; i++) {
+        best_bdw_window[i] = 0;
+    }
+}
 
 void BBRSrc::processNack(BBRNack &pkt) {
 
@@ -607,8 +544,7 @@ void BBRSrc::processNack(BBRNack &pkt) {
     _list_cwd.push_back(std::make_pair(eventlist().now() / 1000, _cwnd));
     _consecutive_no_ecn = 0;
     _consecutive_low_rtt = 0;
-    _received_ecn.push_back(std::make_tuple(eventlist().now(), true, _mss,
-                                            _target_rtt + 10000));
+    _received_ecn.push_back(std::make_tuple(eventlist().now(), true, _mss, _target_rtt + 10000));
 
     _list_nack.push_back(std::make_pair(eventlist().now() / 1000, 1));
     // mark corresponding packet for retransmission
@@ -787,6 +723,44 @@ int BBRSrc::choose_route() {
     return _crt_path / 1;
 }
 
+/* void BBRSrc::updateParams() {
+    if (src_dc != dest_dc) {
+        _hop_count = 9;
+        _base_rtt = ((((_hop_count - 2) * LINK_DELAY_MODERN) + (_interdc_delay / 1000) * 2) +
+                     ((PKT_SIZE_MODERN + 64) * 8 / LINK_SPEED_MODERN * _hop_count) + +(_hop_count * LINK_DELAY_MODERN) +
+                     (64 * 8 / LINK_SPEED_MODERN * _hop_count)) *
+                    1000;
+    } else {
+        _hop_count = 6;
+        _base_rtt = ((_hop_count * LINK_DELAY_MODERN) + ((PKT_SIZE_MODERN + 64) * 8 / LINK_SPEED_MODERN * _hop_count) +
+                     +(_hop_count * LINK_DELAY_MODERN) + (64 * 8 / LINK_SPEED_MODERN * _hop_count)) *
+                    1000;
+    }
+
+    if (precision_ts != 1) {
+        _base_rtt = (((_base_rtt + precision_ts - 1) / precision_ts) * precision_ts);
+    }
+
+    _rtt = _base_rtt;
+    _rto = _base_rtt * 900000;
+    _rto = _base_rtt * 3;
+    _rto_margin = _rtt / 8;
+    _rtx_timeout = timeInf;
+    _rtx_timeout_pending = false;
+    _rtx_pending = false;
+    _crt_path = 0;
+    _trimming_enabled = true;
+
+    _next_pathid = 1;
+
+    _bdp = (_base_rtt * LINK_SPEED_MODERN / 8) / 1000;
+
+    _queue_size = _bdp; // Temporary
+
+    _maxcwnd = _bdp;
+    _cwnd = _bdp;
+} */
+
 int BBRSrc::next_route() {
     // used for reactive ECN.
     // Just move on to the next path blindly
@@ -832,9 +806,7 @@ void BBRSrc::CheckCyclePhase() {
         m_cycleIndex++;
         m_cycleIndex = (m_cycleIndex) % 8;
         if (COLLECT_DATA) {
-            std::string file_name =
-                    PROJECT_ROOT_PATH /
-                    ("sim/output/status/status" + _name + ".txt");
+            std::string file_name = PROJECT_ROOT_PATH / ("sim/output/status/status" + _name + ".txt");
             std::ofstream MyFile(file_name, std::ios_base::app);
             MyFile << eventlist().now() / 1000 << "," << 2 << std::endl;
             MyFile.close();
@@ -846,21 +818,19 @@ double BBRSrc::GetBestBw() {
     // storing the largest number to arr[0]
     double max_bw = 0;
     for (int i = 0; i < 10; ++i) {
-        // printf("Best BW %d --> %f\n", i, best_bdw_window[i]);
+        /* printf("Best BW %d --> %f\n", i, best_bdw_window[i]); */
         if (best_bdw_window[i] > max_bw) {
             max_bw = best_bdw_window[i];
         }
     }
-    // printf("Returning %f\n", max_bw);
+    /* printf("Returning %f\n", max_bw); */
     return max_bw;
 }
 
 void BBRSrc::CheckDrain() {
     if (bbr_status == STARTUP && m_isPipeFilled) {
         if (COLLECT_DATA) {
-            std::string file_name =
-                    PROJECT_ROOT_PATH /
-                    ("sim/output/status/status" + _name + ".txt");
+            std::string file_name = PROJECT_ROOT_PATH / ("sim/output/status/status" + _name + ".txt");
             std::ofstream MyFile(file_name, std::ios_base::app);
             MyFile << eventlist().now() / 1000 << "," << 0 << std::endl;
             MyFile.close();
@@ -886,9 +856,7 @@ void BBRSrc::CheckDrain() {
         latest_phase_window_end = eventlist().now() + _base_rtt;
 
         if (COLLECT_DATA) {
-            std::string file_name =
-                    PROJECT_ROOT_PATH /
-                    ("sim/output/status/status" + _name + ".txt");
+            std::string file_name = PROJECT_ROOT_PATH / ("sim/output/status/status" + _name + ".txt");
             std::ofstream MyFile(file_name, std::ios_base::app);
             MyFile << eventlist().now() / 1000 << "," << 1 << std::endl;
             MyFile.close();
@@ -952,24 +920,21 @@ bool BBRSrc::IsNextCyclePhase() {
 void BBRSrc::update_bw_model(double bw) {
 
     if (COLLECT_DATA) {
-        std::string file_name = PROJECT_ROOT_PATH /
-                                ("sim/output/out_bw/out_bw" + _name + ".txt");
+        std::string file_name = PROJECT_ROOT_PATH / ("sim/output/out_bw/out_bw" + _name + ".txt");
         std::ofstream MyFile(file_name, std::ios_base::app);
-        MyFile << eventlist().now() / 1000 << "," << bw << "," << 1 / 1000
-               << std::endl;
+        MyFile << eventlist().now() / 1000 << "," << bw << "," << 1 / 1000 << std::endl;
         MyFile.close();
     }
 
     best_bdw_current_window.push_back(bw);
-    double max = *max_element(best_bdw_current_window.begin(),
-                              best_bdw_current_window.end());
+    double max = *max_element(best_bdw_current_window.begin(), best_bdw_current_window.end());
     best_bdw_window[m_cycleIndex_bdw] = max;
     if (eventlist().now() > latest_rtt_window_end + _base_rtt) {
         m_cycleIndex_bdw++;
         m_cycleIndex_bdw %= 10;
         best_bdw_current_window.clear();
         latest_rtt_window_end += _base_rtt;
-        if (generic_pacer != NULL && eventlist().now() > _base_rtt * 1.5) {
+        if (generic_pacer != NULL && eventlist().now() > _base_rtt * 0) {
             pacing_delay = pacer_d;
             pacing_delay *= 1000;
             generic_pacer->cancel();
@@ -979,23 +944,32 @@ void BBRSrc::update_bw_model(double bw) {
 }
 
 void BBRSrc::UpdatePacingRate(double bw) {
-    double max = GetBestBw();
-    bw = max;
+    double max_b = GetBestBw();
+    bw = max_b;
     if (m_isPipeFilled || bw > current_bw) {
         current_bw = bw;
     }
 
+    int old_pacer_d = pacer_d;
+
+    current_bw = max(current_bw, 3.0);
     pacer_d = ((_mss + 64) * 8.0) / (current_bw * pacing_gain);
 
-    // printf("Choosing new BW of %f (%f and %f) at %lu\n",
-    //        current_bw * pacing_gain, bw, pacing_gain, GLOBAL_TIME / 1000);
+    if ((pacer_d - old_pacer_d < 4300 * 8 / LINK_SPEED_MODERN) && pacing_gain > 1) {
+
+        pacer_d = old_pacer_d - (4300 * 8 * 2 / LINK_SPEED_MODERN);
+        if (pacer_d < 0) {
+            pacer_d = (4300 * 8 / LINK_SPEED_MODERN);
+        }
+        /* printf("Pacer D %d - old %d - adapted %d\n", pacer_d, old_pacer_d, pacer_d); */
+    }
+
+    /* printf("Choosing new BW of %f (%f and %f) at %lu\n", current_bw * pacing_gain, bw, pacing_gain, GLOBAL_TIME /
+     * 1000); */
     if (COLLECT_DATA) {
-        std::string file_name =
-                PROJECT_ROOT_PATH /
-                ("sim/output/out_bw_paced/out_bw_paced" + _name + ".txt");
+        std::string file_name = PROJECT_ROOT_PATH / ("sim/output/out_bw_paced/out_bw_paced" + _name + ".txt");
         std::ofstream MyFile(file_name, std::ios_base::app);
-        MyFile << eventlist().now() / 1000 << "," << (bw * pacing_gain) << ","
-               << 1 / 1000 << std::endl;
+        MyFile << eventlist().now() / 1000 << "," << (bw * pacing_gain) << "," << 1 / 1000 << std::endl;
         MyFile.close();
     }
 }
@@ -1006,14 +980,11 @@ void BBRSrc::processAck(BBRAck &pkt, bool force_marked) {
     // printf("Received ACK\n");
 
     consecutive_nack = 0;
-    bool marked = pkt.flags() &
-                  ECN_ECHO; // ECN was marked on data packet and echoed on ACK
+    bool marked = pkt.flags() & ECN_ECHO; // ECN was marked on data packet and echoed on ACK
 
     if (COLLECT_DATA && marked) {
-        std::string file_name =
-                PROJECT_ROOT_PATH /
-                ("sim/output/ecn/ecn" + std::to_string(pkt.from) + "_" +
-                 std::to_string(pkt.to) + ".txt");
+        std::string file_name = PROJECT_ROOT_PATH / ("sim/output/ecn/ecn" + std::to_string(pkt.from) + "_" +
+                                                     std::to_string(pkt.to) + ".txt");
         std::ofstream MyFile(file_name, std::ios_base::app);
 
         MyFile << eventlist().now() / 1000 << "," << marked << std::endl;
@@ -1025,16 +996,14 @@ void BBRSrc::processAck(BBRAck &pkt, bool force_marked) {
     if (precision_ts == 1) {
         now_time = eventlist().now();
     } else {
-        now_time = (((eventlist().now() + precision_ts - 1) / precision_ts) *
-                    precision_ts);
+        now_time = (((eventlist().now() + precision_ts - 1) / precision_ts) * precision_ts);
     }
     uint64_t newRtt = now_time - ts;
     mark_received(pkt);
 
     count_total_ack++;
     if (marked) {
-        _list_ecn_received.push_back(
-                std::make_pair(eventlist().now() / 1000, 1));
+        _list_ecn_received.push_back(std::make_pair(eventlist().now() / 1000, 1));
         count_total_ecn++;
         consecutive_good_medium = 0;
     }
@@ -1047,10 +1016,13 @@ void BBRSrc::processAck(BBRAck &pkt, bool force_marked) {
     // BBR Part
     use_pacing = true;
     double delivery_rate = 0;
+    delivered_so_far += _mss + 64;
     if ((delivered_so_far - (pkt.delivered_so_far + 4153)) > 0) {
-        delivery_rate = (delivered_so_far - (pkt.delivered_so_far + 4153)) * 8 /
-                        (double)(newRtt / 1000);
+        delivery_rate = (delivered_so_far - (pkt.delivered_so_far + 4153)) * 8 / (double)(newRtt / 1000);
     }
+
+    /* printf("From %d - New RTT id %lu - Delivery So Far %d - Rate %f\n", from, newRtt, delivered_so_far,
+     * delivery_rate); */
 
     update_bw_model(delivery_rate);
     CheckCyclePhase();
@@ -1063,8 +1035,6 @@ void BBRSrc::processAck(BBRAck &pkt, bool force_marked) {
     //        (delivered_so_far - (pkt.delivered_so_far + 4153)) * 8,
     //        (newRtt / 1000.0), delivery_rate, pacer_d);
 
-    delivered_so_far += _mss + 64;
-
     if (!marked) {
         _consecutive_no_ecn += _mss;
         _next_pathid = pkt.pathid_echo;
@@ -1076,15 +1046,12 @@ void BBRSrc::processAck(BBRAck &pkt, bool force_marked) {
     }
 
     if (COLLECT_DATA) {
-        _received_ecn.push_back(
-                std::make_tuple(eventlist().now(), marked, _mss, newRtt));
-        _list_rtt.push_back(std::make_tuple(
-                eventlist().now() / 1000, newRtt / 1000, pkt.seqno(),
-                pkt.ackno(), _base_rtt / 1000, _target_rtt / 1000));
+        _received_ecn.push_back(std::make_tuple(eventlist().now(), marked, _mss, newRtt));
+        _list_rtt.push_back(std::make_tuple(eventlist().now() / 1000, newRtt / 1000, pkt.seqno(), pkt.ackno(),
+                                            _base_rtt / 1000, _target_rtt / 1000));
     }
 
-    if (newRtt > _base_rtt * quickadapt_lossless_rtt && marked &&
-        queue_type == "lossless_input") {
+    if (newRtt > _base_rtt * quickadapt_lossless_rtt && marked && queue_type == "lossless_input") {
         // printf("PFC Src Happened at %lu - %d@%d\n", GLOBAL_TIME / 1000, from,
         //        pkt.id());
         simulateTrimEvent(dynamic_cast<BBRAck &>(pkt));
@@ -1099,15 +1066,14 @@ void BBRSrc::processAck(BBRAck &pkt, bool force_marked) {
             f_flow_over_hook(pkt);
         }
 
-        cout << "Flow " << nodename() << " finished at "
-             << timeAsUs(eventlist().now()) << endl;
-        cout << "Flow " << nodename() << " completion time is "
-             << timeAsMs(eventlist().now() - _flow_start_time) << endl;
+        cout << "Flow " << nodename() << " finished at " << timeAsUs(eventlist().now()) << endl;
+        cout << "Flow " << nodename() << " completion time is " << timeAsMs(eventlist().now() - _flow_start_time)
+             << endl;
 
         printf("Flow Completion time is %f - Flow Finishing Time %lu - Flow "
-               "Start Time %lu\n",
-               timeAsUs(eventlist().now()) - timeAsUs(_flow_start_time),
-               eventlist().now(), _flow_start_time);
+               "Start Time %lu - Size Finished Flow %lu\n",
+               timeAsUs(eventlist().now()) - timeAsUs(_flow_start_time), eventlist().now(), _flow_start_time,
+               _flow_size);
 
         printf("Overall Completion at %lu\n", GLOBAL_TIME);
         if (_end_trigger) {
@@ -1215,8 +1181,7 @@ void BBRSrc::receivePacket(Packet &pkt) {
         }
         break;
     default:
-        std::cout << "unknown packet receive with type code: " << pkt.type()
-                  << "\n";
+        std::cout << "unknown packet receive with type code: " << pkt.type() << "\n";
         return;
     }
     if (get_unacked() < _cwnd && _rtx_timeout_pending) {
@@ -1258,15 +1223,12 @@ uint32_t BBRSrc::medium_increase(simtime_picosec rtt) {
     } else {
         consecutive_good_medium = 0;
 
-        _list_medium_increase_event.push_back(
-                std::make_pair(eventlist().now() / 1000, 1));
+        _list_medium_increase_event.push_back(std::make_pair(eventlist().now() / 1000, 1));
         if (delay_gain_value_med_inc == 0) {
-            return min(uint32_t(_mss) * exp_gain_value_med_inc * none_rtt_gain,
-                       double(_mss) * none_rtt_gain) *
+            return min(uint32_t(_mss) * exp_gain_value_med_inc * none_rtt_gain, double(_mss) * none_rtt_gain) *
                    jitter_value_med_inc;
         } else {
-            return min(uint32_t((((_target_rtt - rtt) / (double)rtt) *
-                                 delay_gain_value_med_inc * _mss) *
+            return min(uint32_t((((_target_rtt - rtt) / (double)rtt) * delay_gain_value_med_inc * _mss) *
                                         exp_gain_value_med_inc +
                                 (_mss) * (_mss / (double)_cwnd)) *
                                none_rtt_gain,
@@ -1300,17 +1262,14 @@ void BBRSrc::fast_increase() {
     }
 
     increasing = true;
-    _list_fast_increase_event.push_back(
-            std::make_pair(eventlist().now() / 1000, 1));
+    _list_fast_increase_event.push_back(std::make_pair(eventlist().now() / 1000, 1));
 }
 
 void BBRSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
     bool can_decrease_exp_avg = true;
 
-    if (rtt <= (_base_rtt + (_mss * 8 / LINK_SPEED_MODERN * 3 * 1000)) &&
-        !ecn) {
-        printf("Executing %lu vs %lu \n", rtt,
-               (_base_rtt + (_mss * 8 / LINK_SPEED_MODERN * 3 * 1000)));
+    if (rtt <= (_base_rtt + (_mss * 8 / LINK_SPEED_MODERN * 3 * 1000)) && !ecn) {
+        printf("Executing %lu vs %lu \n", rtt, (_base_rtt + (_mss * 8 / LINK_SPEED_MODERN * 3 * 1000)));
         counter_consecutive_good_bytes += _mss;
     } else {
         target_window = _cwnd;
@@ -1343,14 +1302,12 @@ void BBRSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
         return;
     }
 
-    if ((increasing || counter_consecutive_good_bytes > target_window) &&
-        use_fast_increase) {
+    if ((increasing || counter_consecutive_good_bytes > target_window) && use_fast_increase) {
         fast_increase();
         // Case 1 RTT Based Increase
     } else if (!ecn && rtt < _target_rtt) {
 
-        _cwnd += (min(uint32_t((((_target_rtt - rtt) / (double)rtt) * y_gain *
-                                _mss * (_mss / (double)_cwnd))),
+        _cwnd += (min(uint32_t((((_target_rtt - rtt) / (double)rtt) * y_gain * _mss * (_mss / (double)_cwnd))),
                       uint32_t(_mss))) *
                  reaction_delay;
 
@@ -1359,19 +1316,16 @@ void BBRSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
         }
 
         if (COLLECT_DATA) {
-            _list_medium_increase_event.push_back(
-                    std::make_pair(eventlist().now() / 1000, 1));
+            _list_medium_increase_event.push_back(std::make_pair(eventlist().now() / 1000, 1));
             count_case_1.push_back(std::make_pair(eventlist().now() / 1000, 1));
         }
         // printf("1\n");
         //  Case 2 Hybrid Based Decrease || RTT Decrease
     } else if (ecn && rtt > _target_rtt) {
         if (can_decrease_exp_avg) {
-            _cwnd -=
-                    reaction_delay *
-                    min(((w_gain * ((rtt - (double)_target_rtt) / rtt) * _mss) +
-                         _cwnd / (double)_bdp * z_gain * _mss),
-                        (double)_mss);
+            _cwnd -= reaction_delay *
+                     min(((w_gain * ((rtt - (double)_target_rtt) / rtt) * _mss) + _cwnd / (double)_bdp * z_gain * _mss),
+                         (double)_mss);
         }
         if (COLLECT_DATA) {
             count_case_2.push_back(std::make_pair(eventlist().now() / 1000, 1));
@@ -1380,11 +1334,9 @@ void BBRSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
         //  Case 3 Gentle Decrease (Window based)
     } else if (ecn && rtt < _target_rtt) {
         if (can_decrease_exp_avg) {
-            reduce_cwnd(static_cast<double>(_cwnd) / _bdp * _mss * z_gain *
-                        reaction_delay);
+            reduce_cwnd(static_cast<double>(_cwnd) / _bdp * _mss * z_gain * reaction_delay);
             if (COLLECT_DATA) {
-                count_case_3.push_back(
-                        std::make_pair(eventlist().now() / 1000, 1));
+                count_case_3.push_back(std::make_pair(eventlist().now() / 1000, 1));
             }
         }
         // printf("3\n");
@@ -1407,12 +1359,9 @@ void BBRSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
 
 const string &BBRSrc::nodename() { return _nodename; }
 
-void BBRSrc::connect(Route *routeout, Route *routeback, BBRSink &sink,
-                     simtime_picosec starttime) {
-    if (_route_strategy == SINGLE_PATH || _route_strategy == ECMP_FIB ||
-        _route_strategy == ECMP_FIB_ECN || _route_strategy == REACTIVE_ECN ||
-        _route_strategy == ECMP_RANDOM2_ECN ||
-        _route_strategy == ECMP_RANDOM_ECN) {
+void BBRSrc::connect(Route *routeout, Route *routeback, BBRSink &sink, simtime_picosec starttime) {
+    if (_route_strategy == SINGLE_PATH || _route_strategy == ECMP_FIB || _route_strategy == ECMP_FIB_ECN ||
+        _route_strategy == REACTIVE_ECN || _route_strategy == ECMP_RANDOM2_ECN || _route_strategy == ECMP_RANDOM_ECN) {
         assert(routeout);
         _route = routeout;
     }
@@ -1428,6 +1377,7 @@ void BBRSrc::connect(Route *routeout, Route *routeback, BBRSink &sink,
 }
 
 void BBRSrc::startflow() {
+    printf("Starting a flow\n");
     updateParams();
     ideal_x = x_gain;
     _flow_start_time = eventlist().now();
@@ -1537,8 +1487,7 @@ void BBRSrc::send_packets() {
         // Check pacer and set timeout
         uint64_t data_seq = 0;
 
-        BBRPacket *p = BBRPacket::newpkt(_flow, *_route, _highest_sent + 1,
-                                         data_seq, _mss, false, _dstaddr);
+        BBRPacket *p = BBRPacket::newpkt(_flow, *_route, _highest_sent + 1, data_seq, _mss, false, _dstaddr);
 
         p->set_route(*_route);
         int crt = choose_route();
@@ -1568,8 +1517,7 @@ void BBRSrc::send_packets() {
         assert(q);
         uint32_t service_time = q->serviceTime(*p);
         _sent_packets.push_back(
-                SentPacketBBR(eventlist().now() + service_time + _rto, p->seqno(),
-                           false, false, false));
+                SentPacketBBR(eventlist().now() + service_time + _rto, p->seqno(), false, false, false));
 
         count_sent++;
         if (generic_pacer != NULL) {
@@ -1596,12 +1544,9 @@ void permute_sequence_bbr(vector<int> &seq) {
 }
 
 void BBRSrc::set_paths(uint32_t no_of_paths) {
-    if (_route_strategy != ECMP_FIB && _route_strategy != ECMP_FIB_ECN &&
-        _route_strategy != ECMP_FIB2_ECN && _route_strategy != REACTIVE_ECN &&
-        _route_strategy != ECMP_RANDOM_ECN &&
-        _route_strategy != ECMP_RANDOM2_ECN) {
-        cout << "Set paths uec (path_count) called with wrong route strategy "
-             << _route_strategy << endl;
+    if (_route_strategy != ECMP_FIB && _route_strategy != ECMP_FIB_ECN && _route_strategy != ECMP_FIB2_ECN &&
+        _route_strategy != REACTIVE_ECN && _route_strategy != ECMP_RANDOM_ECN && _route_strategy != ECMP_RANDOM2_ECN) {
+        cout << "Set paths uec (path_count) called with wrong route strategy " << _route_strategy << endl;
         abort();
     }
 
@@ -1737,9 +1682,8 @@ void BBRSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
         _rtx_timeout_pending = true;
         apply_timeout_penalty();
 
-        cout << "At " << timeAsUs(now) << "us RTO " << timeAsUs(_rto)
-             << "us RTT " << timeAsUs(_rtt) << "us SEQ " << _last_acked / _mss
-             << " CWND " << _cwnd / _mss << " Flow ID " << str() << endl;
+        cout << "At " << timeAsUs(now) << "us RTO " << timeAsUs(_rto) << "us RTT " << timeAsUs(_rtt) << "us SEQ "
+             << _last_acked / _mss << " CWND " << _cwnd / _mss << " Flow ID " << str() << endl;
 
         _cwnd = _mss;
 
@@ -1788,8 +1732,7 @@ bool BBRSrc::resend_packet(std::size_t idx) {
     // }
     // Getting time until packet is really sent
     _unacked += _mss;
-    BBRPacket *p = BBRPacket::newpkt(_flow, *_route, _sent_packets[idx].seqno,
-                                     0, _mss, true, _dstaddr);
+    BBRPacket *p = BBRPacket::newpkt(_flow, *_route, _sent_packets[idx].seqno, 0, _mss, true, _dstaddr);
     p->set_ts(eventlist().now());
     p->delivered_so_far = delivered_so_far;
 
@@ -1824,8 +1767,7 @@ void BBRSrc::retransmit_packet() {
     _rtx_pending = false;
     for (std::size_t i = 0; i < _sent_packets.size(); ++i) {
         auto &sp = _sent_packets[i];
-        if (_rtx_timeout_pending && !sp.acked && !sp.nacked &&
-            sp.timer <= eventlist().now() + _rto_margin) {
+        if (_rtx_timeout_pending && !sp.acked && !sp.nacked && sp.timer <= eventlist().now() + _rto_margin) {
             _cwnd = _mss;
             sp.timedOut = true;
             reduce_unacked(_mss);
@@ -1843,19 +1785,14 @@ void BBRSrc::retransmit_packet() {
  * BBRSink *
  **********/
 
-BBRSink::BBRSink() : DataReceiver("sink"), _cumulative_ack{0}, _drops{0} {
-    _nodename = "BBRsink";
-}
+BBRSink::BBRSink() : DataReceiver("sink"), _cumulative_ack{0}, _drops{0} { _nodename = "BBRsink"; }
 
-void BBRSink::set_end_trigger(Trigger &end_trigger) {
-    _end_trigger = &end_trigger;
-}
+void BBRSink::set_end_trigger(Trigger &end_trigger) { _end_trigger = &end_trigger; }
 
-void BBRSink::send_nack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno,
-                        BBRAck::seq_t ackno, const Route *rt, int path_id) {
+void BBRSink::send_nack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno, BBRAck::seq_t ackno, const Route *rt,
+                        int path_id) {
 
-    BBRNack *nack =
-            BBRNack::newpkt(_src->_flow, *_route, seqno, ackno, 0, _srcaddr);
+    BBRNack *nack = BBRNack::newpkt(_src->_flow, *_route, seqno, ackno, 0, _srcaddr);
 
     // printf("Sending NACK at %lu\n", GLOBAL_TIME);
     nack->set_pathid(_path_ids[_crt_path]);
@@ -1910,8 +1847,7 @@ void BBRSink::receivePacket(Packet &pkt) {
         }
         break;
     default:
-        std::cout << "unknown packet receive with type code: " << pkt.type()
-                  << "\n";
+        std::cout << "unknown packet receive with type code: " << pkt.type() << "\n";
         pkt.free();
         // printf("Free5\n");
         // //fflush(stdout);
@@ -1943,8 +1879,8 @@ void BBRSink::receivePacket(Packet &pkt) {
                                         // information about
                                         // options somehow
             int32_t path_id = p->pathid();
-            send_ack(ts, marked, 1, _cumulative_ack, _paths.at(crt_path),
-                     pkt.get_route(), path_id, p->delivered_so_far);
+            send_ack(ts, marked, 1, _cumulative_ack, _paths.at(crt_path), pkt.get_route(), path_id,
+                     p->delivered_so_far);
         }
         return;
     }
@@ -1989,9 +1925,8 @@ void BBRSink::receivePacket(Packet &pkt) {
         // received?
         if (_received.empty()) {
             _received.push_front(seqno);
-            _drops += (1000 + seqno - _cumulative_ack - 1) /
-                      1000; // TODO: figure out what is this
-                            // calculating exactly
+            _drops += (1000 + seqno - _cumulative_ack - 1) / 1000; // TODO: figure out what is this
+                                                                   // calculating exactly
         } else if (seqno > _received.back()) {
             _received.push_back(seqno);
         } else {
@@ -2011,12 +1946,10 @@ void BBRSink::receivePacket(Packet &pkt) {
     // quick way of doing that in htsim printf("Ack Sending
     // From %d - %d\n", this->from,
     int32_t path_id = p->pathid();
-    send_ack(ts, marked, seqno, ackno, _paths.at(crt_path), pkt.get_route(),
-             path_id, p->delivered_so_far);
+    send_ack(ts, marked, seqno, ackno, _paths.at(crt_path), pkt.get_route(), path_id, p->delivered_so_far);
 }
 
-void BBRSink::send_ack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno,
-                       BBRAck::seq_t ackno, const Route *rt,
+void BBRSink::send_ack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno, BBRAck::seq_t ackno, const Route *rt,
                        const Route *inRoute, int path_id, int so_far_del) {
 
     BBRAck *ack = 0;
@@ -2150,15 +2083,12 @@ void BBRSink::set_paths(uint32_t no_of_paths) {
  * UecRtxTimerScanner *
  **********************/
 
-BBRRtxTimerScanner::BBRRtxTimerScanner(simtime_picosec scanPeriod,
-                                       EventList &eventlist)
+BBRRtxTimerScanner::BBRRtxTimerScanner(simtime_picosec scanPeriod, EventList &eventlist)
         : EventSource(eventlist, "RtxScanner"), _scanPeriod{scanPeriod} {
     eventlist.sourceIsPendingRel(*this, 0);
 }
 
-void BBRRtxTimerScanner::registerBBR(BBRSrc &BBRsrc) {
-    _uecs.push_back(&BBRsrc);
-}
+void BBRRtxTimerScanner::registerBBR(BBRSrc &BBRsrc) { _uecs.push_back(&BBRsrc); }
 
 void BBRRtxTimerScanner::doNextEvent() {
     simtime_picosec now = eventlist().now();
