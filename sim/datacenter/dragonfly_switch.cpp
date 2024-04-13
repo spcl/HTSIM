@@ -99,6 +99,7 @@ void DragonflySwitch::receivePacket(Packet &pkt) {
         // the egress queue.
         _pipe->receivePacket(pkt);
     } else {
+
         _packets.erase(&pkt);
 
         // egress queue processing.
@@ -107,8 +108,8 @@ void DragonflySwitch::receivePacket(Packet &pkt) {
 
         pkt.hop_count++;
 
-        /*printf("At %s - Hop %d - Time %lu\n", nodename().c_str(),
-           pkt.hop_count, GLOBAL_TIME);*/
+        /* printf("At %s - Hop %d - Time %lu\n", nodename().c_str(),
+           pkt.hop_count, GLOBAL_TIME); */
 
         if ((pkt.hop_count == 1) &&
             (pkt.type() == UEC || pkt.type() == NDP ||
@@ -166,8 +167,8 @@ void DragonflySwitch::addHostPort(int addr, uint32_t flowid, PacketSink *transpo
     Route *rt = new Route();
     uint32_t hostTorAddr = _dt->HOST_TOR_FKT(addr);
     printf("addHostPort: %d.\n", addr);
-    rt->push_back(_dt->queues_host_switch[hostTorAddr][addr]);
-    rt->push_back(_dt->pipes_host_switch[hostTorAddr][addr]);
+    rt->push_back(_dt->queues_switch_host[hostTorAddr][addr]);
+    rt->push_back(_dt->pipes_switch_host[hostTorAddr][addr]);
     rt->push_back(transport);
     _fib->addHostRoute(addr, rt, flowid);
 }
@@ -244,27 +245,28 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 uint32_t _h = _dt->get_no_global_links();
                 uint32_t noGroups = _dt->get_no_groups();
 
+                uint32_t dst_switch = _dt->HOST_TOR_FKT(pkt.dst());
+
                 uint32_t src_group = _id / _a;
-                uint32_t dst_group = pkt.dst() / _a;
+                uint32_t dst_group = dst_switch / _a;
 
                 // printf("getNextHop: src_group = %d\n", src_group);
                 // printf("getNextHop: dst_group = %d\n", dst_group);
 
                 uint32_t src_intra_group_id = _id % _a;
-                uint32_t dst_intra_group_id = pkt.dst() % _a;
-
-                uint32_t dst_switch = _dt->HOST_TOR_FKT(pkt.dst());
+                uint32_t dst_intra_group_id = dst_switch % _a;
 
                 if (_id == dst_switch){
+                    printf("Exit.\n");
                     HostFibEntry *fe = _fib->getHostRoute(pkt.dst(), pkt.flow_id());
                     assert(fe);
                     pkt.set_direction(DOWN);
                     return fe->getEgressPort();
                 }
                 else if (src_group == dst_group){
-                    r->push_back(_dt->queues_switch_switch[_id][pkt.dst()]);
-                    r->push_back(_dt->pipes_switch_switch[_id][pkt.dst()]);
-                    r->push_back(_dt->queues_switch_switch[_id][pkt.dst()]->getRemoteEndpoint());
+                    r->push_back(_dt->queues_switch_switch[_id][dst_switch]);
+                    r->push_back(_dt->pipes_switch_switch[_id][dst_switch]);
+                    r->push_back(_dt->queues_switch_switch[_id][dst_switch]->getRemoteEndpoint());
                     // printf("getNextHop: routeBack_size = %ld\n", r->size());
                     _fib->addRoute(pkt.dst(), r, 1, DOWN);
                 }
