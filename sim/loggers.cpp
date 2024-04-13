@@ -170,9 +170,12 @@ QueueLoggerSampling::QueueLoggerSampling(simtime_picosec period, EventList &even
 }
 
 void QueueLoggerSampling::doNextEvent() {
+    return;
     eventlist().sourceIsPendingRel(*this, _period);
-    if (_queue == NULL)
-        return;
+    if (_queue == NULL){
+        //printf("NULL.\n");
+        return;}
+        
     mem_b queuebuff = _queue->maxsize();
     if (!_seenQueueInD) { // queue size hasn't changed in the past D time units
         _logfile->writeRecord(QUEUE_APPROX, _queue->get_id(), QUEUE_RANGE, (double)_lastq, (double)_lastq,

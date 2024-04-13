@@ -84,6 +84,7 @@ class DragonflyTopology : public Topology {
     
     uint32_t get_group_size() { return _a; }
     uint32_t get_no_groups() { return _a * _h + 1; }
+    uint32_t get_no_global_links() { return _h; }
 
   private:
     void set_params();

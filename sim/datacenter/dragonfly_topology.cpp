@@ -28,12 +28,14 @@ string itoa(uint64_t n);
 DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q) {
     //  p = number of hosts per router.
     //  a = number of routers per group.
-    //  h = number of links used to connect to other groups.
+    //  h = number of links used to connect to other groups per router.
     // qt = queue type.
 
     if (p < 1 || a < 1 || h < 1) {
         cerr << "p, a, h all have to be positive." << endl;
     }
+
+    logfile = NULL;
 
     _p = p;
     _a = a;
@@ -67,6 +69,8 @@ DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b q
         cerr << "p, a, h all have to be positive." << endl;
     }
 
+    logfile = NULL;
+
     _p = p;
     _a = a;
     _h = h;
@@ -85,7 +89,7 @@ DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b q
 
     init_pipes_queues();
     init_network();
-    printf("Dragonfly2::_p = %u\n", _p);
+    // printf("Dragonfly2::_p = %u\n", _p);
 }
 
 // Initializes all pipes and queues for the switches.
@@ -322,4 +326,13 @@ void DragonflyTopology::init_network() {
             switches[j]->configureLossless();
         }
     }
+
+/*     for (int i = 0; i < _no_of_switches; i++){
+        for (int j = i+1; j < _no_of_switches; j++){
+            if(!pipes_switch_switch[i][j] == NULL){
+                printf("%d <-> %d\n", i, j);
+            }
+        }
+        printf("\n");
+    } */
 }
