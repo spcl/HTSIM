@@ -372,11 +372,22 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                         return fe->getEgressPort();
                     }
                     else if (src_group == dst_group){
-                        r->push_back(_dt->queues_switch_switch[_id][dst_switch]);
-                        r->push_back(_dt->pipes_switch_switch[_id][dst_switch]);
-                        r->push_back(_dt->queues_switch_switch[_id][dst_switch]->getRemoteEndpoint());
-                        // printf("getNextHop: routeBack_size = %ld\n", r->size());
-                        e = new FibEntry(r, 1, DOWN);
+                        if(pkt.hop_count == 0){
+                            uint32_t random_intra_group_node = random() % (_a);
+                            uint32_t random_node_id = src_group * _a + random_intra_group_node;
+                            r->push_back(_dt->queues_switch_switch[_id][random_node_id]);
+                            r->push_back(_dt->pipes_switch_switch[_id][random_node_id]);
+                            r->push_back(_dt->queues_switch_switch[_id][random_node_id]->getRemoteEndpoint());
+                            // printf("getNextHop: routeBack_size = %ld\n", r->size());
+                            e = new FibEntry(r, 1, DOWN);
+                        }
+                        else{ // pkt.hop_count == 1
+                            r->push_back(_dt->queues_switch_switch[_id][dst_switch]);
+                            r->push_back(_dt->pipes_switch_switch[_id][dst_switch]);
+                            r->push_back(_dt->queues_switch_switch[_id][dst_switch]->getRemoteEndpoint());
+                            // printf("getNextHop: routeBack_size = %ld\n", r->size());
+                            e = new FibEntry(r, 1, DOWN);
+                        }
                     }
                     else{
                         uint32_t intra_group_connecting_node_id;
