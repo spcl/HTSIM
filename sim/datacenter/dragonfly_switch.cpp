@@ -90,8 +90,14 @@ void DragonflySwitch::receivePacket(Packet &pkt) {
         
         _packets[&pkt] = true;
 
+        /* if(pkt.is_ack){
+            printf("receivePacket: ACK_Packet with pkt_src %d dst %d arrived at %d.\n", pkt.to, pkt.dst(), _id);
+        }else{
+            printf("receivePacket: Packet with pkt_src %d dst %d arrived at %d.\n", pkt.from, pkt.dst(), _id);
+        } */
+
         const Route *nh = getNextHop(pkt, NULL);
-        printf("receivePacket: Packet arrived at %d.\n", _id);
+        
         // set next hop which is peer switch.
         pkt.set_route(*nh);
 
@@ -325,7 +331,7 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 uint32_t src_intra_group_id = _id % _a;
                 uint32_t dst_intra_group_id = dst_switch % _a;
 
-                if (src_group == pkt_src_group && src_group != dst_group){
+                if (src_group == pkt_src_group && pkt_src_group != dst_group){ // Go to random group.
                     if(_id == pkt_src_switch){
 
                         uint32_t random_intra_group_node = random() % (_a);
@@ -363,7 +369,7 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                         e = new FibEntry(r, 1, DOWN);
                     }
                 }
-                else{
+                else if (src_group == pkt_src_group && pkt_src_group == dst_group){ // Go just to a random node within the group.
                     if (_id == dst_switch){
                         //printf("Exit.\n");
                         HostFibEntry *fe = _fib->getHostRoute(pkt.dst(), pkt.flow_id());
@@ -371,10 +377,11 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                         pkt.set_direction(DOWN);
                         return fe->getEgressPort();
                     }
-                    else if (src_group == dst_group){
+                    else {
                         if(pkt.hop_count == 0){
-                            uint32_t random_intra_group_node = random() % (_a);
+                            uint32_t random_intra_group_node = random() % (_a - 1);
                             uint32_t random_node_id = src_group * _a + random_intra_group_node;
+                            if(random_node_id >= _id){random_node_id++;}
                             r->push_back(_dt->queues_switch_switch[_id][random_node_id]);
                             r->push_back(_dt->pipes_switch_switch[_id][random_node_id]);
                             r->push_back(_dt->queues_switch_switch[_id][random_node_id]->getRemoteEndpoint());
@@ -389,37 +396,59 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                             e = new FibEntry(r, 1, DOWN);
                         }
                     }
-                    else{
-                        uint32_t intra_group_connecting_node_id;
-                        if(dst_group > src_group){
-                            intra_group_connecting_node_id = (dst_group - 1) / _h;
+                }
+                else{ // src_group != pkt_src_group
+                    if(pkt_src_group == dst_group){ // src_group != pkt_src_group && pkt_src_group == dst_group
+                        abort();
+                    }
+                    else{ // src_group != pkt_src_group && pkt_src_group != dst_group
+                        if (_id == dst_switch){
+                            //printf("Exit.\n");
+                            HostFibEntry *fe = _fib->getHostRoute(pkt.dst(), pkt.flow_id());
+                            assert(fe);
+                            pkt.set_direction(DOWN);
+                            return fe->getEgressPort();
                         }
-                        else{
-                            intra_group_connecting_node_id = dst_group / _h;
-                        }
-                        uint32_t group_connecting_node_id = src_group * _a + intra_group_connecting_node_id;
-
-                        if(_id == group_connecting_node_id){
-                            // In the topology it holds the following:
-                            // The first _a + 1 nodes connect to the first node of other groups.
-                            // The second _a + 1 nodes connect to the second node of other groups.
-                            // And so on.
-
-                            uint32_t dst_group_connecting_node_id = (dst_group * _a) + (_id / noGroups);
-                            r->push_back(_dt->queues_switch_switch[_id][dst_group_connecting_node_id]);
-                            r->push_back(_dt->pipes_switch_switch[_id][dst_group_connecting_node_id]);
-                            r->push_back(_dt->queues_switch_switch[_id][dst_group_connecting_node_id]->getRemoteEndpoint());
+                        else if (src_group == dst_group){
+                            r->push_back(_dt->queues_switch_switch[_id][dst_switch]);
+                            r->push_back(_dt->pipes_switch_switch[_id][dst_switch]);
+                            r->push_back(_dt->queues_switch_switch[_id][dst_switch]->getRemoteEndpoint());
                             // printf("getNextHop: routeBack_size = %ld\n", r->size());
                             e = new FibEntry(r, 1, DOWN);
                         }
                         else{
-                            r->push_back(_dt->queues_switch_switch[_id][group_connecting_node_id]);
-                            r->push_back(_dt->pipes_switch_switch[_id][group_connecting_node_id]);
-                            r->push_back(_dt->queues_switch_switch[_id][group_connecting_node_id]->getRemoteEndpoint());
-                            // printf("getNextHop: routeBack_size = %ld\n", r->size());
-                            e = new FibEntry(r, 1, DOWN);
+                            uint32_t intra_group_connecting_node_id;
+                            if(dst_group > src_group){
+                                intra_group_connecting_node_id = (dst_group - 1) / _h;
+                            }
+                            else{
+                                intra_group_connecting_node_id = dst_group / _h;
+                            }
+                            uint32_t group_connecting_node_id = src_group * _a + intra_group_connecting_node_id;
+
+                            if(_id == group_connecting_node_id){
+                                // In the topology it holds the following:
+                                // The first _a + 1 nodes connect to the first node of other groups.
+                                // The second _a + 1 nodes connect to the second node of other groups.
+                                // And so on.
+
+                                uint32_t dst_group_connecting_node_id = (dst_group * _a) + (_id / noGroups);
+                                r->push_back(_dt->queues_switch_switch[_id][dst_group_connecting_node_id]);
+                                r->push_back(_dt->pipes_switch_switch[_id][dst_group_connecting_node_id]);
+                                r->push_back(_dt->queues_switch_switch[_id][dst_group_connecting_node_id]->getRemoteEndpoint());
+                                // printf("getNextHop: routeBack_size = %ld\n", r->size());
+                                e = new FibEntry(r, 1, DOWN);
+                            }
+                            else{
+                                r->push_back(_dt->queues_switch_switch[_id][group_connecting_node_id]);
+                                r->push_back(_dt->pipes_switch_switch[_id][group_connecting_node_id]);
+                                r->push_back(_dt->queues_switch_switch[_id][group_connecting_node_id]->getRemoteEndpoint());
+                                // printf("getNextHop: routeBack_size = %ld\n", r->size());
+                                e = new FibEntry(r, 1, DOWN);
+                            }
                         }
                     }
+                    
                 }
                 pkt.set_direction(e->getDirection());
                 return e->getEgressPort();
