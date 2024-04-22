@@ -46,7 +46,8 @@ class PacketFlow : public Logged {
 enum TopologyCase {
     FAT_TREE_CASE,
     FAT_TREE_DC_CASE,
-    DRAGONFLY_CASE
+    DRAGONFLY_CASE,
+    SLIMFLY_CASE
 };
 
 enum RouteStrategy {

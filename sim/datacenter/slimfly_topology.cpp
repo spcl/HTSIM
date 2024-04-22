@@ -1,12 +1,12 @@
 // -*- c-basic-offset: 4; indent-tabs-mode: nil -*-
-#include "dragonfly_topology.h"
+#include "slimfly_topology.h"
 #include "string.h"
 #include <sstream>
 #include <vector>
 
 #include "compositequeue.h"
 #include "compositequeuebts.h"
-#include "dragonfly_switch.h"
+#include "slimfly_switch.h"
 #include "ecnqueue.h"
 #include "main.h"
 #include "prioqueue.h"
@@ -25,75 +25,173 @@ string ntoa(double n);
 string itoa(uint64_t n);
 
 // Creates a new instance of a Dragonfly topology.
-DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q) {
-    //  p = number of hosts per router.
-    //  a = number of routers per group.
-    //  h = number of links used to connect to other groups per router.
-    // qt = queue type.
+SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type qt) {
+    //  p       = number of hosts per router.
+    //  q_base  = base of q (must be a prime).
+    //  q_exp   = exponent of q (> 0; and for q_base = 2: > 1).
+    //  qt      = queue type.
 
-    if (p < 1 || a < 1 || h < 1) {
-        cerr << "p, a, h all have to be positive." << endl;
+    if (p < 1 || q_base < 1 || q_exp < 1) {
+        cerr << "p, q_base, q_exp all have to be positive." << endl;
+    }
+    if (q_base == 2 && q_exp == 1){
+        cerr << "For q_base == 2 q_exp must be > 1." << endl;
+    }
+    if (!is_prime(q_base)){
+        cerr << "q_base must be a prime number." << endl;
+    }
+    if (q_exp > 1){
+        cerr << "The extended Galois fields are not implemented yet." << endl;
     }
 
     logfile = NULL;
 
     _p = p;
-    _a = a;
-    _h = h;
+    _q_base = q_base;
+    _q_exp = q_exp;
+    
+    _q = pow(q_base, q_exp);
+    _xi = get_generator(_q);
+
+    uint32_t q_half = (_q - 1) / 2;
+    _X.resize(q_half, 0);
+    _Xp.resize(q_half, 0);
+    uint32_t x = 1;
+    uint32_t xp = _xi;
+    for (uint32_t i = 0; i < q_half; i++) {
+        _X[i] = x;
+        _Xp[i] = xp;
+        x = (x * (_xi * _xi)) % _q;
+        xp = (xp * (_xi * _xi)) % _q;
+    }
+
+    /* printf("_X = [");
+    for (uint32_t i = 0; i < q_half; i++) {
+        printf("%u, ", _X[i]);
+    }
+    printf("]\n");
+    printf("_Xp = [");
+    for (uint32_t i = 0; i < q_half; i++) {
+        printf("%u, ", _Xp[i]);
+    }
+    printf("]\n"); */
 
     _queuesize = queuesize;
     _eventlist = ev;
-    _qt = q;
+    _qt = qt;
 
-    _no_of_groups = _a *_h + 1;
-    _no_of_switches = _no_of_groups * _a;
+    //_no_of_groups = _a *_h + 1;
+    _no_of_switches = 2 * pow(_q, 2);
     _no_of_nodes = _no_of_switches * _p;
 
-    std::cout << "DragonFly topology with " << _p << " hosts per router, " << _a << " routers per group and "
-         << _no_of_groups << " groups, total nodes " << _no_of_nodes << endl;
+    std::cout << "SlimFly topology with " << _p << " hosts per switch and " << _no_of_switches << " switches, total nodes " << _no_of_nodes << "." << endl;
     std::cout << "Queue type " << _qt << endl;
 
     init_pipes_queues();
     init_network();
-    printf("Dragonfly1::_p = %u\n", _p);
 }
 
-DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q, uint32_t strat) {
-    _df_routing_strategy = strat;
-    //  p = number of hosts per router.
-    //  a = number of routers per group.
-    //  h = number of links used to connect to other groups.
-    // qt = queue type.
+SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type qt, uint32_t strat) {
+    _sf_routing_strategy = strat;
+    printf("_sf_routing_strategy = %u\n", _sf_routing_strategy);
+    //  p       = number of hosts per router.
+    //  q_base  = base of q (must be a prime).
+    //  q_exp   = exponent of q (> 0; and for q_base = 2: > 1).
+    //  qt      = queue type.
 
-    if (p < 1 || a < 1 || h < 1) {
-        cerr << "p, a, h all have to be positive." << endl;
+    if (p < 1 || q_base < 1 || q_exp < 1) {
+        cerr << "p, q_base, q_exp all have to be positive." << endl;
+    }
+    if (q_base == 2 && q_exp == 1){
+        cerr << "For q_base == 2 q_exp must be > 1." << endl;
+    }
+    if (!is_prime(q_base)){
+        cerr << "q_base must be a prime number." << endl;
     }
 
     logfile = NULL;
 
     _p = p;
-    _a = a;
-    _h = h;
+    _q_base = q_base;
+    _q_exp = q_exp;
+    
+    _q = pow(q_base, q_exp);
+    _xi = get_generator(_q);
+
+    uint32_t q_half = (_q - 1) / 2;
+    _X.resize(q_half, 0);
+    _Xp.resize(q_half, 0);
+    uint32_t x = 1;
+    uint32_t xp = _xi;
+    for (uint32_t i = 0; i < q_half; i++) {
+        _X[i] = x;
+        _Xp[i] = xp;
+        x = (x * (_xi * _xi)) % _q;
+        xp = (xp * (_xi * _xi)) % _q;
+    }
+
+    printf("_X = [");
+    for (uint32_t i = 0; i < q_half; i++) {
+        printf("%u, ", _X[i]);
+    }
+    printf("]\n");
+    printf("_Xp = [");
+    for (uint32_t i = 0; i < q_half; i++) {
+        printf("%u, ", _Xp[i]);
+    }
+    printf("]\n");
 
     _queuesize = queuesize;
     _eventlist = ev;
-    _qt = q;
+    _qt = qt;
 
-    _no_of_groups = _a *_h + 1;
-    _no_of_switches = _no_of_groups * _a;
+    //_no_of_groups = _a *_h + 1;
+    _no_of_switches = 2 * pow(_q, 2);
     _no_of_nodes = _no_of_switches * _p;
 
-    std::cout << "DragonFly topology with " << _p << " hosts per router, " << _a << " routers per group and "
-         << _no_of_groups << " groups, total nodes " << _no_of_nodes << endl;
+    std::cout << "SlimFly topology with " << _p << " hosts per switch and " << _no_of_switches << " switches, total nodes " << _no_of_nodes << "." << endl;
     std::cout << "Queue type " << _qt << endl;
 
     init_pipes_queues();
     init_network();
-    // printf("Dragonfly2::_p = %u\n", _p);
+}
+
+uint32_t SlimflyTopology::get_generator(uint32_t q) {
+    if (q == 2){ return 1; }
+    if (q == 3){ return 2; }
+    for (uint32_t i = 2; i < (q - 1); i++){
+        uint32_t gen = i;
+        uint32_t r = i;
+        for (int j = 2; j < (q - 1); j++){
+            r = (r * gen) % q;
+            if (r == 1){ break; }
+        }
+        r = (r * gen) % q;
+        if (r == 1){ printf("gen = %u\n", gen); return gen; }
+    }
+    cerr << "Wasn't able to find a generator for the group." << endl;
+}
+
+bool SlimflyTopology::is_prime(uint32_t q_base){
+    if (q_base < 2){ return false; }
+    if (q_base == 2){ return true; }
+    uint32_t r = sqrt(q_base);
+    for(uint32_t i = 3; i <= r; i++){
+        if(q_base % i == 0){ return false; }
+    }
+    return true;
+}
+
+bool SlimflyTopology::is_element(vector<uint32_t> arr, uint32_t el){
+    int size = arr.size();
+    for (int i = 0; i < size; i++){
+        if(arr[i] == el) {return true;}
+    }
+    return false;
 }
 
 // Initializes all pipes and queues for the switches.
-void DragonflyTopology::init_pipes_queues() {
+void SlimflyTopology::init_pipes_queues() {
     switches.resize(_no_of_switches, NULL);
     
     pipes_host_switch.resize(_no_of_nodes, vector<Pipe *>(_no_of_switches));
@@ -105,21 +203,19 @@ void DragonflyTopology::init_pipes_queues() {
     queues_switch_host.resize(_no_of_switches, vector<Queue *>(_no_of_nodes));
 }
 
-vector<const Route *> *DragonflyTopology::get_bidir_paths(uint32_t src, uint32_t dest, bool reverse){return NULL;}
-
 // Creates an instance of a fair priority queue. It is used for packet input.
-Queue *DragonflyTopology::alloc_src_queue(QueueLogger *queueLogger) {
+Queue *SlimflyTopology::alloc_src_queue(QueueLogger *queueLogger) {
     return new FairPriorityQueue(speedFromMbps((uint64_t)HOST_NIC), memFromPkt(FEEDER_BUFFER), *_eventlist,
                                  queueLogger);
 }
 
 // Allocates a queue with a default link speed set to HOST_NIC.
-Queue *DragonflyTopology::alloc_queue(QueueLogger *queueLogger, mem_b queuesize, bool tor = false) {
+Queue *SlimflyTopology::alloc_queue(QueueLogger *queueLogger, mem_b queuesize, bool tor = false) {
     return alloc_queue(queueLogger, HOST_NIC, queuesize, tor);
 }
 
 // Creates an instance of a queue based on the type which is needed.
-Queue *DragonflyTopology::alloc_queue(QueueLogger *queueLogger, uint64_t speed, mem_b queuesize, bool tor) {
+Queue *SlimflyTopology::alloc_queue(QueueLogger *queueLogger, uint64_t speed, mem_b queuesize, bool tor) {
     if (_qt == RANDOM)
         return new RandomQueue(speedFromMbps(speed), queuesize, *_eventlist, queueLogger, memFromPkt(RANDOM_BUFFER));
     else if (_qt == COMPOSITE)
@@ -145,8 +241,8 @@ Queue *DragonflyTopology::alloc_queue(QueueLogger *queueLogger, uint64_t speed, 
     assert(0);
 }
 
-// Connects all nodes to a dragonfly network.
-void DragonflyTopology::init_network() {
+// Connects all nodes to a slimfly network.
+void SlimflyTopology::init_network() {
     QueueLoggerSampling *queueLogger;
 
     // Initializes all queues and pipes to NULL.
@@ -164,10 +260,8 @@ void DragonflyTopology::init_network() {
         }
     }
 
-    // Creates switches if it is a lossless operation.
-    // ???
     for (uint32_t j = 0; j < _no_of_switches; j++) {
-        switches[j] = new DragonflySwitch(*_eventlist, "Switch_" + ntoa(j), DragonflySwitch::GENERAL, j, timeFromUs((uint32_t)0), this, _df_routing_strategy);
+        switches[j] = new SlimflySwitch(*_eventlist, "Switch_" + ntoa(j), SlimflySwitch::GENERAL, j, timeFromUs((uint32_t)0), this, _sf_routing_strategy);
     }
 
     // Creates all links between Switches and Hosts.
@@ -216,107 +310,160 @@ void DragonflyTopology::init_network() {
         }
     }
 
+    uint32_t q2 = pow(_q, 2);
+
     // Creates all links between Switches and Switches.
-    for (uint32_t j = 0; j < _no_of_switches; j++) {
-        uint32_t groupid = j / _a;
+    
+    for (int y = 0; y < ((int) _q - 1); y++) {
+        for (int yp = (y + 1); yp < (int) _q; yp++) {
+            int diff = yp - y;
+            if (is_element(_X, diff)){
+                // printf("_X:\ty = %d;\typ = %d\n", y, yp);
+                for (uint32_t x = 0; x < _q; x++) {
+                    uint32_t k = _q * x + (uint32_t) y;
+                    uint32_t j = _q * x + (uint32_t) yp;
 
-        // Connect the switch to other switches in the same group, with higher
-        // IDs (full mesh within group).
-        for (uint32_t k = j + 1; k < (groupid + 1) * _a; k++) {
-            // Downlink
-            queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
-            //logfile->addLogger(*queueLogger);
+                    // Downlink
+                    queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
+                    //logfile->addLogger(*queueLogger);
 
-            queues_switch_switch[k][j] = alloc_queue(queueLogger, _queuesize);
-            queues_switch_switch[k][j]->setName("SW" + ntoa(k) + "-I->SW" + ntoa(j));
-            //logfile->writeName(*(queues_switch_switch[k][j]));
+                    queues_switch_switch[k][j] = alloc_queue(queueLogger, _queuesize);
+                    queues_switch_switch[k][j]->setName("SW" + ntoa(k) + "-I->SW" + ntoa(j));
+                    //logfile->writeName(*(queues_switch_switch[k][j]));
 
-            pipes_switch_switch[k][j] = new Pipe(timeFromUs(RTT), *_eventlist);
-            pipes_switch_switch[k][j]->setName("Pipe-SW" + ntoa(k) + "-I->SW" + ntoa(j));
-            //logfile->writeName(*(pipes_switch_switch[k][j]));
+                    pipes_switch_switch[k][j] = new Pipe(timeFromUs(RTT), *_eventlist);
+                    pipes_switch_switch[k][j]->setName("Pipe-SW" + ntoa(k) + "-I->SW" + ntoa(j));
+                    //logfile->writeName(*(pipes_switch_switch[k][j]));
 
-            // Uplink
-            queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
-            //logfile->addLogger(*queueLogger);
+                    // Uplink
+                    queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
+                    //logfile->addLogger(*queueLogger);
 
-            queues_switch_switch[j][k] = alloc_queue(queueLogger, _queuesize, true);
-            queues_switch_switch[j][k]->setName("SW" + ntoa(j) + "-I->SW" + ntoa(k));
-            //logfile->writeName(*(queues_switch_switch[j][k]));
+                    queues_switch_switch[j][k] = alloc_queue(queueLogger, _queuesize, true);
+                    queues_switch_switch[j][k]->setName("SW" + ntoa(j) + "-I->SW" + ntoa(k));
+                    //logfile->writeName(*(queues_switch_switch[j][k]));
 
-            switches[j]->addPort(queues_switch_switch[j][k]);
-            switches[k]->addPort(queues_switch_switch[k][j]);
-            queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
-            queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
+                    switches[j]->addPort(queues_switch_switch[j][k]);
+                    switches[k]->addPort(queues_switch_switch[k][j]);
+                    queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
+                    queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
 
-            // ???
-            if (_qt == LOSSLESS) {
-                switches[j]->addPort(queues_switch_switch[j][k]);
-                ((LosslessQueue *)queues_switch_switch[j][k])->setRemoteEndpoint(queues_switch_switch[k][j]);
-                switches[k]->addPort(queues_switch_switch[k][j]);
-                ((LosslessQueue *)queues_switch_switch[k][j])->setRemoteEndpoint(queues_switch_switch[j][k]);
-            } else if (_qt == LOSSLESS_INPUT || _qt == LOSSLESS_INPUT_ECN) {
-                new LosslessInputQueue(*_eventlist, queues_switch_switch[j][k]);
-                new LosslessInputQueue(*_eventlist, queues_switch_switch[k][j]);
+                    // ???
+                    if (_qt == LOSSLESS) {
+                        switches[j]->addPort(queues_switch_switch[j][k]);
+                        ((LosslessQueue *)queues_switch_switch[j][k])->setRemoteEndpoint(queues_switch_switch[k][j]);
+                        switches[k]->addPort(queues_switch_switch[k][j]);
+                        ((LosslessQueue *)queues_switch_switch[k][j])->setRemoteEndpoint(queues_switch_switch[j][k]);
+                    } else if (_qt == LOSSLESS_INPUT || _qt == LOSSLESS_INPUT_ECN) {
+                        new LosslessInputQueue(*_eventlist, queues_switch_switch[j][k]);
+                        new LosslessInputQueue(*_eventlist, queues_switch_switch[k][j]);
+                    }
+
+                    pipes_switch_switch[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
+                    pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-I->SW" + ntoa(k));
+                    //logfile->writeName(*(pipes_switch_switch[j][k]));
+                }
             }
+            if (is_element(_Xp, diff)){
+                // printf("_Xp:\ty = %d;\typ = %d\n", y, yp);
+                for (uint32_t x = 0; x < _q; x++) {
+                    uint32_t k = q2 + _q * x + y;
+                    uint32_t j = q2 + _q * x + yp;
 
-            pipes_switch_switch[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
-            pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-I->SW" + ntoa(k));
-            //logfile->writeName(*(pipes_switch_switch[j][k]));
+                    // Downlink
+                    queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
+                    //logfile->addLogger(*queueLogger);
 
+                    queues_switch_switch[k][j] = alloc_queue(queueLogger, _queuesize);
+                    queues_switch_switch[k][j]->setName("SW" + ntoa(k) + "-I->SW" + ntoa(j));
+                    //logfile->writeName(*(queues_switch_switch[k][j]));
+
+                    pipes_switch_switch[k][j] = new Pipe(timeFromUs(RTT), *_eventlist);
+                    pipes_switch_switch[k][j]->setName("Pipe-SW" + ntoa(k) + "-I->SW" + ntoa(j));
+                    //logfile->writeName(*(pipes_switch_switch[k][j]));
+
+                    // Uplink
+                    queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
+                    //logfile->addLogger(*queueLogger);
+
+                    queues_switch_switch[j][k] = alloc_queue(queueLogger, _queuesize, true);
+                    queues_switch_switch[j][k]->setName("SW" + ntoa(j) + "-I->SW" + ntoa(k));
+                    //logfile->writeName(*(queues_switch_switch[j][k]));
+
+                    switches[j]->addPort(queues_switch_switch[j][k]);
+                    switches[k]->addPort(queues_switch_switch[k][j]);
+                    queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
+                    queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
+
+                    // ???
+                    if (_qt == LOSSLESS) {
+                        switches[j]->addPort(queues_switch_switch[j][k]);
+                        ((LosslessQueue *)queues_switch_switch[j][k])->setRemoteEndpoint(queues_switch_switch[k][j]);
+                        switches[k]->addPort(queues_switch_switch[k][j]);
+                        ((LosslessQueue *)queues_switch_switch[k][j])->setRemoteEndpoint(queues_switch_switch[j][k]);
+                    } else if (_qt == LOSSLESS_INPUT || _qt == LOSSLESS_INPUT_ECN) {
+                        new LosslessInputQueue(*_eventlist, queues_switch_switch[j][k]);
+                        new LosslessInputQueue(*_eventlist, queues_switch_switch[k][j]);
+                    }
+
+                    pipes_switch_switch[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
+                    pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-I->SW" + ntoa(k));
+                    //logfile->writeName(*(pipes_switch_switch[j][k]));
+                }
+            }
         }
+    }
 
-        // Connect the switch to switches from other groups. Global links.
-        for (uint32_t l = 0; l < _h; l++) {
-            uint32_t targetgroupid = (j % _a) * _h + l + 1;
+    for (uint32_t x = 0; x < _q; x++) {
+        for (uint32_t y = 0; y < _q; y++) {
+            for (uint32_t m = 0; m < _q; m++) {
+                for (uint32_t c = 0; c < _q; c++){
+                    if(y == (m * x + c) % _q){
+                        uint32_t k = _q * x + y;
+                        uint32_t j = q2 + _q * m + c;
 
-            // Compute target switch ID; only create links to groups with ID
-            // larger than ours. if the ID is larger than ours, effective target
-            // group is +1 (we skip our own group for global links).
-            if (targetgroupid <= groupid){
-                continue;
+                        // Downlink
+                        queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
+                        //logfile->addLogger(*queueLogger);
+
+                        queues_switch_switch[k][j] = alloc_queue(queueLogger, _queuesize);
+                        queues_switch_switch[k][j]->setName("SW" + ntoa(k) + "-I->SW" + ntoa(j));
+                        //logfile->writeName(*(queues_switch_switch[k][j]));
+
+                        pipes_switch_switch[k][j] = new Pipe(timeFromUs(RTT), *_eventlist);
+                        pipes_switch_switch[k][j]->setName("Pipe-SW" + ntoa(k) + "-I->SW" + ntoa(j));
+                        //logfile->writeName(*(pipes_switch_switch[k][j]));
+
+                        // Uplink
+                        queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
+                        //logfile->addLogger(*queueLogger);
+
+                        queues_switch_switch[j][k] = alloc_queue(queueLogger, _queuesize, true);
+                        queues_switch_switch[j][k]->setName("SW" + ntoa(j) + "-I->SW" + ntoa(k));
+                        //logfile->writeName(*(queues_switch_switch[j][k]));
+
+                        switches[j]->addPort(queues_switch_switch[j][k]);
+                        switches[k]->addPort(queues_switch_switch[k][j]);
+                        queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
+                        queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
+
+                        // ???
+                        if (_qt == LOSSLESS) {
+                            switches[j]->addPort(queues_switch_switch[j][k]);
+                            ((LosslessQueue *)queues_switch_switch[j][k])->setRemoteEndpoint(queues_switch_switch[k][j]);
+                            switches[k]->addPort(queues_switch_switch[k][j]);
+                            ((LosslessQueue *)queues_switch_switch[k][j])->setRemoteEndpoint(queues_switch_switch[j][k]);
+                        } else if (_qt == LOSSLESS_INPUT || _qt == LOSSLESS_INPUT_ECN) {
+                            new LosslessInputQueue(*_eventlist, queues_switch_switch[j][k]);
+                            new LosslessInputQueue(*_eventlist, queues_switch_switch[k][j]);
+                        }
+
+                        pipes_switch_switch[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
+                        pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-I->SW" + ntoa(k));
+                        //logfile->writeName(*(pipes_switch_switch[j][k]));
+                    }
+                }
             }
-
-            uint32_t k = targetgroupid * _a + groupid / _h;
-
-            // Downlink
-            queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
-            //logfile->addLogger(*queueLogger);
-
-            queues_switch_switch[k][j] = alloc_queue(queueLogger, _queuesize);
-            queues_switch_switch[k][j]->setName("SW" + ntoa(k) + "-G->SW" + ntoa(j));
-            //logfile->writeName(*(queues_switch_switch[k][j]));
-
-            pipes_switch_switch[k][j] = new Pipe(timeFromUs(RTT), *_eventlist);
-            pipes_switch_switch[k][j]->setName("Pipe-SW" + ntoa(k) + "-G->SW" + ntoa(j));
-            //logfile->writeName(*(pipes_switch_switch[k][j]));
-
-            // Uplink
-            queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
-            //logfile->addLogger(*queueLogger);
-            
-            queues_switch_switch[j][k] = alloc_queue(queueLogger, _queuesize, true);
-            queues_switch_switch[j][k]->setName("SW" + ntoa(j) + "-G->SW" + ntoa(k));
-            //logfile->writeName(*(queues_switch_switch[j][k]));
-
-            switches[k]->addPort(queues_switch_switch[k][j]);
-            switches[j]->addPort(queues_switch_switch[j][k]);
-            queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
-            queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
-
-            // ???
-            if (_qt == LOSSLESS) {
-                switches[j]->addPort(queues_switch_switch[j][k]);
-                ((LosslessQueue *)queues_switch_switch[j][k])->setRemoteEndpoint(queues_switch_switch[k][j]);
-                switches[k]->addPort(queues_switch_switch[k][j]);
-                ((LosslessQueue *)queues_switch_switch[k][j])->setRemoteEndpoint(queues_switch_switch[j][k]);
-            } else if (_qt == LOSSLESS_INPUT || _qt == LOSSLESS_INPUT_ECN) {
-                new LosslessInputQueue(*_eventlist, queues_switch_switch[j][k]);
-                new LosslessInputQueue(*_eventlist, queues_switch_switch[k][j]);
-            }
-
-            pipes_switch_switch[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
-            pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-G->SW" + ntoa(k));
-            //logfile->writeName(*(pipes_switch_switch[j][k]));
         }
     }
 
@@ -327,12 +474,12 @@ void DragonflyTopology::init_network() {
         }
     }
 
-/*     for (int i = 0; i < _no_of_switches; i++){
+    for (int i = 0; i < _no_of_switches; i++){
         for (int j = i+1; j < _no_of_switches; j++){
             if(!pipes_switch_switch[i][j] == NULL){
                 printf("%d <-> %d\n", i, j);
             }
         }
         printf("\n");
-    } */
+    }
 }

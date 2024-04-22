@@ -1,6 +1,6 @@
 // -*- c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef DRAGONFLY
-#define DRAGONFLY
+#ifndef SLIMFLY
+#define SLIMFLY
 #include "config.h"
 #include "eventlist.h"
 #include "firstfit.h"
@@ -13,28 +13,25 @@
 #include "switch.h"
 #include "topology.h"
 #include <ostream>
-#include "dragonfly_switch.h"
+#include "slimfly_switch.h"
 
-class DragonflySwitch;
+class SlimflySwitch;
 
-// Dragon Fly parameters
-//  p = number of hosts per router.
-//  a = number of routers per group.
-//  h = number of links used to connect to other groups.
-//  k = router radix.
-//  g = number of groups.
+// Slimfly parameters
+//  p       = number of hosts per router.
+//  q       = prime power to generate connections.
+//  q_base  = base of q (must be a prime).
+//  q_exp   = exponent of q (> 0; and for q_base = 2: > 1).
+//  xi      = group generator.
+//  k       = router radix.
+//  Ns      = number of switches.
+//  Nh      = number of hosts.
 //
-//  The dragonfly parameters a, p, and h can have any values.
-//  However to balance channel load on load-balanced traffic, the
-//  network should have a = 2p = 2h; p = h;
-//  relations between parameters. [Kim et al, ISCA 2008,
-//  https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/34926.pdf]
+//  q = 4w + d     with w € N and d € {-1, 0, 1}.
 //
-//  k = p + h + a - 1
-//  k = 4h - 1.
-//  N = ap (ah + 1) = 2h * h (2h*h +1) = 4h^4 + 2h^2.
-//  h = sqrt(-1 + sqrt(1 + 4N)) / 2
-//  g <= ah + 1 = 2h^2 + 1.
+//  k   = ((3q - d) / 2) + p.
+//  Ns  = 2q^2.
+//  Nh  = p * 2q^2.
 
 #ifndef QT
 #define QT
@@ -50,9 +47,9 @@ typedef enum {
 } queue_type;
 #endif
 
-class DragonflyTopology : public Topology {
+class SlimflyTopology : public Topology {
   public:
-    vector<DragonflySwitch *> switches;
+    vector<SlimflySwitch *> switches;
 
     vector<vector<Pipe *>> pipes_host_switch;
     vector<vector<Pipe *>> pipes_switch_switch;
@@ -69,30 +66,38 @@ class DragonflyTopology : public Topology {
 
     void init_pipes_queues();
 
-    DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q);
-    DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q, uint32_t strat);
-    //DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, Logfile *log, EventList *ev, queue_type q);
+    SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type qt);
+    SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type qt, uint32_t strat);
+    
     void init_network();
-    Queue *alloc_src_queue(QueueLogger *q);
-    Queue *alloc_queue(QueueLogger *q, mem_b queuesize, bool tor);
-    Queue *alloc_queue(QueueLogger *q, uint64_t speed, mem_b queuesize, bool tor);
+    Queue *alloc_src_queue(QueueLogger *qL);
+    Queue *alloc_queue(QueueLogger *qL, mem_b queuesize, bool tor);
+    Queue *alloc_queue(QueueLogger *qL, uint64_t speed, mem_b queuesize, bool tor);
 
     uint32_t HOST_TOR_FKT(uint32_t src) { return (src / _p); }
+    bool is_element(vector<uint32_t> arr, uint32_t el);
 
-    virtual vector<const Route *> *get_bidir_paths(uint32_t src, uint32_t dest, bool reverse);
+    virtual vector<const Route *> *get_bidir_paths(uint32_t src, uint32_t dest, bool reverse){ return NULL; };
     vector<uint32_t> *get_neighbours(uint32_t src) { return NULL; };
     
-    uint32_t get_group_size() { return _a; }
-    uint32_t get_no_groups() { return _a * _h + 1; }
-    uint32_t get_no_global_links() { return _h; }
+    // uint32_t get_group_size() { return _a; }
+    // uint32_t get_no_groups() { return _a * _h + 1; }
+    // uint32_t get_no_global_links() { return _h; }
+    uint32_t get_q() { return _q; }
+    uint32_t get_xi() { return _xi; }
+    vector<uint32_t> get_X() { return _X;}
+    vector<uint32_t> get_Xp() { return _Xp;}
 
   private:
     void set_params();
+    uint32_t get_generator(uint32_t q);
+    bool is_prime(uint32_t q_base);
 
-    uint32_t _p, _a, _h;
-    uint32_t _no_of_nodes;
-    uint32_t _no_of_groups, _no_of_switches;
+    uint32_t _q_base, _q_exp;
+    uint32_t _p, _q, _xi;
+    uint32_t _no_of_switches, _no_of_nodes; /* _no_of_groups, */
     mem_b _queuesize;
-    uint32_t _df_routing_strategy = 0; // routing_strategy NIX
+    uint32_t _sf_routing_strategy = 0; // routing_strategy NIX
+    vector<uint32_t> _X, _Xp;
 };
 #endif
