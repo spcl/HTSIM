@@ -296,7 +296,9 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 }
                 else if (w == z){
                     if(u == x){ // w == z and u == x
+                    printf("Hoi.\n");
                         if(w == 0 && _st->is_element(_st->get_X(), modulo((y - v), q))){
+                            printf("Ciao.\n");
                             r->push_back(_st->queues_switch_switch[_id][dst_switch]);
                             r->push_back(_st->pipes_switch_switch[_id][dst_switch]);
                             r->push_back(_st->queues_switch_switch[_id][dst_switch]->getRemoteEndpoint());
@@ -311,6 +313,7 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                             _fib->addRoute(pkt.dst(), r, 1, DOWN);
                         }
                         else{ // same group but 2 hops needed
+                            printf("Tschüss.\n");
                             uint32_t exists_hop = 0;
                             vector<uint32_t> X;
                             if(w == 0){
@@ -424,13 +427,15 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                     }
                     else{ //w == z && u != x
                         // w == z and other group: 2 hops through other side
-                        uint32_t m = modulo(((y-v)/(x-u)), q);
-                        uint32_t c = modulo((v - m * u), q);
                         uint32_t next_hop;
                         if(w == 0){
+                            uint32_t m = modulo(((v-y)/(u-x)), q);
+                            uint32_t c = modulo((v - m * u), q);
                             next_hop = q2 + m * q + c;
                         }
                         else{ // w == 1
+                            uint32_t m = modulo(((y-v)/(u-x)), q);
+                            uint32_t c = modulo((v + m * u), q);
                             next_hop = m * q + c;
                         }
                         r->push_back(_st->queues_switch_switch[_id][next_hop]);
@@ -440,7 +445,13 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                     }
                 }
                 else{ // w != z
-                    if(y == modulo((u * x + v), q)){ // directly connected
+                    if(v == modulo((u * x + y), q) && w == 0){ // directly connected
+                        r->push_back(_st->queues_switch_switch[_id][dst_switch]);
+                        r->push_back(_st->pipes_switch_switch[_id][dst_switch]);
+                        r->push_back(_st->queues_switch_switch[_id][dst_switch]->getRemoteEndpoint());
+                        _fib->addRoute(pkt.dst(), r, 1, DOWN);
+                    }
+                    else if(y == modulo((u * x + v), q) && w == 1){ // directly connected
                         r->push_back(_st->queues_switch_switch[_id][dst_switch]);
                         r->push_back(_st->pipes_switch_switch[_id][dst_switch]);
                         r->push_back(_st->queues_switch_switch[_id][dst_switch]->getRemoteEndpoint());
@@ -463,12 +474,8 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                                 int next_hop = q2 + q * x + yp;
                                 r->push_back(_st->queues_switch_switch[_id][next_hop]);
                                 r->push_back(_st->pipes_switch_switch[_id][next_hop]);
-                                printf("id: %d\tdst: %d\tsrc_diff: %d\tnext_hop: %d\n", _id, pkt.dst(), src_diff, next_hop);
                                 r->push_back(_st->queues_switch_switch[_id][next_hop]->getRemoteEndpoint());
                                 _fib->addRoute(pkt.dst(), r, 1, DOWN);
-                               /*  if(q * x + yp == v){
-                                
-                                } */
                             }
                         }
                         else{ // w == 1
@@ -489,14 +496,10 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                                 r->push_back(_st->pipes_switch_switch[_id][next_hop]);
                                 r->push_back(_st->queues_switch_switch[_id][next_hop]->getRemoteEndpoint());
                                 _fib->addRoute(pkt.dst(), r, 1, DOWN);
-                                /* if(u * x + yp == v){
-                                    
-                                } */
                             }
                         }
                     }
                 }
-                printf("Debug: Ok.\tid: %d\tdst: %d\n", _id, pkt.dst());
                 break;
             }
             case VALIANTS:{
@@ -654,8 +657,9 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 break;
             }
         }
-
+        
         assert(_fib->getRoutes(pkt.dst()));
+        printf("Debug: Ok.\tid: %d\tdst: %d\n", _id, pkt.dst());
 
         return getNextHop(pkt, ingress_port);
     }

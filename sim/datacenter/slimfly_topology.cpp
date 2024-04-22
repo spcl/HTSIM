@@ -64,6 +64,10 @@ SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, me
         x = (x * (_xi * _xi)) % _q;
         xp = (xp * (_xi * _xi)) % _q;
     }
+    for(int i = 0; i < _X.size(); i++){
+        if(!is_element(_X, _q - _X[i])){_X.push_back(_q - _X[i]);}
+        if(!is_element(_Xp, _q - _Xp[i])){_Xp.push_back(_q - _Xp[i]);}
+    }
 
     /* printf("_X = [");
     for (uint32_t i = 0; i < q_half; i++) {
@@ -129,6 +133,10 @@ SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, me
         x = (x * (_xi * _xi)) % _q;
         xp = (xp * (_xi * _xi)) % _q;
     }
+    for(int i = 0; i < _X.size(); i++){
+        if(!is_element(_X, _q - _X[i])){_X.push_back(_q - _X[i]);}
+        if(!is_element(_Xp, _q - _Xp[i])){_Xp.push_back(_q - _Xp[i]);}
+    }
 
     printf("_X = [");
     for (uint32_t i = 0; i < q_half; i++) {
@@ -188,6 +196,14 @@ bool SlimflyTopology::is_element(vector<uint32_t> arr, uint32_t el){
         if(arr[i] == el) {return true;}
     }
     return false;
+}
+
+int SlimflyTopology::modulo (int x, int y){
+    int res = x % y;
+    if (res < 0){
+        res += y;
+    }
+    return res;
 }
 
 // Initializes all pipes and queues for the switches.
@@ -317,6 +333,7 @@ void SlimflyTopology::init_network() {
     for (int y = 0; y < ((int) _q - 1); y++) {
         for (int yp = (y + 1); yp < (int) _q; yp++) {
             int diff = yp - y;
+            int q_diff = _q - diff;            
             if (is_element(_X, diff)){
                 // printf("_X:\ty = %d;\typ = %d\n", y, yp);
                 for (uint32_t x = 0; x < _q; x++) {
