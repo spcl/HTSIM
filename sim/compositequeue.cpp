@@ -311,22 +311,20 @@ void CompositeQueue::doNextEvent() {
 
 void CompositeQueue::receivePacket(Packet &pkt) {
 
-    if (_failure_generator->drop_pkt(pkt)) {
-        pkt.free();
-        return;
-    }
-
     pkt.flow().logTraffic(pkt, *this, TrafficLogger::PKT_ARRIVE);
     if (_logger)
         _logger->logQueue(*this, QueueLogger::PKT_ARRIVE, pkt);
     // is this a Tofino packet from the egress pipeline?
 
-    if (failed_link && !pkt.header_only()) {
-        pkt.strip_payload();
+    if (_failure_generator->drop_pkt(pkt)) {
+        // Temporary Hack
+        if (!pkt.header_only()) {
+            pkt.strip_payload();
+        }
         pkt.is_failed = true;
-        /* printf("Queue %s - Time %lu - Broken Link", _nodename.c_str(),
-               GLOBAL_TIME / 1000); */
 
+        // pkt.free(); Later we will re-enable this
+        // return;
     } else if (!pkt.header_only()) {
         //  Queue
         /* printf("Remote is %s vs %s %d %d - Switch ID - %d %d\n", this->getRemoteEndpoint()->nodename().c_str(),
