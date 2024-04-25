@@ -1,0 +1,187 @@
+num_ranks 7
+
+rank 0 {
+// Host #0
+s0: send 4096b to 2
+r12: recv 4096b from 2 tag 1
+r12 requires s0
+s26: send 1024b to 5 tag 4
+r30: recv 4096b from 5 tag 4
+r30 requires s26
+s31: send 1024b to 6 tag 5
+r35: recv 200b from 6 tag 5
+s31 requires r30
+s36: send 1024b to 5 tag 6
+r40: recv 4096b from 5 tag 6
+r40 requires s36
+s41: send 1024b to 6 tag 7
+r45: recv 1024b from 6 tag 7
+s41 requires r40
+s66: send 907b to 5 tag 12
+r75: recv 4096b from 5 tag 15
+r75 requires s66
+s76: send 1024b to 5 tag 16
+r85: recv 4096b from 5 tag 19
+r85 requires s76
+}
+rank 1 {
+// Host #1
+s13: send 4096b to 2 tag 2
+r25: recv 4096b from 2 tag 3
+r25 requires s13
+s46: send 1024b to 5 tag 8
+r50: recv 4096b from 5 tag 8
+r50 requires s46
+s51: send 1024b to 6 tag 9
+r55: recv 379b from 6 tag 9
+s51 requires r50
+s56: send 1024b to 5 tag 10
+r60: recv 4096b from 5 tag 10
+r60 requires s56
+s61: send 1024b to 6 tag 11
+r65: recv 1024b from 6 tag 11
+s61 requires r60
+s86: send 1024b to 5 tag 20
+r95: recv 4096b from 5 tag 23
+r95 requires s86
+s96: send 1024b to 5 tag 24
+r105: recv 4096b from 5 tag 27
+r105 requires s96
+}
+rank 2 {
+// SLB #0
+r1: recv 4096b from 0
+s2: send 4096b to 3
+r10: recv 4096b from 3 tag 1
+s11: send 4096b to 0 tag 1
+s2 requires r1
+s11 requires r10
+r14: recv 4096b from 1 tag 2
+s15: send 4096b to 3 tag 2
+r23: recv 4096b from 3 tag 3
+s24: send 4096b to 1 tag 3
+s15 requires r14
+s24 requires r23
+}
+rank 3 {
+// GS #0
+r3: recv 4096b from 2
+s4: send 4096b to 4
+r8: recv 4096b from 4 tag 1
+s9: send 4096b to 2 tag 1
+s4 requires r3
+s9 requires r8
+r16: recv 4096b from 2 tag 2
+s17: send 4096b to 4 tag 2
+r21: recv 4096b from 4 tag 3
+s22: send 4096b to 2 tag 3
+s17 requires r16
+s22 requires r21
+}
+rank 4 {
+// MDS #0
+r5: recv 4096b from 3
+c6: calc 683
+s7: send 4096b to 3 tag 1
+c6 requires r5
+s7 requires c6
+r18: recv 4096b from 3 tag 2
+c19: calc 683
+s20: send 4096b to 3 tag 3
+c19 requires r18
+s20 requires c19
+}
+rank 5 {
+// CCS #0
+r27: recv 1024b from 0 tag 4
+c28: calc 683
+s29: send 4096b to 0 tag 4
+s29 requires r27
+r37: recv 1024b from 0 tag 6
+c38: calc 683
+s39: send 4096b to 0 tag 6
+s39 requires r37
+r47: recv 1024b from 1 tag 8
+c48: calc 683
+s49: send 4096b to 1 tag 8
+s49 requires r47
+r57: recv 1024b from 1 tag 10
+c58: calc 683
+s59: send 4096b to 1 tag 10
+s59 requires r57
+r67: recv 907b from 0 tag 12
+c68: calc 605
+c68 requires r67
+s69: send 907b to 6 tag 13
+r73: recv 1024b from 6 tag 14
+s69 requires c68
+r73 requires s69
+s74: send 4096b to 0 tag 15
+s74 requires r73
+r77: recv 1024b from 0 tag 16
+c78: calc 683
+c78 requires r77
+s79: send 1024b to 6 tag 17
+r83: recv 1024b from 6 tag 18
+s79 requires c78
+r83 requires s79
+s84: send 4096b to 0 tag 19
+s84 requires r83
+r87: recv 1024b from 1 tag 20
+c88: calc 683
+c88 requires r87
+s89: send 1024b to 6 tag 21
+r93: recv 1024b from 6 tag 22
+s89 requires c88
+r93 requires s89
+s94: send 4096b to 1 tag 23
+s94 requires r93
+r97: recv 1024b from 1 tag 24
+c98: calc 683
+c98 requires r97
+s99: send 1024b to 6 tag 25
+r103: recv 1024b from 6 tag 26
+s99 requires c98
+r103 requires s99
+s104: send 4096b to 1 tag 27
+s104 requires r103
+}
+rank 6 {
+// BSS #0
+r32: recv 1024b from 0 tag 5
+c33: calc 34
+s34: send 200b to 0 tag 5
+s34 requires r32
+r42: recv 1024b from 0 tag 7
+c43: calc 171
+s44: send 1024b to 0 tag 7
+s44 requires r42
+r52: recv 1024b from 1 tag 9
+c53: calc 64
+s54: send 379b to 1 tag 9
+s54 requires r52
+r62: recv 1024b from 1 tag 11
+c63: calc 171
+s64: send 1024b to 1 tag 11
+s64 requires r62
+r70: recv 907b from 5 tag 13
+c71: calc 605
+s72: send 1024b to 5 tag 14
+s72 requires c71
+c71 requires r70
+r80: recv 1024b from 5 tag 17
+c81: calc 683
+s82: send 1024b to 5 tag 18
+s82 requires c81
+c81 requires r80
+r90: recv 1024b from 5 tag 21
+c91: calc 683
+s92: send 1024b to 5 tag 22
+s92 requires c91
+c91 requires r90
+r100: recv 1024b from 5 tag 25
+c101: calc 683
+s102: send 1024b to 5 tag 26
+s102 requires c101
+c101 requires r100
+}

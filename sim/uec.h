@@ -314,6 +314,14 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static simtime_picosec pacing_delay;
     bool first_quick_adapt = false;
 
+    int current_idx_reps = 0;
+    int consume_idx_reps = 0;
+    int max_num_entropies = 5;
+    int list_good_reps[5];
+
+    bool reps_with_circular = false;
+    bool freeze_reps = false;
+
   private:
     uint32_t _unacked;
     uint32_t _effcwnd;

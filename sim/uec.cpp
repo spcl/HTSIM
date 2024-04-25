@@ -586,7 +586,7 @@ void UecSrc::quick_adapt(bool trimmed) {
     }
 
     if (_flow_size < _bdp * 10.0 / 100) {
-        return;
+        // return;
     }
 
     double multiplier_small_flow = 1;
@@ -596,8 +596,8 @@ void UecSrc::quick_adapt(bool trimmed) {
     }
 
     if (eventlist().now() >= next_window_end) {
-        printf("Just updated %d at %lu vs %lu - %lu %lu\n", from, eventlist().now() / 1000, previous_window_end / 1000,
-               acked_bytes, acked_bytes);
+        /* printf("Just updated %d at %lu vs %lu - %lu %lu\n", from, eventlist().now() / 1000, previous_window_end /
+           1000, acked_bytes, acked_bytes); */
         previous_window_end = next_window_end;
         saved_acked_bytes = acked_bytes;
 
@@ -950,11 +950,45 @@ int UecSrc::choose_route() {
                     _crt_path = 0;
                 }
             } else {
-                if (_next_pathid == -1) {
-                    assert(_paths.size() > 0);
-                    _crt_path = random() % _paths.size();
+                if (reps_with_circular) {
+                    if (_next_pathid == -1) {
+                        assert(_paths.size() > 0);
+
+                        if (freeze_reps && eventlist().now() > 150000000) {
+                            _crt_path = list_good_reps[consume_idx_reps - 1];
+                            consume_idx_reps--;
+                            if (consume_idx_reps == 1) {
+                                consume_idx_reps = current_idx_reps - 1;
+                            }
+                            _crt_path = random() % _paths.size();
+                        } else {
+                            _crt_path = random() % _paths.size();
+                        }
+
+                    } else {
+
+                        if (freeze_reps && eventlist().now() > 150000000) {
+                            _crt_path = list_good_reps[consume_idx_reps - 1];
+                            consume_idx_reps--;
+                            if (consume_idx_reps == 1) {
+                                consume_idx_reps = current_idx_reps - 1;
+                            }
+                            _crt_path = random() % _paths.size();
+                        } else {
+                            if (current_idx_reps - 1 < 0) {
+                                _crt_path = list_good_reps[0];
+                            } else {
+                                _crt_path = list_good_reps[current_idx_reps - 1];
+                            }
+                        }
+                    }
                 } else {
-                    _crt_path = _next_pathid;
+                    if (_next_pathid == -1) {
+                        assert(_paths.size() > 0);
+                        _crt_path = random() % _paths.size();
+                    } else {
+                        _crt_path = _next_pathid;
+                    }
                 }
             }
             break;
@@ -962,10 +996,11 @@ int UecSrc::choose_route() {
     }
     case ECMP_RANDOM_ECN: {
         _crt_path = from;
-        // _crt_path = (random() * 1) % _paths.size();
+        //_crt_path = (random() * 1) % _paths.size();
         break;
     }
     case ECMP_FIB_ECN: {
+
         // Cycle through a permutation, but use ECN to skip paths
         while (1) {
             _crt_path++;
@@ -1117,6 +1152,13 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
         _consecutive_no_ecn += _mss;
         _next_pathid = pkt.pathid_echo;
         _good_entropies_list.push_back(pkt.pathid_echo);
+
+        list_good_reps[current_idx_reps] = pkt.pathid_echo;
+        current_idx_reps++;
+        consume_idx_reps = current_idx_reps;
+        if (current_idx_reps == max_num_entropies) {
+            current_idx_reps = 0;
+        }
     } else {
         _next_pathid = -1;
         ecn_last_rtt = true;

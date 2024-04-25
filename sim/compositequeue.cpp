@@ -315,6 +315,13 @@ void CompositeQueue::receivePacket(Packet &pkt) {
         _logger->logQueue(*this, QueueLogger::PKT_ARRIVE, pkt);
     // is this a Tofino packet from the egress pipeline?
 
+    /* printf("Node name: %s\n", _nodename.c_str()); */
+    if (_nodename == "compqueue(100000Mb/s,150000bytes)US1->CS1(0)" ||
+        _nodename == "compqueue(100000Mb/s,150000bytes)US0->CS0(0)") {
+        failed_link = true;
+        // printf("Dropping Pkt\n");
+    }
+    failed_link = false;
     if (failed_link && !pkt.header_only()) {
         pkt.strip_payload();
         pkt.is_failed = true;
@@ -473,7 +480,6 @@ void CompositeQueue::receivePacket(Packet &pkt) {
     assert(pkt.header_only());
 
     if (_queuesize_high + pkt.size() > 2000 * _maxsize) {
-
         /* printf("Dropping a PKT - Max Size %lu - Queue Size %lu \n", _maxsize, _queuesize_high); */
         // drop header
         // cout << "drop!\n";

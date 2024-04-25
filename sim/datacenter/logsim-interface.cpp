@@ -72,9 +72,9 @@ void LogSimInterface::htsim_schedule(u_int32_t host, int to, int size, int tag, 
 
     // Save Event for internal tracking
     std::string to_hash = std::to_string(host) + "@" + std::to_string(to) + "@" + std::to_string(tag);
-    /* printf("Scheduling Event (%s) of size %d from %d to %d tag %d start_tiem "
+    printf("Scheduling Event (%s) of size %d from %d to %d tag %d start_tiem "
            "%lu - Time is %lu\n ",
-           to_hash.c_str(), size, host, to, tag, start_time_event * 1000, GLOBAL_TIME); */
+           to_hash.c_str(), size, host, to, tag, start_time_event * 1000, GLOBAL_TIME);
     MsgInfo entry;
     entry.start_time = start_time_event * 1;
     entry.total_bytes_msg = size;

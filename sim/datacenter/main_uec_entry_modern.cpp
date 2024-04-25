@@ -920,6 +920,7 @@ int main(int argc, char **argv) {
             switch (route_strategy) {
             case ECMP_FIB:
             case ECMP_FIB_ECN:
+            case ECMP_RANDOM_ECN:
             case ECMP_RANDOM2_ECN:
             case REACTIVE_ECN: {
                 Route *srctotor = new Route();
@@ -1019,6 +1020,7 @@ int main(int argc, char **argv) {
                                                        queue_choice, hop_latency, switch_latency);
             lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
         } else {
+            FatTreeInterDCTopology *top_dc = NULL;
             if (interdc_delay != 0) {
                 FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
                 UecSrc::set_interdc_delay(interdc_delay);
@@ -1026,15 +1028,30 @@ int main(int argc, char **argv) {
                 FatTreeInterDCTopology::set_interdc_delay(hop_latency);
                 UecSrc::set_interdc_delay(hop_latency);
             }
-            FatTreeInterDCTopology::set_tiers(3);
-            FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
-            FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
-            FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
-            FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
-            FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
-            FatTreeInterDCTopology *top = new FatTreeInterDCTopology(
-                    no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, queue_choice, hop_latency, switch_latency);
-            lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+
+            if (topo_file) {
+                top_dc = FatTreeInterDCTopology::load(topo_file, NULL, eventlist, queuesize, COMPOSITE, FAIR_PRIO);
+                lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top_dc, NULL);
+                if (top_dc->no_of_nodes() != no_of_nodes) {
+                    cerr << "Mismatch between connection matrix (" << no_of_nodes << " nodes) and topology ("
+                         << top_dc->no_of_nodes() << " nodes)" << endl;
+                    exit(1);
+                }
+            } else {
+                FatTreeInterDCTopology::set_tiers(3);
+                top_dc = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, NULL,
+                                                    COMPOSITE, hop_latency, switch_latency, FAIR_PRIO);
+                lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top_dc, NULL);
+            }
+            /*            FatTreeInterDCTopology::set_tiers(3);
+                       FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
+                       FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
+                       FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
+                       FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
+                       FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
+                       FatTreeInterDCTopology *top = new FatTreeInterDCTopology(
+                               no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, queue_choice, hop_latency,
+               switch_latency); */
         }
 
         lgs->set_protocol(UEC_PROTOCOL);

@@ -593,13 +593,21 @@ int main(int argc, char **argv) {
                 FatTreeInterDCTopology::set_interdc_delay(hop_latency);
                 UecSrc::set_interdc_delay(hop_latency);
             }
-            FatTreeInterDCTopology::set_tiers(3);
-            FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
-            FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
-            FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
-            FatTreeInterDCTopology *top = new FatTreeInterDCTopology(
-                    no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, COMPOSITE, hop_latency, switch_latency);
-            lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+            FatTreeInterDCTopology *top_dc = NULL;
+            if (topo_file) {
+                top_dc = FatTreeInterDCTopology::load(topo_file, NULL, eventlist, queuesize, COMPOSITE, FAIR_PRIO);
+                lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top_dc, NULL);
+                if (top_dc->no_of_nodes() != no_of_nodes) {
+                    cerr << "Mismatch between connection matrix (" << no_of_nodes << " nodes) and topology ("
+                         << top_dc->no_of_nodes() << " nodes)" << endl;
+                    exit(1);
+                }
+            } else {
+                FatTreeInterDCTopology::set_tiers(3);
+                top_dc = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, NULL,
+                                                    COMPOSITE, hop_latency, switch_latency, FAIR_PRIO);
+                lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top_dc, NULL);
+            }
         }
 
         lgs->set_protocol(NDP_PROTOCOL);
