@@ -271,6 +271,10 @@ class Packet {
 
     string str() const;
 
+    // Used for Valiant's routing in the Slimfly topology.
+    void set_via(int x){ via = x; return; }
+    int get_via(){ return via; }
+
     // logsim extensions
     bool is_ack = false;
     int pathid_echo = 0;
@@ -328,6 +332,9 @@ class Packet {
 
     // used when using routing tables in switches, i.e. the packet has no route.
     PacketSink *_next_routed_hop;
+
+    // Used for Valiant's routing in the Slimfly topology.
+    int via = -1;
 
     packetid_t _id;
     PacketFlow *_flow;
