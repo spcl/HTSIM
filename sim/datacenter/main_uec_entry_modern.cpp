@@ -602,11 +602,9 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-hm_strategy")){
             if (!strcmp(argv[i + 1], "nix")) {
-                sf_routing_strategy = HammingmeshSwitch::NIX;
+                hm_routing_strategy = HammingmeshSwitch::NIX;
             } else if (!strcmp(argv[i + 1], "minimal")) {
-                sf_routing_strategy = HammingmeshSwitch::MINIMAL;
-            } else if (!strcmp(argv[i + 1], "valiants")) {
-                sf_routing_strategy = HammingmeshSwitch::VALIANTS;
+                hm_routing_strategy = HammingmeshSwitch::MINIMAL;
             } else {
                 cerr << "Wrong strategy for hammingmesh chosen.\n";
             }
@@ -899,9 +897,9 @@ int main(int argc, char **argv) {
                 break;
             }
             case (HAMMINGMESH_CASE): {
-                printf("Case Hammingmesh.\theight = %u,\twidth = %u,\theight_board = %u,\twidth_board = %u.\n");
+                printf("Case Hammingmesh.\theight = %u,\twidth = %u,\theight_board = %u,\twidth_board = %u,\tstrategy = %u.\n", height, width, height_board, width_board, hm_routing_strategy);
                 top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize, &eventlist, queue_choice, hm_routing_strategy);
-                no_of_nodes = top_hm.get_no_nodes();
+                no_of_nodes = top_hm->get_no_nodes();
                 break;
             }
         }
@@ -1121,13 +1119,13 @@ int main(int argc, char **argv) {
                             break;
                         }
                         case (HAMMINGMESH_CASE): {
-                            srctotor->push_back(top_hm->queues_host_switch[src][top_hm->HOST_TOR_FKT(src)]);
-                            srctotor->push_back(top_hm->pipes_host_switch[src][top_hm->HOST_TOR_FKT(src)]);
-                            srctotor->push_back(top_hm->queues_host_switch[src][top_hm->HOST_TOR_FKT(src)]->getRemoteEndpoint());
+                            srctotor->push_back(top_hm->queues_host_switch[src][src]);
+                            srctotor->push_back(top_hm->pipes_host_switch[src][src]);
+                            srctotor->push_back(top_hm->queues_host_switch[src][src]->getRemoteEndpoint());
                             
-                            dsttotor->push_back(top_hm->queues_host_switch[dest][top_hm->HOST_TOR_FKT(dest)]);
-                            dsttotor->push_back(top_hm->pipes_host_switch[dest][top_hm->HOST_TOR_FKT(dest)]);
-                            dsttotor->push_back(top_hm->queues_host_switch[dest][top_hm->HOST_TOR_FKT(dest)]->getRemoteEndpoint());
+                            dsttotor->push_back(top_hm->queues_host_switch[dest][dest]);
+                            dsttotor->push_back(top_hm->pipes_host_switch[dest][dest]);
+                            dsttotor->push_back(top_hm->queues_host_switch[dest][dest]->getRemoteEndpoint());
 
                             uecSrc->from = src;
                             uecSnk->to = dest;
@@ -1135,8 +1133,8 @@ int main(int argc, char **argv) {
                             uecSrc->set_paths(number_entropies);
                             uecSnk->set_paths(number_entropies);
 
-                            top_hm->switches[top_hm->HOST_TOR_FKT(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
-                            top_hm->switches[top_hm->HOST_TOR_FKT(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
+                            top_hm->switches[src]->addHostPort(src, uecSrc->flow_id(), uecSrc);
+                            top_hm->switches[dest]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
                             break;
                         }
                     }
@@ -1209,7 +1207,7 @@ int main(int argc, char **argv) {
                 break;
             }
             case (HAMMINGMESH_CASE): {
-                HammingmeshTopology *top_hm = new HammingmeshTopology(height, width, height_board, width_board queuesize, &eventlist, queue_choice);
+                HammingmeshTopology *top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize, &eventlist, queue_choice);
                 break;
             }
         }

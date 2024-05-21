@@ -92,7 +92,7 @@ class SlimflyTopology : public Topology {
     void set_params();
     uint32_t get_generator(uint32_t q);
     bool is_prime(uint32_t q_base);
-    int modulo(int x, int y);
+    uint32_t modulo(int x, int y);
 
     uint32_t _q_base, _q_exp;
     uint32_t _p, _q, _xi;

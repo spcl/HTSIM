@@ -252,8 +252,8 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 // printf("getNextHop: src_group = %d\n", src_group);
                 // printf("getNextHop: dst_group = %d\n", dst_group);
 
-                uint32_t src_intra_group_id = _id % _a;
-                uint32_t dst_intra_group_id = dst_switch % _a;
+                //uint32_t src_intra_group_id = _id % _a;
+                //uint32_t dst_intra_group_id = dst_switch % _a;
 
                 if (_id == dst_switch){
                     // printf("Exit.\n");
@@ -329,7 +329,7 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 // printf("getNextHop: dst_group = %d\n", dst_group);
 
                 uint32_t src_intra_group_id = _id % _a;
-                uint32_t dst_intra_group_id = dst_switch % _a;
+                // uint32_t dst_intra_group_id = dst_switch % _a;
 
                 if (src_group == pkt_src_group && pkt_src_group != dst_group){ // Go to random group.
                     if(_id == pkt_src_switch){
@@ -338,8 +338,8 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                         uint32_t random_node_id = src_group * _a + random_intra_group_node;
 
                         if(random_node_id == _id){
-                            int random_connection = random() % _h;
-                            int next_group_id = src_intra_group_id * _h + random_connection;
+                            uint32_t random_connection = random() % _h;
+                            uint32_t next_group_id = src_intra_group_id * _h + random_connection;
                             if(next_group_id >= src_group){
                                 next_group_id++;
                             }
@@ -357,8 +357,8 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                         }
                     }
                     else{
-                        int random_connection = random() % _h;
-                        int next_group_id = src_intra_group_id * _h + random_connection;
+                        uint32_t random_connection = random() % _h;
+                        uint32_t next_group_id = src_intra_group_id * _h + random_connection;
                         if(next_group_id >= src_group){
                             next_group_id++;
                         }

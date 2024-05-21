@@ -82,7 +82,7 @@ class SlimflySwitch : public Switch {
     static double _ecn_threshold_fraction;
     static int precision_ts;
 
-    int modulo(int x, int y);
+    uint32_t modulo(int x, int y);
 
   private:
     switch_type _type;

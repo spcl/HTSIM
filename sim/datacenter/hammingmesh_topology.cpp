@@ -24,7 +24,7 @@ extern uint32_t RTT;
 string ntoa(double n);
 string itoa(uint64_t n);
 
-// Creates a new instance of a Dragonfly topology.
+// Creates a new instance of a Hammingmesh topology.
 HammingmeshTopology::HammingmeshTopology(uint32_t height, uint32_t width, uint32_t height_board, uint32_t width_board, mem_b queuesize, EventList *ev, queue_type qt) {
 
     if (height < 1 || width < 1 || height_board < 1 || width_board < 1) {
@@ -222,7 +222,7 @@ void HammingmeshTopology::init_network() {
     }
 
     for (uint32_t j = 0; j < _no_of_switches; j++) {
-        switches[j] = new HammingmeshSwitch(*_eventlist, "Switch_" + ntoa(j), SlimflySwitch::GENERAL, j, timeFromUs((uint32_t)0), this, _hm_routing_strategy);
+        switches[j] = new HammingmeshSwitch(*_eventlist, "Switch_" + ntoa(j), HammingmeshSwitch::GENERAL, j, timeFromUs((uint32_t)0), this, _hm_routing_strategy);
     }
 
     // Creates all links between Switches and Hosts.
@@ -275,35 +275,35 @@ void HammingmeshTopology::init_network() {
         if (i % _width != 0){
             for (uint32_t j = 0; j < _no_of_groups; j++){
                 uint32_t k = j * board_size + i;
-                uint32_t j = k - 1;
-                create_switch_switch_link(k, j, queueLogger);
+                uint32_t l = k - 1;
+                create_switch_switch_link(k, l, queueLogger);
             }
         }
         if (i % _width != _width - 1){
             for (uint32_t j = 0; j < _no_of_groups; j++){
                 uint32_t k = j * board_size + i;
-                uint32_t j = k + 1;
-                create_switch_switch_link(k, j, queueLogger);
+                uint32_t l = k + 1;
+                create_switch_switch_link(k, l, queueLogger);
             }
         }
         if (i / _width != 0){
             for (uint32_t j = 0; j < _no_of_groups; j++){
                 uint32_t k = j * board_size + i;
-                uint32_t j = k - _width;
-                create_switch_switch_link(k, j, queueLogger);
+                uint32_t l = k - _width;
+                create_switch_switch_link(k, l, queueLogger);
             }
         }
         if (i / _width != _height - 1){
             for (uint32_t j = 0; j < _no_of_groups; j++){
                 uint32_t k = j * board_size + i;
-                uint32_t j = k + _width;
-                create_switch_switch_link(k, j, queueLogger);
+                uint32_t l = k + _width;
+                create_switch_switch_link(k, l, queueLogger);
             }
         }
     }
 
     // Creates all global links between Switches and Switches.
-    uint32_t total_height = _height * _height_board;
+    // uint32_t total_height = _height * _height_board;
     uint32_t total_width = _width * _width_board;
     uint32_t group_size = _height_board * _width_board;
     
@@ -312,9 +312,9 @@ void HammingmeshTopology::init_network() {
     if(2 * _height <= 64){
         height_fat_tree_l1 = 1;
         height_fat_tree_l2 = 0;
-        for(int i = 0; i < _width; i++){
-            for(int j = 0; j < _width_board; j++){
-                for(int k = 0; k < _height; k++){
+        for(u_int32_t i = 0; i < _width; i++){
+            for(u_int32_t j = 0; j < _width_board; j++){
+                for(u_int32_t k = 0; k < _height; k++){
                     uint32_t group_base = group_size * _width * k + group_size * i;
                     uint32_t north = group_base + j;
                     uint32_t south = group_base + (_height_board - 1) * _width_board + j;
@@ -328,9 +328,9 @@ void HammingmeshTopology::init_network() {
     else if(2 * _height <= 64 * 63){
         height_fat_tree_l1 = ((2 * _height) / 63) + 1;
         height_fat_tree_l2 = 1;
-        for(int i = 0; i < _width; i++){
-            for(int j = 0; j < _width_board; j++){
-                for(int k = 0; k < _height; k++){
+        for(u_int32_t i = 0; i < _width; i++){
+            for(uint32_t j = 0; j < _width_board; j++){
+                for(uint32_t k = 0; k < _height; k++){
                     uint32_t group_base = group_size * _width * k + group_size * i;
                     uint32_t north = group_base + j;
                     uint32_t south = group_base + (_height_board - 1) * _width_board + j;
@@ -359,9 +359,9 @@ void HammingmeshTopology::init_network() {
     if(2 * _width <= 64){
         width_fat_tree_l1 = 1;
         width_fat_tree_l2 = 0;
-        for(int i = 0; i < _height; i++){
-            for(int j = 0; j < _height_board; j++){
-                for(int k = 0; k < _width; k++){
+        for(uint32_t i = 0; i < _height; i++){
+            for(uint32_t j = 0; j < _height_board; j++){
+                for(uint32_t k = 0; k < _width; k++){
                     uint32_t group_base = group_size * _width * i + group_size * k;
                     uint32_t west = group_base + _width_board * j;
                     uint32_t east = group_base + _width_board * j + (_width_board - 1);
@@ -375,9 +375,9 @@ void HammingmeshTopology::init_network() {
     else if(2 * _width <= 64 * 63){
         width_fat_tree_l1 = ((2 * _width) / 63) + 1;
         width_fat_tree_l2 = 1;
-        for(int i = 0; i < _height; i++){
-            for(int j = 0; j < _height_board; j++){
-                for(int k = 0; k < _width; k++){
+        for(uint32_t i = 0; i < _height; i++){
+            for(uint32_t j = 0; j < _height_board; j++){
+                for(uint32_t k = 0; k < _width; k++){
                     uint32_t group_base = group_size * _width * i + group_size * k;
                     uint32_t west = group_base + _width_board * j;
                     uint32_t east = group_base + _width_board * j + (_width_board - 1);

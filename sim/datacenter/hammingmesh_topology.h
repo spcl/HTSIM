@@ -35,7 +35,7 @@ typedef enum {
 
 class HammingmeshTopology : public Topology {
   public:
-    vector<SlimflySwitch *> switches;
+    vector<HammingmeshSwitch *> switches;
 
     vector<vector<Pipe *>> pipes_host_switch;
     vector<vector<Pipe *>> pipes_switch_switch;
@@ -52,7 +52,7 @@ class HammingmeshTopology : public Topology {
 
     void init_pipes_queues();
 
-    // HammingmeshTopology(uint32_t height, uint32_t width, uint32_t height_board, uint32_t width_board, mem_b queuesize, EventList *ev, queue_type qt);
+    HammingmeshTopology(uint32_t height, uint32_t width, uint32_t height_board, uint32_t width_board, mem_b queuesize, EventList *ev, queue_type qt);
     HammingmeshTopology(uint32_t height, uint32_t width, uint32_t height_board, uint32_t width_board, mem_b queuesize, EventList *ev, queue_type qt, uint32_t strat);
     
     void init_network();
@@ -65,9 +65,18 @@ class HammingmeshTopology : public Topology {
     virtual vector<const Route *> *get_bidir_paths(uint32_t src, uint32_t dest, bool reverse){ return NULL; };
     vector<uint32_t> *get_neighbours(uint32_t src) { return NULL; };
     
-    // uint32_t get_group_size() { return _a; }
-    // uint32_t get_no_groups() { return _a * _h + 1; }
-    // uint32_t get_no_global_links() { return _h; }
+    uint32_t get_height() { return _height; }
+    uint32_t get_width() { return _width; }
+    uint32_t get_height_board() { return _height_board; }
+    uint32_t get_width_board() { return _width_board; }
+    int get_no_nodes() {
+      int ft_size_h, ft_size_w;
+      if ((2 * _height) > 64){ ft_size_h = (2 * _height) / 63 + 1; }
+      else{ ft_size_h = 1; }
+      if ((2 * _width) > 64){ ft_size_w = (2 * _width) / 63 + 1; }
+      else{ ft_size_w = 1; }
+      return (_height * _width * _height_board * _width_board) + (_width * _width_board * ft_size_h) + (_height * _height_board * ft_size_w);
+    }
 
   private:
     void set_params();

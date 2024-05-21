@@ -195,12 +195,12 @@ uint16_t SlimflySwitch::_ar_sticky = SlimflySwitch::PER_PACKET;
 simtime_picosec SlimflySwitch::_sticky_delta = timeFromUs((uint32_t)10);
 double SlimflySwitch::_ecn_threshold_fraction = 1.0;
 
-int SlimflySwitch::modulo (int x, int y){
+uint32_t SlimflySwitch::modulo (int x, int y){
     int res = x % y;
     if (res < 0){
         res += y;
     }
-    return res;
+    return (uint32_t) res;
 }
 
 Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
@@ -254,10 +254,10 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
 
                 uint32_t dst_switch = _st->HOST_TOR_FKT(pkt.dst());
 
-                int q = (int)_st->get_q();
+                uint32_t q = _st->get_q();
                 uint32_t q2 = q * q;
 
-                int u, v, w, x, y, z;
+                uint32_t u, v, w, x, y, z;
 
                 if(_id < q2){
                     u = _id / q;
@@ -525,7 +525,7 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                         // Set via to a random node.
                         uint32_t q = _st->get_q();
                         int no_nodes = (int)(2 * q * q);
-                        int random_hop = random() % (no_nodes - 2);
+                        uint32_t random_hop = modulo(random(), (no_nodes - 2));
                         if(_id < dst_switch){
                             if(random_hop >= _id){ random_hop++; }
                             if(random_hop >= dst_switch){ random_hop++; }
@@ -540,7 +540,7 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                     }
                     else{
                         // Route minimally to the dst.
-                        int u, v, w, x, y, z;
+                        uint32_t u, v, w, x, y, z;
 
                         if(_id < q2){
                             u = _id / q;
@@ -837,7 +837,7 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                         return getNextHop(pkt, ingress_port);
                     }
 
-                    int u, v, w, x, y, z;
+                    uint32_t u, v, w, x, y, z;
 
                     if(_id < q2){
                         u = _id / q;

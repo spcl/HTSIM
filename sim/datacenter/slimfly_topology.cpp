@@ -64,7 +64,7 @@ SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, me
         x = (x * (_xi * _xi)) % _q;
         xp = (xp * (_xi * _xi)) % _q;
     }
-    for(int i = 0; i < _X.size(); i++){
+    for(uint32_t i = 0; i < _X.size(); i++){
         if(!is_element(_X, _q - _X[i])){_X.push_back(_q - _X[i]);}
         if(!is_element(_Xp, _q - _Xp[i])){_Xp.push_back(_q - _Xp[i]);}
     }
@@ -133,7 +133,7 @@ SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, me
         x = (x * (_xi * _xi)) % _q;
         xp = (xp * (_xi * _xi)) % _q;
     }
-    for(int i = 0; i < _X.size(); i++){
+    for(uint32_t i = 0; i < _X.size(); i++){
         if(!is_element(_X, _q - _X[i])){_X.push_back(_q - _X[i]);}
         if(!is_element(_Xp, _q - _Xp[i])){_Xp.push_back(_q - _Xp[i]);}
     }
@@ -170,7 +170,7 @@ uint32_t SlimflyTopology::get_generator(uint32_t q) {
     for (uint32_t i = 2; i < (q - 1); i++){
         uint32_t gen = i;
         uint32_t r = i;
-        for (int j = 2; j < (q - 1); j++){
+        for (uint32_t j = 2; j < (q - 1); j++){
             r = (r * gen) % q;
             if (r == 1){ break; }
         }
@@ -178,6 +178,7 @@ uint32_t SlimflyTopology::get_generator(uint32_t q) {
         if (r == 1){ printf("gen = %u\n", gen); return gen; }
     }
     cerr << "Wasn't able to find a generator for the group." << endl;
+    return 0;
 }
 
 bool SlimflyTopology::is_prime(uint32_t q_base){
@@ -198,7 +199,7 @@ bool SlimflyTopology::is_element(vector<uint32_t> arr, uint32_t el){
     return false;
 }
 
-int SlimflyTopology::modulo (int x, int y){
+uint32_t SlimflyTopology::modulo (int x, int y){
     int res = x % y;
     if (res < 0){
         res += y;
@@ -333,7 +334,7 @@ void SlimflyTopology::init_network() {
     for (int y = 0; y < ((int) _q - 1); y++) {
         for (int yp = (y + 1); yp < (int) _q; yp++) {
             int diff = yp - y;
-            int q_diff = _q - diff;            
+            // int q_diff = _q - diff;            
             if (is_element(_X, diff)){
                 // printf("_X:\ty = %d;\typ = %d\n", y, yp);
                 for (uint32_t x = 0; x < _q; x++) {
@@ -491,8 +492,8 @@ void SlimflyTopology::init_network() {
         }
     }
 
-    for (int i = 0; i < _no_of_switches; i++){
-        for (int j = i+1; j < _no_of_switches; j++){
+    for (uint32_t i = 0; i < _no_of_switches; i++){
+        for (uint32_t j = i+1; j < _no_of_switches; j++){
             if(!pipes_switch_switch[i][j] == NULL){
                 printf("%d <-> %d\n", i, j);
             }
