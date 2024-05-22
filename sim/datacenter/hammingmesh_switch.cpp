@@ -171,7 +171,7 @@ void HammingmeshSwitch::receivePacket(Packet &pkt) {
 // !!!
 void HammingmeshSwitch::addHostPort(int addr, uint32_t flowid, PacketSink *transport) {
     Route *rt = new Route();
-    printf("addHostPort: %d.\n", addr);
+    // printf("addHostPort: %d.\n", addr);
     rt->push_back(_ht->queues_switch_host[addr][addr]);
     rt->push_back(_ht->pipes_switch_host[addr][addr]);
     rt->push_back(transport);
@@ -257,6 +257,7 @@ Route *HammingmeshSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 uint32_t _height_board = _ht->get_height_board();
                 uint32_t _width_board = _ht->get_width_board();
                 uint32_t _no_board_switches = _height * _width * _height_board * _width_board;
+                uint32_t _no_switches_per_board = _height_board * _width_board;
                 bool _2nd_fat_tree_layer_height = (2 * _height > 64);
                 bool _2nd_fat_tree_layer_width = (2 * _width > 64);
                 uint32_t _fat_tree_size_height;
@@ -274,9 +275,9 @@ Route *HammingmeshSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                     _fat_tree_size_width = 1;
                 }
 
-                uint32_t dst_height = pkt_dst / (_width * _no_board_switches);
-                uint32_t dst_width = (pkt_dst % (_width * _no_board_switches)) / _no_board_switches;
-                uint32_t dst_height_board = (pkt_dst % _no_board_switches) / _width_board;
+                uint32_t dst_height = pkt_dst / (_width * _no_switches_per_board);
+                uint32_t dst_width = (pkt_dst % (_width * _no_switches_per_board)) / _no_switches_per_board;
+                uint32_t dst_height_board = (pkt_dst % _no_switches_per_board) / _width_board;
                 uint32_t dst_width_board = pkt_dst % _width_board;
                 /* uint32_t dst_fat_tree_nodes_height;
                 uint32_t dst_fat_tree_nodes_width;
@@ -294,9 +295,9 @@ Route *HammingmeshSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 } */
 
                 if (_id < _no_board_switches){ // On board switch.
-                    uint32_t this_height = _id / (_width * _no_board_switches);
-                    uint32_t this_width = (_id % (_width * _no_board_switches)) / _no_board_switches;
-                    uint32_t this_height_board = (_id % _no_board_switches) / _width_board;
+                    uint32_t this_height = _id / (_width * _no_switches_per_board);
+                    uint32_t this_width = (_id % (_width * _no_switches_per_board)) / _no_switches_per_board;
+                    uint32_t this_height_board = (_id % _no_switches_per_board) / _width_board;
                     uint32_t this_width_board = _id % _width_board;
                     uint32_t this_fat_tree_nodes_height;
                     uint32_t this_fat_tree_nodes_width;
@@ -427,6 +428,9 @@ Route *HammingmeshSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                             }
                         }
                         else{ // Same board. Neither same row nor same column.
+                            printf("id: %u, dst: %u\n", _id, pkt_dst);
+                            printf("th = %u, thb = %u, tw = %u, twb = %u\n", this_height, this_height_board, this_width, this_width_board);
+                            printf("dh = %u, dhb = %u, dw = %u, dwb = %u\n", dst_height, dst_height_board, dst_width, dst_width_board);
                             bool send_left, send_right;
                             if (this_width_board < dst_width_board){
                                 send_left = ((dst_width_board - this_width_board) >= (_width_board + this_width_board + this_fat_tree_nodes_width - dst_width_board));

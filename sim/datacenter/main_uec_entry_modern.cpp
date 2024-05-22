@@ -948,10 +948,10 @@ int main(int argc, char **argv) {
             }
 
             UecSrc::set_starting_cwnd(actual_starting_cwnd * 2);
-            printf("Setting CWND to %lu\n", actual_starting_cwnd);
+            // printf("Setting CWND to %lu\n", actual_starting_cwnd);
 
-            printf("Using BDP of %lu - Queue is %lld - Starting Window is %lu\n", bdp_local, queuesize,
-                   actual_starting_cwnd);
+            /* printf("Using BDP of %lu - Queue is %lld - Starting Window is %lu\n", bdp_local, queuesize,
+                   actual_starting_cwnd); */
 
             uecSrc = new UecSrc(NULL, NULL, eventlist, rtt, bdp, 100, 6);
 
@@ -980,7 +980,7 @@ int main(int argc, char **argv) {
 
             uecSnk = new UecSink();
 
-            uecSrc->setName("uec_" + ntoa(src) + "_" + ntoa(dest));
+            // uecSrc->setName("uec_" + ntoa(src) + "_" + ntoa(dest));
 
             cout << "uec_" + ntoa(src) + "_" + ntoa(dest) << endl;
             logfile.writeName(*uecSrc);
