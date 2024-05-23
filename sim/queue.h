@@ -6,8 +6,8 @@
  * A simple FIFO queue
  */
 
-//#include <list>
-//#include "circular_buffer.h"
+// #include <list>
+// #include "circular_buffer.h"
 #include "circular_buffer.h"
 #include "config.h"
 #include "custom_buffer.h"
@@ -48,13 +48,9 @@ class BaseQueue : public EventSource, public PacketSink, public Drawable {
     virtual mem_b queuesize() const = 0;
     virtual mem_b maxsize() const = 0;
 
-    inline simtime_picosec drainTime(Packet *pkt) {
-        return (simtime_picosec)(pkt->size() * _ps_per_byte);
-    }
+    inline simtime_picosec drainTime(Packet *pkt) { return (simtime_picosec)(pkt->size() * _ps_per_byte); }
 
-    inline mem_b serviceCapacity(simtime_picosec t) {
-        return (mem_b)(timeAsSec(t) * (double)_bitrate);
-    }
+    inline mem_b serviceCapacity(simtime_picosec t) { return (mem_b)(timeAsSec(t) * (double)_bitrate); }
 
     virtual void log_packet_send(simtime_picosec duration);
     virtual uint16_t average_utilization();
@@ -64,11 +60,13 @@ class BaseQueue : public EventSource, public PacketSink, public Drawable {
 
     static simtime_picosec _update_period;
 
+    linkspeed_bps _bitrate;
+
   protected:
     // Housekeeping
     PacketSink *_next_sink; // used in generic topology for linkage
     QueueLogger *_logger;
-    linkspeed_bps _bitrate;
+
     simtime_picosec _ps_per_byte; // service time, in picoseconds per byte
     string _nodename;
 
@@ -91,8 +89,7 @@ class BaseQueue : public EventSource, public PacketSink, public Drawable {
 // A standard FIFO packet queue of fixed size
 class Queue : public BaseQueue {
   public:
-    Queue(linkspeed_bps bitrate, mem_b maxsize, EventList &eventlist,
-          QueueLogger *logger);
+    Queue(linkspeed_bps bitrate, mem_b maxsize, EventList &eventlist, QueueLogger *logger);
     virtual void receivePacket(Packet &pkt);
     void doNextEvent();
     // should really be private, but loggers want to see
@@ -119,8 +116,7 @@ class Queue : public BaseQueue {
 
 class HostQueue : public Queue {
   public:
-    HostQueue(linkspeed_bps bitrate, mem_b maxsize, EventList &eventlist,
-              QueueLogger *logger);
+    HostQueue(linkspeed_bps bitrate, mem_b maxsize, EventList &eventlist, QueueLogger *logger);
 
     void addHostSender(PacketSink *snk) { _senders.push_back(snk); };
     vector<PacketSink *> _senders;
@@ -131,8 +127,7 @@ class HostQueue : public Queue {
 class PriorityQueue : public HostQueue {
   public:
     typedef enum { Q_LO = 0, Q_MID = 1, Q_HI = 2, Q_NONE = 3 } queue_priority_t;
-    PriorityQueue(linkspeed_bps bitrate, mem_b maxsize, EventList &eventlist,
-                  QueueLogger *logger);
+    PriorityQueue(linkspeed_bps bitrate, mem_b maxsize, EventList &eventlist, QueueLogger *logger);
     virtual void receivePacket(Packet &pkt);
     virtual mem_b queuesize() const;
     virtual simtime_picosec serviceTime(Packet &pkt);
@@ -157,8 +152,7 @@ class PriorityQueue : public HostQueue {
 class FairPriorityQueue : public HostQueue {
   public:
     typedef enum { Q_LO = 0, Q_MID = 1, Q_HI = 2, Q_NONE = 3 } queue_priority_t;
-    FairPriorityQueue(linkspeed_bps bitrate, mem_b maxsize,
-                      EventList &eventlist, QueueLogger *logger);
+    FairPriorityQueue(linkspeed_bps bitrate, mem_b maxsize, EventList &eventlist, QueueLogger *logger);
     virtual void receivePacket(Packet &pkt);
     virtual mem_b queuesize() const;
     virtual simtime_picosec serviceTime(Packet &pkt);
