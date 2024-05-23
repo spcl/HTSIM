@@ -112,6 +112,7 @@ bool failuregenerator::switchFail(Switch *sw) {
         return false;
     }
     uint32_t switch_id = sw->getID();
+    string switch_name = sw->nodename();
 
     if (failingSwitches.find(switch_id) != failingSwitches.end()) {
         std::pair<uint64_t, uint64_t> curSwitch = failingSwitches[switch_id];
@@ -127,7 +128,7 @@ bool failuregenerator::switchFail(Switch *sw) {
         }
     } else {
         if (GLOBAL_TIME < switch_fail_start || GLOBAL_TIME < switch_fail_last_fail + switch_fail_period ||
-            failingSwitches.size() > 0) {
+            switch_name.find("UpperPod") == std::string::npos) {
             return false;
         }
 
@@ -135,7 +136,7 @@ bool failuregenerator::switchFail(Switch *sw) {
         uint64_t recoveryTime = GLOBAL_TIME + generateTimeSwitch();
         switch_fail_last_fail = GLOBAL_TIME;
         failuregenerator::failingSwitches[switch_id] = std::make_pair(failureTime, recoveryTime);
-        std::cout << "Failed a new Switch at " << std::to_string(failureTime) << " for "
+        std::cout << "Failed a new Switch name: " << switch_name << " at " << std::to_string(failureTime) << " for "
                   << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
         return true;
     }
@@ -175,7 +176,7 @@ bool failuregenerator::switchDegradation(Switch *sw, Queue q) {
 
     if (failingSwitches.find(switch_id) != failingSwitches.end()) {
         bool decision = trueWithProb(0.1);
-        if (false) {
+        if (decision) {
             std::cout << "Packet dropped at SwitchDegradation" << std::endl;
             return true;
         } else {
@@ -189,7 +190,7 @@ bool failuregenerator::switchDegradation(Switch *sw, Queue q) {
             degraded_switches.insert(switch_id);
             std::cout << "New Switch degraded Link speed now 1000bps " << std::endl;
             bool decision = trueWithProb(0.1);
-            if (false) {
+            if (decision) {
                 std::cout << "Packet dropped at SwitchDegradation" << std::endl;
                 return true;
             } else {
