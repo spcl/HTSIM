@@ -311,6 +311,9 @@ void CompositeQueue::doNextEvent() {
 
 void CompositeQueue::receivePacket(Packet &pkt) {
 
+    std::cout << "Currently at switch " << _switch->getID() << std::endl;
+    std::cout << "Packet from " << pkt.from << " to " << pkt.to << std::endl;
+
     pkt.flow().logTraffic(pkt, *this, TrafficLogger::PKT_ARRIVE);
     if (_logger)
         _logger->logQueue(*this, QueueLogger::PKT_ARRIVE, pkt);
