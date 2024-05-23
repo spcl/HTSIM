@@ -28,20 +28,6 @@ class DragonflyTopology;
 //  N = ap (ah + 1) = 2h * h (2h*h +1) = 4h^4 + 2h^2 = 4 * (k/4)^4 + 2 * (k/4)^2.
 //  g <= ah + 1 = 2h^2 + 1.
 
-/* #define HOST_TOR(src) (src / _p)
-#define HOST_GROUP(src) (src / (_a * _p)) */
-
-/* class FlowletInfo {
-  public:
-    uint32_t _egress;
-    simtime_picosec _last;
-
-    FlowletInfo(uint32_t egress, simtime_picosec lasttime) {
-        _egress = egress;
-        _last = lasttime;
-    };
-}; */
-
 class DragonflySwitch : public Switch {
   public:
     enum switch_type { NONE = 0, GENERAL = 1};

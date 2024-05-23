@@ -17,6 +17,9 @@
 #include "swift_scheduler.h"
 #include <iostream>
 
+/* All operations with loggerfiles have been commented out because they weren't used
+    but haven't been removed to keep the possibility to easely work with them if needed. */
+
 // RoundTrip Time.
 extern uint32_t RTT;
 
@@ -89,7 +92,6 @@ DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b q
 
     init_pipes_queues();
     init_network();
-    // printf("Dragonfly2::_p = %u\n", _p);
 }
 
 // Initializes all pipes and queues for the switches.
@@ -109,8 +111,7 @@ vector<const Route *> *DragonflyTopology::get_bidir_paths(uint32_t src, uint32_t
 
 // Creates an instance of a fair priority queue. It is used for packet input.
 Queue *DragonflyTopology::alloc_src_queue(QueueLogger *queueLogger) {
-    return new FairPriorityQueue(speedFromMbps((uint64_t)HOST_NIC), memFromPkt(FEEDER_BUFFER), *_eventlist,
-                                 queueLogger);
+    return new FairPriorityQueue(speedFromMbps((uint64_t)HOST_NIC), memFromPkt(FEEDER_BUFFER), *_eventlist, queueLogger);
 }
 
 // Allocates a queue with a default link speed set to HOST_NIC.
@@ -133,14 +134,12 @@ Queue *DragonflyTopology::alloc_queue(QueueLogger *queueLogger, uint64_t speed, 
     else if (_qt == LOSSLESS_INPUT)
         return new LosslessOutputQueue(speedFromMbps(speed), memFromPkt(200), *_eventlist, queueLogger);
     else if (_qt == LOSSLESS_INPUT_ECN)
-        return new LosslessOutputQueue(speedFromMbps(speed), memFromPkt(10000), *_eventlist, queueLogger, 1,
-                                       memFromPkt(16));
+        return new LosslessOutputQueue(speedFromMbps(speed), memFromPkt(10000), *_eventlist, queueLogger, 1, memFromPkt(16));
     else if (_qt == COMPOSITE_ECN) {
         if (tor)
             return new CompositeQueue(speedFromMbps(speed), queuesize, *_eventlist, queueLogger);
         else
-            return new ECNQueue(speedFromMbps(speed), memFromPkt(2 * SWITCH_BUFFER), *_eventlist, queueLogger,
-                                memFromPkt(15));
+            return new ECNQueue(speedFromMbps(speed), memFromPkt(2 * SWITCH_BUFFER), *_eventlist, queueLogger, memFromPkt(15));
     }
     assert(0);
 }
@@ -164,8 +163,7 @@ void DragonflyTopology::init_network() {
         }
     }
 
-    // Creates switches if it is a lossless operation.
-    // ???
+    // Creates the switches.
     for (uint32_t j = 0; j < _no_of_switches; j++) {
         switches[j] = new DragonflySwitch(*_eventlist, "Switch_" + ntoa(j), DragonflySwitch::GENERAL, j, timeFromUs((uint32_t)0), this, _df_routing_strategy);
     }
@@ -201,7 +199,6 @@ void DragonflyTopology::init_network() {
             switches[j]->addPort(queues_switch_host[j][k]);
             switches[j]->addPort(queues_host_switch[k][j]);
 
-            // ???
             if (_qt == LOSSLESS) {
                 switches[j]->addPort(queues_switch_host[j][k]);
                 ((LosslessQueue *)queues_switch_host[j][k])->setRemoteEndpoint(queues_host_switch[k][j]);
@@ -248,7 +245,6 @@ void DragonflyTopology::init_network() {
             queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
             queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
 
-            // ???
             if (_qt == LOSSLESS) {
                 switches[j]->addPort(queues_switch_switch[j][k]);
                 ((LosslessQueue *)queues_switch_switch[j][k])->setRemoteEndpoint(queues_switch_switch[k][j]);
@@ -262,16 +258,15 @@ void DragonflyTopology::init_network() {
             pipes_switch_switch[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
             pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-I->SW" + ntoa(k));
             //logfile->writeName(*(pipes_switch_switch[j][k]));
-
         }
 
         // Connect the switch to switches from other groups. Global links.
         for (uint32_t l = 0; l < _h; l++) {
             uint32_t targetgroupid = (j % _a) * _h + l + 1;
 
-            // Compute target switch ID; only create links to groups with ID
-            // larger than ours. if the ID is larger than ours, effective target
-            // group is +1 (we skip our own group for global links).
+            /* Compute target switch ID; only create links to groups with ID
+                larger than ours. if the ID is larger than ours, effective target
+                group is +1 (we skip our own group for global links). */
             if (targetgroupid <= groupid){
                 continue;
             }
@@ -303,7 +298,6 @@ void DragonflyTopology::init_network() {
             queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
             queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
 
-            // ???
             if (_qt == LOSSLESS) {
                 switches[j]->addPort(queues_switch_switch[j][k]);
                 ((LosslessQueue *)queues_switch_switch[j][k])->setRemoteEndpoint(queues_switch_switch[k][j]);
@@ -327,6 +321,7 @@ void DragonflyTopology::init_network() {
         }
     }
 
+// Prints out all connections in the topology. Debugging use only.
 /*     for (int i = 0; i < _no_of_switches; i++){
         for (int j = i+1; j < _no_of_switches; j++){
             if(!pipes_switch_switch[i][j] == NULL){

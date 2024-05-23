@@ -71,7 +71,6 @@ class DragonflyTopology : public Topology {
 
     DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q);
     DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q, uint32_t strat);
-    //DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, Logfile *log, EventList *ev, queue_type q);
     void init_network();
     Queue *alloc_src_queue(QueueLogger *q);
     Queue *alloc_queue(QueueLogger *q, mem_b queuesize, bool tor);
