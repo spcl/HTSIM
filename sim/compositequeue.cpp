@@ -315,13 +315,25 @@ void CompositeQueue::receivePacket(Packet &pkt) {
         _logger->logQueue(*this, QueueLogger::PKT_ARRIVE, pkt);
     // is this a Tofino packet from the egress pipeline?
 
-    /* printf("Node name: %s\n", _nodename.c_str()); */
-    if (_nodename == "compqueue(100000Mb/s,150000bytes)US1->CS1(0)" ||
-        _nodename == "compqueue(100000Mb/s,150000bytes)US0->CS0(0)") {
-        failed_link = true;
-        // printf("Dropping Pkt\n");
+    // printf("Node name: %s\n", _nodename.c_str());
+    if (pkt.from == 90 && pkt.to == 8 && pkt.pathid() == 265) {
+        printf("This %d PKT at %s!\n", pkt.id(), _nodename.c_str());
     }
+
     failed_link = false;
+    if (!pkt.header_only() && (_nodename == "compqueue(100000Mb/s,150000bytes)US1->CS1(0)" ||
+                               _nodename == "compqueue(100000Mb/s,150000bytes)US0->CS0(0)")) {
+        failed_link = true;
+
+        if (eventlist().now() > 150000000) {
+            printf("Dropping2 Pkt at %s / Entropy %d@%d@%d %d %d - Time %lu\n", _nodename.c_str(), pkt.from, pkt.to,
+                   pkt.pathid(), pkt.size(), pkt.id(), GLOBAL_TIME / 1000);
+        } else {
+            printf("Dropping1 Pkt at %s / Entropy %d@%d@%d %d %d - Time %lu\n", _nodename.c_str(), pkt.from, pkt.to,
+                   pkt.pathid(), pkt.size(), pkt.id(), GLOBAL_TIME / 1000);
+        }
+    }
+
     if (failed_link && !pkt.header_only()) {
         pkt.strip_payload();
         pkt.is_failed = true;
@@ -519,9 +531,10 @@ void CompositeQueue::receivePacket(Packet &pkt) {
     // if (pkt.type()==NDP)
     //   cout << "H " << pkt.flow().str() << endl;
     Packet *pkt_p = &pkt;
-    if (pkt.is_failed) {
+    if (pkt.is_failed && (_nodename == "compqueue(100000Mb/s,150000bytes)US1->CS1(0)" ||
+                          _nodename == "compqueue(100000Mb/s,150000bytes)US0->CS0(0)")) {
         pkt_p->is_failed = true;
-        printf("Setting Failure Bit\n");
+        printf("Setting Failure Bit at %s\n", _nodename.c_str());
     }
     _enqueued_high.push(pkt_p);
     _queuesize_high += pkt.size();

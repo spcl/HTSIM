@@ -713,7 +713,7 @@ void UecSrc::quick_adapt(bool trimmed) {
             // Reset counters, update logs.
             count_received = 0;
             need_quick_adapt = false;
-            _list_fast_decrease.push_back(std::make_pair(eventlist().now() / 1000, 1));
+            //_list_fast_decrease.push_back(std::make_pair(eventlist().now() / 1000, 1));
 
             // Update x_gain after large incasts. We want to limit its effect if
             // we move to much smaller windows.
@@ -811,8 +811,10 @@ void UecSrc::processNack(UecNack &pkt) {
     _consecutive_low_rtt = 0;
     _received_ecn.push_back(std::make_tuple(eventlist().now(), true, _mss, _target_rtt + 10000));
 
-    if (!pkt.is_failed) {
+    if (pkt.is_failed) {
+        printf("Received Failed Pkt %d at %lu\n", pkt.seqno(), eventlist().now() / 1000);
         _list_nack.push_back(std::make_pair(eventlist().now() / 1000, 1));
+        _list_fast_decrease.push_back(std::make_pair(eventlist().now() / 1000, 1));
     }
 
     // mark corresponding packet for retransmission
@@ -960,7 +962,7 @@ int UecSrc::choose_route() {
                             if (consume_idx_reps == 1) {
                                 consume_idx_reps = current_idx_reps - 1;
                             }
-                            _crt_path = random() % _paths.size();
+                            //_crt_path = random() % _paths.size();
                         } else {
                             _crt_path = random() % _paths.size();
                         }
@@ -973,7 +975,7 @@ int UecSrc::choose_route() {
                             if (consume_idx_reps == 1) {
                                 consume_idx_reps = current_idx_reps - 1;
                             }
-                            _crt_path = random() % _paths.size();
+                            //_crt_path = random() % _paths.size();
                         } else {
                             if (current_idx_reps - 1 < 0) {
                                 _crt_path = list_good_reps[0];
@@ -995,8 +997,8 @@ int UecSrc::choose_route() {
         }
     }
     case ECMP_RANDOM_ECN: {
-        _crt_path = from;
-        //_crt_path = (random() * 1) % _paths.size();
+        //_crt_path = from;
+        _crt_path = (random() * 1) % _paths.size();
         break;
     }
     case ECMP_FIB_ECN: {
@@ -2019,11 +2021,14 @@ void UecSrc::send_packets() {
         p->set_route(*_route);
         int crt = choose_route();
         p->is_bts_pkt = false;
-
-        p->set_pathid(_path_ids[crt]);
         p->from = this->from;
         p->to = this->to;
         p->tag = this->tag;
+
+        p->set_pathid2(_path_ids[crt], 1);
+        printf("Sending2 packet from %d %d@%d@%d\n", p->id(), from, to, p->pathid());
+        fflush(stdout);
+
         p->my_idx = data_count_idx++;
 
         p->flow().logTraffic(*p, *this, TrafficLogger::PKT_CREATESEND);
@@ -2236,13 +2241,16 @@ bool UecSrc::resend_packet(std::size_t idx) {
 
     p->set_route(*_route);
     int crt = choose_route();
+
     p->from = this->from;
     p->to = this->to;
     p->tag = this->tag;
 
     // printf("Resending to %d\n", this->from);
 
-    p->set_pathid(_path_ids[crt]);
+    p->set_pathid2(_path_ids[crt], 2);
+    printf("Sending1 packet from %d %d@%d@%d\n", p->id(), from, to, p->pathid());
+    fflush(stdout);
 
     p->flow().logTraffic(*p, *this, TrafficLogger::PKT_CREATE);
     /* printf("Send on at %lu -- %d %d\n", GLOBAL_TIME / 1000, pause_send, stop_after_quick); */
@@ -2306,13 +2314,14 @@ void UecSink::send_nack(simtime_picosec ts, bool marked, UecAck::seq_t seqno, Ue
     nack->to = this->to;
     nack->tag = this->tag;
 
-    // printf("Sending NACK at %lu\n", GLOBAL_TIME);
-    nack->set_pathid(_path_ids[_crt_path]);
+    printf("Sending NACK %d at %lu\n", is_failed, GLOBAL_TIME);
+    nack->set_pathid2(_path_ids[_crt_path], 4);
+    // printf("Sending3 packet from %d %d@%d@%d\n", nack->id(), from, to, nack->pathid());
+    fflush(stdout);
     _crt_path++;
     if (_crt_path == _paths.size()) {
         _crt_path = 0;
     }
-
     nack->pathid_echo = path_id;
     nack->is_ack = false;
     nack->flow().logTraffic(*nack, *this, TrafficLogger::PKT_CREATESEND);
@@ -2348,6 +2357,10 @@ void UecSink::receivePacket(Packet &pkt) {
         pfc_just_seen = 1;
     } else {
         pfc_just_seen = 0;
+    }
+
+    if (pkt.is_failed) {
+        printf("Received Failure Bit %d@%d@%d\n", pkt.from, pkt.to, pkt.pathid());
     }
 
     switch (pkt.type()) {
@@ -2435,6 +2448,7 @@ void UecSink::receivePacket(Packet &pkt) {
     // quick way of doing that in htsim printf("Ack Sending
     // From %d - %d\n", this->from,
     int32_t path_id = p->pathid();
+    /* printf("NORMALACK %d@%d@%d\n", from, to, path_id); */
     /* printf("NORMALACK %d@%d@%d - Time %lu\n", from, to, tag,
            GLOBAL_TIME / 1000); */
     send_ack(ts, marked, seqno, ackno, _paths.at(crt_path), pkt.get_route(), path_id);
@@ -2453,7 +2467,9 @@ void UecSink::send_ack(simtime_picosec ts, bool marked, UecAck::seq_t seqno, Uec
     case ECMP_RANDOM_ECN:
         ack = UecAck::newpkt(_src->_flow, *_route, seqno, ackno, 0, _srcaddr);
 
-        ack->set_pathid(_path_ids[_crt_path]);
+        ack->set_pathid2(_path_ids[_crt_path], 3);
+        // printf("Sending4 packet from %d %d@%d@%d\n", ack->id(), from, to, ack->pathid());
+        fflush(stdout);
         _crt_path++;
         if (_crt_path == _paths.size()) {
             _crt_path = 0;

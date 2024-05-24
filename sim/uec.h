@@ -319,8 +319,8 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     int max_num_entropies = 5;
     int list_good_reps[5];
 
-    bool reps_with_circular = false;
-    bool freeze_reps = false;
+    bool reps_with_circular = true;
+    bool freeze_reps = true;
 
   private:
     uint32_t _unacked;

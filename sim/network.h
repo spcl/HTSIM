@@ -187,7 +187,23 @@ class Packet {
     int64_t timeout_budget = 0;
     uint64_t enter_timestamp = 0;
 
-    inline void set_pathid(uint32_t p) { _pathid = p; }
+    inline void set_pathid(uint32_t p) {
+        if (size() > 120) {
+            printf("Setting pathid %d@%d@%d id %d at %lu\n", from, to, p, id(), GLOBAL_TIME / 1000);
+            fflush(stdout);
+        }
+
+        _pathid = p;
+    }
+
+    inline void set_pathid2(uint32_t p, int d) {
+
+        _pathid = p;
+        if (size() > 120) {
+            printf("Setting pathid %d %d@%d@%d id %d at %lu\n", id(), from, to, pathid(), d, GLOBAL_TIME / 1000);
+            fflush(stdout);
+        }
+    }
     const Route *route() const { return _route; }
     const Route *reverse_route() const { return _route->reverse(); }
 
