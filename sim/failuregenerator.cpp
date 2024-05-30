@@ -99,6 +99,7 @@ simtime_picosec failuregenerator::cable_ber_period = 0;
 simtime_picosec failuregenerator::cable_ber_last_fail = 0;
 
 bool failuregenerator::cable_degradation = false;
+std::unordered_map<uint32_t, uint32_t> failuregenerator::degraded_cables;
 simtime_picosec failuregenerator::cable_degradation_start = 0;
 simtime_picosec failuregenerator::cable_degradation_period = 0;
 simtime_picosec failuregenerator::cable_degradation_last_fail = 0;
@@ -149,7 +150,6 @@ bool failuregenerator::switchFail(Switch *sw) {
             return true;
         }
     } else {
-        std::cout << switch_fail_last_fail + switch_fail_period << std::endl;
         if (GLOBAL_TIME < switch_fail_start || GLOBAL_TIME < switch_fail_last_fail + switch_fail_period ||
             switch_name.find("UpperPod") == std::string::npos) {
             return false;
@@ -197,7 +197,7 @@ bool failuregenerator::switchDegradation(Switch *sw, Queue q) {
     }
     uint32_t switch_id = sw->getID();
 
-    if (failingSwitches.find(switch_id) != failingSwitches.end()) {
+    if (degraded_switches.find(switch_id) != degraded_switches.end()) {
         bool decision = trueWithProb(0.1);
         if (decision) {
             std::cout << "Packet dropped at SwitchDegradation" << std::endl;
@@ -267,7 +267,7 @@ bool failuregenerator::switchWorstCase(Switch *sw) {
 }
 
 bool failuregenerator::simCableFailures(Pipe *p, Packet &pkt) {
-    return (cableFail(p, pkt) || cableBER(pkt) || cableDegradation() || cableWorstCase());
+    return (cableFail(p, pkt) || cableBER(pkt) || cableDegradation(p, pkt) || cableWorstCase());
 }
 
 bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
@@ -333,7 +333,68 @@ bool failuregenerator::cableBER(Packet &pkt) {
     return false;
 }
 
-bool failuregenerator::cableDegradation() { return false; }
+bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
+    if (!cable_degradation) {
+        return false;
+    }
+    uint32_t cable_id = p->getID();
+
+    if (degraded_cables.find(cable_id) != degraded_cables.end()) {
+        uint32_t degradation_type = degraded_cables[cable_id];
+        bool decision = false;
+        switch (degradation_type) {
+        case 1:
+            decision = trueWithProb(0.33);
+            break;
+        case 2:
+            decision = trueWithProb(0.66);
+            break;
+        case 3:
+            decision = true;
+            break;
+
+        default:
+            decision = false;
+            break;
+        }
+        if (decision) {
+            std::cout << "Packet dropped at CableDegradation" << std::endl;
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        string from_queue = pkt.route()->at(0)->nodename();
+        if (GLOBAL_TIME < cable_degradation_start ||
+            GLOBAL_TIME < cable_degradation_last_fail + cable_degradation_period ||
+            from_queue.find("DST") != std::string::npos || from_queue.find("SRC") != std::string::npos) {
+            return false;
+        }
+
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<double> dist(0.0, 1.0);
+
+        double randomValue = dist(gen);
+
+        int decided_type = 0;
+
+        if (randomValue < 0.9) {
+            decided_type = 1;
+        } else if (randomValue < 0.99) {
+            decided_type = 2;
+        } else {
+            decided_type = 3;
+        }
+
+        cable_degradation_last_fail = GLOBAL_TIME;
+        failuregenerator::degraded_cables[cable_id] = decided_type;
+        std::cout << "Degraded a new Cable name: " << p->nodename() << std::endl;
+        return true;
+    }
+
+    return false;
+}
 
 bool failuregenerator::cableWorstCase() { return false; }
 

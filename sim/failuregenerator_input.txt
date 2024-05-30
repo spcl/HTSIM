@@ -13,7 +13,7 @@ Switch-Worst-Case-Period: 100000000
 Cable-Fail: OFF
 Cable-Fail-Start-After: 100000000
 Cable-Fail-Period: 100000000
-Cable-BER: ON
+Cable-BER: OFF
 Cable-BER-Start-After: 100000000
 Cable-BER-Period: 10000000
 Cable-Degradation: ON

@@ -60,8 +60,9 @@ class failuregenerator {
     static simtime_picosec cable_ber_period;
     static simtime_picosec cable_ber_last_fail;
 
-    bool cableDegradation();
+    bool cableDegradation(Pipe *p, Packet &pkt);
     static bool cable_degradation;
+    static std::unordered_map<uint32_t, uint32_t> degraded_cables;
     static simtime_picosec cable_degradation_start;
     static simtime_picosec cable_degradation_period;
     static simtime_picosec cable_degradation_last_fail;
