@@ -33,6 +33,7 @@ class Pipe : public EventSource, public PacketSink, public Drawable {
     PacketSink *next() const { return _next_sink; }
     simtime_picosec _delay;
     failuregenerator *_failure_generator;
+    uint32_t getID() { return _id; };
 
   protected:
     string _nodename;
@@ -41,6 +42,8 @@ class Pipe : public EventSource, public PacketSink, public Drawable {
     // serialized)
     vector<pktrecord_t> _inflight_v;
     int _next_insert, _next_pop, _count, _size;
+    uint32_t _id;
+    static uint32_t id;
 
   private:
     PacketSink *_next_sink; // used in generic topology for linkage

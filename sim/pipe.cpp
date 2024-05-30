@@ -3,15 +3,19 @@
 #include <iostream>
 #include <sstream>
 
+uint32_t Pipe::id = 0;
+
 Pipe::Pipe(simtime_picosec delay, EventList &eventlist) : EventSource(eventlist, "pipe"), _delay(delay) {
     _count = 0;
     _next_insert = 0;
     _next_pop = 0;
     _size = 16; // initial size; we'll resize if needed
     _inflight_v.resize(_size);
+    _id = id++;
     stringstream ss;
-    ss << "pipe(" << delay / 1000000 << "us)";
+    ss << "pipe_" << _id << "(" << delay / 1000000 << "us)";
     _nodename = ss.str();
+
     _failure_generator = new failuregenerator();
 }
 
@@ -19,8 +23,7 @@ void Pipe::receivePacket(Packet &pkt) {
     // pkt.flow().logTraffic(pkt,*this,TrafficLogger::PKT_ARRIVE);
     // if (_inflight.empty()){
 
-    if (_failure_generator->simCableFailures()) {
-        std::cout << "Cable Failure\n";
+    if (_failure_generator->simCableFailures(this, pkt)) {
         // Temporary Hack
         if (!pkt.header_only()) {
             pkt.strip_payload();

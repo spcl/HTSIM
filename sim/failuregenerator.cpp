@@ -2,6 +2,7 @@
 
 #include "failuregenerator.h"
 #include "network.h"
+#include "pipe.h"
 #include "switch.h"
 #include <ctime>
 #include <fstream>
@@ -32,16 +33,39 @@ int64_t generateTimeSwitch() {
         std::uniform_int_distribution<> dis(0, 360);
         return dis(gen) * 1e+12;
     } else {
-        std::geometric_distribution<> dis(0.01);
+        std::geometric_distribution<> dis(0.1);
         int64_t val = dis(gen);
         val += 360;
+        if (val > 18000) {
+            val = 18000;
+        }
+        return dis(gen) * 1e+12;
+    }
+}
+
+int64_t generateTimeCable() {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(0, 1);
+    double random_value = dis(gen);
+    if (random_value < 0.8) {
+        std::uniform_int_distribution<> dis(0, 300);
+        return dis(gen) * 1e+12;
+    } else {
+        std::geometric_distribution<> dis(0.1);
+        int64_t val = dis(gen);
+        val += 300;
+        if (val > 3600) {
+            val = 3600;
+        }
         return dis(gen) * 1e+12;
     }
 }
 
 // Map that keeps track of failing switches. Maps from switch id to a pair of time of failure and time of recovery
-std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failuregenerator::failingSwitches;
+
 bool failuregenerator::switch_fail = false;
+std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failuregenerator::failingSwitches;
 simtime_picosec failuregenerator::switch_fail_start = 0;
 simtime_picosec failuregenerator::switch_fail_period = 0;
 simtime_picosec failuregenerator::switch_fail_last_fail = 0;
@@ -62,7 +86,9 @@ bool failuregenerator::switch_worst_case = false;
 simtime_picosec failuregenerator::switch_worst_case_start = 0;
 simtime_picosec failuregenerator::switch_worst_case_period = 0;
 simtime_picosec failuregenerator::switch_worst_case_last_fail = 0;
+
 bool failuregenerator::cable_fail = false;
+std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failuregenerator::failingCables;
 simtime_picosec failuregenerator::cable_fail_start = 0;
 simtime_picosec failuregenerator::cable_fail_period = 0;
 simtime_picosec failuregenerator::cable_fail_last_fail = 0;
@@ -239,13 +265,51 @@ bool failuregenerator::switchWorstCase(Switch *sw) {
     return false;
 }
 
-bool failuregenerator::simCableFailures() {
-    if (trueWithProb(0.1)) {
-        return true;
-    } else {
+bool failuregenerator::simCableFailures(Pipe *p, Packet &pkt) {
+    return (cableFail(p, pkt) || cableBER() || cableDegradation() || cableWorstCase());
+}
+
+bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
+    if (!cable_fail) {
         return false;
     }
+
+    uint32_t cable_id = p->getID();
+    if (failingCables.find(cable_id) != failingCables.end()) {
+        std::pair<uint64_t, uint64_t> curCable = failingCables[cable_id];
+        uint64_t recoveryTime = curCable.second;
+
+        if (GLOBAL_TIME > recoveryTime) {
+            std::cout << "Recovered from Fail" << std::endl;
+            failingCables.erase(cable_id);
+            return false;
+        } else {
+            std::cout << "Packet dropped at CableFail" << std::endl;
+            return true;
+        }
+    } else {
+        string from_queue = pkt.route()->at(0)->nodename();
+        if (GLOBAL_TIME < cable_fail_start || GLOBAL_TIME < cable_fail_last_fail + cable_fail_period ||
+            from_queue.find("DST") != std::string::npos || from_queue.find("SRC") != std::string::npos) {
+            return false;
+        }
+
+        uint64_t failureTime = GLOBAL_TIME;
+        uint64_t recoveryTime = GLOBAL_TIME + generateTimeCable();
+        cable_fail_last_fail = GLOBAL_TIME;
+        failuregenerator::failingCables[cable_id] = std::make_pair(failureTime, recoveryTime);
+        std::cout << "Failed a new Cable name: " << cable_id << " at " << std::to_string(failureTime) << " for "
+                  << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
+        return true;
+    }
+    return false;
 }
+
+bool failuregenerator::cableBER() { return false; }
+
+bool failuregenerator::cableDegradation() { return false; }
+
+bool failuregenerator::cableWorstCase() { return false; }
 
 bool failuregenerator::simNICFailures() { return false; }
 

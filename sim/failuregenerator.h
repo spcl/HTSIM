@@ -8,6 +8,7 @@
 #include <set>
 #include <unordered_map>
 
+class Pipe; // Forward declaration
 class failuregenerator {
 
   public:
@@ -15,7 +16,7 @@ class failuregenerator {
     void parseinputfile();
 
     bool simSwitchFailures(Packet &pkt, Switch *sw, Queue q);
-    bool simCableFailures();
+    bool simCableFailures(Pipe *p, Packet &pkt);
     bool simNICFailures();
 
     // Switch
@@ -46,21 +47,26 @@ class failuregenerator {
     static simtime_picosec switch_worst_case_period;
     static simtime_picosec switch_worst_case_last_fail;
 
+    bool cableFail(Pipe *p, Packet &pkt);
+    static unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failingCables;
     static bool cable_fail;
     static simtime_picosec cable_fail_start;
     static simtime_picosec cable_fail_period;
     static simtime_picosec cable_fail_last_fail;
 
+    bool cableBER();
     static bool cable_ber;
     static simtime_picosec cable_ber_start;
     static simtime_picosec cable_ber_period;
     static simtime_picosec cable_ber_last_fail;
 
+    bool cableDegradation();
     static bool cable_degradation;
     static simtime_picosec cable_degradation_start;
     static simtime_picosec cable_degradation_period;
     static simtime_picosec cable_degradation_last_fail;
 
+    bool cableWorstCase();
     static bool cable_worst_case;
     static simtime_picosec cable_worst_case_start;
     static simtime_picosec cable_worst_case_period;
