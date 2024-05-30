@@ -176,7 +176,7 @@ bool failuregenerator::switchDegradation(Switch *sw, Queue q) {
 
     if (failingSwitches.find(switch_id) != failingSwitches.end()) {
         bool decision = trueWithProb(0.1);
-        if (false) { // Currently dont drop any packets for debugging speed of queue
+        if (decision) {
             std::cout << "Packet dropped at SwitchDegradation" << std::endl;
             return true;
         } else {
@@ -186,11 +186,15 @@ bool failuregenerator::switchDegradation(Switch *sw, Queue q) {
         if (GLOBAL_TIME < switch_ber_start || GLOBAL_TIME < switch_ber_last_fail + switch_ber_period) {
             return false;
         } else {
-            q._bitrate = 1000;
+            int port_nrs = sw->portCount();
+            for (int i = 0; i < port_nrs; i++) {
+                BaseQueue *q = sw->getPort(i);
+                q->_bitrate = 1000;
+            }
             degraded_switches.insert(switch_id);
             std::cout << "New Switch degraded Queue bitrate now 1000bps " << std::endl;
             bool decision = trueWithProb(0.1);
-            if (false) { // Currently dont drop any packets for debugging speed of queue
+            if (decision) {
                 std::cout << "Packet dropped at SwitchDegradation" << std::endl;
                 return true;
             } else {
