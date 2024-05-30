@@ -14,7 +14,6 @@ class failuregenerator {
     failuregenerator();
     void parseinputfile();
 
-    bool simFailures(Packet &pkt, Switch *sw, Queue q);
     bool simSwitchFailures(Packet &pkt, Switch *sw, Queue q);
     bool simCableFailures();
     bool simNICFailures();

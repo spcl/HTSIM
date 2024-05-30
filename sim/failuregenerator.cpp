@@ -99,10 +99,6 @@ simtime_picosec failuregenerator::nic_worst_case_last_fail = 0;
 
 failuregenerator::failuregenerator() { parseinputfile(); }
 
-bool failuregenerator::simFailures(Packet &pkt, Switch *sw, Queue q) {
-    return (simSwitchFailures(pkt, sw, q) || simCableFailures() || simNICFailures());
-}
-
 bool failuregenerator::simSwitchFailures(Packet &pkt, Switch *sw, Queue q) {
     return (switchFail(sw) || switchBER(pkt, sw, q) || switchDegradation(sw, q) || switchWorstCase(sw));
 }
@@ -243,7 +239,13 @@ bool failuregenerator::switchWorstCase(Switch *sw) {
     return false;
 }
 
-bool failuregenerator::simCableFailures() { return false; }
+bool failuregenerator::simCableFailures() {
+    if (trueWithProb(0.1)) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
 bool failuregenerator::simNICFailures() { return false; }
 

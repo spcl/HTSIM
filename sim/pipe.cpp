@@ -12,11 +12,25 @@ Pipe::Pipe(simtime_picosec delay, EventList &eventlist) : EventSource(eventlist,
     stringstream ss;
     ss << "pipe(" << delay / 1000000 << "us)";
     _nodename = ss.str();
+    _failure_generator = new failuregenerator();
 }
 
 void Pipe::receivePacket(Packet &pkt) {
     // pkt.flow().logTraffic(pkt,*this,TrafficLogger::PKT_ARRIVE);
     // if (_inflight.empty()){
+
+    if (_failure_generator->simCableFailures()) {
+        std::cout << "Cable Failure\n";
+        // Temporary Hack
+        if (!pkt.header_only()) {
+            pkt.strip_payload();
+        }
+        pkt.is_failed = true;
+
+        // pkt.free(); Later we will re-enable this
+        // return;
+    }
+
     if (pkt.is_bts_pkt && pkt.id() == 356350 && pkt.from == 1) {
         printf("Get Next Hop BTS - %s - DC %d\n", nodename().c_str());
     }
