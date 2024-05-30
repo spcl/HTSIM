@@ -319,7 +319,7 @@ void CompositeQueue::receivePacket(Packet &pkt) {
         _logger->logQueue(*this, QueueLogger::PKT_ARRIVE, pkt);
     // is this a Tofino packet from the egress pipeline?
 
-    if (_failure_generator->simSwitchFailures(pkt, _switch, *this)) {
+    if (_failure_generator->simSwitchFailures(pkt, _switch, *this) || _failure_generator->simNICFailures(*this, pkt)) {
         // Temporary Hack
         if (!pkt.header_only()) {
             pkt.strip_payload();

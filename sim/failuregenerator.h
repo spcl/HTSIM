@@ -17,7 +17,7 @@ class failuregenerator {
 
     bool simSwitchFailures(Packet &pkt, Switch *sw, Queue q);
     bool simCableFailures(Pipe *p, Packet &pkt);
-    bool simNICFailures();
+    bool simNICFailures(Queue q, Packet &pkt);
 
     // Switch
     bool switchFail(Switch *sw);
@@ -34,7 +34,7 @@ class failuregenerator {
     static simtime_picosec switch_ber_period;
     static simtime_picosec switch_ber_last_fail;
 
-    bool switchDegradation(Switch *sw, Queue q);
+    bool switchDegradation(Switch *sw);
     static std::set<uint32_t> degraded_switches;
     static bool switch_degradation;
     static simtime_picosec switch_degradation_start;
@@ -67,7 +67,7 @@ class failuregenerator {
     static simtime_picosec cable_degradation_period;
     static simtime_picosec cable_degradation_last_fail;
 
-    bool cableWorstCase();
+    bool cableWorstCase(Pipe *p, Packet &pkt);
     static bool cable_worst_case;
     static simtime_picosec cable_worst_case_start;
     static simtime_picosec cable_worst_case_period;
@@ -75,16 +75,21 @@ class failuregenerator {
 
     // NIC
     static bool nic_fail;
+    bool nicFail(Queue q, Packet &pkt);
+    static std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failingNICs;
     static simtime_picosec nic_fail_start;
     static simtime_picosec nic_fail_period;
     static simtime_picosec nic_fail_last_fail;
 
     static bool nic_degradation;
+    bool nicDegradation(Queue q, Packet &pkt);
+    static std::set<uint32_t> degraded_NICs;
     static simtime_picosec nic_degradation_start;
     static simtime_picosec nic_degradation_period;
     static simtime_picosec nic_degradation_last_fail;
 
     static bool nic_worst_case;
+    bool nicWorstCase(Queue q, Packet &pkt);
     static simtime_picosec nic_worst_case_start;
     static simtime_picosec nic_worst_case_period;
     static simtime_picosec nic_worst_case_last_fail;

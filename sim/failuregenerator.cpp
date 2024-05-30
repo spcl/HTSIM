@@ -62,6 +62,19 @@ int64_t generateTimeCable() {
     }
 }
 
+int64_t generateTimeNIC() {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    std::geometric_distribution<> dis(0.1);
+    int64_t val = dis(gen);
+    val += 600;
+    if (val > 1800) {
+        val = 1800;
+    }
+    return dis(gen) * 1e+12;
+}
+
 // Map that keeps track of failing switches. Maps from switch id to a pair of time of failure and time of recovery
 
 bool failuregenerator::switch_fail = false;
@@ -110,11 +123,13 @@ simtime_picosec failuregenerator::cable_worst_case_period = 0;
 simtime_picosec failuregenerator::cable_worst_case_last_fail = 0;
 
 bool failuregenerator::nic_fail = false;
+std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failuregenerator::failingNICs;
 simtime_picosec failuregenerator::nic_fail_start = 0;
 simtime_picosec failuregenerator::nic_fail_period = 0;
 simtime_picosec failuregenerator::nic_fail_last_fail = 0;
 
 bool failuregenerator::nic_degradation = false;
+std::set<uint32_t> failuregenerator::degraded_NICs;
 simtime_picosec failuregenerator::nic_degradation_start = 0;
 simtime_picosec failuregenerator::nic_degradation_period = 0;
 simtime_picosec failuregenerator::nic_degradation_last_fail = 0;
@@ -127,7 +142,7 @@ simtime_picosec failuregenerator::nic_worst_case_last_fail = 0;
 failuregenerator::failuregenerator() { parseinputfile(); }
 
 bool failuregenerator::simSwitchFailures(Packet &pkt, Switch *sw, Queue q) {
-    return (switchFail(sw) || switchBER(pkt, sw, q) || switchDegradation(sw, q) || switchWorstCase(sw));
+    return (switchFail(sw) || switchBER(pkt, sw, q) || switchDegradation(sw) || switchWorstCase(sw));
 }
 
 bool failuregenerator::switchFail(Switch *sw) {
@@ -190,7 +205,7 @@ bool failuregenerator::switchBER(Packet &pkt, Switch *sw, Queue q) {
         return false;
     }
 }
-bool failuregenerator::switchDegradation(Switch *sw, Queue q) {
+bool failuregenerator::switchDegradation(Switch *sw) {
 
     if (!switch_degradation) {
         return false;
@@ -199,14 +214,15 @@ bool failuregenerator::switchDegradation(Switch *sw, Queue q) {
 
     if (degraded_switches.find(switch_id) != degraded_switches.end()) {
         bool decision = trueWithProb(0.1);
-        if (decision) {
+        if (false) {
             std::cout << "Packet dropped at SwitchDegradation" << std::endl;
             return true;
         } else {
             return false;
         }
     } else {
-        if (GLOBAL_TIME < switch_ber_start || GLOBAL_TIME < switch_ber_last_fail + switch_ber_period) {
+        if (GLOBAL_TIME < switch_degradation_start ||
+            GLOBAL_TIME < switch_degradation_last_fail + switch_degradation_period) {
             return false;
         } else {
             int port_nrs = sw->portCount();
@@ -215,9 +231,10 @@ bool failuregenerator::switchDegradation(Switch *sw, Queue q) {
                 q->_bitrate = 1000;
             }
             degraded_switches.insert(switch_id);
+            switch_degradation_last_fail = GLOBAL_TIME;
             std::cout << "New Switch degraded Queue bitrate now 1000bps " << std::endl;
             bool decision = trueWithProb(0.1);
-            if (decision) {
+            if (false) {
                 std::cout << "Packet dropped at SwitchDegradation" << std::endl;
                 return true;
             } else {
@@ -267,7 +284,7 @@ bool failuregenerator::switchWorstCase(Switch *sw) {
 }
 
 bool failuregenerator::simCableFailures(Pipe *p, Packet &pkt) {
-    return (cableFail(p, pkt) || cableBER(pkt) || cableDegradation(p, pkt) || cableWorstCase());
+    return (cableFail(p, pkt) || cableBER(pkt) || cableDegradation(p, pkt) || cableWorstCase(p, pkt));
 }
 
 bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
@@ -396,9 +413,174 @@ bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
     return false;
 }
 
-bool failuregenerator::cableWorstCase() { return false; }
+bool failuregenerator::cableWorstCase(Pipe *p, Packet &pkt) {
+    if (!cable_worst_case) {
+        return false;
+    }
 
-bool failuregenerator::simNICFailures() { return false; }
+    uint32_t cable_id = p->getID();
+    if (failingCables.find(cable_id) != failingCables.end()) {
+        std::pair<uint64_t, uint64_t> curCable = failingCables[cable_id];
+        uint64_t recoveryTime = curCable.second;
+
+        if (GLOBAL_TIME > recoveryTime) {
+            std::cout << "Recovered from Fail" << std::endl;
+            failingCables.erase(cable_id);
+            return false;
+        } else {
+            std::cout << "Packet dropped at cableWorstCase" << std::endl;
+            return true;
+        }
+    } else {
+        string from_queue = pkt.route()->at(0)->nodename();
+        if (GLOBAL_TIME < cable_worst_case || GLOBAL_TIME < cable_worst_case_last_fail + cable_worst_case_period ||
+            from_queue.find("DST") != std::string::npos || from_queue.find("SRC") != std::string::npos) {
+            return false;
+        }
+
+        uint64_t failureTime = GLOBAL_TIME;
+        uint64_t recoveryTime = GLOBAL_TIME + generateTimeCable();
+        cable_worst_case_last_fail = GLOBAL_TIME;
+        failuregenerator::failingCables[cable_id] = std::make_pair(failureTime, recoveryTime);
+        std::cout << "Failed a new Cable name: " << cable_id << " at " << std::to_string(failureTime) << " for "
+                  << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
+        return true;
+    }
+    return false;
+}
+
+bool failuregenerator::simNICFailures(Queue q, Packet &pkt) {
+    return (nicFail(q, pkt) || nicDegradation(q, pkt) || nicWorstCase(q, pkt));
+}
+bool failuregenerator::nicFail(Queue q, Packet &pkt) {
+
+    if (!nic_fail) {
+        return false;
+    }
+
+    uint32_t packet_from = pkt.from;
+    uint32_t packet_to = pkt.to;
+    uint32_t nic_id = q.getSwitch()->getID();
+
+    // Am i at a NIC? TODO
+    if (!(nic_id == packet_from || nic_id == packet_to)) {
+        return false;
+    }
+
+    if (failingNICs.find(nic_id) != failingNICs.end()) {
+        std::pair<uint64_t, uint64_t> curNic = failingNICs[nic_id];
+        uint64_t recoveryTime = curNic.second;
+        if (GLOBAL_TIME > recoveryTime) {
+            std::cout << "Recovered from Fail" << std::endl;
+            failingNICs.erase(nic_id);
+            return false;
+        } else {
+            std::cout << "Packet dropped at nicFail" << std::endl;
+            return true;
+        }
+    } else {
+        if (GLOBAL_TIME < nic_fail_start || GLOBAL_TIME < nic_fail_last_fail + nic_fail_period) {
+            return false;
+        }
+
+        uint64_t failureTime = GLOBAL_TIME;
+        uint64_t recoveryTime = GLOBAL_TIME + generateTimeNIC();
+        nic_fail_last_fail = GLOBAL_TIME;
+        failuregenerator::failingNICs[nic_id] = std::make_pair(failureTime, recoveryTime);
+        std::cout << "Failed a new NIC name: " << q.nodename() << " at " << std::to_string(failureTime) << " for "
+                  << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
+        return true;
+    }
+
+    return false;
+}
+bool failuregenerator::nicDegradation(Queue q, Packet &pkt) {
+    if (!nic_degradation) {
+        return false;
+    }
+
+    uint32_t packet_from = pkt.from;
+    uint32_t packet_to = pkt.to;
+    uint32_t nic_id = q.getSwitch()->getID();
+
+    // Am i at a NIC? TODO
+    if (!(nic_id == packet_from || nic_id == packet_to)) {
+        return false;
+    }
+
+    if (degraded_NICs.find(nic_id) != degraded_NICs.end()) {
+        bool decision = trueWithProb(0.05);
+        if (decision) {
+            std::cout << "Packet dropped at nicDegradation" << std::endl;
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        if (GLOBAL_TIME < nic_degradation_start || GLOBAL_TIME < nic_degradation_last_fail + nic_degradation_period) {
+            return false;
+        } else {
+            int port_nrs = q.getSwitch()->portCount();
+            for (int i = 0; i < port_nrs; i++) {
+                BaseQueue *curq = q.getSwitch()->getPort(i);
+                curq->_bitrate = 1000;
+            }
+            degraded_NICs.insert(nic_id);
+            nic_degradation_last_fail = GLOBAL_TIME;
+            std::cout << "New NIC degraded Queue bitrate now 1000bps " << std::endl;
+            bool decision = trueWithProb(0.05);
+            if (decision) {
+                std::cout << "Packet dropped at nicDegradation" << std::endl;
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    return false;
+}
+bool failuregenerator::nicWorstCase(Queue q, Packet &pkt) {
+    if (!nic_worst_case) {
+        return false;
+    }
+
+    uint32_t packet_from = pkt.from;
+    uint32_t packet_to = pkt.to;
+    uint32_t nic_id = q.getSwitch()->getID();
+
+    // Am i at a NIC? TODO
+    if (!(nic_id == packet_from || nic_id == packet_to)) {
+        return false;
+    }
+
+    if (failingNICs.find(nic_id) != failingNICs.end()) {
+        std::pair<uint64_t, uint64_t> curNic = failingNICs[nic_id];
+        uint64_t recoveryTime = curNic.second;
+        if (GLOBAL_TIME > recoveryTime) {
+            std::cout << "Recovered from Fail" << std::endl;
+            failingNICs.erase(nic_id);
+            return false;
+        } else {
+            std::cout << "Packet dropped at nicWorstCase" << std::endl;
+            return true;
+        }
+    } else {
+        if (GLOBAL_TIME < nic_worst_case_start || GLOBAL_TIME < nic_worst_case_last_fail + nic_worst_case_period) {
+            return false;
+        }
+
+        uint64_t failureTime = GLOBAL_TIME;
+        uint64_t recoveryTime = GLOBAL_TIME + generateTimeNIC();
+        nic_worst_case_last_fail = GLOBAL_TIME;
+        failuregenerator::failingNICs[nic_id] = std::make_pair(failureTime, recoveryTime);
+        std::cout << "Failed a new NIC name: " << q.nodename() << " at " << std::to_string(failureTime) << " for "
+                  << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
+        return true;
+    }
+
+    return false;
+}
 
 void failuregenerator::parseinputfile() {
 
