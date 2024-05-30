@@ -104,7 +104,7 @@ bool failuregenerator::simFailures(Packet &pkt, Switch *sw, Queue q) {
 }
 
 bool failuregenerator::simSwitchFailures(Packet &pkt, Switch *sw, Queue q) {
-    return (switchFail(sw) || switchBER(pkt, sw, q) || switchDegradation(sw, q) || switchWorstCase());
+    return (switchFail(sw) || switchBER(pkt, sw, q) || switchDegradation(sw, q) || switchWorstCase(sw));
 }
 
 bool failuregenerator::switchFail(Switch *sw) {
@@ -206,7 +206,42 @@ bool failuregenerator::switchDegradation(Switch *sw, Queue q) {
     return false;
 }
 
-bool failuregenerator::switchWorstCase() { return false; }
+bool failuregenerator::switchWorstCase(Switch *sw) {
+    if (!switch_worst_case) {
+        return false;
+    }
+    uint32_t switch_id = sw->getID();
+    string switch_name = sw->nodename();
+
+    if (failingSwitches.find(switch_id) != failingSwitches.end()) {
+        std::pair<uint64_t, uint64_t> curSwitch = failingSwitches[switch_id];
+        uint64_t recoveryTime = curSwitch.second;
+
+        if (GLOBAL_TIME > recoveryTime) {
+            std::cout << "Recovered from Fail" << std::endl;
+            failingSwitches.erase(switch_id);
+            return false;
+        } else {
+            std::cout << "Packet dropped at switchWorstCase" << std::endl;
+            return true;
+        }
+    } else {
+        if (GLOBAL_TIME < switch_worst_case_start ||
+            GLOBAL_TIME < switch_worst_case_last_fail + switch_worst_case_period ||
+            switch_name.find("UpperPod") == std::string::npos) {
+            return false;
+        }
+
+        uint64_t failureTime = GLOBAL_TIME;
+        uint64_t recoveryTime = GLOBAL_TIME + generateTimeSwitch();
+        switch_worst_case_last_fail = GLOBAL_TIME;
+        failuregenerator::failingSwitches[switch_id] = std::make_pair(failureTime, recoveryTime);
+        std::cout << "Failed a new Switch name: " << switch_name << " at " << std::to_string(failureTime) << " for "
+                  << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
+        return true;
+    }
+    return false;
+}
 
 bool failuregenerator::simCableFailures() { return false; }
 

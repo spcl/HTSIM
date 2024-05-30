@@ -41,7 +41,7 @@ class failuregenerator {
     static simtime_picosec switch_degradation_period;
     static simtime_picosec switch_degradation_last_fail;
 
-    bool switchWorstCase();
+    bool switchWorstCase(Switch *sw);
     static bool switch_worst_case;
     static simtime_picosec switch_worst_case_start;
     static simtime_picosec switch_worst_case_period;
