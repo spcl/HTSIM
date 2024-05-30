@@ -10,12 +10,12 @@ Switch-Degradation-Period: 100000000
 Switch-Worst-Case: OFF
 Switch-Worst-Case-Start-After: 100000000
 Switch-Worst-Case-Period: 100000000
-Cable-Fail: ON
+Cable-Fail: OFF
 Cable-Fail-Start-After: 100000000
 Cable-Fail-Period: 100000000
 Cable-BER: ON
 Cable-BER-Start-After: 100000000
-Cable-BER-Period: 100000000
+Cable-BER-Period: 10000000
 Cable-Degradation: ON
 Cable-Degradation-Start-After: 100000000
 Cable-Degradation-Period: 100000000

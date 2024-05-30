@@ -54,7 +54,7 @@ class failuregenerator {
     static simtime_picosec cable_fail_period;
     static simtime_picosec cable_fail_last_fail;
 
-    bool cableBER();
+    bool cableBER(Packet &pkt);
     static bool cable_ber;
     static simtime_picosec cable_ber_start;
     static simtime_picosec cable_ber_period;

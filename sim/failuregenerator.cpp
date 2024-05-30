@@ -149,6 +149,7 @@ bool failuregenerator::switchFail(Switch *sw) {
             return true;
         }
     } else {
+        std::cout << switch_fail_last_fail + switch_fail_period << std::endl;
         if (GLOBAL_TIME < switch_fail_start || GLOBAL_TIME < switch_fail_last_fail + switch_fail_period ||
             switch_name.find("UpperPod") == std::string::npos) {
             return false;
@@ -266,7 +267,7 @@ bool failuregenerator::switchWorstCase(Switch *sw) {
 }
 
 bool failuregenerator::simCableFailures(Pipe *p, Packet &pkt) {
-    return (cableFail(p, pkt) || cableBER() || cableDegradation() || cableWorstCase());
+    return (cableFail(p, pkt) || cableBER(pkt) || cableDegradation() || cableWorstCase());
 }
 
 bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
@@ -305,7 +306,32 @@ bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
     return false;
 }
 
-bool failuregenerator::cableBER() { return false; }
+bool failuregenerator::cableBER(Packet &pkt) {
+    if (!cable_ber) {
+        return false;
+    }
+
+    uint32_t pkt_id = pkt.id();
+    string from_queue = pkt.route()->at(0)->nodename();
+
+    if (from_queue.find("DST") != std::string::npos) {
+        if (corrupted_packets.find(pkt_id) != corrupted_packets.end()) {
+            corrupted_packets.erase(pkt_id);
+            std::cout << "Packet dropped at cableBER" << std::endl;
+            return true;
+        }
+    }
+
+    if (GLOBAL_TIME < cable_ber_start || GLOBAL_TIME < cable_ber_last_fail + cable_ber_period) {
+        return false;
+    } else {
+        corrupted_packets.insert(pkt_id);
+        cable_ber_last_fail = GLOBAL_TIME;
+        return false;
+    }
+
+    return false;
+}
 
 bool failuregenerator::cableDegradation() { return false; }
 
