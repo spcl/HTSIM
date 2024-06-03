@@ -1,0 +1,11 @@
+Nodes 128
+Connections 8
+Triggers 48
+0->100 id 1 start 0 size 2000000 
+1->100 id 2 start 0 size 2000000 
+2->100 id 3 start 0 size 2000000 
+3->100 id 4 start 0 size 2000000 
+4->100 id 5 start 0 size 2000000 
+5->100 id 6 start 0 size 2000000 
+6->100 id 7 start 0 size 2000000 
+7->100 id 8 start 0 size 2000000 
