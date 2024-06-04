@@ -212,7 +212,8 @@ bool failuregenerator::switchDegradation(Switch *sw) {
     }
     uint32_t switch_id = sw->getID();
 
-    if (degraded_switches.find(switch_id) != degraded_switches.end()) {
+    // Remove the FALSE here, just wanted to make sure we always trigger the else.
+    if (degraded_switches.find(switch_id) != degraded_switches.end() && false) {
         bool decision = trueWithProb(0.1);
         if (false) {
             std::cout << "Packet dropped at SwitchDegradation" << std::endl;
@@ -221,18 +222,20 @@ bool failuregenerator::switchDegradation(Switch *sw) {
             return false;
         }
     } else {
-        if (GLOBAL_TIME < switch_degradation_start ||
-            GLOBAL_TIME < switch_degradation_last_fail + switch_degradation_period) {
+        // Remove the FALSE here, just wanted to make sure we always trigger the else.
+        if (false && (GLOBAL_TIME < switch_degradation_start ||
+                      GLOBAL_TIME < switch_degradation_last_fail + switch_degradation_period)) {
             return false;
         } else {
             int port_nrs = sw->portCount();
             for (int i = 0; i < port_nrs; i++) {
                 BaseQueue *q = sw->getPort(i);
-                q->_bitrate = 1000;
+                q->update_bit_rate(400000000000);
+                switch_degradation_last_fail = GLOBAL_TIME;
+                std::cout << "New Switchh " << q->_name << " degraded Queue bitrate now 1000bps " << std::endl;
             }
             degraded_switches.insert(switch_id);
-            switch_degradation_last_fail = GLOBAL_TIME;
-            std::cout << "New Switch degraded Queue bitrate now 1000bps " << std::endl;
+
             bool decision = trueWithProb(0.1);
             if (false) {
                 std::cout << "Packet dropped at SwitchDegradation" << std::endl;

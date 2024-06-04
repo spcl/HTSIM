@@ -17,6 +17,7 @@
 #include "loggertypes.h"
 #include "network.h"
 #include "switch.h"
+#include <cmath>
 
 // BaseQueue is a generic queue, but doesn't actually implement any
 // queuing discipline.  Subclasses implement different queuing
@@ -57,6 +58,10 @@ class BaseQueue : public EventSource, public PacketSink, public Drawable {
 
     virtual uint64_t quantized_queuesize();
     virtual uint8_t quantized_utilization();
+    void update_bit_rate(linkspeed_bps updated_rate) {
+        _bitrate = updated_rate;
+        _ps_per_byte = (simtime_picosec)((pow(10.0, 12.0) * 8) / updated_rate);
+    };
 
     static simtime_picosec _update_period;
 
@@ -66,8 +71,8 @@ class BaseQueue : public EventSource, public PacketSink, public Drawable {
     // Housekeeping
     PacketSink *_next_sink; // used in generic topology for linkage
     QueueLogger *_logger;
-
     simtime_picosec _ps_per_byte; // service time, in picoseconds per byte
+
     string _nodename;
 
     CircularBuffer<simtime_picosec> _busystart;

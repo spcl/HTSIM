@@ -581,69 +581,18 @@ void UecSrc::resetQACounting() {
 
 void UecSrc::quick_adapt(bool trimmed) {
 
-    if (!use_fast_drop) {
-        return;
-    }
-
-    if (_flow_size < _bdp * 10.0 / 100) {
-        return;
-    }
-
-    double multiplier_small_flow = 1;
-    if (_flow_size < _bdp) {
-        multiplier_small_flow = _bdp / (double)_flow_size;
-        // acked_bytes = acked_bytes * multiplier_small_flow;
-    }
-
     if (eventlist().now() >= next_window_end) {
-        printf("Just updated %d at %lu vs %lu - %lu %lu\n", from, eventlist().now() / 1000, previous_window_end / 1000,
-               acked_bytes, acked_bytes);
         previous_window_end = next_window_end;
         saved_acked_bytes = acked_bytes;
-
-        qa_window_start = eventlist().now();
-
-        next_window_end = eventlist().now() + qa_period;
-        if (algorithm_type == "intersmartt" && _hop_count > 6) {
-            next_window_end = eventlist().now() + qa_period;
-        }
-        // Enable Fast Drop
-        acked_bytes += 1;
-        double rate_bts = bts_received / (double)tot_pkt_seen_qa * 100;
-
-        /* printf("Considering QA %d - BTS Rate %f - Cond: %d %d - Acked %d - Window End %lu - Time Passed %lu\n",
-           from, rate_bts, trimmed, need_quick_adapt, acked_bytes, next_window_end / 1000, (eventlist().now() -
-           qa_window_start) / 1000); */
-        bts_received = 0;
         acked_bytes = 0;
-        tot_pkt_seen_qa = 0;
-
-        if (rate_bts > 3 && use_bts) {
-            return;
-        }
-
-        /* printf("From %d considering QA at %lu -- %d %d %lu\n", from, eventlist().now() / 1000, trimmed,
-        need_quick_adapt, previous_window_end / 1000); */
-
-        if ((need_quick_adapt) && previous_window_end != 0 && eventlist().now() > _flow_start_time + _base_rtt * 1.1) {
-
-            if (eventlist().now() < ignore_for_time) {
-                return;
-            }
-
-            if (eventlist().now() > next_qa) {
-                next_qa = eventlist().now() + _base_rtt * 3;
-            } else {
-                need_quick_adapt = false;
-                return;
-            }
+        next_window_end = eventlist().now() + _target_rtt;
+        // Enable Fast Drop
+        if ((trimmed || need_quick_adapt) && previous_window_end != 0) {
 
             // Edge case where we get here receiving a packet a long time after
             // the last one (>> base_rtt). Should not matter in most cases.
-            /*saved_acked_bytes =
-                    saved_acked_bytes *
-                    ((double)_base_rtt /
-                     (eventlist().now() - previous_window_end + _base_rtt));*/
+            saved_acked_bytes =
+                    saved_acked_bytes * ((double)_target_rtt / (eventlist().now() - previous_window_end + _target_rtt));
 
             // Update window and ignore count
             printf("Before Update Saved CWD is %lu \n", saved_acked_bytes);
@@ -652,63 +601,13 @@ void UecSrc::quick_adapt(bool trimmed) {
                 //         saved_acked_bytes * (_bdp / (double)send_size);
                 printf("BDP %lu - Send Size %lu - Ratio %f\n", _bdp, send_size, (_bdp / (double)send_size));
             }
-
-            double mult_fact = (saved_acked_bytes / (double)old_sent_bytes_previous_window);
-
-            /* _cwnd = max((double)(saved_acked_bytes * bonus_drop * mult_fact),
-                        (double)_mss); // 1.5 is the amount of target_rtt over
-            // base_rtt. Simplified here for this
-            // code share. */
-            /* printf("Testing Drop: Saved %d - Sent %lu %lu - %f\n", saved_acked_bytes, sent_bytes_previous_window,
-                   old_sent_bytes_previous_window, old_sent_bytes_previous_window / (double)saved_acked_bytes);
-            _cwnd = max((double)(_cwnd * bonus_drop * mult_fact),
+            printf("After Update Saved CWD is %lu \n", saved_acked_bytes);
+            _cwnd = max((double)(saved_acked_bytes * bonus_drop),
                         (double)_mss); // 1.5 is the amount of target_rtt over
                                        // base_rtt. Simplified here for this
-                                       // code share. */
-
-            double increase_by = 1;
-            if (_flow_size < _bdp) {
-                increase_by = _bdp / (double)((_flow_size * 1.0) + _switch_queue_size);
-            }
-
-            printf("Increase By %f - Queue Size %lu - Flow Size %lu\n", increase_by, _switch_queue_size, _flow_size);
-
-            _cwnd = max((double)(saved_acked_bytes * bonus_drop * increase_by * qa_mult),
-                        (double)_mss); // 1.5 is the amount of target_rtt over
-            last_ecn_seen = eventlist().now() + _base_rtt * 1;
-            printf("After Update Saved CWD is %lu \n", _cwnd);
-
-            if (eventlist().now() < _base_rtt * 5 && jump_to != 0) {
-                int coin = rand() % 2;
-                int extra = rand() % (jump_to / 10);
-                if (jump_to > 1200000) {
-                    extra /= 100;
-                } else if (jump_to > 1000000) {
-                    extra /= 3;
-                }
-
-                if (coin % 2 == 0) {
-                    _cwnd = jump_to + extra;
-                } else {
-                    _cwnd = jump_to - extra / 2;
-                }
-            }
-            ignore_for = (get_unacked() / (double)_mss);
-            tried_qa = true;
-            if (algorithm_type == "intersmartt" && _hop_count > 6) {
-                _cwnd = _cwnd = max((double)(saved_acked_bytes * bonus_drop * qa_mult), (double)_mss);
-                ignore_for = (get_unacked() / (double)_mss) * 1.2;
-            } else if (_hop_count > 6) {
-                ignore_for = (get_unacked() / (double)_mss) * 2.2;
-            }
-            ignore_for_time = eventlist().now() + _base_rtt * 1;
-
-            if (_hop_count > 6) {
-                // ignore_for = 10;
-            }
-
-            printf("Ignoring for %d packets\n", ignore_for);
+                                       // code share.
             check_limits_cwnd();
+            ignore_for = (get_unacked() / (double)_mss);
 
             // Reset counters, update logs.
             count_received = 0;
@@ -717,52 +616,36 @@ void UecSrc::quick_adapt(bool trimmed) {
 
             // Update x_gain after large incasts. We want to limit its effect if
             // we move to much smaller windows.
-            // x_gain = min(initial_x_gain,
-            //             (_queue_size / 5.0) / (_mss * ((double)_bdp /
-            //             _cwnd)));
-            // printf("New X Gain is %f\n", x_gain);
-            did_qa = true;
-            qa_count++;
-            pause_send = false;
-            last_qa_event = eventlist().now();
+            x_gain = min(initial_x_gain, (_queue_size / 5.0) / (_mss * ((double)_bdp / _cwnd)));
 
-            pacing_delay = (4160 * 8) / ((_cwnd * 8.0) / (_base_rtt / 1000.0));
-            //  pacing_delay -= (4160 * 8 / 80);
-            /* printf("Setting the pacing delay update %d %lu to %lu at %lu\n", _cwnd, (_base_rtt / 1000),
-               pacing_delay, GLOBAL_TIME / 1000); */
-            if (use_pacing && generic_pacer != NULL) {
-                pacing_delay *= 1000; // ps
-                generic_pacer->cancel();
-            }
-
-            // generic_pacer->schedule_send(pacing_delay);
-            last_pac_change = eventlist().now();
+            // Go into pacing mode after QuickAdapt
+            /*if (use_pacing && generic_pacer == NULL) {
+                generic_pacer = new SmarttPacer(eventlist(), *this);
+                pacer_start_time = eventlist().now();
+                pacing_delay = (4096 * 1 / (_cwnd / (_base_rtt / 1000)));
+                pacing_delay -= (4150 * 8 / 800);
+                pacing_delay = pacing_delay * 1;
+                printf("Setting the pacing delay to %lu\n", pacing_delay);
+                pacing_delay *= 1000;
+            }*/
 
             // Print
 
-            total_pkt = 0;
-            total_nack = 0;
-            printf("Previous and Current Window %lu %lu\n", previous_window_end / 1000, next_window_end / 1000);
+            printf("Total pkt %d - Total NACK %d\n", total_pkt, total_nack);
             printf("Using Fast Drop2 - Flow %d@%d@%d, Ecn %d, CWND %d, "
                    "Saved "
                    "Acked %d (dropping to %f - bonus1  %f -> %f and "
-                   "%f) - Multiplier %f "
+                   "%f) - "
                    "Previous "
                    "Window %lu - Next "
                    "Window %lu// "
                    "Time "
                    "%lu\n",
-                   this->from, this->to, tag, 1, _cwnd, saved_acked_bytes,
+                   from, to, tag, 1, _cwnd, saved_acked_bytes,
                    max((double)(saved_acked_bytes * bonus_drop), saved_acked_bytes * bonus_drop + _mss), bonus_drop,
-                   (saved_acked_bytes * bonus_drop), multiplier_small_flow, (saved_acked_bytes * bonus_drop + _mss),
+                   (saved_acked_bytes * bonus_drop), (saved_acked_bytes * bonus_drop + _mss),
                    previous_window_end / 1000, next_window_end / 1000, eventlist().now() / 1000);
-            printf("Multiplier is %f - Dropping to %f\n", multiplier_small_flow,
-                   multiplier_small_flow * saved_acked_bytes);
-            printf("Sent Bytes %lu - Mult %f\n", sent_bytes_previous_window,
-                   sent_bytes_previous_window / (double)saved_acked_bytes);
         }
-        old_sent_bytes_previous_window = sent_bytes_previous_window;
-        sent_bytes_previous_window = 0;
     }
 }
 
@@ -789,7 +672,9 @@ void UecSrc::processNack(UecNack &pkt) {
     }
 
     if (eventlist().now() > ignore_for_time) {
-        reduce_cwnd(uint64_t(_mss * decrease_on_nack));
+        if (count_received >= ignore_for) {
+            reduce_cwnd(uint64_t(_mss * decrease_on_nack));
+        }
     }
 
     if (use_fast_drop) {
