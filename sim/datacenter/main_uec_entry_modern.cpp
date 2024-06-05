@@ -23,6 +23,7 @@
 #include "uec.h"
 #include <filesystem>
 // #include "vl2_topology.h"
+#include "failuregenerator.h"
 
 // Fat Tree topology was modified to work with this script, others won't work
 // correctly
@@ -602,7 +603,12 @@ int main(int argc, char **argv) {
                 exit(0);
             }
             i++;
-        } else
+        } else if (!strcmp(argv[i], "-failures_input")) {
+            failuregenerator::setInputFile(std::string("../") + argv[i + 1]);
+            i++;
+        }
+
+        else
             exit_error(argv[0]);
 
         i++;

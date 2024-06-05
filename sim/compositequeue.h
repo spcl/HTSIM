@@ -98,8 +98,6 @@ class CompositeQueue : public Queue {
     simtime_picosec last_send = 1;
     simtime_picosec last_recv = 1;
 
-    failuregenerator *_failure_generator;
-
   protected:
     // Mechanism
     void beginService(); // start serving the item at the head of the queue

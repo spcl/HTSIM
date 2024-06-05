@@ -12,8 +12,12 @@ class Pipe; // Forward declaration
 class failuregenerator {
 
   public:
-    failuregenerator();
-    void parseinputfile();
+    static void parseinputfile();
+    static string failures_input_file_path;
+    static void setInputFile(string file_path) {
+        failures_input_file_path = file_path;
+        parseinputfile();
+    };
 
     bool simSwitchFailures(Packet &pkt, Switch *sw, Queue q);
     bool simCableFailures(Pipe *p, Packet &pkt);

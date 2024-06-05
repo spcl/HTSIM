@@ -1,6 +1,7 @@
 // -*- c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "compositequeue.h"
 #include "ecn.h"
+#include "failuregenerator.h"
 #include "uecpacket.h"
 #include <filesystem>
 #include <fstream>
@@ -47,8 +48,6 @@ CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize, EventList &
     stringstream ss;
     ss << "compqueue(" << bitrate / 1000000 << "Mb/s," << maxsize << "bytes)";
     _nodename = ss.str();
-
-    _failure_generator = new failuregenerator();
 }
 
 void CompositeQueue::decreasePhantom() {
@@ -319,7 +318,7 @@ void CompositeQueue::receivePacket(Packet &pkt) {
         _logger->logQueue(*this, QueueLogger::PKT_ARRIVE, pkt);
     // is this a Tofino packet from the egress pipeline?
 
-    if (_failure_generator->simSwitchFailures(pkt, _switch, *this) || _failure_generator->simNICFailures(*this, pkt)) {
+    if (FAILURE_GENERATOR->simSwitchFailures(pkt, _switch, *this) || FAILURE_GENERATOR->simNICFailures(*this, pkt)) {
         // Temporary Hack
         if (!pkt.header_only()) {
             pkt.strip_payload();

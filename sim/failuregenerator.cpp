@@ -77,6 +77,8 @@ int64_t generateTimeNIC() {
 
 // Map that keeps track of failing switches. Maps from switch id to a pair of time of failure and time of recovery
 
+string failuregenerator::failures_input_file_path;
+
 bool failuregenerator::switch_fail = false;
 std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failuregenerator::failingSwitches;
 simtime_picosec failuregenerator::switch_fail_start = 0;
@@ -138,8 +140,6 @@ bool failuregenerator::nic_worst_case = false;
 simtime_picosec failuregenerator::nic_worst_case_start = 0;
 simtime_picosec failuregenerator::nic_worst_case_period = 0;
 simtime_picosec failuregenerator::nic_worst_case_last_fail = 0;
-
-failuregenerator::failuregenerator() { parseinputfile(); }
 
 bool failuregenerator::simSwitchFailures(Packet &pkt, Switch *sw, Queue q) {
     return (switchFail(sw) || switchBER(pkt, sw, q) || switchDegradation(sw) || switchWorstCase(sw));
@@ -212,8 +212,7 @@ bool failuregenerator::switchDegradation(Switch *sw) {
     }
     uint32_t switch_id = sw->getID();
 
-    // Remove the FALSE here, just wanted to make sure we always trigger the else.
-    if (degraded_switches.find(switch_id) != degraded_switches.end() && false) {
+    if (degraded_switches.find(switch_id) != degraded_switches.end()) {
         bool decision = trueWithProb(0.1);
         if (false) {
             std::cout << "Packet dropped at SwitchDegradation" << std::endl;
@@ -222,9 +221,8 @@ bool failuregenerator::switchDegradation(Switch *sw) {
             return false;
         }
     } else {
-        // Remove the FALSE here, just wanted to make sure we always trigger the else.
-        if (false && (GLOBAL_TIME < switch_degradation_start ||
-                      GLOBAL_TIME < switch_degradation_last_fail + switch_degradation_period)) {
+        if ((GLOBAL_TIME < switch_degradation_start ||
+             GLOBAL_TIME < switch_degradation_last_fail + switch_degradation_period)) {
             return false;
         } else {
             int port_nrs = sw->portCount();
@@ -232,7 +230,8 @@ bool failuregenerator::switchDegradation(Switch *sw) {
                 BaseQueue *q = sw->getPort(i);
                 q->update_bit_rate(400000000000);
                 switch_degradation_last_fail = GLOBAL_TIME;
-                std::cout << "New Switchh " << q->_name << " degraded Queue bitrate now 1000bps " << std::endl;
+                std::cout << "New Switch degraded at:" << GLOBAL_TIME << "Switch_name: " << q->_name
+                          << " degraded Queue bitrate now 1000bps " << std::endl;
             }
             degraded_switches.insert(switch_id);
 
@@ -587,7 +586,9 @@ bool failuregenerator::nicWorstCase(Queue q, Packet &pkt) {
 
 void failuregenerator::parseinputfile() {
 
-    std::ifstream inputFile("../failuregenerator_input.txt");
+    std::cout << "Parsing failuregenerator_input file" << failures_input_file_path << std::endl;
+
+    std::ifstream inputFile(failures_input_file_path);
     std::string line;
 
     if (inputFile.is_open()) {
@@ -668,6 +669,6 @@ void failuregenerator::parseinputfile() {
         }
         inputFile.close();
     } else {
-        std::cout << "Error opening failuregenerator_input file" << std::endl;
+        std::cout << "Could not open failuregenerator_input file, all failures are turned off" << std::endl;
     }
 }
