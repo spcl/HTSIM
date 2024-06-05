@@ -77,70 +77,6 @@ int64_t generateTimeNIC() {
 
 // Map that keeps track of failing switches. Maps from switch id to a pair of time of failure and time of recovery
 
-string failuregenerator::failures_input_file_path;
-
-bool failuregenerator::switch_fail = false;
-std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failuregenerator::failingSwitches;
-simtime_picosec failuregenerator::switch_fail_start = 0;
-simtime_picosec failuregenerator::switch_fail_period = 0;
-simtime_picosec failuregenerator::switch_fail_last_fail = 0;
-
-std::set<uint32_t> failuregenerator::corrupted_packets;
-bool failuregenerator::switch_ber = false;
-simtime_picosec failuregenerator::switch_ber_start = 0;
-simtime_picosec failuregenerator::switch_ber_period = 0;
-simtime_picosec failuregenerator::switch_ber_last_fail = 0;
-
-std::set<uint32_t> failuregenerator::degraded_switches;
-bool failuregenerator::switch_degradation = false;
-simtime_picosec failuregenerator::switch_degradation_start = 0;
-simtime_picosec failuregenerator::switch_degradation_period = 0;
-simtime_picosec failuregenerator::switch_degradation_last_fail = 0;
-
-bool failuregenerator::switch_worst_case = false;
-simtime_picosec failuregenerator::switch_worst_case_start = 0;
-simtime_picosec failuregenerator::switch_worst_case_period = 0;
-simtime_picosec failuregenerator::switch_worst_case_last_fail = 0;
-
-bool failuregenerator::cable_fail = false;
-std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failuregenerator::failingCables;
-simtime_picosec failuregenerator::cable_fail_start = 0;
-simtime_picosec failuregenerator::cable_fail_period = 0;
-simtime_picosec failuregenerator::cable_fail_last_fail = 0;
-
-bool failuregenerator::cable_ber = false;
-simtime_picosec failuregenerator::cable_ber_start = 0;
-simtime_picosec failuregenerator::cable_ber_period = 0;
-simtime_picosec failuregenerator::cable_ber_last_fail = 0;
-
-bool failuregenerator::cable_degradation = false;
-std::unordered_map<uint32_t, uint32_t> failuregenerator::degraded_cables;
-simtime_picosec failuregenerator::cable_degradation_start = 0;
-simtime_picosec failuregenerator::cable_degradation_period = 0;
-simtime_picosec failuregenerator::cable_degradation_last_fail = 0;
-
-bool failuregenerator::cable_worst_case = false;
-simtime_picosec failuregenerator::cable_worst_case_start = 0;
-simtime_picosec failuregenerator::cable_worst_case_period = 0;
-simtime_picosec failuregenerator::cable_worst_case_last_fail = 0;
-
-bool failuregenerator::nic_fail = false;
-std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failuregenerator::failingNICs;
-simtime_picosec failuregenerator::nic_fail_start = 0;
-simtime_picosec failuregenerator::nic_fail_period = 0;
-simtime_picosec failuregenerator::nic_fail_last_fail = 0;
-
-bool failuregenerator::nic_degradation = false;
-std::set<uint32_t> failuregenerator::degraded_NICs;
-simtime_picosec failuregenerator::nic_degradation_start = 0;
-simtime_picosec failuregenerator::nic_degradation_period = 0;
-simtime_picosec failuregenerator::nic_degradation_last_fail = 0;
-
-bool failuregenerator::nic_worst_case = false;
-simtime_picosec failuregenerator::nic_worst_case_start = 0;
-simtime_picosec failuregenerator::nic_worst_case_period = 0;
-simtime_picosec failuregenerator::nic_worst_case_last_fail = 0;
-
 bool failuregenerator::simSwitchFailures(Packet &pkt, Switch *sw, Queue q) {
     return (switchFail(sw) || switchBER(pkt, sw, q) || switchDegradation(sw) || switchWorstCase(sw));
 }
@@ -214,7 +150,7 @@ bool failuregenerator::switchDegradation(Switch *sw) {
 
     if (degraded_switches.find(switch_id) != degraded_switches.end()) {
         bool decision = trueWithProb(0.1);
-        if (false) {
+        if (decision) {
             std::cout << "Packet dropped at SwitchDegradation" << std::endl;
             return true;
         } else {
@@ -236,7 +172,7 @@ bool failuregenerator::switchDegradation(Switch *sw) {
             degraded_switches.insert(switch_id);
 
             bool decision = trueWithProb(0.1);
-            if (false) {
+            if (decision) {
                 std::cout << "Packet dropped at SwitchDegradation" << std::endl;
                 return true;
             } else {

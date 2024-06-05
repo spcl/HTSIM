@@ -604,7 +604,7 @@ int main(int argc, char **argv) {
             }
             i++;
         } else if (!strcmp(argv[i], "-failures_input")) {
-            failuregenerator::setInputFile(std::string("../") + argv[i + 1]);
+            FAILURE_GENERATOR->setInputFile(std::string("../") + argv[i + 1]);
             i++;
         }
 

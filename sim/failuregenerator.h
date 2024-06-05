@@ -12,9 +12,9 @@ class Pipe; // Forward declaration
 class failuregenerator {
 
   public:
-    static void parseinputfile();
-    static string failures_input_file_path;
-    static void setInputFile(string file_path) {
+    void parseinputfile();
+    string failures_input_file_path;
+    void setInputFile(string file_path) {
         failures_input_file_path = file_path;
         parseinputfile();
     };
@@ -25,78 +25,78 @@ class failuregenerator {
 
     // Switch
     bool switchFail(Switch *sw);
-    static bool switch_fail;
-    static std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failingSwitches;
-    static simtime_picosec switch_fail_start;
-    static simtime_picosec switch_fail_period;
-    static simtime_picosec switch_fail_last_fail;
+    bool switch_fail = false;
+    std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failingSwitches;
+    simtime_picosec switch_fail_start = 0;
+    simtime_picosec switch_fail_period = 0;
+    simtime_picosec switch_fail_last_fail = 0;
 
     bool switchBER(Packet &pkt, Switch *sw, Queue q);
-    static std::set<uint32_t> corrupted_packets;
-    static bool switch_ber;
-    static simtime_picosec switch_ber_start;
-    static simtime_picosec switch_ber_period;
-    static simtime_picosec switch_ber_last_fail;
+    std::set<uint32_t> corrupted_packets;
+    bool switch_ber = false;
+    simtime_picosec switch_ber_start = 0;
+    simtime_picosec switch_ber_period = 0;
+    simtime_picosec switch_ber_last_fail = 0;
 
     bool switchDegradation(Switch *sw);
-    static std::set<uint32_t> degraded_switches;
-    static bool switch_degradation;
-    static simtime_picosec switch_degradation_start;
-    static simtime_picosec switch_degradation_period;
-    static simtime_picosec switch_degradation_last_fail;
+    std::set<uint32_t> degraded_switches;
+    bool switch_degradation = false;
+    simtime_picosec switch_degradation_start = 0;
+    simtime_picosec switch_degradation_period = 0;
+    simtime_picosec switch_degradation_last_fail = 0;
 
     bool switchWorstCase(Switch *sw);
-    static bool switch_worst_case;
-    static simtime_picosec switch_worst_case_start;
-    static simtime_picosec switch_worst_case_period;
-    static simtime_picosec switch_worst_case_last_fail;
+    bool switch_worst_case = false;
+    simtime_picosec switch_worst_case_start = 0;
+    simtime_picosec switch_worst_case_period = 0;
+    simtime_picosec switch_worst_case_last_fail = 0;
 
     bool cableFail(Pipe *p, Packet &pkt);
-    static unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failingCables;
-    static bool cable_fail;
-    static simtime_picosec cable_fail_start;
-    static simtime_picosec cable_fail_period;
-    static simtime_picosec cable_fail_last_fail;
+    unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failingCables;
+    bool cable_fail = false;
+    simtime_picosec cable_fail_start = 0;
+    simtime_picosec cable_fail_period = 0;
+    simtime_picosec cable_fail_last_fail = 0;
 
     bool cableBER(Packet &pkt);
-    static bool cable_ber;
-    static simtime_picosec cable_ber_start;
-    static simtime_picosec cable_ber_period;
-    static simtime_picosec cable_ber_last_fail;
+    bool cable_ber;
+    simtime_picosec cable_ber_start = 0;
+    simtime_picosec cable_ber_period = 0;
+    simtime_picosec cable_ber_last_fail = 0;
 
     bool cableDegradation(Pipe *p, Packet &pkt);
-    static bool cable_degradation;
-    static std::unordered_map<uint32_t, uint32_t> degraded_cables;
-    static simtime_picosec cable_degradation_start;
-    static simtime_picosec cable_degradation_period;
-    static simtime_picosec cable_degradation_last_fail;
+    bool cable_degradation = false;
+    std::unordered_map<uint32_t, uint32_t> degraded_cables;
+    simtime_picosec cable_degradation_start = 0;
+    simtime_picosec cable_degradation_period = 0;
+    simtime_picosec cable_degradation_last_fail = 0;
 
     bool cableWorstCase(Pipe *p, Packet &pkt);
-    static bool cable_worst_case;
-    static simtime_picosec cable_worst_case_start;
-    static simtime_picosec cable_worst_case_period;
-    static simtime_picosec cable_worst_case_last_fail;
+    bool cable_worst_case = false;
+    simtime_picosec cable_worst_case_start = 0;
+    simtime_picosec cable_worst_case_period = 0;
+    simtime_picosec cable_worst_case_last_fail = 0;
 
     // NIC
-    static bool nic_fail;
+    bool nic_fail = false;
     bool nicFail(Queue q, Packet &pkt);
-    static std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failingNICs;
-    static simtime_picosec nic_fail_start;
-    static simtime_picosec nic_fail_period;
-    static simtime_picosec nic_fail_last_fail;
+    std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failingNICs;
+    simtime_picosec nic_fail_start = 0;
+    simtime_picosec nic_fail_period = 0;
+    simtime_picosec nic_fail_last_fail = 0;
 
-    static bool nic_degradation;
+    bool nic_degradation = false;
     bool nicDegradation(Queue q, Packet &pkt);
-    static std::set<uint32_t> degraded_NICs;
-    static simtime_picosec nic_degradation_start;
-    static simtime_picosec nic_degradation_period;
-    static simtime_picosec nic_degradation_last_fail;
+    std::set<uint32_t> degraded_NICs;
+    simtime_picosec nic_degradation_start = 0;
+    simtime_picosec nic_degradation_period = 0;
+    simtime_picosec nic_degradation_last_fail = 0;
 
-    static bool nic_worst_case;
+    bool nic_worst_case = false;
     bool nicWorstCase(Queue q, Packet &pkt);
-    static simtime_picosec nic_worst_case_start;
-    static simtime_picosec nic_worst_case_period;
-    static simtime_picosec nic_worst_case_last_fail;
+    simtime_picosec nic_worst_case_start = 0;
+    simtime_picosec nic_worst_case_period = 0;
+    simtime_picosec nic_worst_case_last_fail = 0;
 
   private:
 };
