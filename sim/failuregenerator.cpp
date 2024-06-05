@@ -101,14 +101,13 @@ bool failuregenerator::switchFail(Switch *sw) {
             return true;
         }
     } else {
-        if (GLOBAL_TIME < switch_fail_start || GLOBAL_TIME < switch_fail_last_fail + switch_fail_period ||
-            switch_name.find("UpperPod") == std::string::npos) {
+        if (GLOBAL_TIME < switch_fail_next_fail || switch_name.find("UpperPod") == std::string::npos) {
             return false;
         }
 
         uint64_t failureTime = GLOBAL_TIME;
         uint64_t recoveryTime = GLOBAL_TIME + generateTimeSwitch();
-        switch_fail_last_fail = GLOBAL_TIME;
+        switch_fail_next_fail = GLOBAL_TIME + switch_fail_period;
         failuregenerator::failingSwitches[switch_id] = std::make_pair(failureTime, recoveryTime);
         std::cout << "Failed a new Switch name: " << switch_name << " at " << std::to_string(failureTime) << " for "
                   << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
@@ -133,11 +132,11 @@ bool failuregenerator::switchBER(Packet &pkt, Switch *sw, Queue q) {
         }
     }
 
-    if (GLOBAL_TIME < switch_ber_start || GLOBAL_TIME < switch_ber_last_fail + switch_ber_period) {
+    if (GLOBAL_TIME < switch_ber_next_fail) {
         return false;
     } else {
         corrupted_packets.insert(pkt_id);
-        switch_ber_last_fail = GLOBAL_TIME;
+        switch_ber_next_fail = GLOBAL_TIME + switch_ber_period;
         return false;
     }
 }
@@ -157,15 +156,14 @@ bool failuregenerator::switchDegradation(Switch *sw) {
             return false;
         }
     } else {
-        if ((GLOBAL_TIME < switch_degradation_start ||
-             GLOBAL_TIME < switch_degradation_last_fail + switch_degradation_period)) {
+        if (GLOBAL_TIME < switch_degradation_next_fail) {
             return false;
         } else {
             int port_nrs = sw->portCount();
             for (int i = 0; i < port_nrs; i++) {
                 BaseQueue *q = sw->getPort(i);
                 q->update_bit_rate(400000000000);
-                switch_degradation_last_fail = GLOBAL_TIME;
+                switch_degradation_next_fail = GLOBAL_TIME + switch_degradation_period;
                 std::cout << "New Switch degraded at:" << GLOBAL_TIME << "Switch_name: " << q->_name
                           << " degraded Queue bitrate now 1000bps " << std::endl;
             }
@@ -204,15 +202,13 @@ bool failuregenerator::switchWorstCase(Switch *sw) {
             return true;
         }
     } else {
-        if (GLOBAL_TIME < switch_worst_case_start ||
-            GLOBAL_TIME < switch_worst_case_last_fail + switch_worst_case_period ||
-            switch_name.find("UpperPod") == std::string::npos) {
+        if (GLOBAL_TIME < switch_worst_case_next_fail || switch_name.find("UpperPod") == std::string::npos) {
             return false;
         }
 
         uint64_t failureTime = GLOBAL_TIME;
         uint64_t recoveryTime = GLOBAL_TIME + generateTimeSwitch();
-        switch_worst_case_last_fail = GLOBAL_TIME;
+        switch_worst_case_next_fail = GLOBAL_TIME + switch_worst_case_period;
         failuregenerator::failingSwitches[switch_id] = std::make_pair(failureTime, recoveryTime);
         std::cout << "Failed a new Switch name: " << switch_name << " at " << std::to_string(failureTime) << " for "
                   << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
@@ -245,14 +241,14 @@ bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
         }
     } else {
         string from_queue = pkt.route()->at(0)->nodename();
-        if (GLOBAL_TIME < cable_fail_start || GLOBAL_TIME < cable_fail_last_fail + cable_fail_period ||
-            from_queue.find("DST") != std::string::npos || from_queue.find("SRC") != std::string::npos) {
+        if (GLOBAL_TIME < cable_fail_next_fail || from_queue.find("DST") != std::string::npos ||
+            from_queue.find("SRC") != std::string::npos) {
             return false;
         }
 
         uint64_t failureTime = GLOBAL_TIME;
         uint64_t recoveryTime = GLOBAL_TIME + generateTimeCable();
-        cable_fail_last_fail = GLOBAL_TIME;
+        cable_fail_next_fail = GLOBAL_TIME + cable_fail_period;
         failuregenerator::failingCables[cable_id] = std::make_pair(failureTime, recoveryTime);
         std::cout << "Failed a new Cable name: " << cable_id << " at " << std::to_string(failureTime) << " for "
                   << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
@@ -277,11 +273,11 @@ bool failuregenerator::cableBER(Packet &pkt) {
         }
     }
 
-    if (GLOBAL_TIME < cable_ber_start || GLOBAL_TIME < cable_ber_last_fail + cable_ber_period) {
+    if (GLOBAL_TIME < cable_ber_next_fail) {
         return false;
     } else {
         corrupted_packets.insert(pkt_id);
-        cable_ber_last_fail = GLOBAL_TIME;
+        cable_ber_next_fail = GLOBAL_TIME + cable_ber_period;
         return false;
     }
 
@@ -320,9 +316,8 @@ bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
         }
     } else {
         string from_queue = pkt.route()->at(0)->nodename();
-        if (GLOBAL_TIME < cable_degradation_start ||
-            GLOBAL_TIME < cable_degradation_last_fail + cable_degradation_period ||
-            from_queue.find("DST") != std::string::npos || from_queue.find("SRC") != std::string::npos) {
+        if (GLOBAL_TIME < cable_degradation_next_fail || from_queue.find("DST") != std::string::npos ||
+            from_queue.find("SRC") != std::string::npos) {
             return false;
         }
 
@@ -342,7 +337,7 @@ bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
             decided_type = 3;
         }
 
-        cable_degradation_last_fail = GLOBAL_TIME;
+        cable_degradation_next_fail = GLOBAL_TIME + cable_degradation_period;
         failuregenerator::degraded_cables[cable_id] = decided_type;
         std::cout << "Degraded a new Cable name: " << p->nodename() << std::endl;
         return true;
@@ -371,14 +366,14 @@ bool failuregenerator::cableWorstCase(Pipe *p, Packet &pkt) {
         }
     } else {
         string from_queue = pkt.route()->at(0)->nodename();
-        if (GLOBAL_TIME < cable_worst_case || GLOBAL_TIME < cable_worst_case_last_fail + cable_worst_case_period ||
-            from_queue.find("DST") != std::string::npos || from_queue.find("SRC") != std::string::npos) {
+        if (GLOBAL_TIME < cable_worst_case_next_fail || from_queue.find("DST") != std::string::npos ||
+            from_queue.find("SRC") != std::string::npos) {
             return false;
         }
 
         uint64_t failureTime = GLOBAL_TIME;
         uint64_t recoveryTime = GLOBAL_TIME + generateTimeCable();
-        cable_worst_case_last_fail = GLOBAL_TIME;
+        cable_worst_case_next_fail = GLOBAL_TIME + cable_worst_case_period;
         failuregenerator::failingCables[cable_id] = std::make_pair(failureTime, recoveryTime);
         std::cout << "Failed a new Cable name: " << cable_id << " at " << std::to_string(failureTime) << " for "
                   << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
@@ -417,13 +412,13 @@ bool failuregenerator::nicFail(Queue q, Packet &pkt) {
             return true;
         }
     } else {
-        if (GLOBAL_TIME < nic_fail_start || GLOBAL_TIME < nic_fail_last_fail + nic_fail_period) {
+        if (GLOBAL_TIME < nic_fail_next_fail) {
             return false;
         }
 
         uint64_t failureTime = GLOBAL_TIME;
         uint64_t recoveryTime = GLOBAL_TIME + generateTimeNIC();
-        nic_fail_last_fail = GLOBAL_TIME;
+        nic_fail_next_fail = GLOBAL_TIME + nic_fail_period;
         failuregenerator::failingNICs[nic_id] = std::make_pair(failureTime, recoveryTime);
         std::cout << "Failed a new NIC name: " << q.nodename() << " at " << std::to_string(failureTime) << " for "
                   << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
@@ -455,7 +450,7 @@ bool failuregenerator::nicDegradation(Queue q, Packet &pkt) {
             return false;
         }
     } else {
-        if (GLOBAL_TIME < nic_degradation_start || GLOBAL_TIME < nic_degradation_last_fail + nic_degradation_period) {
+        if (GLOBAL_TIME < nic_degradation_next_fail) {
             return false;
         } else {
             int port_nrs = q.getSwitch()->portCount();
@@ -464,7 +459,7 @@ bool failuregenerator::nicDegradation(Queue q, Packet &pkt) {
                 curq->_bitrate = 1000;
             }
             degraded_NICs.insert(nic_id);
-            nic_degradation_last_fail = GLOBAL_TIME;
+            nic_degradation_next_fail = GLOBAL_TIME + nic_degradation_period;
             std::cout << "New NIC degraded Queue bitrate now 1000bps " << std::endl;
             bool decision = trueWithProb(0.05);
             if (decision) {
@@ -504,13 +499,13 @@ bool failuregenerator::nicWorstCase(Queue q, Packet &pkt) {
             return true;
         }
     } else {
-        if (GLOBAL_TIME < nic_worst_case_start || GLOBAL_TIME < nic_worst_case_last_fail + nic_worst_case_period) {
+        if (GLOBAL_TIME < nic_worst_case_next_fail) {
             return false;
         }
 
         uint64_t failureTime = GLOBAL_TIME;
         uint64_t recoveryTime = GLOBAL_TIME + generateTimeNIC();
-        nic_worst_case_last_fail = GLOBAL_TIME;
+        nic_worst_case_next_fail = GLOBAL_TIME + nic_worst_case_period;
         failuregenerator::failingNICs[nic_id] = std::make_pair(failureTime, recoveryTime);
         std::cout << "Failed a new NIC name: " << q.nodename() << " at " << std::to_string(failureTime) << " for "
                   << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
@@ -539,66 +534,77 @@ void failuregenerator::parseinputfile() {
                 switch_fail = (value == "ON");
             } else if (key == "Switch-Fail-Start-After:") {
                 switch_fail_start = std::stoll(value);
+                switch_fail_next_fail = switch_fail_start;
             } else if (key == "Switch-Fail-Period:") {
                 switch_fail_period = std::stoll(value);
             } else if (key == "Switch-BER:") {
                 switch_ber = (value == "ON");
             } else if (key == "Switch-BER-Start-After:") {
                 switch_ber_start = std::stoll(value);
+                switch_ber_next_fail = switch_ber_start;
             } else if (key == "Switch-BER-Period:") {
                 switch_ber_period = std::stoll(value);
             } else if (key == "Switch-Degradation:") {
                 switch_degradation = (value == "ON");
             } else if (key == "Switch-Degradation-Start-After:") {
                 switch_degradation_start = std::stoll(value);
+                switch_degradation_next_fail = switch_degradation_start;
             } else if (key == "Switch-Degradation-Period:") {
                 switch_degradation_period = std::stoll(value);
             } else if (key == "Switch-Worst-Case:") {
                 switch_worst_case = (value == "ON");
             } else if (key == "Switch-Worst-Case-Start-After:") {
                 switch_worst_case_start = std::stoll(value);
+                switch_worst_case_next_fail = switch_worst_case_start;
             } else if (key == "Switch-Worst-Case-Period:") {
                 switch_worst_case_period = std::stoll(value);
             } else if (key == "Cable-Fail:") {
                 cable_fail = (value == "ON");
             } else if (key == "Cable-Fail-Start-After:") {
                 cable_fail_start = std::stoll(value);
+                cable_fail_next_fail = cable_fail_start;
             } else if (key == "Cable-Fail-Period:") {
                 cable_fail_period = std::stoll(value);
             } else if (key == "Cable-BER:") {
                 cable_ber = (value == "ON");
             } else if (key == "Cable-BER-Start-After:") {
                 cable_ber_start = std::stoll(value);
+                cable_ber_next_fail = cable_ber_start;
             } else if (key == "Cable-BER-Period:") {
                 cable_ber_period = std::stoll(value);
             } else if (key == "Cable-Degradation:") {
                 cable_degradation = (value == "ON");
             } else if (key == "Cable-Degradation-Start-After:") {
                 cable_degradation_start = std::stoll(value);
+                cable_degradation_next_fail = cable_degradation_start;
             } else if (key == "Cable-Degradation-Period:") {
                 cable_degradation_period = std::stoll(value);
             } else if (key == "Cable-Worst-Case:") {
                 cable_worst_case = (value == "ON");
             } else if (key == "Cable-Worst-Case-Start-After:") {
                 cable_worst_case_start = std::stoll(value);
+                cable_worst_case_next_fail = cable_worst_case_start;
             } else if (key == "Cable-Worst-Case-Period:") {
                 cable_worst_case_period = std::stoll(value);
             } else if (key == "NIC-Fail:") {
                 nic_fail = (value == "ON");
             } else if (key == "NIC-Fail-Start-After:") {
                 nic_fail_start = std::stoll(value);
+                nic_fail_next_fail = nic_fail_start;
             } else if (key == "NIC-Fail-Period:") {
                 nic_fail_period = std::stoll(value);
             } else if (key == "NIC-Degradation:") {
                 nic_degradation = (value == "ON");
             } else if (key == "NIC-Degradation-Start-After:") {
                 nic_degradation_start = std::stoll(value);
+                nic_degradation_next_fail = nic_degradation_start;
             } else if (key == "NIC-Degradation-Period:") {
                 nic_degradation_period = std::stoll(value);
             } else if (key == "NIC-Worst-Case:") {
                 nic_worst_case = (value == "ON");
             } else if (key == "NIC-Worst-Case-Start-After:") {
                 nic_worst_case_start = std::stoll(value);
+                nic_worst_case_next_fail = nic_worst_case_start;
             } else if (key == "NIC-Worst-Case-Period:") {
                 nic_worst_case_period = std::stoll(value);
             }
