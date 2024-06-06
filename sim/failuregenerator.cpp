@@ -99,14 +99,6 @@ bool failuregenerator::switchBER(Packet &pkt, Switch *sw, Queue q) {
 
     uint32_t pkt_id = pkt.id();
 
-    if (q.getRemoteEndpoint() == nullptr) {
-        if (corrupted_packets.find(pkt_id) != corrupted_packets.end()) {
-            corrupted_packets.erase(pkt_id);
-            std::cout << "Packet dropped at SwitchBER" << std::endl;
-            return true;
-        }
-    }
-
     if (GLOBAL_TIME < switch_ber_next_fail) {
         return false;
     } else {
@@ -114,6 +106,16 @@ bool failuregenerator::switchBER(Packet &pkt, Switch *sw, Queue q) {
         switch_ber_next_fail = GLOBAL_TIME + switch_ber_period;
         return false;
     }
+}
+
+bool failuregenerator::dropPacketsSwichtBER(Packet &pkt) {
+    uint32_t pkt_id = pkt.id();
+    if (corrupted_packets.find(pkt_id) != corrupted_packets.end()) {
+        corrupted_packets.erase(pkt_id);
+        std::cout << "Packet dropped at SwitchBER" << std::endl;
+        return true;
+    }
+    return false;
 }
 
 bool failuregenerator::switchDegradation(Switch *sw) {

@@ -2200,7 +2200,7 @@ bool UecSink::already_received(UecPacket &pkt) {
 void UecSink::receivePacket(Packet &pkt) {
     /* printf("Sink Received %d %d - Entropy %d - %lu - \n", pkt.from, pkt.id(), pkt.pathid(), GLOBAL_TIME / 1000); */
 
-    if (FAILURE_GENERATOR->simNICFailures(NULL, this, pkt)) {
+    if (FAILURE_GENERATOR->simNICFailures(NULL, this, pkt) || FAILURE_GENERATOR->dropPacketsSwichtBER(pkt)) {
         // Temporary Hack
         if (!pkt.header_only()) {
             pkt.strip_payload();

@@ -34,6 +34,7 @@ class failuregenerator {
     simtime_picosec switch_fail_next_fail = 0;
 
     bool switchBER(Packet &pkt, Switch *sw, Queue q);
+    bool dropPacketsSwichtBER(Packet &pkt);
     std::set<uint32_t> corrupted_packets;
     bool switch_ber = false;
     simtime_picosec switch_ber_start = 0;
