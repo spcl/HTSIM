@@ -138,3 +138,63 @@ Specific to InterDC SMaRTT:
 - ```-use_pacing``` enables pacing.
 - ```-phantom_slowdown``` indicates how much the phantom queue dequeues slower compared to the real queue.
 - ```-phantom_size``` indicates the phantom queue size.
+
+## Simulating Failures
+The following failures can be simulated:
+### Switches
+- ```Switch-Fail```: Simulates complete failure of a switch. If turned on, affected switches are failing with 50% probability uniformly between 0 and 6 minutes long, and with 50% probability geometrically (with parameter 0.1) between 6 and 300 minutes long.
+- ```Switch-BER```: Simulates the bit error rate of a switch. If turned on, affected switches have a BER of 1e-12.
+- ```Switch-Degradation```: Simulates the degradation of a switch. If turned on, affected switches have a 10% packet loss rate and transmit only at 1 Kbps.
+- ```Switch-Worst-Case```: Simulates complete failure of a switch. If turned on, affected switches are failing with 50% probability uniformly between 0 and 6 minutes long, and with 50% probability geometrically (with parameter 0.1) between 6 and 300 minutes long.
+### Cables
+- ```Cable-Fail```: Simulates complete failure of a cable. If turned on, affected cables are failing with 80% probability uniformly between 0 and 5 minutes long, and with 20% probability geometrically (with parameter 0.1) between 5 and 60 minutes long.
+- ```Cable-BER```: Simulates the bit error rate of a cable. If turned on, affected cables have a BER of 1e-12.
+- ```Cable-Degradation```: Simulates the degradation of a cable with 3 lanes. If turned on, when a cable gets affected with 90% probability 1 of 3 lanes is degraded, with 9% probability 2 of 3 lanes are degraded, with 1% probability 3 of 3 lanes are degraded. When 1 lane is degraded, a packet gets dropped with 33.33% probability. When 2 lanes are degraded, a packet gets dropped with 66.66% probability. When 3 lanes are degraded, every packet gets dropped.
+- ```Cable-Worst-Case```: Simulates complete failure of a cable. If turned on, affected cables are failing with 80% probability uniformly between 0 and 5 minutes long, and with 20% probability geometrically (with parameter 0.1) between 5 and 60 minutes long.
+### NICs
+- ```NIC-Fail```: Simulates complete failure of a NIC. If turned on, affected NICs are failing geometrically (with parameter 0.1) between 10 and 30 minutes long.
+- ```NIC-Degradation```: Simulates the degradation of a NIC. If turned on, affected NICs have a 5% packet loss rate and transmit only at 1 Kbps.
+- ```NIC-Fail```: Simulates complete failure of a NIC. If turned on, affected NICs are failing geometrically (with parameter 0.1) between 10 and 30 minutes long.
+
+To turn on or off the failures, add a .txt file in the datacenter folder, where you specify which failures are turned on or off and add the following to the command line: ```-failures_input example.txt```
+
+To control how many failures happen during the simulation, there are two additional parameters for every failure mode, namely Start-After and Period. The Start-After parameter defines after how many picoseconds the failure start and the period defines after how many picoseconds the next failure occurs.
+
+Here is an example .txt file where the failure modes Switch-Fail and Cable-Fail are activated. Both start after 0.0001 seconds and then every 0.0001 seconds a switch and cable fail as specified above.
+
+```
+Switch-Fail: ON
+Switch-Fail-Start-After: 100000000
+Switch-Fail-Period: 100000000
+Switch-BER: OFF
+Switch-BER-Start-After: 0
+Switch-BER-Period: 0
+Switch-Degradation: OFF
+Switch-Degradation-Start-After: 0
+Switch-Degradation-Period: 0
+Switch-Worst-Case: OFF
+Switch-Worst-Case-Start-After: 0
+Switch-Worst-Case-Period: 0
+Cable-Fail: ON
+Cable-Fail-Start-After: 100000000
+Cable-Fail-Period: 100000000
+Cable-BER: OFF
+Cable-BER-Start-After: 0
+Cable-BER-Period: 0
+Cable-Degradation: OFF
+Cable-Degradation-Start-After: 0
+Cable-Degradation-Period: 0
+Cable-Worst-Case: OFF
+Cable-Worst-Case-Start-After: 0
+Cable-Worst-Case-Period: 0
+NIC-Fail: OFF
+NIC-Fail-Start-After: 0
+NIC-Fail-Period: 0
+NIC-Degradation: OFF
+NIC-Degradation-Start-After: 0
+NIC-Degradation-Period: 0
+NIC-Worst-Case: OFF
+NIC-Worst-Case-Start-After: 0
+NIC-Worst-Case-Period: 0
+```
+  
