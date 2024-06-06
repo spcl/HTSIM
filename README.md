@@ -44,6 +44,13 @@ The main files that have been changed/added to support this CC are:
 - ```fat_tree_interdc_topology.cpp``` and ```fat_tree_interdc_topology.h``` --> here we define the topology.
 - ```fat_tree_interdc_switch.cpp``` and ```fat_tree_interdc_switch.h``` --> here we define the custom routing for the topology.
 
+### Dragonfly Topology
+In the dragonfly topology every switch is connected to a fixed number of endpoints (denoted by the input parameter p). Each switch is in a group of switches in which every pair of switches is connected through a direct link. Every group has the same size (denoted by the input parameter a). Every two groups are connected by one global link connected to each a switch in the groups. The number of global links per switch is denoted by the input parameter h. Therefore, there are h+1 groups with each a switches and p nodes per switch. The router radix of this topology is h+(a-1)+p.
+
+### Slimfly Topology
+
+### Hammingmesh Topology
+
 ## Basic Instructions
 
 We currently provide two entry points to run the simulator with the support of LogGOPSim: htsim_uec_entry_modern and htsim_ndp_entry_modern. The idea here is that these entry points will execute the GOAL input file (in binary format) that is given as part of the ```-goal``` command. The input file should be inside ```sim/lgs/input/```.

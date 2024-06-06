@@ -80,9 +80,6 @@ class SlimflyTopology : public Topology {
     virtual vector<const Route *> *get_bidir_paths(uint32_t src, uint32_t dest, bool reverse){ return NULL; };
     vector<uint32_t> *get_neighbours(uint32_t src) { return NULL; };
     
-    // uint32_t get_group_size() { return _a; }
-    // uint32_t get_no_groups() { return _a * _h + 1; }
-    // uint32_t get_no_global_links() { return _h; }
     uint32_t get_q() { return _q; }
     uint32_t get_xi() { return _xi; }
     vector<uint32_t> get_X() { return _X;}
@@ -96,9 +93,9 @@ class SlimflyTopology : public Topology {
 
     uint32_t _q_base, _q_exp;
     uint32_t _p, _q, _xi;
-    uint32_t _no_of_switches, _no_of_nodes; /* _no_of_groups, */
-    mem_b _queuesize;
-    uint32_t _sf_routing_strategy = 0; // routing_strategy NIX
     vector<uint32_t> _X, _Xp;
+    uint32_t _no_of_switches, _no_of_nodes;
+    mem_b _queuesize;
+    uint32_t _sf_routing_strategy = 0; // SlimflySwitch::routing_strategy::NIX
 };
 #endif

@@ -147,14 +147,12 @@ Queue *HammingmeshTopology::alloc_queue(QueueLogger *queueLogger, uint64_t speed
     else if (_qt == LOSSLESS_INPUT)
         return new LosslessOutputQueue(speedFromMbps(speed), memFromPkt(200), *_eventlist, queueLogger);
     else if (_qt == LOSSLESS_INPUT_ECN)
-        return new LosslessOutputQueue(speedFromMbps(speed), memFromPkt(10000), *_eventlist, queueLogger, 1,
-                                       memFromPkt(16));
+        return new LosslessOutputQueue(speedFromMbps(speed), memFromPkt(10000), *_eventlist, queueLogger, 1, memFromPkt(16));
     else if (_qt == COMPOSITE_ECN) {
         if (tor)
             return new CompositeQueue(speedFromMbps(speed), queuesize, *_eventlist, queueLogger);
         else
-            return new ECNQueue(speedFromMbps(speed), memFromPkt(2 * SWITCH_BUFFER), *_eventlist, queueLogger,
-                                memFromPkt(15));
+            return new ECNQueue(speedFromMbps(speed), memFromPkt(2 * SWITCH_BUFFER), *_eventlist, queueLogger, memFromPkt(15));
     }
     assert(0);
 }
@@ -186,7 +184,6 @@ void HammingmeshTopology::create_switch_switch_link(uint32_t k, uint32_t j, Queu
     queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
     queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
 
-    // ???
     if (_qt == LOSSLESS) {
         switches[j]->addPort(queues_switch_switch[j][k]);
         ((LosslessQueue *)queues_switch_switch[j][k])->setRemoteEndpoint(queues_switch_switch[k][j]);
@@ -272,31 +269,31 @@ void HammingmeshTopology::init_network() {
     // Creates all on-board links between Switches and Switches.
     uint32_t board_size = _height_board * _width_board;
     for (uint32_t i = 0; i < board_size; i++){
-        if (i % _width != 0){
+        if (i % _width_board != 0){
             for (uint32_t j = 0; j < _no_of_groups; j++){
                 uint32_t k = j * board_size + i;
                 uint32_t l = k - 1;
                 create_switch_switch_link(k, l, queueLogger);
             }
         }
-        if (i % _width != _width - 1){
+        if (i % _width_board != _width_board - 1){
             for (uint32_t j = 0; j < _no_of_groups; j++){
                 uint32_t k = j * board_size + i;
                 uint32_t l = k + 1;
                 create_switch_switch_link(k, l, queueLogger);
             }
         }
-        if (i / _width != 0){
+        if (i / _width_board != 0){
             for (uint32_t j = 0; j < _no_of_groups; j++){
                 uint32_t k = j * board_size + i;
-                uint32_t l = k - _width;
+                uint32_t l = k - _width_board;
                 create_switch_switch_link(k, l, queueLogger);
             }
         }
-        if (i / _width != _height - 1){
+        if (i / _width_board != _height_board - 1){
             for (uint32_t j = 0; j < _no_of_groups; j++){
                 uint32_t k = j * board_size + i;
-                uint32_t l = k + _width;
+                uint32_t l = k + _width_board;
                 create_switch_switch_link(k, l, queueLogger);
             }
         }
@@ -326,7 +323,12 @@ void HammingmeshTopology::init_network() {
         }
     }
     else if(2 * _height <= 64 * 63){
-        height_fat_tree_l1 = ((2 * _height) / 63) + 1;
+        if((2 * _height) % 63 == 0){
+            height_fat_tree_l1 = (2 * _height) / 63;
+        }
+        else{
+            height_fat_tree_l1 = ((2 * _height) / 63) + 1;
+        }
         height_fat_tree_l2 = 1;
         for(u_int32_t i = 0; i < _width; i++){
             for(uint32_t j = 0; j < _width_board; j++){
@@ -373,7 +375,12 @@ void HammingmeshTopology::init_network() {
         }
     }
     else if(2 * _width <= 64 * 63){
-        width_fat_tree_l1 = ((2 * _width) / 63) + 1;
+        if((2 * _width) % 63 == 0){
+            width_fat_tree_l1 = (2 * _width) / 63;
+        }
+        else{
+            width_fat_tree_l1 = ((2 * _width) / 63) + 1;
+        }
         width_fat_tree_l2 = 1;
         for(uint32_t i = 0; i < _height; i++){
             for(uint32_t j = 0; j < _height_board; j++){
@@ -381,8 +388,8 @@ void HammingmeshTopology::init_network() {
                     uint32_t group_base = group_size * _width * i + group_size * k;
                     uint32_t west = group_base + _width_board * j;
                     uint32_t east = group_base + _width_board * j + (_width_board - 1);
-                    uint32_t tree_west = width_tree_base + (2 * k) / 63;
-                    uint32_t tree_east = width_tree_base + ((2 * k) + 1) / 63;
+                    uint32_t tree_west = width_tree_base + (i * _height_board + j) * (width_fat_tree_l1 + width_fat_tree_l2) + (2 * k) / 63;
+                    uint32_t tree_east = width_tree_base + (i * _height_board + j) * (width_fat_tree_l1 + width_fat_tree_l2) + ((2 * k) + 1) / 63;
                     create_switch_switch_link(west, tree_west, queueLogger);
                     create_switch_switch_link(east, tree_east, queueLogger);
                 }
@@ -407,6 +414,7 @@ void HammingmeshTopology::init_network() {
         }
     }
 
+    // Prints all connections in the topology.
     /* for (int i = 0; i < _no_of_switches; i++){
         for (int j = i+1; j < _no_of_switches; j++){
             if(!pipes_switch_switch[i][j] == NULL){

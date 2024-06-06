@@ -17,8 +17,6 @@
 
 class HammingmeshSwitch;
 
-// Hammingmesh parameters:
-
 #ifndef QT
 #define QT
 typedef enum {
@@ -86,6 +84,6 @@ class HammingmeshTopology : public Topology {
     uint32_t _height, _width, _height_board, _width_board;
     uint32_t _no_of_switches, _no_of_nodes, _no_of_groups;
     mem_b _queuesize;
-    uint32_t _hm_routing_strategy = 0; // routing_strategy NIX
+    uint32_t _hm_routing_strategy = 0; // HammingmeshSwitch::routing_strategy::NIX
 };
 #endif

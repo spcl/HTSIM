@@ -26,20 +26,6 @@ class SlimflyTopology;
 //  Ns  = 2q^2.
 //  Nh  = p * 2q^2.
 
-/* #define HOST_TOR(src) (src / _p)
-#define HOST_GROUP(src) (src / (_a * _p)) */
-
-/* class FlowletInfo {
-  public:
-    uint32_t _egress;
-    simtime_picosec _last;
-
-    FlowletInfo(uint32_t egress, simtime_picosec lasttime) {
-        _egress = egress;
-        _last = lasttime;
-    };
-}; */
-
 class SlimflySwitch : public Switch {
   public:
     enum switch_type { NONE = 0, GENERAL = 1};

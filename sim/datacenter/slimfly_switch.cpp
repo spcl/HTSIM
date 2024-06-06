@@ -57,8 +57,6 @@ SlimflySwitch::SlimflySwitch(EventList &eventlist, string s, switch_type t,
     _last_choice = eventlist.now();
     _fib = new RouteTable();
     _sf_strategy = (routing_strategy)strat;
-    // if(!_fib == NULL) printf("_fib is initialized.\n");
-    // if(!_st == NULL) printf("_st is initialized.\n");
 }
 
 void SlimflySwitch::receivePacket(Packet &pkt) {
@@ -81,21 +79,9 @@ void SlimflySwitch::receivePacket(Packet &pkt) {
         return;
     }
 
-    // printf("Node %s - Packet Received\n", nodename().c_str());
-
-    // printf("Packet Destination is 3 %d\n", pkt.dst());
-
     if (_packets.find(&pkt) == _packets.end()) {
         // ingress pipeline processing.
-        
         _packets[&pkt] = true;
-
-        /* if(pkt.is_ack){
-            printf("receivePacket: ACK_Packet with pkt_src %d dst %d arrived at %d.\n", pkt.to, pkt.dst(), _id);
-        }else{
-            printf("receivePacket: Packet with pkt_src %d dst %d arrived at %d.\n", pkt.from, pkt.dst(), _id);
-        } */
-
         const Route *nh = getNextHop(pkt, NULL);
         
         // set next hop which is peer switch.
@@ -105,13 +91,9 @@ void SlimflySwitch::receivePacket(Packet &pkt) {
         // the egress queue.
         _pipe->receivePacket(pkt);
     } else {
-
         _packets.erase(&pkt);
 
         // egress queue processing.
-        // cout << "Switch type " << _type <<  " id " << _id << " pkt dst " <<
-        // pkt.dst() << " dir " << pkt.get_direction() << endl;
-
         pkt.hop_count++;
 
         /* printf("At %s - Hop %d - Time %lu\n", nodename().c_str(),
@@ -162,17 +144,13 @@ void SlimflySwitch::receivePacket(Packet &pkt) {
         { printf("From %d - Switch %s - Hop %d - %d\n", pkt.from,
                    nodename().c_str(), pkt.hop_count, GLOBAL_TIME / 1000);
         }*/
-
-        //printf("receivePacket: SendOn.\n");
         pkt.sendOn();
     }
 };
 
-// !!!
 void SlimflySwitch::addHostPort(int addr, uint32_t flowid, PacketSink *transport) {
     Route *rt = new Route();
     uint32_t hostTorAddr = _st->HOST_TOR_FKT(addr);
-    printf("addHostPort: %d.\n", addr);
     rt->push_back(_st->queues_switch_host[hostTorAddr][addr]);
     rt->push_back(_st->pipes_switch_host[hostTorAddr][addr]);
     rt->push_back(transport);
@@ -195,6 +173,7 @@ uint16_t SlimflySwitch::_ar_sticky = SlimflySwitch::PER_PACKET;
 simtime_picosec SlimflySwitch::_sticky_delta = timeFromUs((uint32_t)10);
 double SlimflySwitch::_ecn_threshold_fraction = 1.0;
 
+// In contrast to the normal modulo (%) this function always returns positive values.
 uint32_t SlimflySwitch::modulo (int x, int y){
     int res = x % y;
     if (res < 0){
@@ -206,29 +185,20 @@ uint32_t SlimflySwitch::modulo (int x, int y){
 Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
     // Retrieve available routes for the destination from the Forwarding Information Base (FIB)
     vector<FibEntry *> *available_hops = _fib->getRoutes(pkt.dst());
-
-    // Could it be that "if (available_hops)" and "if (available_hops->size() > 1)" do the same?
     if (available_hops) {
-        // Here possibly taking something from the cache.
         uint32_t ecmp_choice = 0;
 
         if (available_hops->size() > 1){
-            //printf("access: _sf_strategy = %u\n", _sf_strategy);
             switch (_sf_strategy) {
                 case NIX: {
-                    //printf("access: nix: _sf_strategy = %u\n", _sf_strategy);
                     abort();
                     break;
                 }
                 case MINIMAL: {
-                    //printf("access: minimal: _sf_strategy = %u\n", _sf_strategy);
-                    /* sort(available_hops->begin(), available_hops->end(), [](FibEntry *a, FibEntry *b) {
-                        return a->getCost() < b->getCost();}); */
                     permute_paths(available_hops);
                     break;
                 }
                 case VALIANTS: {
-                    //printf("access: valiants: _sf_strategy = %u\n", _sf_strategy);
                     // We should never go in here because we won't add an entry into _fib.
                     abort();
                     break;
@@ -244,12 +214,10 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
         // Here building the routes for the first time.
         switch (_sf_strategy) {
             case NIX: {
-                //printf("build: nix: _sf_strategy = %u\n", _sf_strategy);
                 abort();
                 break;
             }
             case MINIMAL: {
-                //printf("build: minimal: _sf_strategy = %u\n", _sf_strategy);
                 Route *r = new Route();
 
                 uint32_t dst_switch = _st->HOST_TOR_FKT(pkt.dst());
@@ -281,14 +249,7 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                     z = 1;
                 }
 
-                /* printf("u = %d,\tv = %d,\tw = %d,\tx = %d,\ty = %d,\tz = %d,\n", u, v, w, x, y, z);
-                printf("getNextHop: src_block = %d;\tsrc_group = %d\tsrc_switch = %d\n", w, u, _id);
-                printf("\t\t\tdst_block = %d\tdst_group = %d\tdst_switch = %d\n", z, x, dst_switch);
-                printf("\t\t\tpacket_size = %d\n", pkt.size());
-                printf("\t\t\tmod = %d\n", modulo((y - v), q)); */
-
                 if (_id == dst_switch){
-                    // printf("Exit.\n");
                     HostFibEntry *fe = _fib->getHostRoute(pkt.dst(), pkt.flow_id());
                     assert(fe);
                     pkt.set_direction(DOWN);
@@ -300,18 +261,15 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                             r->push_back(_st->queues_switch_switch[_id][dst_switch]);
                             r->push_back(_st->pipes_switch_switch[_id][dst_switch]);
                             r->push_back(_st->queues_switch_switch[_id][dst_switch]->getRemoteEndpoint());
-                            // printf("getNextHop: routeBack_size = %ld\n", r->size());
                             _fib->addRoute(pkt.dst(), r, 1, DOWN);
                         }
                         else if(w == 1 && _st->is_element(_st->get_Xp(), modulo((y - v), q))){
                             r->push_back(_st->queues_switch_switch[_id][dst_switch]);
                             r->push_back(_st->pipes_switch_switch[_id][dst_switch]);
                             r->push_back(_st->queues_switch_switch[_id][dst_switch]->getRemoteEndpoint());
-                            // printf("getNextHop: routeBack_size = %ld\n", r->size());
                             _fib->addRoute(pkt.dst(), r, 1, DOWN);
                         }
                         else{ // same group but 2 hops needed
-                            printf("Tschüss.\n");
                             uint32_t exists_hop = 0;
                             vector<uint32_t> X;
                             if(w == 0){
@@ -513,7 +471,6 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 uint32_t q2 = q * q;
 
                 if (_id == dst_switch){
-                    // printf("Exit.\n");
                     HostFibEntry *fe = _fib->getHostRoute(pkt.dst(), pkt.flow_id());
                     assert(fe);
                     pkt.set_direction(DOWN);
@@ -564,270 +521,245 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                             z = 1;
                         }
 
-                        /* printf("u = %d,\tv = %d,\tw = %d,\tx = %d,\ty = %d,\tz = %d,\n", u, v, w, x, y, z);
-                        printf("getNextHop: src_block = %d;\tsrc_group = %d\tsrc_switch = %d\n", w, u, _id);
-                        printf("\t\t\tdst_block = %d\tdst_group = %d\tdst_switch = %d\n", z, x, dst_switch);
-                        printf("\t\t\tpacket_size = %d\n", pkt.size());
-                        printf("\t\t\tmod = %d\n", modulo((y - v), q)); */
-
-
-
-
-
-
-
-
-
-
                         if (w == z){
-                        if(u == x){ // w == z and u == x
-                            if(w == 0 && _st->is_element(_st->get_X(), modulo((y - v), q))){
-                                r->push_back(_st->queues_switch_switch[_id][dst_switch]);
-                                r->push_back(_st->pipes_switch_switch[_id][dst_switch]);
-                                r->push_back(_st->queues_switch_switch[_id][dst_switch]->getRemoteEndpoint());
-                                e = new FibEntry(r, 1, DOWN);
-                                pkt.set_direction(e->getDirection());
-                                return e->getEgressPort();
+                            if(u == x){ // w == z and u == x
+                                if(w == 0 && _st->is_element(_st->get_X(), modulo((y - v), q))){
+                                    r->push_back(_st->queues_switch_switch[_id][dst_switch]);
+                                    r->push_back(_st->pipes_switch_switch[_id][dst_switch]);
+                                    r->push_back(_st->queues_switch_switch[_id][dst_switch]->getRemoteEndpoint());
+                                    e = new FibEntry(r, 1, DOWN);
+                                    pkt.set_direction(e->getDirection());
+                                    return e->getEgressPort();
+                                }
+                                else if(w == 1 && _st->is_element(_st->get_Xp(), modulo((y - v), q))){
+                                    r->push_back(_st->queues_switch_switch[_id][dst_switch]);
+                                    r->push_back(_st->pipes_switch_switch[_id][dst_switch]);
+                                    r->push_back(_st->queues_switch_switch[_id][dst_switch]->getRemoteEndpoint());
+                                    e = new FibEntry(r, 1, DOWN);
+                                    pkt.set_direction(e->getDirection());
+                                    return e->getEgressPort();
+                                }
+                                else{ // same group but 2 hops needed
+                                    uint32_t exists_hop = 0;
+                                    vector<uint32_t> X;
+                                    if(w == 0){
+                                        X = _st->get_X();
+                                    }
+                                    else{
+                                        X = _st->get_Xp();
+                                    }
+                                    int size = X.size();
+                                    uint32_t diff = modulo((y - v), q);
+                                    
+                                    for (int i = 0; i < size; i++){
+                                        for (int j = i+1; j < size; j++){
+                                            if (modulo((X[i] + X[j]), q) == diff){
+                                                int next_i = u * q + modulo((v + X[i]), q);
+                                                int next_j = u * q + modulo((v + X[j]), q);
+                                                if(w == 1){
+                                                    next_i += q2;
+                                                    next_j += q2;
+                                                }
+                                                r->push_back(_st->queues_switch_switch[_id][next_i]);
+                                                r->push_back(_st->pipes_switch_switch[_id][next_i]);
+                                                r->push_back(_st->queues_switch_switch[_id][next_i]->getRemoteEndpoint());
+                                                e = new FibEntry(r, 1, DOWN);
+                                                temp_fib->push_back(e);
+                                                r = new Route();
+                                                r->push_back(_st->queues_switch_switch[_id][next_j]);
+                                                r->push_back(_st->pipes_switch_switch[_id][next_j]);
+                                                r->push_back(_st->queues_switch_switch[_id][next_j]->getRemoteEndpoint());
+                                                e = new FibEntry(r, 1, DOWN);
+                                                temp_fib->push_back(e);
+                                                r = new Route();
+                                                exists_hop += 2;
+                                            }
+                                            else if (modulo((X[i] - X[j]), q) == diff){
+                                                int next_i = u * q + modulo((v + X[i]), q);
+                                                int next_j = u * q + modulo((v - X[j]), q);
+                                                if(w == 1){
+                                                    next_i += q2;
+                                                    next_j += q2;
+                                                }
+                                                r->push_back(_st->queues_switch_switch[_id][next_i]);
+                                                r->push_back(_st->pipes_switch_switch[_id][next_i]);
+                                                r->push_back(_st->queues_switch_switch[_id][next_i]->getRemoteEndpoint());
+                                                e = new FibEntry(r, 1, DOWN);
+                                                temp_fib->push_back(e);
+                                                r = new Route();
+                                                r->push_back(_st->queues_switch_switch[_id][next_j]);
+                                                r->push_back(_st->pipes_switch_switch[_id][next_j]);
+                                                r->push_back(_st->queues_switch_switch[_id][next_j]->getRemoteEndpoint());
+                                                e = new FibEntry(r, 1, DOWN);
+                                                temp_fib->push_back(e);
+                                                r = new Route();
+                                                exists_hop += 2;
+                                            }
+                                            else if (modulo(( -X[i] + X[j]), q) == diff){
+                                                int next_i = u * q + modulo((v - X[i]), q);
+                                                int next_j = u * q + modulo((v + X[j]), q);
+                                                if(w == 1){
+                                                    next_i += q2;
+                                                    next_j += q2;
+                                                }
+                                                r->push_back(_st->queues_switch_switch[_id][next_i]);
+                                                r->push_back(_st->pipes_switch_switch[_id][next_i]);
+                                                r->push_back(_st->queues_switch_switch[_id][next_i]->getRemoteEndpoint());
+                                                _fib->addRoute(pkt.dst(), r, 1, DOWN);
+                                                r = new Route();
+                                                r->push_back(_st->queues_switch_switch[_id][next_j]);
+                                                r->push_back(_st->pipes_switch_switch[_id][next_j]);
+                                                r->push_back(_st->queues_switch_switch[_id][next_j]->getRemoteEndpoint());
+                                                _fib->addRoute(pkt.dst(), r, 1, DOWN);
+                                                r = new Route();
+                                                exists_hop += 2;
+                                            }
+                                            else if (modulo(( -X[i] - X[j]), q) == diff){
+                                                int next_i = u * q + modulo((v - X[i]), q);
+                                                int next_j = u * q + modulo((v - X[j]), q);
+                                                if(w == 1){
+                                                    next_i += q2;
+                                                    next_j += q2;
+                                                }
+                                                r->push_back(_st->queues_switch_switch[_id][next_i]);
+                                                r->push_back(_st->pipes_switch_switch[_id][next_i]);
+                                                r->push_back(_st->queues_switch_switch[_id][next_i]->getRemoteEndpoint());
+                                                e = new FibEntry(r, 1, DOWN);
+                                                temp_fib->push_back(e);
+                                                r = new Route();
+                                                r->push_back(_st->queues_switch_switch[_id][next_j]);
+                                                r->push_back(_st->pipes_switch_switch[_id][next_j]);
+                                                r->push_back(_st->queues_switch_switch[_id][next_j]->getRemoteEndpoint());
+                                                e = new FibEntry(r, 1, DOWN);
+                                                temp_fib->push_back(e);
+                                                r = new Route();
+                                                exists_hop += 2;
+                                            }
+                                        }
+                                        if (modulo((2 * X[i]), q) == diff){
+                                            int next_i = u * q + modulo((v + X[i]), q);
+                                            if(w == 1){
+                                                next_i += q2;
+                                            }
+                                            r->push_back(_st->queues_switch_switch[_id][next_i]);
+                                            r->push_back(_st->pipes_switch_switch[_id][next_i]);
+                                            r->push_back(_st->queues_switch_switch[_id][next_i]->getRemoteEndpoint());
+                                            e = new FibEntry(r, 1, DOWN);
+                                            temp_fib->push_back(e);
+                                            r = new Route();
+                                            exists_hop++;
+                                        }
+                                        else if (modulo((2 * (-X[i])), q) == diff){
+                                            int next_i = u * q + modulo((v - X[i]), q);
+                                            if(w == 1){
+                                                next_i += q2;
+                                            }
+                                            r->push_back(_st->queues_switch_switch[_id][next_i]);
+                                            r->push_back(_st->pipes_switch_switch[_id][next_i]);
+                                            r->push_back(_st->queues_switch_switch[_id][next_i]->getRemoteEndpoint());
+                                            e = new FibEntry(r, 1, DOWN);
+                                            temp_fib->push_back(e);
+                                            r = new Route();
+                                            exists_hop++;
+                                        }
+                                    }
+                                    if (exists_hop == 0){
+                                        // This should never happen as all elements within a group are connected by 2 hops.
+                                        abort();
+                                    }
+                                }
                             }
-                            else if(w == 1 && _st->is_element(_st->get_Xp(), modulo((y - v), q))){
-                                r->push_back(_st->queues_switch_switch[_id][dst_switch]);
-                                r->push_back(_st->pipes_switch_switch[_id][dst_switch]);
-                                r->push_back(_st->queues_switch_switch[_id][dst_switch]->getRemoteEndpoint());
-                                e = new FibEntry(r, 1, DOWN);
-                                pkt.set_direction(e->getDirection());
-                                return e->getEgressPort();
-                            }
-                            else{ // same group but 2 hops needed
-                                uint32_t exists_hop = 0;
-                                vector<uint32_t> X;
+                            else{ //w == z && u != x
+                                // w == z and other group: 2 hops through other side
+                                uint32_t next_hop;
                                 if(w == 0){
-                                    X = _st->get_X();
+                                    uint32_t m = modulo(((v-y)/(u-x)), q);
+                                    uint32_t c = modulo((v - m * u), q);
+                                    next_hop = q2 + m * q + c;
                                 }
-                                else{
-                                    X = _st->get_Xp();
+                                else{ // w == 1
+                                    uint32_t m = modulo(((y-v)/(u-x)), q);
+                                    uint32_t c = modulo((v + m * u), q);
+                                    next_hop = m * q + c;
                                 }
-                                int size = X.size();
-                                uint32_t diff = modulo((y - v), q);
-                                
-                                for (int i = 0; i < size; i++){
-                                    for (int j = i+1; j < size; j++){
-                                        if (modulo((X[i] + X[j]), q) == diff){
-                                            int next_i = u * q + modulo((v + X[i]), q);
-                                            int next_j = u * q + modulo((v + X[j]), q);
-                                            if(w == 1){
-                                                next_i += q2;
-                                                next_j += q2;
-                                            }
-                                            r->push_back(_st->queues_switch_switch[_id][next_i]);
-                                            r->push_back(_st->pipes_switch_switch[_id][next_i]);
-                                            r->push_back(_st->queues_switch_switch[_id][next_i]->getRemoteEndpoint());
-                                            e = new FibEntry(r, 1, DOWN);
-                                            temp_fib->push_back(e);
-                                            r = new Route();
-                                            r->push_back(_st->queues_switch_switch[_id][next_j]);
-                                            r->push_back(_st->pipes_switch_switch[_id][next_j]);
-                                            r->push_back(_st->queues_switch_switch[_id][next_j]->getRemoteEndpoint());
-                                            e = new FibEntry(r, 1, DOWN);
-                                            temp_fib->push_back(e);
-                                            r = new Route();
-                                            exists_hop += 2;
-                                        }
-                                        else if (modulo((X[i] - X[j]), q) == diff){
-                                            int next_i = u * q + modulo((v + X[i]), q);
-                                            int next_j = u * q + modulo((v - X[j]), q);
-                                            if(w == 1){
-                                                next_i += q2;
-                                                next_j += q2;
-                                            }
-                                            r->push_back(_st->queues_switch_switch[_id][next_i]);
-                                            r->push_back(_st->pipes_switch_switch[_id][next_i]);
-                                            r->push_back(_st->queues_switch_switch[_id][next_i]->getRemoteEndpoint());
-                                            e = new FibEntry(r, 1, DOWN);
-                                            temp_fib->push_back(e);
-                                            r = new Route();
-                                            r->push_back(_st->queues_switch_switch[_id][next_j]);
-                                            r->push_back(_st->pipes_switch_switch[_id][next_j]);
-                                            r->push_back(_st->queues_switch_switch[_id][next_j]->getRemoteEndpoint());
-                                            e = new FibEntry(r, 1, DOWN);
-                                            temp_fib->push_back(e);
-                                            r = new Route();
-                                            exists_hop += 2;
-                                        }
-                                        else if (modulo(( -X[i] + X[j]), q) == diff){
-                                            int next_i = u * q + modulo((v - X[i]), q);
-                                            int next_j = u * q + modulo((v + X[j]), q);
-                                            if(w == 1){
-                                                next_i += q2;
-                                                next_j += q2;
-                                            }
-                                            r->push_back(_st->queues_switch_switch[_id][next_i]);
-                                            r->push_back(_st->pipes_switch_switch[_id][next_i]);
-                                            r->push_back(_st->queues_switch_switch[_id][next_i]->getRemoteEndpoint());
-                                            _fib->addRoute(pkt.dst(), r, 1, DOWN);
-                                            r = new Route();
-                                            r->push_back(_st->queues_switch_switch[_id][next_j]);
-                                            r->push_back(_st->pipes_switch_switch[_id][next_j]);
-                                            r->push_back(_st->queues_switch_switch[_id][next_j]->getRemoteEndpoint());
-                                            _fib->addRoute(pkt.dst(), r, 1, DOWN);
-                                            r = new Route();
-                                            exists_hop += 2;
-                                        }
-                                        else if (modulo(( -X[i] - X[j]), q) == diff){
-                                            int next_i = u * q + modulo((v - X[i]), q);
-                                            int next_j = u * q + modulo((v - X[j]), q);
-                                            if(w == 1){
-                                                next_i += q2;
-                                                next_j += q2;
-                                            }
-                                            r->push_back(_st->queues_switch_switch[_id][next_i]);
-                                            r->push_back(_st->pipes_switch_switch[_id][next_i]);
-                                            r->push_back(_st->queues_switch_switch[_id][next_i]->getRemoteEndpoint());
-                                            e = new FibEntry(r, 1, DOWN);
-                                            temp_fib->push_back(e);
-                                            r = new Route();
-                                            r->push_back(_st->queues_switch_switch[_id][next_j]);
-                                            r->push_back(_st->pipes_switch_switch[_id][next_j]);
-                                            r->push_back(_st->queues_switch_switch[_id][next_j]->getRemoteEndpoint());
-                                            e = new FibEntry(r, 1, DOWN);
-                                            temp_fib->push_back(e);
-                                            r = new Route();
-                                            exists_hop += 2;
-                                        }
-                                    }
-                                    if (modulo((2 * X[i]), q) == diff){
-                                        int next_i = u * q + modulo((v + X[i]), q);
-                                        if(w == 1){
-                                            next_i += q2;
-                                        }
-                                        r->push_back(_st->queues_switch_switch[_id][next_i]);
-                                        r->push_back(_st->pipes_switch_switch[_id][next_i]);
-                                        r->push_back(_st->queues_switch_switch[_id][next_i]->getRemoteEndpoint());
+                                r->push_back(_st->queues_switch_switch[_id][next_hop]);
+                                r->push_back(_st->pipes_switch_switch[_id][next_hop]);
+                                r->push_back(_st->queues_switch_switch[_id][next_hop]->getRemoteEndpoint());
+                                e = new FibEntry(r, 1, DOWN);
+                                pkt.set_direction(e->getDirection());
+                                return e->getEgressPort();
+                            }
+                        }
+                        else{ // w != z
+                            if(v == modulo((u * x + y), q) && w == 0){ // directly connected
+                                r->push_back(_st->queues_switch_switch[_id][dst_switch]);
+                                r->push_back(_st->pipes_switch_switch[_id][dst_switch]);
+                                r->push_back(_st->queues_switch_switch[_id][dst_switch]->getRemoteEndpoint());
+                                e = new FibEntry(r, 1, DOWN);
+                                pkt.set_direction(e->getDirection());
+                                return e->getEgressPort();
+                            }
+                            else if(y == modulo((u * x + v), q) && w == 1){ // directly connected
+                                r->push_back(_st->queues_switch_switch[_id][dst_switch]);
+                                r->push_back(_st->pipes_switch_switch[_id][dst_switch]);
+                                r->push_back(_st->queues_switch_switch[_id][dst_switch]->getRemoteEndpoint());
+                                e = new FibEntry(r, 1, DOWN);
+                                pkt.set_direction(e->getDirection());
+                                return e->getEgressPort();
+                            }
+                            else{ // w != z and 2 hops
+                                if(w == 0){
+                                    int yp = modulo(v - u * x, q);
+                                    int vp = modulo(y + u * x, q);
+                                    int src_diff = modulo(v - vp, q);
+                                    int dst_diff = modulo(y - yp, q);
+                                    if(_st->is_element(_st->get_X(), src_diff)){
+                                        int next_hop = q * u + vp;
+                                        r->push_back(_st->queues_switch_switch[_id][next_hop]);
+                                        r->push_back(_st->pipes_switch_switch[_id][next_hop]);
+                                        r->push_back(_st->queues_switch_switch[_id][next_hop]->getRemoteEndpoint());
                                         e = new FibEntry(r, 1, DOWN);
                                         temp_fib->push_back(e);
                                         r = new Route();
-                                        exists_hop++;
                                     }
-                                    else if (modulo((2 * (-X[i])), q) == diff){
-                                        int next_i = u * q + modulo((v - X[i]), q);
-                                        if(w == 1){
-                                            next_i += q2;
-                                        }
-                                        r->push_back(_st->queues_switch_switch[_id][next_i]);
-                                        r->push_back(_st->pipes_switch_switch[_id][next_i]);
-                                        r->push_back(_st->queues_switch_switch[_id][next_i]->getRemoteEndpoint());
+                                    if(_st->is_element(_st->get_Xp(), dst_diff)){
+                                        int next_hop = q2 + q * x + yp;
+                                        r->push_back(_st->queues_switch_switch[_id][next_hop]);
+                                        r->push_back(_st->pipes_switch_switch[_id][next_hop]);
+                                        r->push_back(_st->queues_switch_switch[_id][next_hop]->getRemoteEndpoint());
+                                        e = new FibEntry(r, 1, DOWN);
+                                        temp_fib->push_back(e);
+                                    }
+                                }
+                                else{ // w == 1
+                                    int yp = modulo(v + u * x, q);
+                                    int vp = modulo(y - u * x, q);
+                                    int src_diff = modulo(v - vp, q);
+                                    int dst_diff = modulo(y - yp, q);
+                                    if(_st->is_element(_st->get_Xp(), src_diff)){
+                                        int next_hop = q2 + q * u + vp;
+                                        r->push_back(_st->queues_switch_switch[_id][next_hop]);
+                                        r->push_back(_st->pipes_switch_switch[_id][next_hop]);
+                                        r->push_back(_st->queues_switch_switch[_id][next_hop]->getRemoteEndpoint());
                                         e = new FibEntry(r, 1, DOWN);
                                         temp_fib->push_back(e);
                                         r = new Route();
-                                        exists_hop++;
+                                    }
+                                    if(_st->is_element(_st->get_X(), dst_diff)){
+                                        int next_hop = q * x + yp;
+                                        r->push_back(_st->queues_switch_switch[_id][next_hop]);
+                                        r->push_back(_st->pipes_switch_switch[_id][next_hop]);
+                                        r->push_back(_st->queues_switch_switch[_id][next_hop]->getRemoteEndpoint());
+                                        e = new FibEntry(r, 1, DOWN);
+                                        temp_fib->push_back(e);
                                     }
                                 }
-                                if (exists_hop == 0){
-                                    // This should never happen as all elements within a group are connected by 2 hops.
-                                    abort();
-                                }
                             }
                         }
-                        else{ //w == z && u != x
-                            // w == z and other group: 2 hops through other side
-                            uint32_t next_hop;
-                            if(w == 0){
-                                uint32_t m = modulo(((v-y)/(u-x)), q);
-                                uint32_t c = modulo((v - m * u), q);
-                                next_hop = q2 + m * q + c;
-                            }
-                            else{ // w == 1
-                                uint32_t m = modulo(((y-v)/(u-x)), q);
-                                uint32_t c = modulo((v + m * u), q);
-                                next_hop = m * q + c;
-                            }
-                            r->push_back(_st->queues_switch_switch[_id][next_hop]);
-                            r->push_back(_st->pipes_switch_switch[_id][next_hop]);
-                            r->push_back(_st->queues_switch_switch[_id][next_hop]->getRemoteEndpoint());
-                            e = new FibEntry(r, 1, DOWN);
-                            pkt.set_direction(e->getDirection());
-                            return e->getEgressPort();
-                        }
-                    }
-                    else{ // w != z
-                        if(v == modulo((u * x + y), q) && w == 0){ // directly connected
-                            r->push_back(_st->queues_switch_switch[_id][dst_switch]);
-                            r->push_back(_st->pipes_switch_switch[_id][dst_switch]);
-                            r->push_back(_st->queues_switch_switch[_id][dst_switch]->getRemoteEndpoint());
-                            e = new FibEntry(r, 1, DOWN);
-                            pkt.set_direction(e->getDirection());
-                            return e->getEgressPort();
-                        }
-                        else if(y == modulo((u * x + v), q) && w == 1){ // directly connected
-                            r->push_back(_st->queues_switch_switch[_id][dst_switch]);
-                            r->push_back(_st->pipes_switch_switch[_id][dst_switch]);
-                            r->push_back(_st->queues_switch_switch[_id][dst_switch]->getRemoteEndpoint());
-                            e = new FibEntry(r, 1, DOWN);
-                            pkt.set_direction(e->getDirection());
-                            return e->getEgressPort();
-                        }
-                        else{ // w != z and 2 hops
-                            if(w == 0){
-                                int yp = modulo(v - u * x, q);
-                                int vp = modulo(y + u * x, q);
-                                int src_diff = modulo(v - vp, q);
-                                int dst_diff = modulo(y - yp, q);
-                                if(_st->is_element(_st->get_X(), src_diff)){
-                                    int next_hop = q * u + vp;
-                                    r->push_back(_st->queues_switch_switch[_id][next_hop]);
-                                    r->push_back(_st->pipes_switch_switch[_id][next_hop]);
-                                    r->push_back(_st->queues_switch_switch[_id][next_hop]->getRemoteEndpoint());
-                                    e = new FibEntry(r, 1, DOWN);
-                                    temp_fib->push_back(e);
-                                    r = new Route();
-                                }
-                                if(_st->is_element(_st->get_Xp(), dst_diff)){
-                                    int next_hop = q2 + q * x + yp;
-                                    r->push_back(_st->queues_switch_switch[_id][next_hop]);
-                                    r->push_back(_st->pipes_switch_switch[_id][next_hop]);
-                                    r->push_back(_st->queues_switch_switch[_id][next_hop]->getRemoteEndpoint());
-                                    e = new FibEntry(r, 1, DOWN);
-                                    temp_fib->push_back(e);
-                                }
-                            }
-                            else{ // w == 1
-                                int yp = modulo(v + u * x, q);
-                                int vp = modulo(y - u * x, q);
-                                int src_diff = modulo(v - vp, q);
-                                int dst_diff = modulo(y - yp, q);
-                                if(_st->is_element(_st->get_Xp(), src_diff)){
-                                    int next_hop = q2 + q * u + vp;
-                                    r->push_back(_st->queues_switch_switch[_id][next_hop]);
-                                    r->push_back(_st->pipes_switch_switch[_id][next_hop]);
-                                    r->push_back(_st->queues_switch_switch[_id][next_hop]->getRemoteEndpoint());
-                                    e = new FibEntry(r, 1, DOWN);
-                                    temp_fib->push_back(e);
-                                    r = new Route();
-                                }
-                                if(_st->is_element(_st->get_X(), dst_diff)){
-                                    int next_hop = q * x + yp;
-                                    r->push_back(_st->queues_switch_switch[_id][next_hop]);
-                                    r->push_back(_st->pipes_switch_switch[_id][next_hop]);
-                                    r->push_back(_st->queues_switch_switch[_id][next_hop]->getRemoteEndpoint());
-                                    e = new FibEntry(r, 1, DOWN);
-                                    temp_fib->push_back(e);
-                                }
-                            }
-                        }
-                    }
-                    permute_paths(temp_fib);
-                    e = (*temp_fib)[0];
-                    pkt.set_direction(e->getDirection());
-                    return e->getEgressPort();
-
-
-
-
-
-
-
-
-
-
+                        permute_paths(temp_fib);
+                        e = (*temp_fib)[0];
+                        pkt.set_direction(e->getDirection());
+                        return e->getEgressPort();
                     }
                 }
                 else{
@@ -860,13 +792,6 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                         y = modulo((uvia - q2), q);
                         z = 1;
                     }
-
-                    /* printf("u = %d,\tv = %d,\tw = %d,\tx = %d,\ty = %d,\tz = %d,\n", u, v, w, x, y, z);
-                    printf("getNextHop: src_block = %d;\tsrc_group = %d\tsrc_switch = %d\n", w, u, _id);
-                    printf("\t\t\tvia_block = %d\tvia_group = %d\tvia_switch = %d\n", z, x, uvia);
-                    printf("\t\t\tpacket_size = %d\n", pkt.size());
-                    printf("\t\t\tmod = %d\n", modulo((y - v), q)); */
-
 
                     if (w == z){
                         if(u == x){ // w == z and u == x

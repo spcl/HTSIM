@@ -22,7 +22,6 @@
 #include "swift_scheduler.h"
 #include <iostream>
 
-// #define HOST_TOR(src) (src / _p);
 #define HOST_GROUP(src) (src / (_a * _p));
 
 // RoundTrip Time.
@@ -57,8 +56,6 @@ HammingmeshSwitch::HammingmeshSwitch(EventList &eventlist, string s, switch_type
     _last_choice = eventlist.now();
     _fib = new RouteTable();
     _hm_strategy = (routing_strategy)strat;
-    // if(!_fib == NULL) printf("_fib is initialized.\n");
-    // if(!_st == NULL) printf("_st is initialized.\n");
 }
 
 void HammingmeshSwitch::receivePacket(Packet &pkt) {
@@ -81,20 +78,9 @@ void HammingmeshSwitch::receivePacket(Packet &pkt) {
         return;
     }
 
-    // printf("Node %s - Packet Received\n", nodename().c_str());
-
-    // printf("Packet Destination is 3 %d\n", pkt.dst());
-
     if (_packets.find(&pkt) == _packets.end()) {
         // ingress pipeline processing.
-        
         _packets[&pkt] = true;
-
-        /* if(pkt.is_ack){
-            printf("receivePacket: ACK_Packet with pkt_src %d dst %d arrived at %d.\n", pkt.to, pkt.dst(), _id);
-        }else{
-            printf("receivePacket: Packet with pkt_src %d dst %d arrived at %d.\n", pkt.from, pkt.dst(), _id);
-        } */
 
         const Route *nh = getNextHop(pkt, NULL);
         
@@ -105,7 +91,6 @@ void HammingmeshSwitch::receivePacket(Packet &pkt) {
         // the egress queue.
         _pipe->receivePacket(pkt);
     } else {
-
         _packets.erase(&pkt);
 
         // egress queue processing.
@@ -162,16 +147,12 @@ void HammingmeshSwitch::receivePacket(Packet &pkt) {
         { printf("From %d - Switch %s - Hop %d - %d\n", pkt.from,
                    nodename().c_str(), pkt.hop_count, GLOBAL_TIME / 1000);
         }*/
-
-        //printf("receivePacket: SendOn.\n");
         pkt.sendOn();
     }
 };
 
-// !!!
 void HammingmeshSwitch::addHostPort(int addr, uint32_t flowid, PacketSink *transport) {
     Route *rt = new Route();
-    // printf("addHostPort: %d.\n", addr);
     rt->push_back(_ht->queues_switch_host[addr][addr]);
     rt->push_back(_ht->pipes_switch_host[addr][addr]);
     rt->push_back(transport);
@@ -194,6 +175,7 @@ uint16_t HammingmeshSwitch::_ar_sticky = HammingmeshSwitch::PER_PACKET;
 simtime_picosec HammingmeshSwitch::_sticky_delta = timeFromUs((uint32_t)10);
 double HammingmeshSwitch::_ecn_threshold_fraction = 1.0;
 
+// In contrast to the normal modulo (%) this function always returns positive values.
 int HammingmeshSwitch::modulo (int x, int y){
     int res = x % y;
     if (res < 0){
@@ -205,24 +187,16 @@ int HammingmeshSwitch::modulo (int x, int y){
 Route *HammingmeshSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
     // Retrieve available routes for the destination from the Forwarding Information Base (FIB)
     vector<FibEntry *> *available_hops = _fib->getRoutes(pkt.dst());
-
-    // Could it be that "if (available_hops)" and "if (available_hops->size() > 1)" do the same?
     if (available_hops) {
-        // Here possibly taking something from the cache.
         uint32_t ecmp_choice = 0;
 
         if (available_hops->size() > 1){
-            //printf("access: _sf_strategy = %u\n", _sf_strategy);
             switch (_hm_strategy) {
                 case NIX: {
-                    //printf("access: nix: _sf_strategy = %u\n", _sf_strategy);
                     abort();
                     break;
                 }
                 case MINIMAL: {
-                    //printf("access: minimal: _sf_strategy = %u\n", _sf_strategy);
-                    /* sort(available_hops->begin(), available_hops->end(), [](FibEntry *a, FibEntry *b) {
-                        return a->getCost() < b->getCost();}); */
                     permute_paths(available_hops);
                     break;
                 }
@@ -244,13 +218,6 @@ Route *HammingmeshSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 Route *r = new Route();
 
                 uint32_t pkt_dst = pkt.dst();
-                /* uint32_t pkt_src;
-                if(pkt.is_ack){
-                    pkt_src = pkt.to;
-                }
-                else{
-                    pkt_src = pkt.from;
-                } */
 
                 uint32_t _height = _ht->get_height();
                 uint32_t _width = _ht->get_width();
@@ -263,13 +230,23 @@ Route *HammingmeshSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 uint32_t _fat_tree_size_height;
                 uint32_t _fat_tree_size_width;
                 if(_2nd_fat_tree_layer_height){
-                    _fat_tree_size_height = ((2 * _height) % 63) + 1;
+                    if((2 * _height) % 63 == 0){
+                        _fat_tree_size_height = ((2 * _height) / 63) + 1;
+                    }
+                    else{
+                         _fat_tree_size_height = ((2 * _height) / 63) + 2;
+                    }
                 }
                 else{
                     _fat_tree_size_height = 1;
                 }
                 if(_2nd_fat_tree_layer_width){
-                    _fat_tree_size_width = ((2 * _width) % 63) + 1;
+                    if((2 * _width) % 63 == 0){
+                        _fat_tree_size_width = ((2 * _width) / 63) + 1;
+                    }
+                    else{
+                        _fat_tree_size_width = ((2 * _width) / 63) + 2;
+                    }
                 }
                 else{
                     _fat_tree_size_width = 1;
@@ -279,21 +256,7 @@ Route *HammingmeshSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 uint32_t dst_width = (pkt_dst % (_width * _no_switches_per_board)) / _no_switches_per_board;
                 uint32_t dst_height_board = (pkt_dst % _no_switches_per_board) / _width_board;
                 uint32_t dst_width_board = pkt_dst % _width_board;
-                /* uint32_t dst_fat_tree_nodes_height;
-                uint32_t dst_fat_tree_nodes_width;
-                if(_2nd_fat_tree_layer_height && dst_height % 63 == 31){
-                    dst_fat_tree_nodes_height = 3;
-                }
-                else{
-                    dst_fat_tree_nodes_height = 1;
-                }
-                if(_2nd_fat_tree_layer_width && dst_width % 63 == 31){
-                    dst_fat_tree_nodes_width = 3;
-                }
-                else{
-                    dst_fat_tree_nodes_width = 1;
-                } */
-
+                
                 if (_id < _no_board_switches){ // On board switch.
                     uint32_t this_height = _id / (_width * _no_switches_per_board);
                     uint32_t this_width = (_id % (_width * _no_switches_per_board)) / _no_switches_per_board;
@@ -428,9 +391,6 @@ Route *HammingmeshSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                             }
                         }
                         else{ // Same board. Neither same row nor same column.
-                            printf("id: %u, dst: %u\n", _id, pkt_dst);
-                            printf("th = %u, thb = %u, tw = %u, twb = %u\n", this_height, this_height_board, this_width, this_width_board);
-                            printf("dh = %u, dhb = %u, dw = %u, dwb = %u\n", dst_height, dst_height_board, dst_width, dst_width_board);
                             bool send_left, send_right;
                             if (this_width_board < dst_width_board){
                                 send_left = ((dst_width_board - this_width_board) >= (_width_board + this_width_board + this_fat_tree_nodes_width - dst_width_board));
@@ -829,7 +789,7 @@ Route *HammingmeshSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                         uint32_t this_width_board = (fat_tree_id % (_width_board * _fat_tree_size_height)) / _fat_tree_size_height;
                         uint32_t dst_board_entry_top = dst_height * _width * _width_board * _height_board + this_width * _width_board * _height_board + this_width_board;
                         uint32_t dst_board_entry_bottom = dst_height * _width * _width_board * _height_board + this_width * _width_board * _height_board + _width_board * (_height_board - 1) + this_width_board;
-
+                        
                         if (_2nd_fat_tree_layer_height){
                             uint32_t dst_fat_tree_entry_top = _no_board_switches + this_width * _width_board * _fat_tree_size_height + this_width_board * _fat_tree_size_height + ((2 * dst_height) / 63);
                             uint32_t dst_fat_tree_entry_bottom = _no_board_switches + this_width * _width_board * _fat_tree_size_height + this_width_board * _fat_tree_size_height + ((2 * dst_height + 1) / 63);
@@ -943,9 +903,9 @@ Route *HammingmeshSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                         uint32_t dst_board_entry_right = dst_board_entry_left + _width_board - 1;
 
                         if (_2nd_fat_tree_layer_width){
-                            uint32_t dst_fat_tree_entry_left = _no_board_switches + _width * _width_board * _fat_tree_size_height + this_height * _height_board * _fat_tree_size_width + this_height_board * _fat_tree_size_width + ((2 * dst_height) / 63);
-                            uint32_t dst_fat_tree_entry_right = _no_board_switches + _width * _width_board * _fat_tree_size_height + this_height * _height_board * _fat_tree_size_width + this_height_board * _fat_tree_size_width + ((2 * dst_height + 1) / 63);
-                            uint32_t dst_fat_tree_root = _no_board_switches + _width * _width_board * _fat_tree_size_height + (this_height * _height_board + this_height_board) * _fat_tree_size_width - 1;
+                            uint32_t dst_fat_tree_entry_left = _no_board_switches + _width * _width_board * _fat_tree_size_height + this_height * _height_board * _fat_tree_size_width + this_height_board * _fat_tree_size_width + ((2 * dst_width) / 63);
+                            uint32_t dst_fat_tree_entry_right = _no_board_switches + _width * _width_board * _fat_tree_size_height + this_height * _height_board * _fat_tree_size_width + this_height_board * _fat_tree_size_width + ((2 * dst_width + 1) / 63);
+                            uint32_t dst_fat_tree_root = _no_board_switches + _width * _width_board * _fat_tree_size_height + (this_height * _height_board + this_height_board + 1) * _fat_tree_size_width - 1;
 
                             uint32_t dist_to_entry_left;
                             uint32_t dist_to_entry_right;
@@ -1054,7 +1014,7 @@ Route *HammingmeshSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
         }
         
         assert(_fib->getRoutes(pkt.dst()));
-        printf("Debug: Ok.\tid: %d\tdst: %d\n", _id, pkt.dst());
+        //printf("Debug: Ok.\tid: %d\tdst: %d\n", _id, pkt.dst());
 
         return getNextHop(pkt, ingress_port);
     }

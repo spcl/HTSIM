@@ -10,20 +10,6 @@
 
 class HammingmeshTopology;
 
-// Hammingmesh parameters
-//  
-
-/* class FlowletInfo {
-  public:
-    uint32_t _egress;
-    simtime_picosec _last;
-
-    FlowletInfo(uint32_t egress, simtime_picosec lasttime) {
-        _egress = egress;
-        _last = lasttime;
-    };
-}; */
-
 class HammingmeshSwitch : public Switch {
   public:
     enum switch_type { NONE = 0, GENERAL = 1};
@@ -47,11 +33,6 @@ class HammingmeshSwitch : public Switch {
     virtual void receivePacket(Packet &pkt);
     virtual Route *getNextHop(Packet &pkt, BaseQueue *ingress_port);
 
-    static void set_strategy(routing_strategy s) {
-        printf("set_strat: %d\n", s);
-        assert(_hm_strategy == NIX);
-        _hm_strategy = s;
-    }
     static void set_ar_fraction(uint16_t f) {
         assert(f >= 1);
         _ar_fraction = f;

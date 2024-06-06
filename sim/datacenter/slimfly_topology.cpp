@@ -69,22 +69,10 @@ SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, me
         if(!is_element(_Xp, _q - _Xp[i])){_Xp.push_back(_q - _Xp[i]);}
     }
 
-    /* printf("_X = [");
-    for (uint32_t i = 0; i < q_half; i++) {
-        printf("%u, ", _X[i]);
-    }
-    printf("]\n");
-    printf("_Xp = [");
-    for (uint32_t i = 0; i < q_half; i++) {
-        printf("%u, ", _Xp[i]);
-    }
-    printf("]\n"); */
-
     _queuesize = queuesize;
     _eventlist = ev;
     _qt = qt;
 
-    //_no_of_groups = _a *_h + 1;
     _no_of_switches = 2 * pow(_q, 2);
     _no_of_nodes = _no_of_switches * _p;
 
@@ -153,7 +141,6 @@ SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, me
     _eventlist = ev;
     _qt = qt;
 
-    //_no_of_groups = _a *_h + 1;
     _no_of_switches = 2 * pow(_q, 2);
     _no_of_nodes = _no_of_switches * _p;
 
@@ -164,6 +151,8 @@ SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, me
     init_network();
 }
 
+// Given a prime field defined by q this function gets a generator for the field.
+// That means a number which when multiplied by itself (modulo) can span the whole field.
 uint32_t SlimflyTopology::get_generator(uint32_t q) {
     if (q == 2){ return 1; }
     if (q == 3){ return 2; }
@@ -199,6 +188,7 @@ bool SlimflyTopology::is_element(vector<uint32_t> arr, uint32_t el){
     return false;
 }
 
+// In contrast to the standard modulo (%) this one always gives positive results.
 uint32_t SlimflyTopology::modulo (int x, int y){
     int res = x % y;
     if (res < 0){
@@ -246,14 +236,12 @@ Queue *SlimflyTopology::alloc_queue(QueueLogger *queueLogger, uint64_t speed, me
     else if (_qt == LOSSLESS_INPUT)
         return new LosslessOutputQueue(speedFromMbps(speed), memFromPkt(200), *_eventlist, queueLogger);
     else if (_qt == LOSSLESS_INPUT_ECN)
-        return new LosslessOutputQueue(speedFromMbps(speed), memFromPkt(10000), *_eventlist, queueLogger, 1,
-                                       memFromPkt(16));
+        return new LosslessOutputQueue(speedFromMbps(speed), memFromPkt(10000), *_eventlist, queueLogger, 1, memFromPkt(16));
     else if (_qt == COMPOSITE_ECN) {
         if (tor)
             return new CompositeQueue(speedFromMbps(speed), queuesize, *_eventlist, queueLogger);
         else
-            return new ECNQueue(speedFromMbps(speed), memFromPkt(2 * SWITCH_BUFFER), *_eventlist, queueLogger,
-                                memFromPkt(15));
+            return new ECNQueue(speedFromMbps(speed), memFromPkt(2 * SWITCH_BUFFER), *_eventlist, queueLogger, memFromPkt(15));
     }
     assert(0);
 }
@@ -277,6 +265,7 @@ void SlimflyTopology::init_network() {
         }
     }
 
+    // Creates all switches.
     for (uint32_t j = 0; j < _no_of_switches; j++) {
         switches[j] = new SlimflySwitch(*_eventlist, "Switch_" + ntoa(j), SlimflySwitch::GENERAL, j, timeFromUs((uint32_t)0), this, _sf_routing_strategy);
     }
@@ -312,7 +301,6 @@ void SlimflyTopology::init_network() {
             switches[j]->addPort(queues_switch_host[j][k]);
             switches[j]->addPort(queues_host_switch[k][j]);
 
-            // ???
             if (_qt == LOSSLESS) {
                 switches[j]->addPort(queues_switch_host[j][k]);
                 ((LosslessQueue *)queues_switch_host[j][k])->setRemoteEndpoint(queues_host_switch[k][j]);
@@ -330,7 +318,6 @@ void SlimflyTopology::init_network() {
     uint32_t q2 = pow(_q, 2);
 
     // Creates all links between Switches and Switches.
-    
     for (int y = 0; y < ((int) _q - 1); y++) {
         for (int yp = (y + 1); yp < (int) _q; yp++) {
             int diff = yp - y;
@@ -366,7 +353,6 @@ void SlimflyTopology::init_network() {
                     queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
                     queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
 
-                    // ???
                     if (_qt == LOSSLESS) {
                         switches[j]->addPort(queues_switch_switch[j][k]);
                         ((LosslessQueue *)queues_switch_switch[j][k])->setRemoteEndpoint(queues_switch_switch[k][j]);
@@ -383,7 +369,6 @@ void SlimflyTopology::init_network() {
                 }
             }
             if (is_element(_Xp, diff)){
-                // printf("_Xp:\ty = %d;\typ = %d\n", y, yp);
                 for (uint32_t x = 0; x < _q; x++) {
                     uint32_t k = q2 + _q * x + y;
                     uint32_t j = q2 + _q * x + yp;
@@ -413,7 +398,6 @@ void SlimflyTopology::init_network() {
                     queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
                     queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
 
-                    // ???
                     if (_qt == LOSSLESS) {
                         switches[j]->addPort(queues_switch_switch[j][k]);
                         ((LosslessQueue *)queues_switch_switch[j][k])->setRemoteEndpoint(queues_switch_switch[k][j]);
@@ -465,7 +449,6 @@ void SlimflyTopology::init_network() {
                         queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
                         queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
 
-                        // ???
                         if (_qt == LOSSLESS) {
                             switches[j]->addPort(queues_switch_switch[j][k]);
                             ((LosslessQueue *)queues_switch_switch[j][k])->setRemoteEndpoint(queues_switch_switch[k][j]);
@@ -492,12 +475,13 @@ void SlimflyTopology::init_network() {
         }
     }
 
-    for (uint32_t i = 0; i < _no_of_switches; i++){
+    // Prints all connections in the network.
+    /* for (uint32_t i = 0; i < _no_of_switches; i++){
         for (uint32_t j = i+1; j < _no_of_switches; j++){
             if(!pipes_switch_switch[i][j] == NULL){
                 printf("%d <-> %d\n", i, j);
             }
         }
         printf("\n");
-    }
+    } */
 }
