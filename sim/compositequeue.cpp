@@ -310,15 +310,12 @@ void CompositeQueue::doNextEvent() {
 
 void CompositeQueue::receivePacket(Packet &pkt) {
 
-    // std::cout << "Currently at switch " << _switch->nodename() << std::endl;
-    // std::cout << "Packet from " << pkt.from << " to " << pkt.to << std::endl;
-
     pkt.flow().logTraffic(pkt, *this, TrafficLogger::PKT_ARRIVE);
     if (_logger)
         _logger->logQueue(*this, QueueLogger::PKT_ARRIVE, pkt);
     // is this a Tofino packet from the egress pipeline?
 
-    if (FAILURE_GENERATOR->simSwitchFailures(pkt, _switch, *this) || FAILURE_GENERATOR->simNICFailures(*this, pkt)) {
+    if (FAILURE_GENERATOR->simSwitchFailures(pkt, _switch, *this)) {
         // Temporary Hack
         if (!pkt.header_only()) {
             pkt.strip_payload();

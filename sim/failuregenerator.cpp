@@ -4,6 +4,7 @@
 #include "network.h"
 #include "pipe.h"
 #include "switch.h"
+#include "uec.h"
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -344,22 +345,20 @@ bool failuregenerator::cableWorstCase(Pipe *p, Packet &pkt) {
     return false;
 }
 
-bool failuregenerator::simNICFailures(Queue q, Packet &pkt) {
-    return (nicFail(q, pkt) || nicDegradation(q, pkt) || nicWorstCase(q, pkt));
+bool failuregenerator::simNICFailures(UecSrc *src, UecSink *sink, Packet &pkt) {
+    return (nicFail(src, sink, pkt) || nicDegradation(src, sink, pkt) || nicWorstCase(src, sink, pkt));
 }
-bool failuregenerator::nicFail(Queue q, Packet &pkt) {
+bool failuregenerator::nicFail(UecSrc *src, UecSink *sink, Packet &pkt) {
 
     if (!nic_fail) {
         return false;
     }
 
-    uint32_t packet_from = pkt.from;
-    uint32_t packet_to = pkt.to;
-    uint32_t nic_id = q.getSwitch()->getID();
-
-    // Am i at a NIC? TODO
-    if (!(nic_id == packet_from || nic_id == packet_to)) {
-        return false;
+    uint32_t nic_id = -1;
+    if (src == NULL) {
+        nic_id = sink->to;
+    } else {
+        nic_id = src->from;
     }
 
     if (failingNICs.find(nic_id) != failingNICs.end()) {
@@ -382,28 +381,25 @@ bool failuregenerator::nicFail(Queue q, Packet &pkt) {
         uint64_t recoveryTime = GLOBAL_TIME + generateTimeNIC();
         nic_fail_next_fail = GLOBAL_TIME + nic_fail_period;
         failuregenerator::failingNICs[nic_id] = std::make_pair(failureTime, recoveryTime);
-        std::cout << "Failed a new NIC name: " << q.nodename() << " at " << std::to_string(failureTime) << " for "
+        std::cout << "Failed a new NIC name: " << nic_id << " at " << std::to_string(failureTime) << " for "
                   << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
         return true;
     }
 }
-bool failuregenerator::nicDegradation(Queue q, Packet &pkt) {
+bool failuregenerator::nicDegradation(UecSrc *src, UecSink *sink, Packet &pkt) {
     if (!nic_degradation) {
         return false;
     }
 
-    uint32_t packet_from = pkt.from;
-    uint32_t packet_to = pkt.to;
-    uint32_t nic_id = q.getSwitch()->getID();
-
-    // Am i at a NIC? TODO
-    if (!(nic_id == packet_from || nic_id == packet_to)) {
-        return false;
+    uint32_t nic_id = -1;
+    if (src == NULL) {
+        nic_id = sink->to;
+    } else {
+        nic_id = src->from;
     }
 
     if (degraded_NICs.find(nic_id) != degraded_NICs.end()) {
-        bool decision = trueWithProb(0.05);
-        if (decision) {
+        if (trueWithProb(0.05)) {
             std::cout << "Packet dropped at nicDegradation" << std::endl;
             return true;
         } else {
@@ -413,16 +409,16 @@ bool failuregenerator::nicDegradation(Queue q, Packet &pkt) {
         if (GLOBAL_TIME < nic_degradation_next_fail) {
             return false;
         } else {
-            int port_nrs = q.getSwitch()->portCount();
-            for (int i = 0; i < port_nrs; i++) {
-                BaseQueue *curq = q.getSwitch()->getPort(i);
-                curq->_bitrate = 1000;
-            }
+            // int port_nrs = q.getSwitch()->portCount();
+            // for (int i = 0; i < port_nrs; i++) {
+            //     BaseQueue *curq = q.getSwitch()->getPort(i);
+            //     curq->_bitrate = 1000;
+            // }
             degraded_NICs.insert(nic_id);
             nic_degradation_next_fail = GLOBAL_TIME + nic_degradation_period;
             std::cout << "New NIC degraded Queue bitrate now 1000bps " << std::endl;
-            bool decision = trueWithProb(0.05);
-            if (decision) {
+
+            if (trueWithProb(0.05)) {
                 std::cout << "Packet dropped at nicDegradation" << std::endl;
                 return true;
             } else {
@@ -431,18 +427,16 @@ bool failuregenerator::nicDegradation(Queue q, Packet &pkt) {
         }
     }
 }
-bool failuregenerator::nicWorstCase(Queue q, Packet &pkt) {
+bool failuregenerator::nicWorstCase(UecSrc *src, UecSink *sink, Packet &pkt) {
     if (!nic_worst_case) {
         return false;
     }
 
-    uint32_t packet_from = pkt.from;
-    uint32_t packet_to = pkt.to;
-    uint32_t nic_id = q.getSwitch()->getID();
-
-    // Am i at a NIC? TODO
-    if (!(nic_id == packet_from || nic_id == packet_to)) {
-        return false;
+    uint32_t nic_id = -1;
+    if (src == NULL) {
+        nic_id = sink->to;
+    } else {
+        nic_id = src->from;
     }
 
     if (failingNICs.find(nic_id) != failingNICs.end()) {
@@ -465,7 +459,7 @@ bool failuregenerator::nicWorstCase(Queue q, Packet &pkt) {
         uint64_t recoveryTime = GLOBAL_TIME + generateTimeNIC();
         nic_worst_case_next_fail = GLOBAL_TIME + nic_worst_case_period;
         failuregenerator::failingNICs[nic_id] = std::make_pair(failureTime, recoveryTime);
-        std::cout << "Failed a new NIC name: " << q.nodename() << " at " << std::to_string(failureTime) << " for "
+        std::cout << "Failed a new NIC name: " << nic_id << " at " << std::to_string(failureTime) << " for "
                   << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
         return true;
     }

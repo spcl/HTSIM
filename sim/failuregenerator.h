@@ -8,7 +8,9 @@
 #include <set>
 #include <unordered_map>
 
-class Pipe; // Forward declaration
+class Pipe;
+class UecSrc;
+class UecSink;
 class failuregenerator {
 
   public:
@@ -21,7 +23,7 @@ class failuregenerator {
 
     bool simSwitchFailures(Packet &pkt, Switch *sw, Queue q);
     bool simCableFailures(Pipe *p, Packet &pkt);
-    bool simNICFailures(Queue q, Packet &pkt);
+    bool simNICFailures(UecSrc *src, UecSink *sink, Packet &pkt);
 
     // Switch
     bool switchFail(Switch *sw);
@@ -79,21 +81,21 @@ class failuregenerator {
 
     // NIC
     bool nic_fail = false;
-    bool nicFail(Queue q, Packet &pkt);
+    bool nicFail(UecSrc *src, UecSink *sink, Packet &pkt);
     std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failingNICs;
     simtime_picosec nic_fail_start = 0;
     simtime_picosec nic_fail_period = 0;
     simtime_picosec nic_fail_next_fail = 0;
 
     bool nic_degradation = false;
-    bool nicDegradation(Queue q, Packet &pkt);
+    bool nicDegradation(UecSrc *src, UecSink *sink, Packet &pkt);
     std::set<uint32_t> degraded_NICs;
     simtime_picosec nic_degradation_start = 0;
     simtime_picosec nic_degradation_period = 0;
     simtime_picosec nic_degradation_next_fail = 0;
 
     bool nic_worst_case = false;
-    bool nicWorstCase(Queue q, Packet &pkt);
+    bool nicWorstCase(UecSrc *src, UecSink *sink, Packet &pkt);
     simtime_picosec nic_worst_case_start = 0;
     simtime_picosec nic_worst_case_period = 0;
     simtime_picosec nic_worst_case_next_fail = 0;
