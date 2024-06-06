@@ -45,11 +45,25 @@ The main files that have been changed/added to support this CC are:
 - ```fat_tree_interdc_switch.cpp``` and ```fat_tree_interdc_switch.h``` --> here we define the custom routing for the topology.
 
 ### Dragonfly Topology
-In the dragonfly topology every switch is connected to a fixed number of endpoints (denoted by the input parameter p). Each switch is in a group of switches in which every pair of switches is connected through a direct link. Every group has the same size (denoted by the input parameter a). Every two groups are connected by one global link connected to each a switch in the groups. The number of global links per switch is denoted by the input parameter h. Therefore, there are h+1 groups with each a switches and p nodes per switch. The router radix of this topology is h+(a-1)+p.
+In the Dragonfly topology every switch is connected to a fixed number of endpoints (denoted by the input parameter p). Each switch is in a group of switches in which every pair of switches is connected through a direct link. Every group has the same size (denoted by the input parameter a). Every two groups are connected by one global link connected to each a switch in the groups. The number of global links per switch is denoted by the input parameter h. Therefore, there are h+1 groups with each a switches and p nodes per switch. The router radix of this topology is h+(a-1)+p.
+Minimal routing takes at most 3 steps / Valiant's routing at most 5.
 
 ### Slimfly Topology
+In the Slimfly topology again every switch is connected to a fixed number of endpoints (denoted by the input parameter p). The switches however are organized in two different squares of size q. q has to be a prime number or a prime power (calculated by the input parameters q_base and q_exp which denoted the base of the prime number/power and its coressponding exponent). In this work / program we only allow q only to be a prime number as prime powers are much harder to implement and prime numbers don't limit the size to which a network could grow.
+Within a square a switch can only be connected vertically to other switches. The connecting criterion is as follows:
+    The 1st group's coordinates are: (x, y, 0)
+    The 2nd group's coordinates are: (m, c, 1)
+    First one has to find a generator g of the field with size q.
+    Then the two sets X and X' are: X = {1, g^2, ..., g^q-3}; X' = {g, g^3, ..., g^q-2}
+    Two switches (x, y, 0) and (x, y', 0) in the 1st group are connected if and only if (y - y') % q is element of X.
+    Two switches (m, c, 1) and (m, c', 1) in the 2nd group are connected if and only if (c - c') % q is element of X'.
+Between the two squares each switch is connected to q switches of the other group if and only if y = (m * x + c) % q.
+There are 2 * q^2 switches with each p nodes in the network. The router radix is ((3q-delta) / 2) + p where delta is element {-1, 0, 1}.
+Minimal routing takes at most 2 steps / Valiant's routing at most 4.
 
 ### Hammingmesh Topology
+In the Hammingmesh topology there are so called boards which are switches organized in a grid with a fixed height and width (denoted by the input parameters height_board and width_board). All boards are again oragnized like a grid with fixed height and width (denoted by height and width). Within a board a switch is connected to its neighbours (up, down, left, right). Nodes at the edge of a board are connected to a fat tree. For each combination of height and height_board (so for each row) there is a fat tree for nodes at the left or right edge of the board. Also for each combination of width and width_board (so for each column) there is a fat tree for nodes at the upper or lower edge of the board. (For this work we limited the fat tree node's radix to 64 and the fat tree's height to 2. This allows 63 * 64 row and columns each.)
+Minimal routing takes at most height_board + width_board + 2 * (height_row_fat_tree + height_column_fat_tree) steps.
 
 ## Basic Instructions
 
