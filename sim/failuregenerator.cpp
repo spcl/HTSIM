@@ -11,68 +11,43 @@
 #include <string>
 #include <unordered_map>
 
+std::random_device rd;
+std::mt19937 gen(rd());
+
 // returns true with probability prob
 bool trueWithProb(double prob) {
-    std::random_device rd;
-    std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(0, 1);
-    double random_value = dis(gen);
-    if (random_value < prob) {
-        return true;
-    } else {
-        return false;
-    }
+    return dis(gen) < prob;
 }
 
 int64_t generateTimeSwitch() {
-    std::random_device rd;
-    std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(0, 1);
-    double random_value = dis(gen);
-    if (random_value < 0.5) {
+    if (dis(gen) < 0.5) {
         std::uniform_int_distribution<> dis(0, 360);
         return dis(gen) * 1e+12;
     } else {
         std::geometric_distribution<> dis(0.1);
-        int64_t val = dis(gen);
-        val += 360;
-        if (val > 18000) {
-            val = 18000;
-        }
-        return dis(gen) * 1e+12;
+        int64_t val = dis(gen) + 360;
+        return std::min(val, int64_t(18000)) * 1e12;
     }
 }
 
 int64_t generateTimeCable() {
-    std::random_device rd;
-    std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(0, 1);
-    double random_value = dis(gen);
-    if (random_value < 0.8) {
+    if (dis(gen) < 0.8) {
         std::uniform_int_distribution<> dis(0, 300);
         return dis(gen) * 1e+12;
     } else {
         std::geometric_distribution<> dis(0.1);
-        int64_t val = dis(gen);
-        val += 300;
-        if (val > 3600) {
-            val = 3600;
-        }
-        return dis(gen) * 1e+12;
+        int64_t val = dis(gen) + 300;
+        return std::min(val, int64_t(3600)) * 1e12;
     }
 }
 
 int64_t generateTimeNIC() {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-
     std::geometric_distribution<> dis(0.1);
-    int64_t val = dis(gen);
-    val += 600;
-    if (val > 1800) {
-        val = 1800;
-    }
-    return dis(gen) * 1e+12;
+    int64_t val = dis(gen) + 600;
+    return std::min(val, int64_t(1800)) * 1e12;
 }
 
 // Map that keeps track of failing switches. Maps from switch id to a pair of time of failure and time of recovery
@@ -86,7 +61,7 @@ bool failuregenerator::switchFail(Switch *sw) {
         return false;
     }
     uint32_t switch_id = sw->getID();
-    string switch_name = sw->nodename();
+    std::string switch_name = sw->nodename();
 
     if (failingSwitches.find(switch_id) != failingSwitches.end()) {
         std::pair<uint64_t, uint64_t> curSwitch = failingSwitches[switch_id];
@@ -113,7 +88,6 @@ bool failuregenerator::switchFail(Switch *sw) {
                   << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
         return true;
     }
-    return false;
 }
 
 bool failuregenerator::switchBER(Packet &pkt, Switch *sw, Queue q) {
@@ -124,7 +98,7 @@ bool failuregenerator::switchBER(Packet &pkt, Switch *sw, Queue q) {
 
     uint32_t pkt_id = pkt.id();
 
-    if (q.getRemoteEndpoint() == NULL) {
+    if (q.getRemoteEndpoint() == nullptr) {
         if (corrupted_packets.find(pkt_id) != corrupted_packets.end()) {
             corrupted_packets.erase(pkt_id);
             std::cout << "Packet dropped at SwitchBER" << std::endl;
@@ -140,6 +114,7 @@ bool failuregenerator::switchBER(Packet &pkt, Switch *sw, Queue q) {
         return false;
     }
 }
+
 bool failuregenerator::switchDegradation(Switch *sw) {
 
     if (!switch_degradation) {
@@ -148,8 +123,7 @@ bool failuregenerator::switchDegradation(Switch *sw) {
     uint32_t switch_id = sw->getID();
 
     if (degraded_switches.find(switch_id) != degraded_switches.end()) {
-        bool decision = trueWithProb(0.1);
-        if (decision) {
+        if (trueWithProb(0.1)) {
             std::cout << "Packet dropped at SwitchDegradation" << std::endl;
             return true;
         } else {
@@ -169,8 +143,7 @@ bool failuregenerator::switchDegradation(Switch *sw) {
             }
             degraded_switches.insert(switch_id);
 
-            bool decision = trueWithProb(0.1);
-            if (decision) {
+            if (trueWithProb(0.1)) {
                 std::cout << "Packet dropped at SwitchDegradation" << std::endl;
                 return true;
             } else {
@@ -178,8 +151,6 @@ bool failuregenerator::switchDegradation(Switch *sw) {
             }
         }
     }
-
-    return false;
 }
 
 bool failuregenerator::switchWorstCase(Switch *sw) {
@@ -187,7 +158,7 @@ bool failuregenerator::switchWorstCase(Switch *sw) {
         return false;
     }
     uint32_t switch_id = sw->getID();
-    string switch_name = sw->nodename();
+    std::string switch_name = sw->nodename();
 
     if (failingSwitches.find(switch_id) != failingSwitches.end()) {
         std::pair<uint64_t, uint64_t> curSwitch = failingSwitches[switch_id];
@@ -214,7 +185,6 @@ bool failuregenerator::switchWorstCase(Switch *sw) {
                   << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
         return true;
     }
-    return false;
 }
 
 bool failuregenerator::simCableFailures(Pipe *p, Packet &pkt) {
@@ -240,7 +210,7 @@ bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
             return true;
         }
     } else {
-        string from_queue = pkt.route()->at(0)->nodename();
+        std::string from_queue = pkt.route()->at(0)->nodename();
         if (GLOBAL_TIME < cable_fail_next_fail || from_queue.find("DST") != std::string::npos ||
             from_queue.find("SRC") != std::string::npos) {
             return false;
@@ -254,7 +224,6 @@ bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
                   << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
         return true;
     }
-    return false;
 }
 
 bool failuregenerator::cableBER(Packet &pkt) {
@@ -263,7 +232,7 @@ bool failuregenerator::cableBER(Packet &pkt) {
     }
 
     uint32_t pkt_id = pkt.id();
-    string from_queue = pkt.route()->at(0)->nodename();
+    std::string from_queue = pkt.route()->at(0)->nodename();
 
     if (from_queue.find("DST") != std::string::npos) {
         if (corrupted_packets.find(pkt_id) != corrupted_packets.end()) {
@@ -280,8 +249,6 @@ bool failuregenerator::cableBER(Packet &pkt) {
         cable_ber_next_fail = GLOBAL_TIME + cable_ber_period;
         return false;
     }
-
-    return false;
 }
 
 bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
@@ -315,14 +282,11 @@ bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
             return false;
         }
     } else {
-        string from_queue = pkt.route()->at(0)->nodename();
+        std::string from_queue = pkt.route()->at(0)->nodename();
         if (GLOBAL_TIME < cable_degradation_next_fail || from_queue.find("DST") != std::string::npos ||
             from_queue.find("SRC") != std::string::npos) {
             return false;
         }
-
-        std::random_device rd;
-        std::mt19937 gen(rd());
         std::uniform_real_distribution<double> dist(0.0, 1.0);
 
         double randomValue = dist(gen);
@@ -342,8 +306,6 @@ bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
         std::cout << "Degraded a new Cable name: " << p->nodename() << std::endl;
         return true;
     }
-
-    return false;
 }
 
 bool failuregenerator::cableWorstCase(Pipe *p, Packet &pkt) {
@@ -365,7 +327,7 @@ bool failuregenerator::cableWorstCase(Pipe *p, Packet &pkt) {
             return true;
         }
     } else {
-        string from_queue = pkt.route()->at(0)->nodename();
+        std::string from_queue = pkt.route()->at(0)->nodename();
         if (GLOBAL_TIME < cable_worst_case_next_fail || from_queue.find("DST") != std::string::npos ||
             from_queue.find("SRC") != std::string::npos) {
             return false;
@@ -424,8 +386,6 @@ bool failuregenerator::nicFail(Queue q, Packet &pkt) {
                   << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
         return true;
     }
-
-    return false;
 }
 bool failuregenerator::nicDegradation(Queue q, Packet &pkt) {
     if (!nic_degradation) {
@@ -470,8 +430,6 @@ bool failuregenerator::nicDegradation(Queue q, Packet &pkt) {
             }
         }
     }
-
-    return false;
 }
 bool failuregenerator::nicWorstCase(Queue q, Packet &pkt) {
     if (!nic_worst_case) {
@@ -511,8 +469,6 @@ bool failuregenerator::nicWorstCase(Queue q, Packet &pkt) {
                   << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
         return true;
     }
-
-    return false;
 }
 
 void failuregenerator::parseinputfile() {
