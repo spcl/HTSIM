@@ -11,13 +11,13 @@
 #include "fairpullqueue.h"
 #include "smartt_pacer.h"
 // #include "datacenter/logsim-interface.h"
+#include "buffer_reps.h"
 #include "network.h"
 #include "trigger.h"
 #include "uecpacket.h"
 #include <functional>
 #include <list>
 #include <map>
-
 class UecSink;
 // class LogSimInterface;
 
@@ -265,6 +265,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     int src_dc = 0;
     int dest_dc = 0;
     int num_trim = 0;
+    CircularBufferREPS<int> *circular_buffer_reps;
 
     static uint64_t explicit_target_rtt;
     static uint64_t explicit_base_rtt;
@@ -420,6 +421,10 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     vector<pair<simtime_picosec, uint64_t>> _list_fast_decrease;
     vector<pair<simtime_picosec, int>> us_to_cs;
     vector<pair<simtime_picosec, int>> ls_to_us;
+
+    vector<pair<simtime_picosec, int>> reps_new;
+    vector<pair<simtime_picosec, int>> reps_rec;
+    vector<pair<simtime_picosec, int>> reps_rec_invalid;
 
     vector<const Route *> _good_entropies;
     bool _use_good_entropies;

@@ -149,6 +149,10 @@ void initializeLoggingFolders() {
     std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/out_bw_paced/");
     std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/out_bw/");
 
+    std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/reps_new/");
+    std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/reps_rec/");
+    std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/reps_rec_invalid/");
+
     bool ret_val = std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output");
     ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/rtt");
     ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/ecn");
@@ -175,6 +179,10 @@ void initializeLoggingFolders() {
     ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/out_bw");
     ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/out_bw_paced");
     ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/status");
+
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/reps_new");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/reps_rec");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/reps_rec_invalid");
 }
 
 // Path

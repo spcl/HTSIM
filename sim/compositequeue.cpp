@@ -322,15 +322,20 @@ void CompositeQueue::receivePacket(Packet &pkt) {
 
     failed_link = false;
     if (!pkt.header_only() && (_nodename == "compqueue(100000Mb/s,150000bytes)US1->CS1(0)" ||
-                               _nodename == "compqueue(100000Mb/s,150000bytes)US0->CS0(0)")) {
-        failed_link = true;
+                               _nodename == "compqueue(100000Mb/s,150000bytes)US0->CS0(0)" ||
+                               _nodename == "compqueue(100000Mb/s,150000bytes)US3->CS3(0)" ||
+                               _nodename == "compqueue(100000Mb/s,150000bytes)US12->CS4(0)")) {
 
-        if (eventlist().now() > 150000000) {
-            printf("Dropping2 Pkt at %s / Entropy %d@%d@%d %d %d - Time %lu\n", _nodename.c_str(), pkt.from, pkt.to,
-                   pkt.pathid(), pkt.size(), pkt.id(), GLOBAL_TIME / 1000);
-        } else {
-            printf("Dropping1 Pkt at %s / Entropy %d@%d@%d %d %d - Time %lu\n", _nodename.c_str(), pkt.from, pkt.to,
-                   pkt.pathid(), pkt.size(), pkt.id(), GLOBAL_TIME / 1000);
+        if ((GLOBAL_TIME > 80000000) || (GLOBAL_TIME > 200000000 && GLOBAL_TIME < 530000000)) {
+            failed_link = true;
+
+            if (eventlist().now() > 150000000) {
+                printf("Dropping2 Pkt at %s / Entropy %d@%d@%d %d %d - Time %lu\n", _nodename.c_str(), pkt.from, pkt.to,
+                       pkt.pathid(), pkt.size(), pkt.id(), GLOBAL_TIME / 1000);
+            } else {
+                printf("Dropping1 Pkt at %s / Entropy %d@%d@%d %d %d - Time %lu\n", _nodename.c_str(), pkt.from, pkt.to,
+                       pkt.pathid(), pkt.size(), pkt.id(), GLOBAL_TIME / 1000);
+            }
         }
     }
 

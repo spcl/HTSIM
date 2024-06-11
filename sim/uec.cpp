@@ -153,6 +153,8 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList
     } else {
         _bts_enabled = false;
     }
+
+    circular_buffer_reps = new CircularBufferREPS<int>(10);
 }
 
 // Add deconstructor and save data once we are done.
@@ -263,6 +265,37 @@ UecSrc::~UecSrc() {
         }
 
         MyFileFastInc.close();
+
+        // REPS NEW
+        file_name = PROJECT_ROOT_PATH / ("sim/output/reps_new/reps_new" + _name + "_" + std::to_string(tag) + ".txt");
+        std::ofstream RepsNew(file_name, std::ios_base::app);
+
+        for (const auto &p : reps_new) {
+            RepsNew << p.first << "," << p.second << std::endl;
+        }
+
+        RepsNew.close();
+
+        // REPS REC
+        file_name = PROJECT_ROOT_PATH / ("sim/output/reps_rec/reps_rec" + _name + "_" + std::to_string(tag) + ".txt");
+        std::ofstream RepsRec(file_name, std::ios_base::app);
+
+        for (const auto &p : reps_rec) {
+            RepsRec << p.first << "," << p.second << std::endl;
+        }
+
+        RepsRec.close();
+
+        // REPS REC INVALID
+        file_name = PROJECT_ROOT_PATH /
+                    ("sim/output/reps_rec_invalid/reps_rec_invalid" + _name + "_" + std::to_string(tag) + ".txt");
+        std::ofstream RepsInvalid(file_name, std::ios_base::app);
+
+        for (const auto &p : reps_rec_invalid) {
+            RepsInvalid << p.first << "," << p.second << std::endl;
+        }
+
+        RepsInvalid.close();
 
         // Fast Decrease
         file_name = PROJECT_ROOT_PATH / ("sim/output/fastd/fastd" + _name + "_" + std::to_string(tag) + ".txt");
@@ -919,10 +952,39 @@ int UecSrc::choose_route() {
             _crt_path = 0;
         }
         break;
+    case CIRCULAR_REPS: {
+
+        if (circular_buffer_reps->isFrozenMode()) {
+            if (circular_buffer_reps->isEmpty()) {
+                _crt_path++;
+                if (_crt_path == _paths.size()) {
+                    _crt_path = 0;
+                }
+                reps_new.push_back(std::make_pair(eventlist().now() / 1000, 1));
+            } else {
+                _crt_path = circular_buffer_reps->remove_frozen();
+                reps_rec_invalid.push_back(std::make_pair(eventlist().now() / 1000, 1));
+                // printf("Returned Entropy %d\n", _crt_path);
+            }
+        } else {
+            if (circular_buffer_reps->isEmpty() || circular_buffer_reps->getNumberFreshEntropies() == 0) {
+                _crt_path++;
+                if (_crt_path == _paths.size()) {
+                    _crt_path = 0;
+                }
+                reps_new.push_back(std::make_pair(eventlist().now() / 1000, 1));
+            } else {
+                _crt_path = circular_buffer_reps->remove_earliest_fresh();
+                reps_rec.push_back(std::make_pair(eventlist().now() / 1000, 1));
+                // printf("Returned Entropy %d\n", _crt_path);
+            }
+        }
+        break;
+    }
     case ECMP_RANDOM2_ECN: {
 
-        if (false) {
-            uint64_t allpathssizes = _mss * _paths.size();
+        if (true) {
+            /*uint64_t allpathssizes = _mss * _paths.size();
             if (_highest_sent < max(_maxcwnd, (uint64_t)1)) {
                 curr_entropy++;
                 _crt_path++;
@@ -936,6 +998,31 @@ int UecSrc::choose_route() {
                 } else {
                     curr_entropy++;
                     _crt_path = curr_entropy % _paths.size();
+                }
+            }*/
+
+            uint64_t allpathssizes = _mss * _paths.size();
+            if (_highest_sent < max(_maxcwnd, (uint64_t)1)) {
+                printf("Trying this for %d // Highest Sent %d - cwnd %d - "
+                       "allpathsize %d\n",
+                       from, _highest_sent, _maxcwnd, allpathssizes);
+                _crt_path++;
+                // printf("Trying this for %d\n", from);
+                if (_crt_path == _paths.size()) {
+                    // permute_paths();
+                    _crt_path = 0;
+                }
+                reps_new.push_back(std::make_pair(eventlist().now() / 1000, 1));
+            } else {
+                if (_next_pathid == -1) {
+                    assert(_paths.size() > 0);
+                    _crt_path = random() % _paths.size();
+                    printf("New Path %d is %d\n", from, _crt_path);
+                    reps_new.push_back(std::make_pair(eventlist().now() / 1000, 1));
+                } else {
+                    printf("Recycling Path %d is %d\n", from, _next_pathid);
+                    _crt_path = _next_pathid;
+                    reps_rec.push_back(std::make_pair(eventlist().now() / 1000, 1));
                 }
             }
             break;
@@ -998,7 +1085,7 @@ int UecSrc::choose_route() {
     }
     case ECMP_RANDOM_ECN: {
         //_crt_path = from;
-        _crt_path = (random() * 1) % _paths.size();
+        _crt_path = random() % _paths.size();
         break;
     }
     case ECMP_FIB_ECN: {
@@ -1109,6 +1196,17 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
     consecutive_nack = 0;
     bool marked = pkt.flags() & ECN_ECHO; // ECN was marked on data packet and echoed on ACK
 
+    if (GLOBAL_TIME > 140000000) {
+        circular_buffer_reps->setFrozenMode(true);
+    }
+
+    // REPS
+    if (!marked && !circular_buffer_reps->isFrozenMode()) {
+        circular_buffer_reps->add(pkt.pathid_echo);
+    } else if ((marked || !marked) && circular_buffer_reps->isFrozenMode()) {
+        circular_buffer_reps->add(pkt.pathid_echo);
+    }
+
     if (COLLECT_DATA && marked) {
         std::string file_name = PROJECT_ROOT_PATH / ("sim/output/ecn/ecn" + std::to_string(pkt.from) + "_" +
                                                      std::to_string(pkt.to) + ".txt");
@@ -1174,7 +1272,6 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
     }
 
     if (newRtt > _base_rtt * quickadapt_lossless_rtt && marked && queue_type == "lossless_input") {
-
         simulateTrimEvent(dynamic_cast<UecAck &>(pkt));
     }
 
@@ -1920,7 +2017,8 @@ const string &UecSrc::nodename() { return _nodename; }
 
 void UecSrc::connect(Route *routeout, Route *routeback, UecSink &sink, simtime_picosec starttime) {
     if (_route_strategy == SINGLE_PATH || _route_strategy == ECMP_FIB || _route_strategy == ECMP_FIB_ECN ||
-        _route_strategy == REACTIVE_ECN || _route_strategy == ECMP_RANDOM2_ECN || _route_strategy == ECMP_RANDOM_ECN) {
+        _route_strategy == REACTIVE_ECN || _route_strategy == ECMP_RANDOM2_ECN || _route_strategy == ECMP_RANDOM_ECN ||
+        _route_strategy == CIRCULAR_REPS) {
         assert(routeout);
         _route = routeout;
     }
@@ -2078,7 +2176,8 @@ void permute_sequence_uec(vector<int> &seq) {
 
 void UecSrc::set_paths(uint32_t no_of_paths) {
     if (_route_strategy != ECMP_FIB && _route_strategy != ECMP_FIB_ECN && _route_strategy != ECMP_FIB2_ECN &&
-        _route_strategy != REACTIVE_ECN && _route_strategy != ECMP_RANDOM_ECN && _route_strategy != ECMP_RANDOM2_ECN) {
+        _route_strategy != REACTIVE_ECN && _route_strategy != ECMP_RANDOM_ECN && _route_strategy != ECMP_RANDOM2_ECN &&
+        _route_strategy != CIRCULAR_REPS) {
         cout << "Set paths uec (path_count) called with wrong route "
                 "strategy "
              << _route_strategy << endl;
@@ -2464,6 +2563,7 @@ void UecSink::send_ack(simtime_picosec ts, bool marked, UecAck::seq_t seqno, Uec
     case ECMP_FIB_ECN:
     case REACTIVE_ECN:
     case ECMP_RANDOM2_ECN:
+    case CIRCULAR_REPS:
     case ECMP_RANDOM_ECN:
         ack = UecAck::newpkt(_src->_flow, *_route, seqno, ackno, 0, _srcaddr);
 
@@ -2524,6 +2624,7 @@ void UecSink::connect(UecSrc &src, const Route *route) {
     case ECMP_FIB_ECN:
     case REACTIVE_ECN:
     case ECMP_RANDOM2_ECN:
+    case CIRCULAR_REPS:
     case ECMP_RANDOM_ECN:
         assert(route);
         //("Setting route\n");
@@ -2553,6 +2654,7 @@ void UecSink::set_paths(uint32_t no_of_paths) {
     case ECMP_FIB:
     case ECMP_FIB_ECN:
     case ECMP_RANDOM2_ECN:
+    case CIRCULAR_REPS:
     case REACTIVE_ECN:
         assert(_paths.size() == 0);
         _paths.resize(no_of_paths);

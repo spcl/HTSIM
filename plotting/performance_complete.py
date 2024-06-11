@@ -35,6 +35,9 @@ def main(args):
     os.system("rm -r case2/")
     os.system("rm -r case3/")
     os.system("rm -r case4/")
+    os.system("rm -r reps_new/")
+    os.system("rm -r reps_rec/")
+    os.system("rm -r reps_rec_invalid/")
 
     os.system("cp -a ../sim/output/cwd/. cwd/")
     os.system("cp -a ../sim/output/rtt/. rtt/")
@@ -53,6 +56,10 @@ def main(args):
     os.system("cp -a ../sim/output/case2/. case2/")
     os.system("cp -a ../sim/output/case3/. case3/")
     os.system("cp -a ../sim/output/case4/. case4/")
+
+    os.system("cp -a ../sim/output/reps_new/. reps_new/")
+    os.system("cp -a ../sim/output/reps_rec/. reps_rec/")
+    os.system("cp -a ../sim/output/reps_rec_invalid/. reps_rec_invalid/")
 
     # RTT Data
     colnames=['Time', 'RTT', 'seqno', 'ackno', 'base', 'target']
@@ -169,7 +176,7 @@ def main(args):
         name = [str(path_in_str)] * temp_df4.shape[0]
         temp_df4 = temp_df4.assign(Node=name)
         df4 = pd.concat([df4, temp_df4])
-    if (len(df4) > 10000):
+    if (len(df4) > 100000000):
         ratio = len(df) / 10000
         # DownScale
         if (ratio < 1):
@@ -483,6 +490,49 @@ def main(args):
         temp_df9 = temp_df9.assign(Node=name)
         df9 = pd.concat([df9, temp_df9])
 
+
+    # Reps NEW data
+    colnames=['Time', 'REPS_NEW'] 
+    df40 = pd.DataFrame(columns =colnames)
+    name = ['0'] * df40.shape[0]
+    df40 = df40.assign(Node=name)
+
+    pathlist = Path('reps_new').glob('**/*.txt')
+    for files in sorted(pathlist):
+        path_in_str = str(files)
+        temp_df40 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
+        name = [str(path_in_str)] * temp_df40.shape[0]
+        temp_df40 = temp_df40.assign(Node=name)
+        df40 = pd.concat([df40, temp_df40])
+
+    # Reps NEW data
+    colnames=['Time', 'REPS_REC'] 
+    df41 = pd.DataFrame(columns =colnames)
+    name = ['0'] * df41.shape[0]
+    df41 = df41.assign(Node=name)
+
+    pathlist = Path('reps_rec').glob('**/*.txt')
+    for files in sorted(pathlist):
+        path_in_str = str(files)
+        temp_df41 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
+        name = [str(path_in_str)] * temp_df41.shape[0]
+        temp_df41 = temp_df41.assign(Node=name)
+        df41 = pd.concat([df41, temp_df41])
+
+    # Reps INV data
+    colnames=['Time', 'REPS_REC_INVALID'] 
+    df42 = pd.DataFrame(columns =colnames)
+    name = ['0'] * df42.shape[0]
+    df42 = df42.assign(Node=name)
+
+    pathlist = Path('reps_rec_invalid').glob('**/*.txt')
+    for files in sorted(pathlist):
+        path_in_str = str(files)
+        temp_df42 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
+        name = [str(path_in_str)] * temp_df42.shape[0]
+        temp_df42 = temp_df42.assign(Node=name)
+        df42 = pd.concat([df42, temp_df42])
+
     # FastD data
     colnames=['Time', 'FastD'] 
     df10 = pd.DataFrame(columns =colnames)
@@ -533,6 +583,9 @@ def main(args):
     y_fasti =max_rtt * 0.75
     y_fastd =max_rtt * 0.70
     y_mediumi =max_rtt * 0.65
+    reps_rec = max_rtt * 0.60
+    reps_new = max_rtt * 0.55
+    reps_invalid = max_rtt * 0.50
     mean_rtt = 10000
     count = 0
     for i in df['Node'].unique():
@@ -686,6 +739,43 @@ def main(args):
         )
 
     print("FastD Plot")
+
+
+    # Reps New
+    mean_sent = df40["Time"].mean()
+    df40['REPS_NEW'] = df40['REPS_NEW'].multiply(reps_new)
+    for i in df40['Node'].unique():
+        sub_df40 = df40.loc[df40['Node'] == str(i)]
+        fig.add_trace(
+            go.Scatter(x=sub_df40["Time"], y=sub_df40["REPS_NEW"], mode="markers", marker_symbol="triangle-up", name="REPS_NEW Packet", marker=dict(size=5, color="red"), showlegend=True),
+            secondary_y=False
+        )
+
+    print("REPS NEW Plot")
+
+    # Reps INVALID
+    mean_sent = df42["Time"].mean()
+    df42['REPS_REC_INVALID'] = df42['REPS_REC_INVALID'].multiply(reps_invalid)
+    for i in df42['Node'].unique():
+        sub_df42 = df42.loc[df42['Node'] == str(i)]
+        fig.add_trace(
+            go.Scatter(x=sub_df42["Time"], y=sub_df42["REPS_REC_INVALID"], mode="markers", marker_symbol="triangle-up", name="REPS_NEW Packet", marker=dict(size=5, color="yellow"), showlegend=True),
+            secondary_y=False
+        )
+
+    print("REPS INVALID Plot")
+
+    # FastI
+    mean_sent = df41["Time"].mean()
+    df41['REPS_REC'] = df41['REPS_REC'].multiply(reps_rec)
+    for i in df41['Node'].unique():
+        sub_df41 = df41.loc[df41['Node'] == str(i)]
+        fig.add_trace(
+            go.Scatter(x=sub_df41["Time"], y=sub_df41["REPS_REC"], mode="markers", marker_symbol="triangle-up", name="REPS_REC Packet", marker=dict(size=5, color="violet"), showlegend=True),
+            secondary_y=False
+        )
+
+    print("REPS REC Plot")
     # FastD
     mean_sent = df10["Time"].mean()
     df10['FastD'] = df10['FastD'].multiply(y_fastd)
@@ -698,14 +788,14 @@ def main(args):
 
     print("MediumI Plot")
     # MediumI
-    mean_sent = df11["Time"].mean()
+    '''mean_sent = df11["Time"].mean()
     df11['MediumI'] = df11['MediumI'].multiply(y_mediumi)
     for i in df11['Node'].unique():
         sub_df11 = df11.loc[df11['Node'] == str(i)]
         fig.add_trace(
             go.Scatter(x=sub_df11["Time"], y=sub_df11["MediumI"], mode="markers", marker_symbol="triangle-up", name="MediumI Packet", marker=dict(size=5, color="white"), showlegend=True),
             secondary_y=False
-        )
+        )'''
 
 
     if args.name is not None:
@@ -757,7 +847,7 @@ def main(args):
         text="Queuing<br>Latency",
         font=dict(color=color[3], size=13),
         )
-
+    '''
     fig.add_shape(
         type="line",
         x0=0,  # Start x-coordinate
@@ -832,7 +922,7 @@ def main(args):
         text="KMax",          # The text label you want to display
         showarrow=False,               # No arrow pointing to the label
         font=dict(size=12, color="green"),  # Customize the font size and color
-    )
+    )'''
 
     config = {
     'toImageButtonOptions': {

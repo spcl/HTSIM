@@ -529,6 +529,10 @@ int main(int argc, char **argv) {
                 route_strategy = ECMP_RANDOM2_ECN;
                 FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
                 FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
+            } else if (!strcmp(argv[i + 1], "circular_reps")) {
+                route_strategy = CIRCULAR_REPS;
+                FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+                FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
             }
             i++;
         } else if (!strcmp(argv[i], "-topology")) {
@@ -921,6 +925,7 @@ int main(int argc, char **argv) {
             case ECMP_FIB:
             case ECMP_FIB_ECN:
             case ECMP_RANDOM_ECN:
+            case CIRCULAR_REPS:
             case ECMP_RANDOM2_ECN:
             case REACTIVE_ECN: {
                 Route *srctotor = new Route();
