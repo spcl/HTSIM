@@ -1,5 +1,6 @@
 // -*- c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "pipe.h"
+#include "failuregenerator.h"
 #include <iostream>
 #include <sstream>
 

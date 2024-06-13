@@ -57,6 +57,35 @@ bool failuregenerator::simSwitchFailures(Packet &pkt, Switch *sw, Queue q) {
     return (switchFail(sw) || switchBER(pkt, sw, q) || switchDegradation(sw) || switchWorstCase(sw));
 }
 
+bool failuregenerator::fail_new_switch(Switch *sw) {
+
+    uint32_t switch_id = sw->getID();
+    std::string switch_name = sw->nodename();
+
+    if (neededSwitches.find(switch_id) != neededSwitches.end()) {
+        std::cout << "Did not fail critical Switch name: " << switch_name << std::endl;
+        return false;
+    }
+
+    uint64_t failureTime = GLOBAL_TIME;
+    uint64_t recoveryTime = GLOBAL_TIME + generateTimeSwitch();
+    failingSwitches[switch_id] = std::make_pair(failureTime, recoveryTime);
+
+    if (!check_connectivity()) {
+        failingSwitches.erase(switch_id);
+        neededSwitches.insert(switch_id);
+        std::cout << "Did not fail critical Switch name: " << switch_name << std::endl;
+        return false;
+    }
+
+    switch_fail_next_fail = GLOBAL_TIME + switch_fail_period;
+
+    std::cout << "Failed a new Switch name: " << switch_name << " at " << std::to_string(failureTime) << " for "
+              << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
+
+    return true;
+}
+
 bool failuregenerator::switchFail(Switch *sw) {
     if (!switch_fail) {
         return false;
@@ -70,6 +99,7 @@ bool failuregenerator::switchFail(Switch *sw) {
 
         if (GLOBAL_TIME > recoveryTime) {
             std::cout << "Recovered from Fail" << std::endl;
+            neededSwitches.clear();
             failingSwitches.erase(switch_id);
             return false;
         } else {
@@ -77,17 +107,14 @@ bool failuregenerator::switchFail(Switch *sw) {
             return true;
         }
     } else {
-        if (GLOBAL_TIME < switch_fail_next_fail || switch_name.find("UpperPod") == std::string::npos) {
+        // if (GLOBAL_TIME < switch_fail_next_fail || switch_name.find("UpperPod") == std::string::npos) {
+        //     return false;
+        // }
+        if (GLOBAL_TIME < switch_fail_next_fail) {
             return false;
         }
 
-        uint64_t failureTime = GLOBAL_TIME;
-        uint64_t recoveryTime = GLOBAL_TIME + generateTimeSwitch();
-        switch_fail_next_fail = GLOBAL_TIME + switch_fail_period;
-        failuregenerator::failingSwitches[switch_id] = std::make_pair(failureTime, recoveryTime);
-        std::cout << "Failed a new Switch name: " << switch_name << " at " << std::to_string(failureTime) << " for "
-                  << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
-        return true;
+        return fail_new_switch(sw);
     }
 }
 
@@ -180,18 +207,45 @@ bool failuregenerator::switchWorstCase(Switch *sw) {
             return false;
         }
 
-        uint64_t failureTime = GLOBAL_TIME;
-        uint64_t recoveryTime = GLOBAL_TIME + generateTimeSwitch();
-        switch_worst_case_next_fail = GLOBAL_TIME + switch_worst_case_period;
-        failuregenerator::failingSwitches[switch_id] = std::make_pair(failureTime, recoveryTime);
-        std::cout << "Failed a new Switch name: " << switch_name << " at " << std::to_string(failureTime) << " for "
-                  << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
-        return true;
+        return fail_new_switch(sw);
     }
 }
 
 bool failuregenerator::simCableFailures(Pipe *p, Packet &pkt) {
     return (cableFail(p, pkt) || cableBER(pkt) || cableDegradation(p, pkt) || cableWorstCase(p, pkt));
+}
+
+bool failuregenerator::fail_new_cable(Pipe *p) {
+
+    uint32_t cable_id = p->getID();
+    std::string cable_name = p->nodename();
+
+    if (cable_name.find("callbackpipe") != std::string::npos) {
+        return false;
+    }
+
+    if (neededCables.find(cable_id) != neededCables.end()) {
+        std::cout << "Did not fail critical Cable name: " << cable_name << std::endl;
+        return false;
+    }
+
+    uint64_t failureTime = GLOBAL_TIME;
+    uint64_t recoveryTime = GLOBAL_TIME + generateTimeCable();
+
+    failingCables[cable_id] = std::make_pair(failureTime, recoveryTime);
+
+    if (!check_connectivity()) {
+        failingCables.erase(cable_id);
+        neededCables.insert(cable_id);
+        std::cout << "Did not fail critical Cable name: " << cable_name << std::endl;
+        return false;
+    }
+
+    cable_fail_next_fail = GLOBAL_TIME + cable_fail_period;
+
+    std::cout << "Failed a new Cable name: " << cable_name << " at " << std::to_string(failureTime) << " for "
+              << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
+    return true;
 }
 
 bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
@@ -206,6 +260,7 @@ bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
 
         if (GLOBAL_TIME > recoveryTime) {
             std::cout << "Recovered from Fail" << std::endl;
+            neededCables.clear();
             failingCables.erase(cable_id);
             return false;
         } else {
@@ -214,18 +269,14 @@ bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
         }
     } else {
         std::string from_queue = pkt.route()->at(0)->nodename();
-        if (GLOBAL_TIME < cable_fail_next_fail || from_queue.find("DST") != std::string::npos ||
-            from_queue.find("SRC") != std::string::npos) {
+        // if (GLOBAL_TIME < cable_fail_next_fail || from_queue.find("DST") != std::string::npos ||
+        //     from_queue.find("SRC") != std::string::npos) {
+
+        if (GLOBAL_TIME < cable_fail_next_fail) {
             return false;
         }
 
-        uint64_t failureTime = GLOBAL_TIME;
-        uint64_t recoveryTime = GLOBAL_TIME + generateTimeCable();
-        cable_fail_next_fail = GLOBAL_TIME + cable_fail_period;
-        failuregenerator::failingCables[cable_id] = std::make_pair(failureTime, recoveryTime);
-        std::cout << "Failed a new Cable name: " << cable_id << " at " << std::to_string(failureTime) << " for "
-                  << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
-        return true;
+        return fail_new_cable(p);
     }
 }
 
@@ -305,7 +356,7 @@ bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
         }
 
         cable_degradation_next_fail = GLOBAL_TIME + cable_degradation_period;
-        failuregenerator::degraded_cables[cable_id] = decided_type;
+        degraded_cables[cable_id] = decided_type;
         std::cout << "Degraded a new Cable name: " << p->nodename() << std::endl;
         return true;
     }
@@ -336,13 +387,7 @@ bool failuregenerator::cableWorstCase(Pipe *p, Packet &pkt) {
             return false;
         }
 
-        uint64_t failureTime = GLOBAL_TIME;
-        uint64_t recoveryTime = GLOBAL_TIME + generateTimeCable();
-        cable_worst_case_next_fail = GLOBAL_TIME + cable_worst_case_period;
-        failuregenerator::failingCables[cable_id] = std::make_pair(failureTime, recoveryTime);
-        std::cout << "Failed a new Cable name: " << cable_id << " at " << std::to_string(failureTime) << " for "
-                  << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
-        return true;
+        return fail_new_cable(p);
     }
     return false;
 }
@@ -350,6 +395,17 @@ bool failuregenerator::cableWorstCase(Pipe *p, Packet &pkt) {
 bool failuregenerator::simNICFailures(UecSrc *src, UecSink *sink, Packet &pkt) {
     return (nicFail(src, sink, pkt) || nicDegradation(src, sink, pkt) || nicWorstCase(src, sink, pkt));
 }
+
+bool failuregenerator::fail_new_nic(u_int32_t nic_id) {
+    uint64_t failureTime = GLOBAL_TIME;
+    uint64_t recoveryTime = GLOBAL_TIME + generateTimeNIC();
+    nic_fail_next_fail = GLOBAL_TIME + nic_fail_period;
+    failingNICs[nic_id] = std::make_pair(failureTime, recoveryTime);
+    std::cout << "Failed a new NIC name: " << nic_id << " at " << std::to_string(failureTime) << " for "
+              << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
+    return true;
+}
+
 bool failuregenerator::nicFail(UecSrc *src, UecSink *sink, Packet &pkt) {
 
     if (!nic_fail) {
@@ -378,14 +434,7 @@ bool failuregenerator::nicFail(UecSrc *src, UecSink *sink, Packet &pkt) {
         if (GLOBAL_TIME < nic_fail_next_fail) {
             return false;
         }
-
-        uint64_t failureTime = GLOBAL_TIME;
-        uint64_t recoveryTime = GLOBAL_TIME + generateTimeNIC();
-        nic_fail_next_fail = GLOBAL_TIME + nic_fail_period;
-        failuregenerator::failingNICs[nic_id] = std::make_pair(failureTime, recoveryTime);
-        std::cout << "Failed a new NIC name: " << nic_id << " at " << std::to_string(failureTime) << " for "
-                  << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
-        return true;
+        return fail_new_nic(nic_id);
     }
 }
 bool failuregenerator::nicDegradation(UecSrc *src, UecSink *sink, Packet &pkt) {
@@ -457,14 +506,119 @@ bool failuregenerator::nicWorstCase(UecSrc *src, UecSink *sink, Packet &pkt) {
             return false;
         }
 
-        uint64_t failureTime = GLOBAL_TIME;
-        uint64_t recoveryTime = GLOBAL_TIME + generateTimeNIC();
-        nic_worst_case_next_fail = GLOBAL_TIME + nic_worst_case_period;
-        failuregenerator::failingNICs[nic_id] = std::make_pair(failureTime, recoveryTime);
-        std::cout << "Failed a new NIC name: " << nic_id << " at " << std::to_string(failureTime) << " for "
-                  << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
-        return true;
+        return fail_new_nic(nic_id);
     }
+}
+
+std::pair<std::pair<std::set<uint32_t>, std::set<uint32_t>>, std::string>
+failuregenerator::get_path_switches_cables(uint32_t path_id, UecSrc *src) {
+
+    std::vector<int> path_ids = src->get_path_ids();
+    PacketFlow flow = src->get_flow();
+    Route r = *src->get_route();
+
+    std::string path;
+
+    std::set<uint32_t> switches;
+    std::set<uint32_t> cables;
+
+    UecPacket *packet = UecPacket::newpkt(flow, r, uint64_t(0), uint64_t(0), uint16_t(0), false, src->to);
+    packet->set_route(*src->get_route());
+    packet->set_pathid(path_ids[path_id]);
+    packet->from = src->from;
+    packet->to = src->to;
+    packet->tag = src->tag;
+
+    while (true) {
+        Queue *next_queue = dynamic_cast<Queue *>(packet->getNextHopOfPacket());
+        Pipe *next_pipe = dynamic_cast<Pipe *>(packet->getNextHopOfPacket());
+        Switch *next_switch = dynamic_cast<Switch *>(packet->getNextHopOfPacket());
+        if (next_switch == nullptr) {
+            if (next_queue) {
+                path += " -> " + next_queue->nodename();
+            } else {
+                std::cout << "Error: last next_queue is nullptr" << std::endl;
+            }
+            if (next_pipe) {
+                path += " -> " + next_pipe->nodename();
+                cables.insert(next_pipe->getID());
+            } else {
+                std::cout << "Error: last next_pipe is nullptr" << std::endl;
+            }
+            break;
+        }
+        if (next_queue) {
+            path += " -> " + next_queue->nodename();
+        } else {
+            std::cout << "Error: next_queue is nullptr" << std::endl;
+        }
+        if (next_pipe) {
+            path += " -> " + next_pipe->nodename();
+            cables.insert(next_pipe->getID());
+        } else {
+            std::cout << "Error: next_pipe is nullptr" << std::endl;
+        }
+        if (next_switch) {
+            path += " -> " + next_switch->nodename();
+            switches.insert(next_switch->getID());
+
+            r = *next_switch->getNextHop(*packet, NULL);
+            packet->set_route(r);
+            r = *next_switch->getNextHop(*packet, NULL);
+            packet->set_route(r);
+        } else {
+            std::cout << "Error: next_switch is nullptr" << std::endl;
+        }
+    }
+
+    return std::make_pair(std::make_pair(switches, cables), path);
+}
+
+bool failuregenerator::check_connectivity() {
+    for (UecSrc *src : all_srcs) {
+
+        int route_len = src->get_paths().size();
+
+        bool src_dst_connected = false;
+
+        for (int i = 0; i < route_len; i++) {
+            std::pair<std::pair<std::set<uint32_t>, std::set<uint32_t>>, std::string> switches_cables_on_path_string =
+                    get_path_switches_cables(i, src);
+            std::pair<std::set<uint32_t>, std::set<uint32_t>> switches_cables_on_path =
+                    switches_cables_on_path_string.first;
+            std::string found_path = switches_cables_on_path_string.second;
+            std::set<uint32_t> switches_on_path = switches_cables_on_path.first;
+            std::set<uint32_t> cables_on_path = switches_cables_on_path.second;
+
+            bool all_switches_active = true;
+            bool all_cables_active = true;
+
+            for (uint32_t sw : switches_on_path) {
+                if (failingSwitches.find(sw) != failingSwitches.end()) {
+                    all_switches_active = false;
+                    break;
+                }
+            }
+
+            for (uint32_t cable : cables_on_path) {
+
+                if (failingCables.find(cable) != failingCables.end()) {
+                    all_cables_active = false;
+                    break;
+                }
+            }
+            if (all_switches_active && all_cables_active) {
+                std::cout << "Path " << src->nodename() << " is connected by" << found_path << ::endl;
+                src_dst_connected = true;
+                break;
+            }
+        }
+        if (!src_dst_connected) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void failuregenerator::parseinputfile() {

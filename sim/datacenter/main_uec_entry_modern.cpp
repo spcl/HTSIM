@@ -23,7 +23,6 @@
 #include "uec.h"
 #include <filesystem>
 // #include "vl2_topology.h"
-#include "failuregenerator.h"
 
 // Fat Tree topology was modified to work with this script, others won't work
 // correctly
@@ -975,6 +974,9 @@ int main(int argc, char **argv) {
                 uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
                 uecSrc->set_paths(number_entropies);
                 uecSnk->set_paths(number_entropies);
+
+                FAILURE_GENERATOR->addSrc(uecSrc);
+                FAILURE_GENERATOR->addDst(uecSnk);
 
                 // register src and snk to receive packets src their respective
                 // TORs.

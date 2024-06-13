@@ -1,6 +1,6 @@
 Switch-Fail: ON
-Switch-Fail-Start-After: 100000000
-Switch-Fail-Period: 100000000
+Switch-Fail-Start-After: 10000000
+Switch-Fail-Period: 100
 Switch-BER: OFF
 Switch-BER-Start-After: 100000000
 Switch-BER-Period: 10000000
@@ -10,9 +10,9 @@ Switch-Degradation-Period: 100000000
 Switch-Worst-Case: OFF
 Switch-Worst-Case-Start-After: 100000000
 Switch-Worst-Case-Period: 100000000
-Cable-Fail: OFF
-Cable-Fail-Start-After: 0
-Cable-Fail-Period: 100000000
+Cable-Fail: ON
+Cable-Fail-Start-After: 10000000
+Cable-Fail-Period: 100
 Cable-BER: OFF
 Cable-BER-Start-After: 100000000
 Cable-BER-Period: 10000000

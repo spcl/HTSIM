@@ -3,17 +3,31 @@
 #define FAILURE_GENERATOR_H
 
 #include "network.h"
+#include "pipe.h"
 #include "switch.h"
+#include "uec.h"
 #include <chrono>
 #include <set>
 #include <unordered_map>
 
-class Pipe;
-class UecSrc;
-class UecSink;
 class failuregenerator {
 
   public:
+    uint32_t path_nr = 0;
+    std::set<UecSrc *> all_srcs;
+    std::set<UecSink *> all_sinks;
+    // map from path to switches in this path
+    std::unordered_map<uint32_t, std::set<uint64_t>> path_switches;
+    // map from path to cables in this path
+    std::unordered_map<uint32_t, std::set<uint64_t>> path_cables;
+
+    void addSrc(UecSrc *src) { all_srcs.insert(src); }
+    void addDst(UecSink *sink) { all_sinks.insert(sink); }
+
+    std::pair<std::pair<std::set<uint32_t>, std::set<uint32_t>>, std::string> get_path_switches_cables(uint32_t path_id,
+                                                                                                       UecSrc *src);
+
+    bool check_connectivity();
     void parseinputfile();
     string failures_input_file_path;
     void setInputFile(string file_path) {
@@ -25,10 +39,13 @@ class failuregenerator {
     bool simCableFailures(Pipe *p, Packet &pkt);
     bool simNICFailures(UecSrc *src, UecSink *sink, Packet &pkt);
 
+    bool fail_new_switch(Switch *sw);
+
     // Switch
     bool switchFail(Switch *sw);
     bool switch_fail = false;
     std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failingSwitches;
+    std::set<uint32_t> neededSwitches;
     simtime_picosec switch_fail_start = 0;
     simtime_picosec switch_fail_period = 0;
     simtime_picosec switch_fail_next_fail = 0;
@@ -54,9 +71,12 @@ class failuregenerator {
     simtime_picosec switch_worst_case_period = 0;
     simtime_picosec switch_worst_case_next_fail = 0;
 
+    bool fail_new_cable(Pipe *p);
+
     bool cableFail(Pipe *p, Packet &pkt);
     unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failingCables;
     bool cable_fail = false;
+    std::set<uint32_t> neededCables;
     simtime_picosec cable_fail_start = 0;
     simtime_picosec cable_fail_period = 0;
     simtime_picosec cable_fail_next_fail = 0;
@@ -82,6 +102,9 @@ class failuregenerator {
 
     // NIC
     bool nic_fail = false;
+
+    bool fail_new_nic(u_int32_t nic_id);
+
     bool nicFail(UecSrc *src, UecSink *sink, Packet &pkt);
     std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failingNICs;
     simtime_picosec nic_fail_start = 0;

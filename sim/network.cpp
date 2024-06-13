@@ -117,6 +117,31 @@ PacketSink *Packet::sendOn2(VirtualQueue *crtSink) {
     return nextsink;
 }
 
+PacketSink *Packet::getNextHopOfPacket() {
+    PacketSink *nextsink;
+
+    if (_route) {
+
+        if (_bounced) {
+            assert(_nexthop > 0);
+            assert(_nexthop < _route->size());
+            assert(_nexthop < _route->reverse()->size());
+            nextsink = _route->reverse()->at(_nexthop);
+            _nexthop++;
+        } else {
+            assert(_nexthop < _route->size());
+
+            nextsink = _route->at(_nexthop);
+            _nexthop++;
+        }
+    } else if (_next_routed_hop) {
+        nextsink = _next_routed_hop;
+    } else {
+        assert(0);
+    }
+    return nextsink;
+}
+
 // AKA, return to sender
 void Packet::bounce() {
     assert(!_bounced);
