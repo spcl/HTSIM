@@ -1,6 +1,6 @@
 // -*- c-basic-offset: 4; indent-tabs-mode: nil -*-
-#ifndef BCUBE
-#define BCUBE
+/* #ifndef BCUBE
+#define BCUBE */
 #include "config.h"
 #include "eventlist.h"
 #include "firstfit.h"
@@ -23,12 +23,13 @@
 // switches per level
 //=(K+1)*NUM_SRV/NUM_PORTS
 //#define NUM_SW 8
-
+/* 
 #ifndef QT
 #define QT
 typedef enum { RANDOM, COMPOSITE, COMPOSITE_PRIO } queue_type;
 #endif
-
+ */
+/* 
 class BCubeTopology : public Topology {
   public:
     Matrix3d<Pipe *> pipes_srv_switch;
@@ -78,3 +79,4 @@ class BCubeTopology : public Topology {
 };
 
 #endif
+ */

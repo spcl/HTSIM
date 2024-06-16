@@ -9,19 +9,19 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
-
+/* 
 extern uint32_t RTT;
 
 string ntoa(double n);
 string itoa(uint64_t n);
-
+ */
 /*
 void push_front(Route* rt, Queue* q){
   rt->insert(rt->begin(),q);
 }
 */
 
-BCubeTopology::BCubeTopology(uint32_t no_of_nodes, uint32_t ports_per_switch, uint32_t no_of_levels, Logfile *lg,
+/* BCubeTopology::BCubeTopology(uint32_t no_of_nodes, uint32_t ports_per_switch, uint32_t no_of_levels, Logfile *lg,
                              EventList *ev, FirstFit *fit, queue_type qt) {
     set_params(no_of_nodes, ports_per_switch, no_of_levels);
     logfile = lg;
@@ -54,11 +54,12 @@ void BCubeTopology::set_params(uint32_t no_of_nodes, uint32_t ports_per_switch, 
     prio_queues_srv.set_size(_NUM_SRV, _K + 1);
     addresses.set_size(_NUM_SRV, _K + 1);
 }
-
-#define SWITCH_ID(srv, level) switch_from_srv(srv, level)
+ */
+/* #define SWITCH_ID(srv, level) switch_from_srv(srv, level)
 //(level==0?srv/_NUM_PORTS:srv%(int)pow(_NUM_PORTS,level+1))
 #define ADDRESS(srv, level) (level == 0 ? srv % _NUM_PORTS : srv / (int)pow(_NUM_PORTS, level))
-
+ */
+/* 
 Queue *BCubeTopology::alloc_src_queue(QueueLogger *queueLogger) {
     return new PriorityQueue(speedFromMbps((uint64_t)HOST_NIC), memFromPkt(FEEDER_BUFFER), *eventlist, queueLogger);
 }
@@ -108,7 +109,8 @@ uint32_t BCubeTopology::srv_from_address(uint32_t *address) {
 
     return addr;
 }
-
+ */
+/* 
 void BCubeTopology::address_from_srv(uint32_t srv) {
     uint32_t addr = srv, crt_n = 0;
 
@@ -218,7 +220,7 @@ void BCubeTopology::init_network() {
         }
     }
 }
-
+ */
 /*void check_non_null(Route* rt){
   int fail = 0;
   for (unsigned int i=1;i<rt->size()-1;i+=2)
@@ -235,7 +237,7 @@ void BCubeTopology::init_network() {
   assert(0);
   }
   }*/
-
+/* 
 Route *BCubeTopology::bcube_routing(uint32_t src, uint32_t dest, uint32_t *permutation, uint32_t *nic = NULL) {
     Route *routeout = new Route();
 
@@ -305,8 +307,8 @@ Route *BCubeTopology::dc_routing(uint32_t src, uint32_t dest, uint32_t i) {
 
     return routeout;
 }
-
-Route *BCubeTopology::alt_dc_routing(uint32_t src, uint32_t dest, uint32_t i, uint32_t c) {
+ */
+/* Route *BCubeTopology::alt_dc_routing(uint32_t src, uint32_t dest, uint32_t i, uint32_t c) {
     uint32_t permutation[_K + 1];
     uint32_t m = _K;
 
@@ -337,8 +339,8 @@ Route *BCubeTopology::alt_dc_routing(uint32_t src, uint32_t dest, uint32_t i, ui
 
     return path;
 }
-
-vector<const Route *> *BCubeTopology::get_paths(uint32_t src, uint32_t dest) {
+ */
+/* vector<const Route *> *BCubeTopology::get_paths(uint32_t src, uint32_t dest) {
     vector<const Route *> *paths = new vector<const Route *>();
 
     for (int64_t i = _K; i != static_cast<uint32_t>(-1); i--) {
@@ -349,14 +351,14 @@ vector<const Route *> *BCubeTopology::get_paths(uint32_t src, uint32_t dest) {
             paths->push_back(alt_dc_routing(src, dest, level, get_neighbour(src, level)));
     }
     return paths;
-}
+} */
 
-void BCubeTopology::print_paths(std::ofstream &p, uint32_t src, vector<const Route *> *paths) {
+/* void BCubeTopology::print_paths(std::ofstream &p, uint32_t src, vector<const Route *> *paths) {
     for (uint32_t i = 0; i < paths->size(); i++)
         print_path(p, src, paths->at(i));
-}
+} */
 
-void BCubeTopology::print_path(std::ofstream &paths, uint32_t src, const Route *route) {
+/* void BCubeTopology::print_path(std::ofstream &paths, uint32_t src, const Route *route) {
     paths << "SRC_" << src << " ";
 
     for (uint32_t i = 1; i < route->size() - 1; i += 2) {
@@ -366,4 +368,4 @@ void BCubeTopology::print_path(std::ofstream &paths, uint32_t src, const Route *
             paths << "NULL ";
     }
     paths << endl;
-}
+} */

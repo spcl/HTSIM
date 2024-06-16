@@ -48,7 +48,8 @@ enum TopologyCase {
     FAT_TREE_DC_CASE,
     DRAGONFLY_CASE,
     SLIMFLY_CASE,
-    HAMMINGMESH_CASE
+    HAMMINGMESH_CASE,
+    BCUBE_CASE
 };
 
 enum RouteStrategy {

@@ -39,6 +39,10 @@
 #include "hammingmesh_topology.cpp"
 #include "hammingmesh_switch.h"
 #include "hammingmesh_switch.cpp"
+#include "b-cube_topology.h"
+#include "b-cube_topology.cpp"
+#include "b-cube_switch.h"
+#include "b-cube_switch.cpp"
 // #include "oversubscribed_fat_tree_topology.h"
 // #include "multihomed_fat_tree_topology.h"
 // #include "star_topology.h"
@@ -179,6 +183,9 @@ int main(int argc, char **argv) {
     uint32_t height_board = 0;
     uint32_t width_board = 0;
     HammingmeshSwitch::routing_strategy hm_routing_strategy = HammingmeshSwitch::NIX;
+    uint32_t n_bcube = 0;
+    uint32_t k_bcube = 0;
+    BCubeSwitch::routing_strategy bc_routing_strategy = BCubeSwitch::NIX;
     uint64_t interdc_delay = 0;
     uint64_t max_queue_size = 0;
 
@@ -550,6 +557,9 @@ int main(int argc, char **argv) {
             else if (!strcmp(argv[i + 1], "hammingmesh")) {
                 topology = HAMMINGMESH_CASE;
             }
+            else if (!strcmp(argv[i + 1], "bcube")) {
+                topology = BCUBE_CASE;
+            }
             i++;
         } else if (!strcmp(argv[i], "-p")) {
             p = atoi(argv[i + 1]);
@@ -607,6 +617,21 @@ int main(int argc, char **argv) {
                 hm_routing_strategy = HammingmeshSwitch::MINIMAL;
             } else {
                 cerr << "Wrong strategy for hammingmesh chosen.\n";
+            }
+            i++;
+        } else if (!strcmp(argv[i], "-n_bcube")) {
+            n_bcube = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-k_bcube")) {
+            k_bcube = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-bc_strategy")){
+            if (!strcmp(argv[i + 1], "nix")) {
+                bc_routing_strategy = BCubeSwitch::NIX;
+            } else if (!strcmp(argv[i + 1], "minimal")) {
+                bc_routing_strategy = BCubeSwitch::MINIMAL;
+            } else {
+                cerr << "Wrong strategy for bcube chosen.\n";
             }
             i++;
         } else if (!strcmp(argv[i], "-queue_type")) {
@@ -816,11 +841,6 @@ int main(int argc, char **argv) {
     StarTopology *top = new StarTopology(&logfile, &eventlist, ff);
 #endif
 
-#ifdef BCUBE
-    BCubeTopology *top = new BCubeTopology(&logfile, &eventlist, ff);
-    cout << "BCUBE " << K << endl;
-#endif
-
 #ifdef VL2
     VL2Topology *top = new VL2Topology(&logfile, &eventlist, ff);
 #endif
@@ -850,6 +870,7 @@ int main(int argc, char **argv) {
         DragonflyTopology *top_df = NULL;
         SlimflyTopology *top_sf = NULL;
         HammingmeshTopology *top_hm = NULL;
+        BCubeTopology *top_bc = NULL;
 
         switch (topology){
             case (FAT_TREE_CASE): {
@@ -900,6 +921,12 @@ int main(int argc, char **argv) {
                 printf("Case Hammingmesh.\theight = %u,\twidth = %u,\theight_board = %u,\twidth_board = %u,\tstrategy = %u.\n", height, width, height_board, width_board, hm_routing_strategy);
                 top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize, &eventlist, queue_choice, hm_routing_strategy);
                 no_of_nodes = top_hm->get_no_nodes();
+                break;
+            }
+            case (BCUBE_CASE): {
+                printf("Case BCube.\n = %u,\tk = %u,\tstrategy = %u.\n", n_bcube, k_bcube, hm_routing_strategy);
+                top_bc = new BCubeTopology(n_bcube, k_bcube, queuesize, &eventlist, queue_choice, bc_routing_strategy);
+                no_of_nodes = top_bc->get_no_of_nodes();
                 break;
             }
         }
@@ -1087,8 +1114,6 @@ int main(int argc, char **argv) {
                             break;
                         }
                         case (SLIMFLY_CASE): {
-                            /* printf("-1 % 5 u = %d\n", -1 % 5u);
-                            printf("-1 % 5 = %d\n", -1 % 5); */
                             // Hier Code einfügen.
                             // srctotor und dsttotor müssen noch gefüllt werden damit in sendOn() _nexthop > 0
                             // und _nexthop < _route->size().
@@ -1135,6 +1160,25 @@ int main(int argc, char **argv) {
 
                             top_hm->switches[src]->addHostPort(src, uecSrc->flow_id(), uecSrc);
                             top_hm->switches[dest]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
+                            break;
+                        }
+                        case (BCUBE_CASE): {
+                            srctotor->push_back(top_bc->queues_host_switch[src][src]);
+                            srctotor->push_back(top_bc->pipes_host_switch[src][src]);
+                            srctotor->push_back(top_bc->queues_host_switch[src][src]->getRemoteEndpoint());
+                            
+                            dsttotor->push_back(top_bc->queues_host_switch[dest][dest]);
+                            dsttotor->push_back(top_bc->pipes_host_switch[dest][dest]);
+                            dsttotor->push_back(top_bc->queues_host_switch[dest][dest]->getRemoteEndpoint());
+
+                            uecSrc->from = src;
+                            uecSnk->to = dest;
+                            uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
+                            uecSrc->set_paths(number_entropies);
+                            uecSnk->set_paths(number_entropies);
+
+                            top_bc->switches[src]->addHostPort(src, uecSrc->flow_id(), uecSrc);
+                            top_bc->switches[dest]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
                             break;
                         }
                     }
@@ -1208,6 +1252,10 @@ int main(int argc, char **argv) {
             }
             case (HAMMINGMESH_CASE): {
                 HammingmeshTopology *top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize, &eventlist, queue_choice);
+                break;
+            }
+            case (BCUBE_CASE): {
+                BCubeTopology *top_bc = new BCubeTopology(n_bcube, k_bcube, queuesize, &eventlist, queue_choice);
                 break;
             }
         }

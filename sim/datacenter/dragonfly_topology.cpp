@@ -58,7 +58,6 @@ DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b q
 
     init_pipes_queues();
     init_network();
-    printf("Dragonfly1::_p = %u\n", _p);
 }
 
 DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q, uint32_t strat) {
