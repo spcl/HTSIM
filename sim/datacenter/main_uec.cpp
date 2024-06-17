@@ -397,7 +397,31 @@ int main(int argc, char **argv) {
             } else if (!strcmp(argv[i + 1], "custom")) {
                 UecSrc::set_alogirthm("custom");
                 printf("Name Running: SMaRTT ECN Only Variable\n");
-            }
+            } else if (!strcmp(argv[i + 1], "lcp")) {
+                UecSrc::set_alogirthm("lcp");
+                printf("Name Running: LCP\n");
+            } 
+            i++;
+        } else if (!strcmp(argv[i], "-target-low-us")) {
+            TARGET_RTT_LOW = timeFromUs(atof(argv[i + 1]));
+            i++;
+        } else if (!strcmp(argv[i], "-target-high-us")) {
+            TARGET_RTT_HIGH = timeFromUs(atof(argv[i + 1]));
+            i++;
+        } else if (!strcmp(argv[i], "-baremetal-us")) {
+            BAREMETAL_RTT = timeFromUs(atof(argv[i + 1]));
+            i++;
+        } else if (!strcmp(argv[i], "-alpha")) {
+            LCP_ALPHA = atof(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-beta")) {
+            LCP_BETA = atof(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-delta")) {
+            LCP_DELTA = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-k")) {
+            LCP_K = atoi(argv[i + 1]);
             i++;
         } else {
             printf("Called with %s\n", argv[i]);

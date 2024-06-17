@@ -43,6 +43,15 @@ extern uint64_t INFINITE_BUFFER_SIZE;
 extern uint64_t BDP_MODERN_NDP;
 extern uint64_t MAX_CWD_MODERN_NDP;
 extern uint64_t BDP_OLD_NDP;
+// LCP
+extern simtime_picosec TARGET_RTT_LOW;
+extern simtime_picosec TARGET_RTT_HIGH;
+extern simtime_picosec BAREMETAL_RTT;
+extern double LCP_ALPHA;
+extern double LCP_BETA;
+extern uint32_t LCP_DELTA;
+extern int LCP_K;
+//
 extern uint64_t MAX_CWD_OLD_NDP;
 extern uint64_t ENABLE_FAST_DROP;
 extern std::filesystem::path PROJECT_ROOT_PATH;

@@ -156,6 +156,11 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger,
     } else {
         _bts_enabled = false;
     }
+
+    // LCP changes.
+    _previous_rtt_ewma = timeFromMs(0);
+    _current_rtt_ewma = timeFromMs(0);
+    _next_measurement_seq_no = 0;
 }
 
 // Add deconstructor and save data once we are done.
@@ -1108,7 +1113,7 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
         // printf("Window Is %d - From %d To %d\n", _cwnd, from, to);
         current_pkt++;
         // printf("Triggering ADJ\n");
-        adjust_window(ts, marked, newRtt);
+        adjust_window(ts, marked, newRtt, seqno);
 
         acked_bytes += _mss;
         good_bytes += _mss;
@@ -1215,7 +1220,7 @@ void UecSrc::fast_increase() {
             std::make_pair(eventlist().now() / 1000, 1));
 }
 
-void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
+void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, uint32_t ackno) {
 
     bool can_decrease_exp_avg = false;
     exp_avg_ecn = exp_avg_alpha * ecn + (1 - exp_avg_alpha) * exp_avg_ecn;
@@ -1494,6 +1499,81 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
                         _cwnd += ((double)_mss / _cwnd) * (x_gain / 1) * _mss;
                     }
                 }
+            }
+        }
+    }
+
+    if (algorithm_type == "lcp") {
+        if (_current_rtt_ewma == timeFromMs(0)) {
+            _current_rtt_ewma = rtt;
+        } else {
+            _current_rtt_ewma = _current_rtt_ewma * (1.0 - LCP_ALPHA) + LCP_ALPHA * rtt;
+        }
+        printf("\t_current_rtt_ewma: %d _previous_rtt_ewma: %d rtt: %d alpha: %f\n", _current_rtt_ewma, _previous_rtt_ewma, rtt, LCP_ALPHA);
+
+        // Next measurement epoch has begun.
+        if (ackno >= _next_measurement_seq_no) {
+            if (_previous_rtt_ewma == timeFromMs(0)) {
+                _previous_rtt_ewma = _current_rtt_ewma;
+            }
+            int64_t rtt_change = (int64_t) _current_rtt_ewma - (int64_t) _previous_rtt_ewma;
+            printf("Current RTT: %d, Previous RTT: %d, RTT Change: %ld\n", _current_rtt_ewma, _previous_rtt_ewma, rtt_change);
+
+            uint32_t cwnd_before = _cwnd;
+
+            // Translate rtt_change into a rate.
+            double gradient = ((double) rtt_change) / ((double) TARGET_RTT_LOW);
+            printf("CWND change: %s before: %lu gradient: %f rttchange: %ld\n", nodename(), cwnd_before, gradient, rtt_change);
+            printf("    _current_rtt_ewma: %d, _target_rtt_low: %d, _target_rtt_high: %d\n", _current_rtt_ewma, TARGET_RTT_LOW, TARGET_RTT_HIGH);
+            if (_current_rtt_ewma < TARGET_RTT_LOW) {
+                _cwnd += (uint32_t)LCP_DELTA * _mss;
+                printf("    CWND change: %s less than all, go from %d to %d\n", nodename(), cwnd_before, _cwnd);
+            } else if (_current_rtt_ewma > TARGET_RTT_HIGH) {
+                double latency_ratio = ((double)TARGET_RTT_HIGH) / ((double) _current_rtt_ewma);
+                double factor = (1.0 - LCP_BETA * (1.0 - latency_ratio));
+                _cwnd *= (1.0 - LCP_BETA * (1.0 - latency_ratio));
+                printf("    CWND change: %s greater than all, go from %d to %d latency ratio: %f\n", nodename(), cwnd_before, _cwnd, latency_ratio);
+            } else if (gradient <= 0.0) {
+                _cwnd += (uint32_t)LCP_DELTA * _mss;
+                printf("    CWND change: %s between with negative gradient go from %d to %d delta: %lu\n", nodename(), cwnd_before, _cwnd, LCP_DELTA);
+            } else {
+                double gradient_change = min(max(0.0, gradient * LCP_BETA), 1.0);
+                _cwnd *= (1 - gradient_change);
+                printf("    CWND change: %s between with positive gradient go from %d to %d gradient_change: %f\n", nodename(), cwnd_before, _cwnd, gradient_change);
+            }
+        
+            // Reset State.
+            _next_measurement_seq_no = ackno + _cwnd;
+            _previous_rtt_ewma = _current_rtt_ewma;
+
+            check_limits_cwnd();
+
+            if (COLLECT_DATA) {
+                std::string file_name =
+                        PROJECT_ROOT_PATH /
+                        ("sim/output/current_rtt_ewma/current_rtt_ewma_" + _name + "_" +
+                                         std::to_string(tag) + ".txt");
+                std::ofstream MyFile(file_name, std::ios_base::app);
+                MyFile << eventlist().now() / 1000 << "," << _current_rtt_ewma / 1000 << std::endl;
+                MyFile.close();
+
+                file_name = PROJECT_ROOT_PATH / ("sim/output/target_rtt_low/target_rtt_low_" + _name + "_" +
+                                         std::to_string(tag) + ".txt");
+                std::ofstream MyFile2(file_name, std::ios_base::app);
+                MyFile2 << eventlist().now() / 1000 << "," << TARGET_RTT_LOW /1000 << std::endl;
+                MyFile2.close();
+
+                file_name = PROJECT_ROOT_PATH / ("sim/output/target_rtt_high/target_rtt_high_" + _name + "_" +
+                                         std::to_string(tag) + ".txt");
+                std::ofstream MyFile3(file_name, std::ios_base::app);
+                MyFile3 << eventlist().now() / 1000 << "," << TARGET_RTT_HIGH / 1000 << std::endl;
+                MyFile3.close();
+
+                file_name = PROJECT_ROOT_PATH / ("sim/output/baremetal_latency/baremetal_latency_" + _name + "_" +
+                                         std::to_string(tag) + ".txt");
+                std::ofstream MyFile4(file_name, std::ios_base::app);
+                MyFile4 << eventlist().now() / 1000 << "," << BAREMETAL_RTT / 1000 << std::endl;
+                MyFile4.close();
             }
         }
     }

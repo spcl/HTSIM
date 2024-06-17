@@ -247,6 +247,11 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     uint64_t send_size = 0;
     bool did_qa = false;
 
+    // LCP.
+    simtime_picosec _previous_rtt_ewma;
+    simtime_picosec _current_rtt_ewma;
+    uint64_t _next_measurement_seq_no;
+
     // Custom Parameters
     static int adjust_packet_counts;
     static std::string queue_type;
@@ -466,7 +471,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     void quick_adapt(bool);
     uint64_t get_unacked();
 
-    void adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt);
+    void adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, uint32_t ackno);
     uint32_t medium_increase(simtime_picosec);
     void fast_increase();
     bool no_ecn_last_target_rtt();

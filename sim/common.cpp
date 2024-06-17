@@ -57,3 +57,11 @@ uint64_t BUFFER_SIZE_OLD = 8 * PKT_SIZE_OLD;                     // 8 Pkts
 uint64_t BDP_OLD_NDP = BASE_RTT_OLD * LINK_SPEED_OLD / 8; // BDP
 uint64_t MAX_CWD_OLD_NDP = BDP_OLD_NDP * 3;               // BDP * 1.2
 std::filesystem::path PROJECT_ROOT_PATH;
+// LCP Specific Values
+simtime_picosec TARGET_RTT_LOW = 0;
+simtime_picosec TARGET_RTT_HIGH = 0;
+simtime_picosec BAREMETAL_RTT = 0;
+double LCP_ALPHA = 0.5;
+double LCP_BETA = 0.8;
+uint32_t LCP_DELTA = 1;
+int LCP_K = 1;
