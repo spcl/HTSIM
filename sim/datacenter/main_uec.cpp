@@ -410,6 +410,12 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-baremetal-us")) {
             BAREMETAL_RTT = timeFromUs(atof(argv[i + 1]));
+            if (TARGET_RTT_LOW == 0) {
+                TARGET_RTT_LOW = timeFromUs(atof(argv[i + 1]) * 1.05);
+            } 
+            if (TARGET_RTT_HIGH == 0) {
+                TARGET_RTT_HIGH = timeFromUs(atof(argv[i + 1]) * 1.1);
+            }
             i++;
         } else if (!strcmp(argv[i], "-alpha")) {
             LCP_ALPHA = atof(argv[i + 1]);
@@ -432,6 +438,11 @@ int main(int argc, char **argv) {
     }
 
     SINGLE_PKT_TRASMISSION_TIME_MODERN = packet_size * 8 / (LINK_SPEED_MODERN);
+
+    if (UecSrc::algorithm_type == "lcp" && (BAREMETAL_RTT == 0 || TARGET_RTT_HIGH == 0 || TARGET_RTT_LOW == 0)) {
+        cout << "LCP requires baremetal, target high and target low RTT to be set. You must set -baremetal-us at least." << endl;
+        exit(1);
+    }
 
     // Initialize Seed, Logging and Other variables
     if (seed != -1) {
