@@ -217,7 +217,7 @@ An example of the file is below.
 - ```NIC-Degradation```: Simulates the degradation of a NIC. If turned on, affected NICs have a 5% packet loss rate and transmit only at 1 Kbps.
 - ```NIC-Degradation-Start-After```: Defines after how many picoseconds the first NIC gets degraded.
 - ```NIC-Degradation-Period```: Defines after how many picoseconds since the last NIC got degraded the next NIC gets degraded.
-- ```NIC-Degradation-Max-Percent```: Between 0 and 1, defines the maximum percentage of degraded cables.
+- ```NIC-Degradation-Max-Percent```: Between 0 and 1, defines the maximum percentage of degraded NICs.
 
 Here is an example .txt file where the failure modes Switch-Fail and Cable-Fail are activated.
 ```
