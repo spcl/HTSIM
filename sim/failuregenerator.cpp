@@ -62,6 +62,14 @@ bool failuregenerator::fail_new_switch(Switch *sw) {
     uint32_t switch_id = sw->getID();
     std::string switch_name = sw->nodename();
 
+    int numberOfFailingSwitches = failingSwitches.size();
+    int numberOfAllSwitches = all_switches.size();
+    float percent = (float)numberOfFailingSwitches / numberOfAllSwitches;
+    if (percent > switch_fail_max_percent) {
+        std::cout << "Did not fail Switch, because of max-percent Switch-name: " << switch_name << std::endl;
+        return false;
+    }
+
     if (neededSwitches.find(switch_id) != neededSwitches.end()) {
         std::cout << "Did not fail critical Switch name: " << switch_name << std::endl;
         return false;
@@ -124,11 +132,22 @@ bool failuregenerator::switchBER(Packet &pkt, Switch *sw, Queue q) {
         return false;
     }
 
+    FAILURE_GENERATOR->all_packets_switchBER++;
+
     uint32_t pkt_id = pkt.id();
 
     if (GLOBAL_TIME < switch_ber_next_fail) {
         return false;
     } else {
+        float percent =
+                (float)FAILURE_GENERATOR->num_corrupted_packets_switchBER / FAILURE_GENERATOR->all_packets_switchBER;
+
+        if (percent > switch_ber_max_percent) {
+            std::cout << "Did not corrupt packet at SwitchBER, because of max-percent" << std::endl;
+            return false;
+        }
+        std::cout << "Added new corrupted packet at SwitchBER" << std::endl;
+        FAILURE_GENERATOR->num_corrupted_packets_switchBER++;
         corrupted_packets.insert(pkt_id);
         switch_ber_next_fail = GLOBAL_TIME + switch_ber_period;
         return false;
@@ -163,6 +182,14 @@ bool failuregenerator::switchDegradation(Switch *sw) {
         if (GLOBAL_TIME < switch_degradation_next_fail) {
             return false;
         } else {
+            int numberOfDegradedSwitches = degraded_switches.size();
+            int numberOfAllSwitches = all_switches.size();
+            float percent = (float)numberOfDegradedSwitches / numberOfAllSwitches;
+            if (percent > switch_degradation_max_percent) {
+                std::cout << "Did not degrade Switch, because of max-percent Switch-name: " << sw->nodename()
+                          << std::endl;
+                return false;
+            }
             int port_nrs = sw->portCount();
             for (int i = 0; i < port_nrs; i++) {
                 BaseQueue *q = sw->getPort(i);
@@ -217,6 +244,16 @@ bool failuregenerator::simCableFailures(Pipe *p, Packet &pkt) {
 
 bool failuregenerator::fail_new_cable(Pipe *p) {
 
+    int numberOfFailingCables = failingCables.size();
+    int numberOfAllCables = all_cables.size();
+
+    float percent = (float)numberOfFailingCables / numberOfAllCables;
+
+    if (percent > cable_fail_max_percent) {
+        std::cout << "Did not fail Cable, because of max-percent Cable-name: " << p->nodename() << std::endl;
+        return false;
+    }
+
     uint32_t cable_id = p->getID();
     std::string cable_name = p->nodename();
 
@@ -268,9 +305,6 @@ bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
             return true;
         }
     } else {
-        std::string from_queue = pkt.route()->at(0)->nodename();
-        // if (GLOBAL_TIME < cable_fail_next_fail || from_queue.find("DST") != std::string::npos ||
-        //     from_queue.find("SRC") != std::string::npos) {
 
         if (GLOBAL_TIME < cable_fail_next_fail) {
             return false;
@@ -284,6 +318,8 @@ bool failuregenerator::cableBER(Packet &pkt) {
     if (!cable_ber) {
         return false;
     }
+
+    FAILURE_GENERATOR->all_packets_cableBER++;
 
     uint32_t pkt_id = pkt.id();
     std::string from_queue = pkt.route()->at(0)->nodename();
@@ -299,6 +335,14 @@ bool failuregenerator::cableBER(Packet &pkt) {
     if (GLOBAL_TIME < cable_ber_next_fail) {
         return false;
     } else {
+        float percent =
+                (float)FAILURE_GENERATOR->num_corrupted_packets_cableBER / FAILURE_GENERATOR->all_packets_cableBER;
+
+        if (percent > cable_ber_max_percent) {
+            std::cout << "Did not corrupt packet at CableBER, because of max-percent" << std::endl;
+            return false;
+        }
+        num_corrupted_packets_cableBER++;
         corrupted_packets.insert(pkt_id);
         cable_ber_next_fail = GLOBAL_TIME + cable_ber_period;
         return false;
@@ -336,9 +380,14 @@ bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
             return false;
         }
     } else {
-        std::string from_queue = pkt.route()->at(0)->nodename();
-        if (GLOBAL_TIME < cable_degradation_next_fail || from_queue.find("DST") != std::string::npos ||
-            from_queue.find("SRC") != std::string::npos) {
+        if (GLOBAL_TIME < cable_degradation_next_fail) {
+            return false;
+        }
+        int numberOfDegradedCables = degraded_cables.size();
+        int numberOfAllCables = all_cables.size();
+        float percent = (float)numberOfDegradedCables / numberOfAllCables;
+        if (percent > cable_degradation_max_percent) {
+            std::cout << "Did not degrade Cable, because of max-percent Cable-name: " << p->nodename() << std::endl;
             return false;
         }
         std::uniform_real_distribution<double> dist(0.0, 1.0);
@@ -381,9 +430,8 @@ bool failuregenerator::cableWorstCase(Pipe *p, Packet &pkt) {
             return true;
         }
     } else {
-        std::string from_queue = pkt.route()->at(0)->nodename();
-        if (GLOBAL_TIME < cable_worst_case_next_fail || from_queue.find("DST") != std::string::npos ||
-            from_queue.find("SRC") != std::string::npos) {
+
+        if (GLOBAL_TIME < cable_worst_case_next_fail) {
             return false;
         }
 
@@ -397,6 +445,15 @@ bool failuregenerator::simNICFailures(UecSrc *src, UecSink *sink, Packet &pkt) {
 }
 
 bool failuregenerator::fail_new_nic(u_int32_t nic_id) {
+
+    int numberOfFailingNICs = failingNICs.size();
+    int numberOfAllNICs = all_srcs.size() + all_sinks.size();
+    float percent = (float)numberOfFailingNICs / numberOfAllNICs;
+    if (percent > nic_fail_max_percent) {
+        std::cout << "Did not fail NIC, because of max-percent NIC-name: " << nic_id << std::endl;
+        return false;
+    }
+
     uint64_t failureTime = GLOBAL_TIME;
     uint64_t recoveryTime = GLOBAL_TIME + generateTimeNIC();
     nic_fail_next_fail = GLOBAL_TIME + nic_fail_period;
@@ -460,6 +517,13 @@ bool failuregenerator::nicDegradation(UecSrc *src, UecSink *sink, Packet &pkt) {
         if (GLOBAL_TIME < nic_degradation_next_fail) {
             return false;
         } else {
+            int numberOfDegradedNICs = degraded_NICs.size();
+            int numberOfAllNICs = all_srcs.size() + all_sinks.size();
+            float percent = (float)numberOfDegradedNICs / numberOfAllNICs;
+            if (percent > nic_degradation_max_percent) {
+                std::cout << "Did not degrade NIC, because of max-percent NIC-name: " << nic_id << std::endl;
+                return false;
+            }
             // int port_nrs = q.getSwitch()->portCount();
             // for (int i = 0; i < port_nrs; i++) {
             //     BaseQueue *curq = q.getSwitch()->getPort(i);
@@ -542,6 +606,7 @@ failuregenerator::get_path_switches_cables(uint32_t path_id, UecSrc *src) {
             if (next_pipe) {
                 path += " -> " + next_pipe->nodename();
                 cables.insert(next_pipe->getID());
+                FAILURE_GENERATOR->all_cables.insert(next_pipe->getID());
             } else {
                 std::cout << "Error: last next_pipe is nullptr" << std::endl;
             }
@@ -555,12 +620,14 @@ failuregenerator::get_path_switches_cables(uint32_t path_id, UecSrc *src) {
         if (next_pipe) {
             path += " -> " + next_pipe->nodename();
             cables.insert(next_pipe->getID());
+            FAILURE_GENERATOR->all_cables.insert(next_pipe->getID());
         } else {
             std::cout << "Error: next_pipe is nullptr" << std::endl;
         }
         if (next_switch) {
             path += " -> " + next_switch->nodename();
             switches.insert(next_switch->getID());
+            FAILURE_GENERATOR->all_switches.insert(next_switch->getID());
 
             r = *next_switch->getNextHop(*packet, NULL);
             packet->set_route(r);
@@ -713,6 +780,24 @@ void failuregenerator::parseinputfile() {
                 nic_worst_case_next_fail = nic_worst_case_start;
             } else if (key == "NIC-Worst-Case-Period:") {
                 nic_worst_case_period = std::stoll(value);
+            } else if (key == "Switch-Fail-Max-Percent:") {
+                switch_fail_max_percent = std::stof(value);
+            } else if (key == "Switch-BER-Max-Percent:") {
+                switch_ber_max_percent = std::stof(value);
+            } else if (key == "Switch-Degradation-Max-Percent:") {
+                switch_degradation_max_percent = std::stof(value);
+            } else if (key == "Cable-Fail-Max-Percent:") {
+                cable_fail_max_percent = std::stof(value);
+            } else if (key == "Cable-BER-Max-Percent:") {
+                cable_ber_max_percent = std::stof(value);
+            } else if (key == "Cable-Degradation-Max-Percent:") {
+                cable_degradation_max_percent = std::stof(value);
+            } else if (key == "NIC-Fail-Max-Percent:") {
+                nic_fail_max_percent = std::stof(value);
+            } else if (key == "NIC-Degradation-Max-Percent:") {
+                nic_degradation_max_percent = std::stof(value);
+            } else {
+                std::cout << "Unknown key in failuregenerator input file: " << key << std::endl;
             }
         }
         inputFile.close();

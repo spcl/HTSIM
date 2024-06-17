@@ -39,9 +39,9 @@ class failuregenerator {
     bool simCableFailures(Pipe *p, Packet &pkt);
     bool simNICFailures(UecSrc *src, UecSink *sink, Packet &pkt);
 
-    bool fail_new_switch(Switch *sw);
-
     // Switch
+    bool fail_new_switch(Switch *sw);
+    std::set<uint32_t> all_switches;
     bool switchFail(Switch *sw);
     bool switch_fail = false;
     std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failingSwitches;
@@ -49,14 +49,18 @@ class failuregenerator {
     simtime_picosec switch_fail_start = 0;
     simtime_picosec switch_fail_period = 0;
     simtime_picosec switch_fail_next_fail = 0;
+    float switch_fail_max_percent = 1;
 
     bool switchBER(Packet &pkt, Switch *sw, Queue q);
     bool dropPacketsSwichtBER(Packet &pkt);
+    int num_corrupted_packets_switchBER = 0;
+    int all_packets_switchBER = 0;
     std::set<uint32_t> corrupted_packets;
     bool switch_ber = false;
     simtime_picosec switch_ber_start = 0;
     simtime_picosec switch_ber_period = 0;
     simtime_picosec switch_ber_next_fail = 0;
+    float switch_ber_max_percent = 1;
 
     bool switchDegradation(Switch *sw);
     std::set<uint32_t> degraded_switches;
@@ -64,6 +68,7 @@ class failuregenerator {
     simtime_picosec switch_degradation_start = 0;
     simtime_picosec switch_degradation_period = 0;
     simtime_picosec switch_degradation_next_fail = 0;
+    float switch_degradation_max_percent = 1;
 
     bool switchWorstCase(Switch *sw);
     bool switch_worst_case = false;
@@ -71,7 +76,10 @@ class failuregenerator {
     simtime_picosec switch_worst_case_period = 0;
     simtime_picosec switch_worst_case_next_fail = 0;
 
+    // Cable
     bool fail_new_cable(Pipe *p);
+
+    std::set<uint32_t> all_cables;
 
     bool cableFail(Pipe *p, Packet &pkt);
     unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failingCables;
@@ -80,12 +88,16 @@ class failuregenerator {
     simtime_picosec cable_fail_start = 0;
     simtime_picosec cable_fail_period = 0;
     simtime_picosec cable_fail_next_fail = 0;
+    float cable_fail_max_percent = 1;
 
     bool cableBER(Packet &pkt);
     bool cable_ber;
+    int all_packets_cableBER = 0;
+    int num_corrupted_packets_cableBER = 0;
     simtime_picosec cable_ber_start = 0;
     simtime_picosec cable_ber_period = 0;
     simtime_picosec cable_ber_next_fail = 0;
+    float cable_ber_max_percent = 1;
 
     bool cableDegradation(Pipe *p, Packet &pkt);
     bool cable_degradation = false;
@@ -93,6 +105,7 @@ class failuregenerator {
     simtime_picosec cable_degradation_start = 0;
     simtime_picosec cable_degradation_period = 0;
     simtime_picosec cable_degradation_next_fail = 0;
+    float cable_degradation_max_percent = 1;
 
     bool cableWorstCase(Pipe *p, Packet &pkt);
     bool cable_worst_case = false;
@@ -110,6 +123,7 @@ class failuregenerator {
     simtime_picosec nic_fail_start = 0;
     simtime_picosec nic_fail_period = 0;
     simtime_picosec nic_fail_next_fail = 0;
+    float nic_fail_max_percent = 1;
 
     bool nic_degradation = false;
     bool nicDegradation(UecSrc *src, UecSink *sink, Packet &pkt);
@@ -117,6 +131,7 @@ class failuregenerator {
     simtime_picosec nic_degradation_start = 0;
     simtime_picosec nic_degradation_period = 0;
     simtime_picosec nic_degradation_next_fail = 0;
+    float nic_degradation_max_percent = 1;
 
     bool nic_worst_case = false;
     bool nicWorstCase(UecSrc *src, UecSink *sink, Packet &pkt);
