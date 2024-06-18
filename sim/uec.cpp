@@ -18,7 +18,7 @@ double UecSrc::kmax_double;
 double UecSrc::kmin_double;
 std::string UecSrc::queue_type = "composite";
 std::string UecSrc::algorithm_type = "standard_trimming";
-bool UecSrc::use_fast_drop = false;
+bool UecSrc::use_fast_drop = true;
 int UecSrc::fast_drop_rtt = 1;
 bool UecSrc::use_pacing = false;
 simtime_picosec UecSrc::pacing_delay = 0;
@@ -161,6 +161,7 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger,
     _previous_rtt_ewma = timeFromMs(0);
     _current_rtt_ewma = timeFromMs(0);
     _next_measurement_seq_no = 0;
+    _consecutive_good_epochs = 0;
 }
 
 // Add deconstructor and save data once we are done.
@@ -1199,6 +1200,7 @@ void UecSrc::receivePacket(Packet &pkt) {
 }
 
 void UecSrc::fast_increase() {
+    uint32_t cwnd_before = _cwnd;
     if (use_fast_drop) {
         if (count_received > ignore_for) {
             if (use_super_fast_increase) {
@@ -1218,6 +1220,8 @@ void UecSrc::fast_increase() {
     increasing = true;
     _list_fast_increase_event.push_back(
             std::make_pair(eventlist().now() / 1000, 1));
+
+    cout << "CWND Change: " << _name << "_" << std::to_string(tag) << " fast increase - before: " << cwnd_before << " after: " << _cwnd << " consecutive_good_epochs " << _consecutive_good_epochs << endl;
 }
 
 void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, uint32_t ackno) {
@@ -1511,8 +1515,22 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
         }
         printf("\t_current_rtt_ewma: %d _previous_rtt_ewma: %d rtt: %d alpha: %f\n", _current_rtt_ewma, _previous_rtt_ewma, rtt, LCP_ALPHA);
 
+        if (_current_rtt_ewma > TARGET_RTT_LOW) {
+            _consecutive_good_epochs = 0;
+        }
+
+        if (_consecutive_good_epochs > LCP_FAST_INCREASE_THRESHOLD) {
+            fast_increase();
+        }
+
         // Next measurement epoch has begun.
         if (ackno >= _next_measurement_seq_no) {
+            if (_current_rtt_ewma < TARGET_RTT_LOW) {
+                _consecutive_good_epochs++;
+            } else {
+                _consecutive_good_epochs = 0;
+            }
+
             if (_previous_rtt_ewma == timeFromMs(0)) {
                 _previous_rtt_ewma = _current_rtt_ewma;
             }
@@ -1523,23 +1541,27 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
 
             // Translate rtt_change into a rate.
             double gradient = ((double) rtt_change) / ((double) TARGET_RTT_LOW);
-            printf("CWND change: %s before: %lu gradient: %f rttchange: %ld\n", nodename(), cwnd_before, gradient, rtt_change);
-            printf("    _current_rtt_ewma: %d, _target_rtt_low: %d, _target_rtt_high: %d\n", _current_rtt_ewma, TARGET_RTT_LOW, TARGET_RTT_HIGH);
+            cout << "CWND change: " << nodename() << " before: " << cwnd_before << " gradient: " << gradient << " rttchange: " << rtt_change << endl;
+            cout << "    _current_rtt_ewma: " << _current_rtt_ewma << ", _target_rtt_low: " << TARGET_RTT_LOW << ", _target_rtt_high: " << TARGET_RTT_HIGH << endl;
             if (_current_rtt_ewma < TARGET_RTT_LOW) {
                 _cwnd += (uint32_t)LCP_DELTA * _mss;
-                printf("    CWND change: %s less than all, go from %d to %d\n", nodename(), cwnd_before, _cwnd);
+                cout << "    CWND change: " << nodename() << " less than all, go from " << cwnd_before << " to " << _cwnd << endl;
+                quick_adapt(false);
             } else if (_current_rtt_ewma > TARGET_RTT_HIGH) {
                 double latency_ratio = ((double)TARGET_RTT_HIGH) / ((double) _current_rtt_ewma);
                 double factor = (1.0 - LCP_BETA * (1.0 - latency_ratio));
                 _cwnd *= (1.0 - LCP_BETA * (1.0 - latency_ratio));
-                printf("    CWND change: %s greater than all, go from %d to %d latency ratio: %f\n", nodename(), cwnd_before, _cwnd, latency_ratio);
+                cout << "    CWND change: " << nodename() << " greater than all, go from " << cwnd_before << " to " << _cwnd << " latency ratio: " << latency_ratio << endl;
+                quick_adapt(true);
             } else if (gradient <= 0.0) {
                 _cwnd += (uint32_t)LCP_DELTA * _mss;
-                printf("    CWND change: %s between with negative gradient go from %d to %d delta: %lu\n", nodename(), cwnd_before, _cwnd, LCP_DELTA);
+                cout << "    CWND change: " << nodename() << " between with negative gradient go from " << cwnd_before << " to " << _cwnd << " delta: " << LCP_DELTA << endl;
+                quick_adapt(false);
             } else {
                 double gradient_change = min(max(0.0, gradient * LCP_BETA), 1.0);
                 _cwnd *= (1 - gradient_change);
-                printf("    CWND change: %s between with positive gradient go from %d to %d gradient_change: %f\n", nodename(), cwnd_before, _cwnd, gradient_change);
+                cout << "    CWND change: " << nodename() << " between with positive gradient go from " << cwnd_before << " to " << _cwnd << " gradient_change: " << gradient_change << endl;
+                quick_adapt(false);
             }
         
             // Reset State.

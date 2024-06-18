@@ -425,9 +425,11 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-delta")) {
             LCP_DELTA = atoi(argv[i + 1]);
-            i++;
         } else if (!strcmp(argv[i], "-k")) {
             LCP_K = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-fast-increase-threshold")) {
+            LCP_FAST_INCREASE_THRESHOLD = atoi(argv[i + 1]);
             i++;
         } else {
             printf("Called with %s\n", argv[i]);
@@ -443,6 +445,10 @@ int main(int argc, char **argv) {
         cout << "LCP requires baremetal, target high and target low RTT to be set. You must set -baremetal-us at least." << endl;
         exit(1);
     }
+    printf("Baremetal RTT: %lu\n", BAREMETAL_RTT);
+    printf("Target RTT Low: %lu\n", TARGET_RTT_LOW);
+    printf("Target RTT High: %lu\n", TARGET_RTT_HIGH);
+    // exit(1);
 
     // Initialize Seed, Logging and Other variables
     if (seed != -1) {

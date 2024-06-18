@@ -173,6 +173,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static void set_precision_ts(int value) { precision_ts = value; }
     static void set_disable_case_4(double value) { disable_case_4 = value; }
     static void set_starting_cwnd(double value) { starting_cwnd = value; }
+    static void set_max_cwnd(double value) { max_cwnd = value; }
     static void set_bonus_drop(double value) { bonus_drop = value; }
     static void set_buffer_drop(double value) { buffer_drop = value; }
     static void set_stop_after_quick(bool value) { stop_after_quick = value; }
@@ -251,6 +252,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     simtime_picosec _previous_rtt_ewma;
     simtime_picosec _current_rtt_ewma;
     uint64_t _next_measurement_seq_no;
+    uint32_t _consecutive_good_epochs;
 
     // Custom Parameters
     static int adjust_packet_counts;
@@ -315,6 +317,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static double decrease_on_nack;
 
     static double starting_cwnd;
+    static double max_cwnd;
     static double bonus_drop;
     static double buffer_drop;
     static bool stop_after_quick;

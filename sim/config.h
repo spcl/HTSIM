@@ -51,6 +51,7 @@ extern double LCP_ALPHA;
 extern double LCP_BETA;
 extern uint32_t LCP_DELTA;
 extern int LCP_K;
+extern uint32_t LCP_FAST_INCREASE_THRESHOLD;
 //
 extern uint64_t MAX_CWD_OLD_NDP;
 extern uint64_t ENABLE_FAST_DROP;
