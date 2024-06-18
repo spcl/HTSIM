@@ -77,14 +77,16 @@ bool failuregenerator::fail_new_switch(Switch *sw) {
 
     uint64_t failureTime = GLOBAL_TIME;
     uint64_t recoveryTime = GLOBAL_TIME + generateTimeSwitch();
-    failingSwitches[switch_id] = std::make_pair(failureTime, recoveryTime);
+
+    temp_failingSwitches = failingSwitches;
+    temp_failingSwitches[switch_id] = std::make_pair(failureTime, recoveryTime);
 
     if (!check_connectivity()) {
-        failingSwitches.erase(switch_id);
         neededSwitches.insert(switch_id);
         std::cout << "Did not fail critical Switch name: " << switch_name << std::endl;
         return false;
     }
+    failingSwitches[switch_id] = std::make_pair(failureTime, recoveryTime);
 
     switch_fail_next_fail = GLOBAL_TIME + switch_fail_period;
 
@@ -244,6 +246,13 @@ bool failuregenerator::simCableFailures(Pipe *p, Packet &pkt) {
 
 bool failuregenerator::fail_new_cable(Pipe *p) {
 
+    uint32_t cable_id = p->getID();
+    std::string cable_name = p->nodename();
+
+    if (cable_name.find("callbackpipe") != std::string::npos) {
+        return false;
+    }
+
     int numberOfFailingCables = failingCables.size();
     int numberOfAllCables = all_cables.size();
 
@@ -251,13 +260,6 @@ bool failuregenerator::fail_new_cable(Pipe *p) {
 
     if (percent > cable_fail_max_percent) {
         std::cout << "Did not fail Cable, because of max-percent Cable-name: " << p->nodename() << std::endl;
-        return false;
-    }
-
-    uint32_t cable_id = p->getID();
-    std::string cable_name = p->nodename();
-
-    if (cable_name.find("callbackpipe") != std::string::npos) {
         return false;
     }
 
@@ -269,14 +271,16 @@ bool failuregenerator::fail_new_cable(Pipe *p) {
     uint64_t failureTime = GLOBAL_TIME;
     uint64_t recoveryTime = GLOBAL_TIME + generateTimeCable();
 
-    failingCables[cable_id] = std::make_pair(failureTime, recoveryTime);
+    temp_failingCables = failingCables;
+    temp_failingCables[cable_id] = std::make_pair(failureTime, recoveryTime);
 
     if (!check_connectivity()) {
-        failingCables.erase(cable_id);
         neededCables.insert(cable_id);
         std::cout << "Did not fail critical Cable name: " << cable_name << std::endl;
         return false;
     }
+
+    failingCables[cable_id] = std::make_pair(failureTime, recoveryTime);
 
     cable_fail_next_fail = GLOBAL_TIME + cable_fail_period;
 
@@ -661,7 +665,7 @@ bool failuregenerator::check_connectivity() {
             bool all_cables_active = true;
 
             for (uint32_t sw : switches_on_path) {
-                if (failingSwitches.find(sw) != failingSwitches.end()) {
+                if (temp_failingSwitches.find(sw) != temp_failingSwitches.end()) {
                     all_switches_active = false;
                     break;
                 }
@@ -669,7 +673,7 @@ bool failuregenerator::check_connectivity() {
 
             for (uint32_t cable : cables_on_path) {
 
-                if (failingCables.find(cable) != failingCables.end()) {
+                if (temp_failingCables.find(cable) != temp_failingCables.end()) {
                     all_cables_active = false;
                     break;
                 }

@@ -45,6 +45,7 @@ class failuregenerator {
     bool switchFail(Switch *sw);
     bool switch_fail = false;
     std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failingSwitches;
+    std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> temp_failingSwitches;
     std::set<uint32_t> neededSwitches;
     simtime_picosec switch_fail_start = 0;
     simtime_picosec switch_fail_period = 0;
@@ -83,6 +84,7 @@ class failuregenerator {
 
     bool cableFail(Pipe *p, Packet &pkt);
     unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failingCables;
+    unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> temp_failingCables;
     bool cable_fail = false;
     std::set<uint32_t> neededCables;
     simtime_picosec cable_fail_start = 0;
