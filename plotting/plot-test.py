@@ -52,37 +52,27 @@ def getNumTrimmed(name_file_to_use):
 
 
 def run_experiment(experiment_name, experiment_cm, experiment_topo, name_title, msg_size):
-    
     os.system("mkdir -p experiments")
     os.system("rm -rf experiments/{}".format(experiment_name))
     os.system("mkdir experiments/{}".format(experiment_name))
 
 
-
-    # # SMaRTT (Works)
-    # out_name = "experiments/{}/out.txt".format(experiment_name)
-    # string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -k 1 -algorithm smartt -nodes 1024 -q 4452000 -strat ecmp_host_random2_ecn -number_entropies 1024 -kmin 2 -kmax 80 -use_fast_increase 0 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 700 -switch_latency 0 -reuse_entropy 1 -tm ../sim/datacenter/connection_matrices/{} -x_gain 0.25 -y_gain 2 -w_gain 2 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -use_pacing 0 -decrease_on_nack 1 -topology normal -max_queue_size 1000000 > {}".format(experiment_cm, out_name)
-    # os.system(string_to_run)
-    # list_smartt = getListFCT(out_name)
-    # num_nack_smartt = getNumTrimmed(out_name)
-    # print("SMARTT: Flow Diff {} - Total {}".format(max(list_smartt) - min(list_smartt), max(list_smartt)))
-
-    
-
-    # SMaRTT with failures (Does not work)
     out_name = "experiments/{}/out.txt".format(experiment_name)
-    string_to_run = "../sim/datacenter/htsim_uec_entry_modern -failures_input /sim/failuregenerator_input.txt  -o uec_entry -k 1 -algorithm smartt -nodes 1024 -q 4452000 -strat ecmp_host_random2_ecn -number_entropies 1024 -kmin 2 -kmax 80 -use_fast_increase 0 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 700 -switch_latency 0 -reuse_entropy 1 -tm ../sim/datacenter/connection_matrices/{} -x_gain 0.25 -y_gain 2 -w_gain 2 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -use_pacing 0 -decrease_on_nack 1 -topology normal -max_queue_size 1000000 > {}".format(experiment_cm, out_name)
+    string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -k 1 -algorithm smartt -nodes 128 -q {} -strat ecmp_host_random2_ecn -number_entropies 1024 -kmin 2 -kmax 80 -use_fast_increase 0 -use_super_fast_increase 1 -fast_drop 1 -linkspeed {} -mtu 4096 -seed 2 -queue_type composite -hop_latency 700 -switch_latency 0 -reuse_entropy 1 -tm ../sim/datacenter/connection_matrices/{} -x_gain 0.25 -y_gain 2 -w_gain 2 -z_gain 0.8 -bonus_drop 1 -collect_data 1 -use_pacing 0 -decrease_on_nack 1 -topology normal -max_queue_size 1000000 > {}".format(queue_size,link_speed, experiment_cm, out_name)
     os.system(string_to_run)
     list_smartt = getListFCT(out_name)
     num_nack_smartt = getNumTrimmed(out_name)
     print("SMARTT: Flow Diff {} - Total {}".format(max(list_smartt) - min(list_smartt), max(list_smartt)))
 
-
-    # Combine all data into a list of lists
     
+# Combine all data into a list of lists
+    
+    # all_data = [list_eqds_vanilla, list_dctcp_vanilla, list_swift_reps, list_bbr, list_smartt, list_smartt_eqds]
+    # labels = ['EQDS', 'MPRDMA', 'Swift', 'BBR', 'SMaRTT', 'SMaRTT-EQDS']
     all_data = [list_smartt]
+    labels = ['SMaRTT']
     # Create a list of labels for each dataset
-    labels = ['SMaRTT', "SMaRTT with Switch Fail"]
+    
     # Initialize an empty list to store cumulative probabilities
 
     unit = "ms"
@@ -134,8 +124,11 @@ def run_experiment(experiment_name, experiment_cm, experiment_topo, name_title, 
     # PLOT 2 (NACK)
     # Your list of 5 numbers and corresponding labels
     plt.figure(figsize=(7, 5))
+    # numbers = [num_nack_eqds_vanilla, num_nack_dctcp_vanilla, num_nack_swift_reps, num_nack_bbr, num_nack_smartt,  num_nack_smartt_eqds]
+    # labels = ['EQDS', 'MPRDMA', 'Swift', 'BBR', 'SMaRTT', 'SMaRTT-EQDS']
     numbers = [num_nack_smartt]
     labels = ['SMaRTT']
+    
 
     # Create a DataFrame from the lists
     data = pd.DataFrame({'Packets Trimmed': numbers, 'Algorithm': labels})
@@ -158,6 +151,8 @@ def run_experiment(experiment_name, experiment_cm, experiment_topo, name_title, 
     # Your list of 5 numbers and corresponding labels
     plt.figure(figsize=(7, 5))
 
+    # numbers = [max(list_eqds_vanilla), max(list_dctcp_vanilla), max(list_swift_reps), max(list_bbr), max(list_smartt), max(list_smartt_eqds)]
+    # labels = ['EQDS', 'MPRDMA', 'Swift', 'BBR', 'SMaRTT', 'SMaRTT-EQDS']
     numbers = [max(list_smartt)]
     labels = ['SMaRTT']
     # Create a DataFrame from the lists
@@ -201,13 +196,15 @@ def run_experiment(experiment_name, experiment_cm, experiment_topo, name_title, 
     
 
 def main():
- 
-    list_title_names = ["paper_incast_intra_large", "perm16"]
-    list_custom_names = ["paper_incast_intra_large", "perm16"]
-    list_exp = ["paper_incast_intra_large", "perm16"]
-    list_topologies = ["", ""]
 
-    msg_sizes = [2**21, 2**25]   
+    
+ 
+    list_title_names = ["Permutation 8:1 OS - 1024 Nodes - 2MiB Flows", "Permutation 8:1 OS - 1024 Nodes - 32MiB Flows", "Permutation 8:1 OS - 1024 Nodes - 8MiB Flows but ont 16MiB"]
+    list_custom_names = ["Permutation8OS_128_Nodes_2MB_800G", "Permutation8OS_128_Nodes_32MB_800G", "Permutation8OS_128_Nodes_8MB16MB_800G"]
+    list_exp = ["mult_perm_2", "mult_perm_32","mult_perm_diff"]
+    list_topologies = ["fat_tree_128_8os_800.topo", "fat_tree_128_8os_800.topo", "fat_tree_128_8os_800.topo"] 
+
+    msg_sizes = [2**21, 2**25, 2**23]    
     for idx, item in enumerate(list_exp):
         print("Running Experiment Named {}".format(list_custom_names[idx]))
         run_experiment(list_custom_names[idx], list_exp[idx], list_topologies[idx], list_title_names[idx], msg_sizes[idx])
