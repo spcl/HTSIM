@@ -254,6 +254,8 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     uint64_t _next_measurement_seq_no;
     uint32_t _consecutive_good_epochs;
     simtime_picosec _time_of_next_epoch;
+    // uint64_t _bytes_receieved_since_last_epoch;
+    simtime_picosec _time_of_last_qa;
 
     // Custom Parameters
     static int adjust_packet_counts;
@@ -472,6 +474,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     vector<pair<simtime_picosec, int>> count_case_4;
 
     void send_packets();
+    void quick_adapt_drop();
     void quick_adapt(bool);
     uint64_t get_unacked();
 

@@ -163,6 +163,7 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger,
     _next_measurement_seq_no = 0;
     _consecutive_good_epochs = 0;
     _time_of_next_epoch = TARGET_RTT_LOW;
+    _time_of_last_qa = 0;
 }
 
 // Add deconstructor and save data once we are done.
@@ -570,118 +571,139 @@ void UecSrc::check_limits_cwnd() {
     }
 }
 
+void UecSrc::quick_adapt_drop() {
+    // Update window and ignore count
+    printf("Before Update Saved CWD is %lu \n", saved_acked_bytes);
+    if (send_size <= _bdp) {
+        // saved_acked_bytes =
+        //         saved_acked_bytes * (_bdp / (double)send_size);
+        printf("BDP %lu - Send Size %lu - Ratio %f\n", _bdp, send_size,
+                (_bdp / (double)send_size));
+    }
+    printf("After Update Saved CWD is %lu \n", saved_acked_bytes);
+    _cwnd = max((double)(saved_acked_bytes * bonus_drop),
+                (double)_mss); // 1.5 is the amount of target_rtt over
+                                // base_rtt. Simplified here for this
+                                // code share.
+    _list_fast_decrease.push_back(
+                    std::make_pair(eventlist().now() / 1000, 1));
+}
+
 void UecSrc::quick_adapt(bool trimmed) {
 
-    // if (eventlist().now() >= next_window_end) {
+    if (eventlist().now() >= next_window_end) {
         previous_window_end = next_window_end;
         saved_acked_bytes = acked_bytes;
 
+        cout << "QADEBUG: Acked bytes " << saved_acked_bytes << " time since last qa: " << eventlist().now() - _time_of_last_qa << endl;
+        _time_of_last_qa = eventlist().now();
+
         acked_bytes = 0;
         next_window_end = eventlist().now() + _base_rtt;
-        // Enable Fast Drop
-        if ((trimmed || need_quick_adapt) && previous_window_end != 0) {
+    //     // Enable Fast Drop
+    //     if ((trimmed || need_quick_adapt) && previous_window_end != 0) {
 
-            if (did_qa) {
-                // return;
-            }
+    //         if (did_qa) {
+    //             // return;
+    //         }
 
-            if (eventlist().now() > next_qa) {
-                next_qa = eventlist().now() + _base_rtt * 3;
-            } else {
-                return;
-            }
+    //         if (eventlist().now() > next_qa) {
+    //             next_qa = eventlist().now() + _base_rtt * 3;
+    //         } else {
+    //             return;
+    //         }
 
-            // Edge case where we get here receiving a packet a long time after
-            // the last one (>> base_rtt). Should not matter in most cases.
-            /*saved_acked_bytes =
-                    saved_acked_bytes *
-                    ((double)_base_rtt /
-                     (eventlist().now() - previous_window_end + _base_rtt));*/
+    //         // Edge case where we get here receiving a packet a long time after
+    //         // the last one (>> base_rtt). Should not matter in most cases.
+    //         /*saved_acked_bytes =
+    //                 saved_acked_bytes *
+    //                 ((double)_base_rtt /
+    //                  (eventlist().now() - previous_window_end + _base_rtt));*/
 
-            // Update window and ignore count
-            printf("Before Update Saved CWD is %lu \n", saved_acked_bytes);
-            if (send_size <= _bdp) {
-                // saved_acked_bytes =
-                //         saved_acked_bytes * (_bdp / (double)send_size);
-                printf("BDP %lu - Send Size %lu - Ratio %f\n", _bdp, send_size,
-                       (_bdp / (double)send_size));
-            }
-            printf("After Update Saved CWD is %lu \n", saved_acked_bytes);
-            _cwnd = max((double)(saved_acked_bytes * bonus_drop),
-                        (double)_mss); // 1.5 is the amount of target_rtt over
-                                       // base_rtt. Simplified here for this
-                                       // code share.
+    //         // Update window and ignore count
+    //         printf("Before Update Saved CWD is %lu \n", saved_acked_bytes);
+    //         if (send_size <= _bdp) {
+    //             // saved_acked_bytes =
+    //             //         saved_acked_bytes * (_bdp / (double)send_size);
+    //             printf("BDP %lu - Send Size %lu - Ratio %f\n", _bdp, send_size,
+    //                    (_bdp / (double)send_size));
+    //         }
+    //         printf("After Update Saved CWD is %lu \n", saved_acked_bytes);
+    //         _cwnd = max((double)(saved_acked_bytes * bonus_drop),
+    //                     (double)_mss); // 1.5 is the amount of target_rtt over
+    //                                    // base_rtt. Simplified here for this
+    //                                    // code share.
         
-            if (eventlist().now() < _base_rtt * 5 && jump_to != 0) {
-                int coin = rand() % 2;
-                int extra = rand() % (jump_to / 10);
-                if (jump_to > 1200000) {
-                    extra /= 100;
-                } else if (jump_to > 1000000) {
-                    extra /= 3;
-                }
+    //         if (eventlist().now() < _base_rtt * 5 && jump_to != 0) {
+    //             int coin = rand() % 2;
+    //             int extra = rand() % (jump_to / 10);
+    //             if (jump_to > 1200000) {
+    //                 extra /= 100;
+    //             } else if (jump_to > 1000000) {
+    //                 extra /= 3;
+    //             }
 
-                if (coin % 2 == 0) {
-                    _cwnd = jump_to + extra;
-                } else {
-                    _cwnd = jump_to - extra / 2;
-                }
-            }
+    //             if (coin % 2 == 0) {
+    //                 _cwnd = jump_to + extra;
+    //             } else {
+    //                 _cwnd = jump_to - extra / 2;
+    //             }
+    //         }
 
-            check_limits_cwnd();
-            ignore_for = (get_unacked() / (double)_mss);
+    //         check_limits_cwnd();
+    //         ignore_for = (get_unacked() / (double)_mss);
 
-            // Reset counters, update logs.
-            count_received = 0;
-            need_quick_adapt = false;
-            _list_fast_decrease.push_back(
-                    std::make_pair(eventlist().now() / 1000, 1));
+    //         // Reset counters, update logs.
+    //         count_received = 0;
+    //         need_quick_adapt = false;
+    //         _list_fast_decrease.push_back(
+    //                 std::make_pair(eventlist().now() / 1000, 1));
 
-            // Update x_gain after large incasts. We want to limit its effect if
-            // we move to much smaller windows.
-            // x_gain = min(initial_x_gain,
-            //             (_queue_size / 5.0) / (_mss * ((double)_bdp /
-            //             _cwnd)));
-            // printf("New X Gain is %f\n", x_gain);
-            did_qa = true;
-            qa_count++;
-            pause_send = false;
-            last_qa_event = eventlist().now();
+    //         // Update x_gain after large incasts. We want to limit its effect if
+    //         // we move to much smaller windows.
+    //         // x_gain = min(initial_x_gain,
+    //         //             (_queue_size / 5.0) / (_mss * ((double)_bdp /
+    //         //             _cwnd)));
+    //         // printf("New X Gain is %f\n", x_gain);
+    //         did_qa = true;
+    //         qa_count++;
+    //         pause_send = false;
+    //         last_qa_event = eventlist().now();
 
-            // Go into pacing mode after QuickAdapt
-            if (use_pacing && generic_pacer == NULL) {
-                generic_pacer = new SmarttPacer(eventlist(), *this);
-                pacer_start_time = eventlist().now();
-                pacing_delay =
-                        ((4160 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
-                // pacing_delay -= (4160 * 8 / LINK_SPEED_MODERN);
-                printf("Setting the pacing delay %d %lu to %lu at %lu\n", _cwnd,
-                       (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
-                pacing_delay *= 1000; // ps
-            }
+    //         // Go into pacing mode after QuickAdapt
+    //         if (use_pacing && generic_pacer == NULL) {
+    //             generic_pacer = new SmarttPacer(eventlist(), *this);
+    //             pacer_start_time = eventlist().now();
+    //             pacing_delay =
+    //                     ((4160 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
+    //             // pacing_delay -= (4160 * 8 / LINK_SPEED_MODERN);
+    //             printf("Setting the pacing delay %d %lu to %lu at %lu\n", _cwnd,
+    //                    (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
+    //             pacing_delay *= 1000; // ps
+    //         }
 
-            // Print
+    //         // Print
 
-            total_pkt = 0;
-            total_nack = 0;
-            printf("Using Fast Drop2 - Flow %d@%d@%d, Ecn %d, CWND %d, "
-                   "Saved "
-                   "Acked %d (dropping to %f - bonus1  %f -> %f and "
-                   "%f) - "
-                   "Previous "
-                   "Window %lu - Next "
-                   "Window %lu// "
-                   "Time "
-                   "%lu\n",
-                   from, to, tag, 1, _cwnd, saved_acked_bytes,
-                   max((double)(saved_acked_bytes * bonus_drop),
-                       saved_acked_bytes * bonus_drop + _mss),
-                   bonus_drop, (saved_acked_bytes * bonus_drop),
-                   (saved_acked_bytes * bonus_drop + _mss),
-                   previous_window_end / 1000, next_window_end / 1000,
-                   eventlist().now() / 1000);
-        }
-    // }
+    //         total_pkt = 0;
+    //         total_nack = 0;
+    //         printf("Using Fast Drop2 - Flow %d@%d@%d, Ecn %d, CWND %d, "
+    //                "Saved "
+    //                "Acked %d (dropping to %f - bonus1  %f -> %f and "
+    //                "%f) - "
+    //                "Previous "
+    //                "Window %lu - Next "
+    //                "Window %lu// "
+    //                "Time "
+    //                "%lu\n",
+    //                from, to, tag, 1, _cwnd, saved_acked_bytes,
+    //                max((double)(saved_acked_bytes * bonus_drop),
+    //                    saved_acked_bytes * bonus_drop + _mss),
+    //                bonus_drop, (saved_acked_bytes * bonus_drop),
+    //                (saved_acked_bytes * bonus_drop + _mss),
+    //                previous_window_end / 1000, next_window_end / 1000,
+    //                eventlist().now() / 1000);
+    //     }
+    }
 }
 
 void UecSrc::processNack(UecNack &pkt) {
@@ -697,22 +719,23 @@ void UecSrc::processNack(UecNack &pkt) {
            pkt.is_failed);
 
     // Reduce Window Or Do Fast Drop
-    if (use_fast_drop) {
-        if (count_received >= ignore_for) {
-            if (eventlist().now() > next_qa) {
-                need_quick_adapt = true;
-                quick_adapt(true);
-            }
-            // need_quick_adapt = true;
-            pause_send = true;
-            // quick_adapt(true);
-        }
-        if (count_received > ignore_for) {
-            reduce_cwnd(uint64_t(_mss * decrease_on_nack));
-        }
-    } else {
-        reduce_cwnd(uint64_t(_mss * decrease_on_nack));
-    }
+    // if (use_fast_drop) {
+    //     if (count_received >= ignore_for) {
+    //         if (eventlist().now() > next_qa) {
+    //             need_quick_adapt = true;
+    //             quick_adapt(true);
+    //         }
+    //         // need_quick_adapt = true;
+    //         pause_send = true;
+    //         // quick_adapt(true);
+    //     }
+    //     if (count_received > ignore_for) {
+    //         reduce_cwnd(uint64_t(_mss * decrease_on_nack));
+    //     }
+    // } else {
+    //     reduce_cwnd(uint64_t(_mss * decrease_on_nack));
+    // }
+    quick_adapt_drop();
     check_limits_cwnd();
 
     _list_cwd.push_back(std::make_pair(eventlist().now() / 1000, _cwnd));
@@ -1501,7 +1524,7 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
         } else {
             _current_rtt_ewma = _current_rtt_ewma * (1.0 - LCP_ALPHA) + LCP_ALPHA * rtt;
         }
-        printf("\t_current_rtt_ewma: %d _previous_rtt_ewma: %d rtt: %d alpha: %f\n", _current_rtt_ewma, _previous_rtt_ewma, rtt, LCP_ALPHA);
+        // printf("\t_current_rtt_ewma: %d _previous_rtt_ewma: %d rtt: %d alpha: %f curackno: %lu\n", _current_rtt_ewma, _previous_rtt_ewma, rtt, LCP_ALPHA, ackno);
 
         if (_current_rtt_ewma > TARGET_RTT_LOW) {
             _consecutive_good_epochs = 0;
@@ -1511,10 +1534,14 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
             fast_increase();
         }
 
+        // _bytes_receieved_since_last_epoch += _mss;
+
         if (eventlist().now() >= _time_of_next_epoch) {
             cout << "TimeEpoch time: " << eventlist().now() / 1000000 << "  ack sequence number: " << ackno << " next measurement sequence number: " << _next_measurement_seq_no << " highest sent seq no: " << _highest_sent << " abdul'sfix for measurement: " << _highest_sent + 1 << " cwnd: " << _cwnd << endl;
-            // quick_adapt(false);
+            // cout << "According to me bytes receieved since last time... " << _bytes_receieved_since_last_epoch << endl;
+            quick_adapt(false);
             _time_of_next_epoch = eventlist().now() + TARGET_RTT_LOW;
+            // _bytes_receieved_since_last_epoch = 0;
         }
 
         // Next measurement epoch has begun.
@@ -1541,6 +1568,9 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
             if (_current_rtt_ewma < TARGET_RTT_LOW) {
                 _cwnd += (uint32_t)LCP_DELTA;
                 cout << "    CWND change: " << nodename() << " less than all, go from " << cwnd_before << " to " << _cwnd << endl;
+            } else if (_current_rtt_ewma > 2 * TARGET_RTT_HIGH) {
+                quick_adapt_drop();
+                cout << "    CWND change: " << nodename() << " more than 2x target high, go from " << cwnd_before << " to " << _cwnd << endl;
             } else if (_current_rtt_ewma > TARGET_RTT_HIGH) {
                 double latency_ratio = ((double)TARGET_RTT_HIGH) / ((double) _current_rtt_ewma);
                 double factor = (1.0 - LCP_BETA * (1.0 - latency_ratio));
