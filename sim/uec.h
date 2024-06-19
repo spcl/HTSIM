@@ -209,9 +209,9 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     uint32_t _cwnd;
     uint32_t acked_bytes = 0;
     uint32_t good_bytes = 0;
-    uint32_t saved_acked_bytes = 0;
-    uint32_t saved_good_bytes = 0;
-    uint32_t saved_trimmed_bytes = 0;
+    uint32_t saved_acked_bytes; // Should initialize in constructor.
+    uint32_t saved_good_bytes = 0; // Unused in LCP IDCC.
+    uint32_t saved_trimmed_bytes = 0; // Unused in LCP IDCC.
     uint32_t last_decrease = 0;
     uint32_t drop_amount = 0;
     uint32_t count_total_ecn = 0;
@@ -256,6 +256,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     simtime_picosec _time_of_next_epoch;
     // uint64_t _bytes_receieved_since_last_epoch;
     simtime_picosec _time_of_last_qa;
+    bool _first_qa_measurement;
 
     // Custom Parameters
     static int adjust_packet_counts;

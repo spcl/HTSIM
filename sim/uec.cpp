@@ -164,6 +164,8 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger,
     _consecutive_good_epochs = 0;
     _time_of_next_epoch = TARGET_RTT_LOW;
     _time_of_last_qa = 0;
+    saved_acked_bytes = _bdp / 2;
+    _first_qa_measurement = true;
 }
 
 // Add deconstructor and save data once we are done.
@@ -593,7 +595,11 @@ void UecSrc::quick_adapt(bool trimmed) {
 
     if (eventlist().now() >= next_window_end) {
         previous_window_end = next_window_end;
-        saved_acked_bytes = acked_bytes;
+        if (_first_qa_measurement) {
+            _first_qa_measurement = false;
+        } else {
+            saved_acked_bytes = acked_bytes;
+        }
 
         cout << "QADEBUG: Acked bytes " << saved_acked_bytes << " time since last qa: " << eventlist().now() - _time_of_last_qa << endl;
         _time_of_last_qa = eventlist().now();
@@ -1761,7 +1767,7 @@ void UecSrc::send_packets() {
 
     while (get_unacked() + _mss <= c && _highest_sent < _flow_size) {
 
-        printf("Sending packet %d vs %d ~ %d vs %d\n", get_unacked() + _mss,
+        printf("Time: %llu, Sending packet %d vs %d ~ %d vs %d\n", eventlist().now()/1000, get_unacked() + _mss,
                _cwnd, _highest_sent, _flow_size);
 
         // Stop sending
