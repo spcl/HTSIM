@@ -20,7 +20,7 @@ std::string UecSrc::queue_type = "composite";
 std::string UecSrc::algorithm_type = "standard_trimming";
 bool UecSrc::use_fast_drop = false;
 int UecSrc::fast_drop_rtt = 1;
-bool UecSrc::use_pacing = false;
+bool UecSrc::use_pacing = true;
 simtime_picosec UecSrc::pacing_delay = 0;
 bool UecSrc::do_jitter = false;
 bool UecSrc::do_exponential_gain = false;
@@ -1767,8 +1767,6 @@ void UecSrc::send_packets() {
 
     while (get_unacked() + _mss <= c && _highest_sent < _flow_size) {
 
-        printf("Time: %llu, Sending packet %d vs %d ~ %d vs %d\n", eventlist().now()/1000, get_unacked() + _mss,
-               _cwnd, _highest_sent, _flow_size);
 
         // Stop sending
         if (pause_send && stop_after_quick) {
@@ -1815,6 +1813,9 @@ void UecSrc::send_packets() {
         _sent_packets.push_back(
                 SentPacket(eventlist().now() + service_time + _rto, p->seqno(),
                            false, false, false));
+
+         printf("PKTSND: Time: %llu, Sending packet %d vs %d ~ %d vs %d\n", eventlist().now()/1000, get_unacked() + _mss,
+               _cwnd, _highest_sent, _flow_size);
 
         if (generic_pacer != NULL && use_pacing) {
             generic_pacer->just_sent();
