@@ -410,12 +410,6 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-baremetal-us")) {
             BAREMETAL_RTT = timeFromUs(atof(argv[i + 1]));
-            if (TARGET_RTT_LOW == 0) {
-                TARGET_RTT_LOW = timeFromUs(atof(argv[i + 1]) * 1.05);
-            } 
-            if (TARGET_RTT_HIGH == 0) {
-                TARGET_RTT_HIGH = timeFromUs(atof(argv[i + 1]) * 1.1);
-            }
             i++;
         } else if (!strcmp(argv[i], "-alpha")) {
             LCP_ALPHA = atof(argv[i + 1]);
@@ -440,14 +434,6 @@ int main(int argc, char **argv) {
     }
 
     SINGLE_PKT_TRASMISSION_TIME_MODERN = packet_size * 8 / (LINK_SPEED_MODERN);
-
-    if (UecSrc::algorithm_type == "lcp" && (BAREMETAL_RTT == 0 || TARGET_RTT_HIGH == 0 || TARGET_RTT_LOW == 0)) {
-        cout << "LCP requires baremetal, target high and target low RTT to be set. You must set -baremetal-us at least." << endl;
-        exit(1);
-    }
-    printf("Baremetal RTT: %lu\n", BAREMETAL_RTT);
-    printf("Target RTT Low: %lu\n", TARGET_RTT_LOW);
-    printf("Target RTT High: %lu\n", TARGET_RTT_HIGH);
     // exit(1);
 
     // Initialize Seed, Logging and Other variables
@@ -491,7 +477,8 @@ int main(int argc, char **argv) {
     uint64_t base_rtt_max_hops =
             (hops * LINK_DELAY_MODERN) +
             (PKT_SIZE_MODERN * 8 / LINK_SPEED_MODERN * hops) +
-            (hops * LINK_DELAY_MODERN) + (64 * 8 / LINK_SPEED_MODERN * hops);
+            (hops * LINK_DELAY_MODERN) + (64 * 8 / LINK_SPEED_MODERN * hops) + 3898;
+
     uint64_t bdp_local = base_rtt_max_hops * LINK_SPEED_MODERN / 8;
     if (queue_size_ratio == 0) {
         queuesize = bdp_local; // Equal to BDP if not other info
@@ -500,6 +487,13 @@ int main(int argc, char **argv) {
     }
 
     LCP_DELTA = bdp_local * 0.05;
+    BAREMETAL_RTT = base_rtt_max_hops * 1000;
+    TARGET_RTT_LOW = BAREMETAL_RTT * 1.05;
+    TARGET_RTT_HIGH = BAREMETAL_RTT * 1.1;
+    
+    printf("Baremetal RTT: %lu\n", BAREMETAL_RTT);
+    printf("Target RTT Low: %lu\n", TARGET_RTT_LOW);
+    printf("Target RTT High: %lu\n", TARGET_RTT_HIGH);
 
     UecSrc::setRouteStrategy(route_strategy);
     UecSink::setRouteStrategy(route_strategy);
