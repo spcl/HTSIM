@@ -1202,21 +1202,8 @@ void UecSrc::receivePacket(Packet &pkt) {
 
 void UecSrc::fast_increase() {
     uint32_t cwnd_before = _cwnd;
-    if (use_fast_drop) {
-        if (count_received > ignore_for) {
-            if (use_super_fast_increase) {
-                _cwnd += 1.2 * _mss;
-            } else {
-                _cwnd += _mss;
-            }
-        }
-    } else {
-        if (use_super_fast_increase) {
-            _cwnd += 4 * _mss * (LINK_SPEED_MODERN / 100);
-        } else {
-            _cwnd += _mss;
-        }
-    }
+
+    _cwnd += 0.5 * _mss;
 
     increasing = true;
     _list_fast_increase_event.push_back(
@@ -1521,8 +1508,7 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
         }
 
         if (_consecutive_good_epochs > LCP_FAST_INCREASE_THRESHOLD) {
-            // fast_increase();
-            (void)0;
+            fast_increase();
         }
 
         if (eventlist().now() >= _time_of_next_epoch) {
