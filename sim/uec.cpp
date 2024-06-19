@@ -18,7 +18,7 @@ double UecSrc::kmax_double;
 double UecSrc::kmin_double;
 std::string UecSrc::queue_type = "composite";
 std::string UecSrc::algorithm_type = "standard_trimming";
-bool UecSrc::use_fast_drop = true;
+bool UecSrc::use_fast_drop = false;
 int UecSrc::fast_drop_rtt = 1;
 bool UecSrc::use_pacing = false;
 simtime_picosec UecSrc::pacing_delay = 0;
@@ -162,6 +162,7 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger,
     _current_rtt_ewma = timeFromMs(0);
     _next_measurement_seq_no = 0;
     _consecutive_good_epochs = 0;
+    _time_of_next_epoch = TARGET_RTT_LOW;
 }
 
 // Add deconstructor and save data once we are done.
@@ -571,7 +572,7 @@ void UecSrc::check_limits_cwnd() {
 
 void UecSrc::quick_adapt(bool trimmed) {
 
-    if (eventlist().now() >= next_window_end) {
+    // if (eventlist().now() >= next_window_end) {
         previous_window_end = next_window_end;
         saved_acked_bytes = acked_bytes;
 
@@ -610,7 +611,7 @@ void UecSrc::quick_adapt(bool trimmed) {
                         (double)_mss); // 1.5 is the amount of target_rtt over
                                        // base_rtt. Simplified here for this
                                        // code share.
-
+        
             if (eventlist().now() < _base_rtt * 5 && jump_to != 0) {
                 int coin = rand() % 2;
                 int extra = rand() % (jump_to / 10);
@@ -680,7 +681,7 @@ void UecSrc::quick_adapt(bool trimmed) {
                    previous_window_end / 1000, next_window_end / 1000,
                    eventlist().now() / 1000);
         }
-    }
+    // }
 }
 
 void UecSrc::processNack(UecNack &pkt) {
@@ -1520,11 +1521,19 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
         }
 
         if (_consecutive_good_epochs > LCP_FAST_INCREASE_THRESHOLD) {
-            fast_increase();
+            // fast_increase();
+            (void)0;
+        }
+
+        if (eventlist().now() >= _time_of_next_epoch) {
+            cout << "TimeEpoch time: " << eventlist().now() / 1000000 << "  ack sequence number: " << ackno << " next measurement sequence number: " << _next_measurement_seq_no << " highest sent seq no: " << _highest_sent << " abdul'sfix for measurement: " << _highest_sent + 1 << " cwnd: " << _cwnd << endl;
+            // quick_adapt(false);
+            _time_of_next_epoch = eventlist().now() + TARGET_RTT_LOW;
         }
 
         // Next measurement epoch has begun.
         if (ackno >= _next_measurement_seq_no) {
+            cout << "ByteEpoch time: " << eventlist().now() / 1000000 << "  ack sequence number: " << ackno << " next measurement sequence number: " << _next_measurement_seq_no << " highest sent seq no: " << _highest_sent << " abdul'sfix for measurement: " << _highest_sent + 1 << " cwnd: " << _cwnd << endl;
             if (_current_rtt_ewma < TARGET_RTT_LOW) {
                 _consecutive_good_epochs++;
             } else {
@@ -1544,28 +1553,25 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
             cout << "CWND change: " << nodename() << " before: " << cwnd_before << " gradient: " << gradient << " rttchange: " << rtt_change << endl;
             cout << "    _current_rtt_ewma: " << _current_rtt_ewma << ", _target_rtt_low: " << TARGET_RTT_LOW << ", _target_rtt_high: " << TARGET_RTT_HIGH << endl;
             if (_current_rtt_ewma < TARGET_RTT_LOW) {
-                _cwnd += (uint32_t)LCP_DELTA * _mss;
+                _cwnd += (uint32_t)LCP_DELTA;
                 cout << "    CWND change: " << nodename() << " less than all, go from " << cwnd_before << " to " << _cwnd << endl;
-                quick_adapt(false);
             } else if (_current_rtt_ewma > TARGET_RTT_HIGH) {
                 double latency_ratio = ((double)TARGET_RTT_HIGH) / ((double) _current_rtt_ewma);
                 double factor = (1.0 - LCP_BETA * (1.0 - latency_ratio));
                 _cwnd *= (1.0 - LCP_BETA * (1.0 - latency_ratio));
                 cout << "    CWND change: " << nodename() << " greater than all, go from " << cwnd_before << " to " << _cwnd << " latency ratio: " << latency_ratio << endl;
-                quick_adapt(true);
+                // quick_adapt(true);
             } else if (gradient <= 0.0) {
-                _cwnd += (uint32_t)LCP_DELTA * _mss;
+                _cwnd += _mss;
                 cout << "    CWND change: " << nodename() << " between with negative gradient go from " << cwnd_before << " to " << _cwnd << " delta: " << LCP_DELTA << endl;
-                quick_adapt(false);
             } else {
                 double gradient_change = min(max(0.0, gradient * LCP_BETA), 1.0);
                 _cwnd *= (1 - gradient_change);
                 cout << "    CWND change: " << nodename() << " between with positive gradient go from " << cwnd_before << " to " << _cwnd << " gradient_change: " << gradient_change << endl;
-                quick_adapt(false);
             }
         
             // Reset State.
-            _next_measurement_seq_no = ackno + _cwnd;
+            _next_measurement_seq_no = _highest_sent + 1;
             _previous_rtt_ewma = _current_rtt_ewma;
 
             check_limits_cwnd();

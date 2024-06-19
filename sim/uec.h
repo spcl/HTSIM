@@ -253,6 +253,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     simtime_picosec _current_rtt_ewma;
     uint64_t _next_measurement_seq_no;
     uint32_t _consecutive_good_epochs;
+    simtime_picosec _time_of_next_epoch;
 
     // Custom Parameters
     static int adjust_packet_counts;

@@ -499,6 +499,8 @@ int main(int argc, char **argv) {
         queuesize = bdp_local * queue_size_ratio;
     }
 
+    LCP_DELTA = bdp_local * 0.05;
+
     UecSrc::setRouteStrategy(route_strategy);
     UecSink::setRouteStrategy(route_strategy);
 
