@@ -142,7 +142,7 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger,
     if (use_pacing && generic_pacer == NULL) {
         generic_pacer = new SmarttPacer(eventlist(), *this);
         pacer_start_time = eventlist().now();
-        pacing_delay = ((4160 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
+        pacing_delay = ((_mss * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
         printf("Setting the pacing delay1 %d %lu to %lu at %lu\n", _cwnd,
                (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
         // pacing_delay -= (4160 * 8 / LINK_SPEED_MODERN);
@@ -441,7 +441,7 @@ void UecSrc::updateParams() {
     if (use_pacing && generic_pacer != NULL) {
         generic_pacer = new SmarttPacer(eventlist(), *this);
         pacer_start_time = eventlist().now();
-        pacing_delay = ((4160 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
+        pacing_delay = ((_mss * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
         printf("Setting the pacing delay1 %d %lu to %lu at %lu\n", _cwnd,
                (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
         // pacing_delay -= (4160 * 8 / LINK_SPEED_MODERN);
@@ -1065,7 +1065,7 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
 
     if (use_pacing && generic_pacer != NULL /*&& did_qa*/ &&
         ((eventlist().now() - last_pac_change) > _base_rtt / 20)) {
-        pacing_delay = (4160 * 8) / ((_cwnd * 8.0) / (_base_rtt / 1000.0));
+        pacing_delay = (_mss * 8) / ((_cwnd * 8.0) / (_base_rtt / 1000.0));
         //  pacing_delay -= (4160 * 8 / 80);
         printf("Setting the pacing delay update %d %lu to %lu at %lu\n", _cwnd,
                (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
