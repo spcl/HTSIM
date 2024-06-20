@@ -150,7 +150,7 @@ The following failures can be simulated:
  - Complete NIC Failure
  - NIC Degradation
 
-To turn on or off the failures, add a .txt file in the datacenter folder, where you specify which failures are turned ON or OFF and add the following to the command line: ```-failures_input example.txt```
+To turn on or off the failures, add a .txt file in the HTSIM\sim\failures_input folder, where you specify which failures are turned ON or OFF and add the following to the command line: ```-failures_input ../failures_input/file_name.txt```
 An example of the file is below.
 
 ### Switch Failures
