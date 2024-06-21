@@ -428,7 +428,13 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-fast-increase-threshold")) {
             LCP_FAST_INCREASE_THRESHOLD = atoi(argv[i + 1]);
             i++;
-        } else {
+        } else if (!strcmp(argv[i], "-no-qa")) {
+            LCP_USE_QUICK_ADAPT = false;
+        } else if (!strcmp(argv[i], "-no-fi")) {
+            LCP_USE_FAST_INCREASE = false;
+        } else if (!strcmp(argv[i], "-no-pacing")) {
+            LCP_USE_PACING = false;
+        }  else {
             printf("Called with %s\n", argv[i]);
             exit_error(argv[0]);
         }

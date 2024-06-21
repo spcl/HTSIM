@@ -53,6 +53,9 @@ extern double LCP_GAMMA;
 extern uint32_t LCP_DELTA;
 extern int LCP_K;
 extern uint32_t LCP_FAST_INCREASE_THRESHOLD;
+extern bool LCP_USE_QUICK_ADAPT;
+extern bool LCP_USE_PACING;
+extern bool LCP_USE_FAST_INCREASE;
 //
 extern uint64_t MAX_CWD_OLD_NDP;
 extern uint64_t ENABLE_FAST_DROP;

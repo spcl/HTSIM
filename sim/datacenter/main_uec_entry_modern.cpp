@@ -299,7 +299,7 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-use_pacing")) {
             use_pacing = atoi(argv[i + 1]);
-            UecSrc::set_use_pacing(use_pacing);
+            // UecSrc::set_use_pacing(use_pacing);
             i++;
         } else if (!strcmp(argv[i], "-fast_drop")) {
             UecSrc::set_fast_drop(atoi(argv[i + 1]));

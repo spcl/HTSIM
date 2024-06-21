@@ -67,3 +67,6 @@ double LCP_GAMMA = 0.3;
 uint32_t LCP_DELTA = 1;
 int LCP_K = 1;
 uint32_t LCP_FAST_INCREASE_THRESHOLD = 3;
+bool LCP_USE_QUICK_ADAPT = true;
+bool LCP_USE_PACING = true;
+bool LCP_USE_FAST_INCREASE = true;

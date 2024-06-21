@@ -109,7 +109,6 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static void set_alogirthm(std::string value) { algorithm_type = value; }
     static void set_fast_drop(bool value) { use_fast_drop = value; }
     static void set_fast_drop_rtt(int value) { fast_drop_rtt = value; }
-    static void set_use_pacing(int value) { use_pacing = value; }
     static void set_pacing_delay(simtime_picosec value) {
         pacing_delay = value * 1000;
     }
@@ -327,7 +326,6 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static bool stop_after_quick;
     static simtime_picosec stop_pacing_after_rtt;
     static RouteStrategy _route_strategy;
-    static bool use_pacing;
     static simtime_picosec pacing_delay;
     bool first_quick_adapt = false;
 

@@ -20,7 +20,6 @@ std::string UecSrc::queue_type = "composite";
 std::string UecSrc::algorithm_type = "standard_trimming";
 bool UecSrc::use_fast_drop = false;
 int UecSrc::fast_drop_rtt = 1;
-bool UecSrc::use_pacing = true;
 simtime_picosec UecSrc::pacing_delay = 0;
 bool UecSrc::do_jitter = false;
 bool UecSrc::do_exponential_gain = false;
@@ -139,7 +138,7 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger,
     f_flow_over_hook = nullptr;
     last_pac_change = 0;
 
-    if (use_pacing && generic_pacer == NULL) {
+    if (LCP_USE_PACING && generic_pacer == NULL) {
         generic_pacer = new SmarttPacer(eventlist(), *this);
         pacer_start_time = eventlist().now();
         pacing_delay = ((_mss * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
@@ -438,7 +437,7 @@ void UecSrc::updateParams() {
     _enableDistanceBasedRtx = false;
     last_pac_change = 0;
 
-    if (use_pacing && generic_pacer != NULL) {
+    if (LCP_USE_PACING && generic_pacer != NULL) {
         generic_pacer = new SmarttPacer(eventlist(), *this);
         pacer_start_time = eventlist().now();
         pacing_delay = ((_mss * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
@@ -590,7 +589,7 @@ void UecSrc::quick_adapt_drop() {
     _list_fast_decrease.push_back(
                     std::make_pair(eventlist().now() / 1000, 1));
 
-    if (use_pacing && generic_pacer != NULL /*&& did_qa*/ &&
+    if (LCP_USE_PACING && generic_pacer != NULL /*&& did_qa*/ &&
         ((eventlist().now() - last_pac_change) > _base_rtt / 20)) {
         pacing_delay = (_mss * 8) / ((_cwnd * 8.0) / (_base_rtt / 1000.0));
         //  pacing_delay -= (4160 * 8 / 80);
@@ -689,7 +688,7 @@ void UecSrc::quick_adapt(bool trimmed) {
     //         last_qa_event = eventlist().now();
 
     //         // Go into pacing mode after QuickAdapt
-    //         if (use_pacing && generic_pacer == NULL) {
+    //         if (LCP_USE_PACING && generic_pacer == NULL) {
     //             generic_pacer = new SmarttPacer(eventlist(), *this);
     //             pacer_start_time = eventlist().now();
     //             pacing_delay =
@@ -753,8 +752,10 @@ void UecSrc::processNack(UecNack &pkt) {
     // } else {
     //     reduce_cwnd(uint64_t(_mss * decrease_on_nack));
     // }
-    quick_adapt_drop();
-    check_limits_cwnd();
+    if (LCP_USE_QUICK_ADAPT) {
+        quick_adapt_drop();
+        check_limits_cwnd();
+    }
 
     _list_cwd.push_back(std::make_pair(eventlist().now() / 1000, _cwnd));
     _consecutive_no_ecn = 0;
@@ -1075,7 +1076,7 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
     uint64_t newRtt = now_time - ts;
     mark_received(pkt);
 
-    if (use_pacing && generic_pacer != NULL /*&& did_qa*/ &&
+    if (LCP_USE_PACING && generic_pacer != NULL /*&& did_qa*/ &&
         ((eventlist().now() - last_pac_change) > _base_rtt / 20)) {
         pacing_delay = (_mss * 8) / ((_cwnd * 8.0) / (_base_rtt / 1000.0));
         //  pacing_delay -= (4160 * 8 / 80);
@@ -1548,7 +1549,8 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
             _consecutive_good_epochs = 0;
         }
 
-        if (_consecutive_good_epochs > LCP_FAST_INCREASE_THRESHOLD) {
+        if (LCP_USE_FAST_INCREASE && _consecutive_good_epochs > LCP_FAST_INCREASE_THRESHOLD) {
+            printf("Doing fi\n");
             fast_increase();
         }
 
@@ -1587,7 +1589,15 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
                 _cwnd += (uint32_t)LCP_DELTA;
                 cout << "    CWND change: " << nodename() << " less than all, go from " << cwnd_before << " to " << _cwnd << endl;
             } else if (_current_rtt_ewma > 2 * TARGET_RTT_HIGH) {
-                quick_adapt_drop();
+                if (LCP_USE_QUICK_ADAPT) {
+                    quick_adapt_drop();
+                } else {
+                    double latency_ratio = ((double)TARGET_RTT_HIGH) / ((double) _current_rtt_ewma);
+                    double latency_factor = LCP_BETA * (1.0 - latency_ratio);
+                    double gradient_factor = min(max(-1.0, gradient), 0.0) * LCP_GAMMA;
+                    double total_factor = min(max(-1.0, latency_factor + gradient_factor), 1.0);
+                    _cwnd *= (1.0 - total_factor);
+                }
                 cout << "    CWND change: " << nodename() << " more than 2x target high, go from " << cwnd_before << " to " << _cwnd << endl;
             } else if (_current_rtt_ewma > TARGET_RTT_HIGH) {
                 double latency_ratio = ((double)TARGET_RTT_HIGH) / ((double) _current_rtt_ewma);
@@ -1596,7 +1606,6 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
                 double total_factor = min(max(-1.0, latency_factor + gradient_factor), 1.0);
                 _cwnd *= (1.0 - total_factor);
                 cout << "    CWND change: " << nodename() << " greater than all, go from " << cwnd_before << " to " << _cwnd << " latency factor: " << latency_factor << " gradient factor: " << gradient_factor << " total factor: " << total_factor << endl;
-                // quick_adapt(true);
             } else if (gradient <= 0.0) {
                 _cwnd += _mss;
                 cout << "    CWND change: " << nodename() << " between with negative gradient go from " << cwnd_before << " to " << _cwnd << " delta: " << LCP_DELTA << endl;
@@ -1788,7 +1797,7 @@ void UecSrc::send_packets() {
         }
 
         // Check pacer and set timeout
-        if (!_paced_packet && use_pacing) {
+        if (!_paced_packet && LCP_USE_PACING) {
             if (generic_pacer != NULL && !generic_pacer->is_pending()) {
                 printf("scheduling send\n");
                 generic_pacer->schedule_send(pacing_delay);
@@ -1831,7 +1840,7 @@ void UecSrc::send_packets() {
          printf("PKTSND: Time: %llu, Sending packet %d vs %d ~ %d vs %d\n", eventlist().now()/1000, get_unacked() + _mss,
                _cwnd, _highest_sent, _flow_size);
 
-        if (generic_pacer != NULL && use_pacing) {
+        if (generic_pacer != NULL && LCP_USE_PACING) {
             generic_pacer->just_sent();
             _paced_packet = false;
         }
@@ -1990,7 +1999,7 @@ bool UecSrc::resend_packet(std::size_t idx) {
     }
 
     // Check pacer and set timeout
-    if (!_paced_packet && use_pacing) {
+    if (!_paced_packet && LCP_USE_PACING) {
         if (generic_pacer != NULL && !generic_pacer->is_pending()) {
             generic_pacer->schedule_send(pacing_delay);
             return false;
