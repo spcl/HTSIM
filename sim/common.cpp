@@ -70,3 +70,4 @@ uint32_t LCP_FAST_INCREASE_THRESHOLD = 3;
 bool LCP_USE_QUICK_ADAPT = true;
 bool LCP_USE_PACING = true;
 bool LCP_USE_FAST_INCREASE = true;
+double LCP_PACING_BONUS = 0.05;

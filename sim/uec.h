@@ -101,6 +101,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     int choose_route();
     inline simtime_picosec pacing_delay_f() const { return pacing_delay; }
     int next_route();
+    void update_pacing_delay();
 
     void set_traffic_logger(TrafficLogger *pktlogger);
     static void set_kmax(double value) { kmax_double = value; }

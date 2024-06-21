@@ -138,17 +138,7 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger,
     f_flow_over_hook = nullptr;
     last_pac_change = 0;
 
-    if (LCP_USE_PACING && generic_pacer == NULL) {
-        generic_pacer = new SmarttPacer(eventlist(), *this);
-        pacer_start_time = eventlist().now();
-        pacing_delay = ((_mss * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
-        printf("Setting the pacing delay1 %d %lu to %lu at %lu\n", _cwnd,
-               (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
-        // pacing_delay -= (4160 * 8 / LINK_SPEED_MODERN);
-        printf("Setting the pacing delay2 %d %lu to %lu at %lu\n", _cwnd,
-               (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
-        pacing_delay *= 1000; // ps
-    }
+    update_pacing_delay();
 
     if (queue_type == "composite_bts") {
         _bts_enabled = true;
@@ -364,6 +354,26 @@ void UecSrc::set_end_trigger(Trigger &end_trigger) {
     _end_trigger = &end_trigger;
 }
 
+void UecSrc::update_pacing_delay() {
+    bool is_time_to_update = (last_pac_change == 0) || ((eventlist().now() - last_pac_change) > _base_rtt / 20);
+    cout << "PaceDelayChange: Is it time to update? " << is_time_to_update << " at " << GLOBAL_TIME / 1000 << endl;
+    cout << "PaceDelayChange: Last change was " << eventlist().now() - last_pac_change << " ago at " << GLOBAL_TIME / 1000 << endl;
+    if (LCP_USE_PACING && is_time_to_update) {
+        pacing_delay = (((double)_mss) / (((double)_cwnd) / (_base_rtt / 1000.0))) * (1.0 - LCP_PACING_BONUS);
+        cout << "PaceDelayChange: Setting the pacing delay to: " << pacing_delay << " at " << GLOBAL_TIME / 1000
+             << " with cwnd: " << _cwnd << " and mss: " << _mss << endl;
+            pacing_delay *= 1000; // ps
+        if (generic_pacer != NULL) {
+            generic_pacer->cancel();
+            last_pac_change = eventlist().now();
+        } else {
+            generic_pacer = new SmarttPacer(eventlist(), *this);
+            pacer_start_time = eventlist().now();
+            last_pac_change = eventlist().now();
+        }
+    }
+}
+
 // Update Network Parameters
 void UecSrc::updateParams() {
     if (src_dc != dest_dc) {
@@ -437,17 +447,7 @@ void UecSrc::updateParams() {
     _enableDistanceBasedRtx = false;
     last_pac_change = 0;
 
-    if (LCP_USE_PACING && generic_pacer != NULL) {
-        generic_pacer = new SmarttPacer(eventlist(), *this);
-        pacer_start_time = eventlist().now();
-        pacing_delay = ((_mss * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
-        printf("Setting the pacing delay1 %d %lu to %lu at %lu\n", _cwnd,
-               (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
-        // pacing_delay -= (4160 * 8 / LINK_SPEED_MODERN);
-        printf("Setting the pacing delay2 %d %lu to %lu at %lu\n", _cwnd,
-               (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
-        pacing_delay *= 1000; // ps
-    }
+    update_pacing_delay();
 }
 
 std::size_t UecSrc::get_sent_packet_idx(uint32_t pkt_seqno) {
@@ -570,6 +570,8 @@ void UecSrc::check_limits_cwnd() {
     if (_cwnd < _mss) {
         _cwnd = _mss;
     }
+
+    update_pacing_delay();
 }
 
 void UecSrc::quick_adapt_drop() {
@@ -589,17 +591,7 @@ void UecSrc::quick_adapt_drop() {
     _list_fast_decrease.push_back(
                     std::make_pair(eventlist().now() / 1000, 1));
 
-    if (LCP_USE_PACING && generic_pacer != NULL /*&& did_qa*/ &&
-        ((eventlist().now() - last_pac_change) > _base_rtt / 20)) {
-        pacing_delay = (_mss * 8) / ((_cwnd * 8.0) / (_base_rtt / 1000.0));
-        //  pacing_delay -= (4160 * 8 / 80);
-        printf("Setting the pacing delay update %d %lu to %lu at %lu\n", _cwnd,
-               (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
-        pacing_delay *= 1000; // ps
-        generic_pacer->cancel();
-        // generic_pacer->schedule_send(pacing_delay);
-        last_pac_change = eventlist().now();
-    }
+    check_limits_cwnd();
 }
 
 void UecSrc::quick_adapt(bool trimmed) {
@@ -617,109 +609,6 @@ void UecSrc::quick_adapt(bool trimmed) {
 
         acked_bytes = 0;
         next_window_end = eventlist().now() + _base_rtt;
-    //     // Enable Fast Drop
-    //     if ((trimmed || need_quick_adapt) && previous_window_end != 0) {
-
-    //         if (did_qa) {
-    //             // return;
-    //         }
-
-    //         if (eventlist().now() > next_qa) {
-    //             next_qa = eventlist().now() + _base_rtt * 3;
-    //         } else {
-    //             return;
-    //         }
-
-    //         // Edge case where we get here receiving a packet a long time after
-    //         // the last one (>> base_rtt). Should not matter in most cases.
-    //         /*saved_acked_bytes =
-    //                 saved_acked_bytes *
-    //                 ((double)_base_rtt /
-    //                  (eventlist().now() - previous_window_end + _base_rtt));*/
-
-    //         // Update window and ignore count
-    //         printf("Before Update Saved CWD is %lu \n", saved_acked_bytes);
-    //         if (send_size <= _bdp) {
-    //             // saved_acked_bytes =
-    //             //         saved_acked_bytes * (_bdp / (double)send_size);
-    //             printf("BDP %lu - Send Size %lu - Ratio %f\n", _bdp, send_size,
-    //                    (_bdp / (double)send_size));
-    //         }
-    //         printf("After Update Saved CWD is %lu \n", saved_acked_bytes);
-    //         _cwnd = max((double)(saved_acked_bytes * bonus_drop),
-    //                     (double)_mss); // 1.5 is the amount of target_rtt over
-    //                                    // base_rtt. Simplified here for this
-    //                                    // code share.
-        
-    //         if (eventlist().now() < _base_rtt * 5 && jump_to != 0) {
-    //             int coin = rand() % 2;
-    //             int extra = rand() % (jump_to / 10);
-    //             if (jump_to > 1200000) {
-    //                 extra /= 100;
-    //             } else if (jump_to > 1000000) {
-    //                 extra /= 3;
-    //             }
-
-    //             if (coin % 2 == 0) {
-    //                 _cwnd = jump_to + extra;
-    //             } else {
-    //                 _cwnd = jump_to - extra / 2;
-    //             }
-    //         }
-
-    //         check_limits_cwnd();
-    //         ignore_for = (get_unacked() / (double)_mss);
-
-    //         // Reset counters, update logs.
-    //         count_received = 0;
-    //         need_quick_adapt = false;
-    //         _list_fast_decrease.push_back(
-    //                 std::make_pair(eventlist().now() / 1000, 1));
-
-    //         // Update x_gain after large incasts. We want to limit its effect if
-    //         // we move to much smaller windows.
-    //         // x_gain = min(initial_x_gain,
-    //         //             (_queue_size / 5.0) / (_mss * ((double)_bdp /
-    //         //             _cwnd)));
-    //         // printf("New X Gain is %f\n", x_gain);
-    //         did_qa = true;
-    //         qa_count++;
-    //         pause_send = false;
-    //         last_qa_event = eventlist().now();
-
-    //         // Go into pacing mode after QuickAdapt
-    //         if (LCP_USE_PACING && generic_pacer == NULL) {
-    //             generic_pacer = new SmarttPacer(eventlist(), *this);
-    //             pacer_start_time = eventlist().now();
-    //             pacing_delay =
-    //                     ((4160 * 8) / ((_cwnd * 8) / (_base_rtt / 1000)));
-    //             // pacing_delay -= (4160 * 8 / LINK_SPEED_MODERN);
-    //             printf("Setting the pacing delay %d %lu to %lu at %lu\n", _cwnd,
-    //                    (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
-    //             pacing_delay *= 1000; // ps
-    //         }
-
-    //         // Print
-
-    //         total_pkt = 0;
-    //         total_nack = 0;
-    //         printf("Using Fast Drop2 - Flow %d@%d@%d, Ecn %d, CWND %d, "
-    //                "Saved "
-    //                "Acked %d (dropping to %f - bonus1  %f -> %f and "
-    //                "%f) - "
-    //                "Previous "
-    //                "Window %lu - Next "
-    //                "Window %lu// "
-    //                "Time "
-    //                "%lu\n",
-    //                from, to, tag, 1, _cwnd, saved_acked_bytes,
-    //                max((double)(saved_acked_bytes * bonus_drop),
-    //                    saved_acked_bytes * bonus_drop + _mss),
-    //                bonus_drop, (saved_acked_bytes * bonus_drop),
-    //                (saved_acked_bytes * bonus_drop + _mss),
-    //                previous_window_end / 1000, next_window_end / 1000,
-    //                eventlist().now() / 1000);
-    //     }
     }
 }
 
@@ -754,7 +643,6 @@ void UecSrc::processNack(UecNack &pkt) {
     // }
     if (LCP_USE_QUICK_ADAPT) {
         quick_adapt_drop();
-        check_limits_cwnd();
     }
 
     _list_cwd.push_back(std::make_pair(eventlist().now() / 1000, _cwnd));
@@ -1075,18 +963,6 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
     }
     uint64_t newRtt = now_time - ts;
     mark_received(pkt);
-
-    if (LCP_USE_PACING && generic_pacer != NULL /*&& did_qa*/ &&
-        ((eventlist().now() - last_pac_change) > _base_rtt / 20)) {
-        pacing_delay = (_mss * 8) / ((_cwnd * 8.0) / (_base_rtt / 1000.0));
-        //  pacing_delay -= (4160 * 8 / 80);
-        printf("Setting the pacing delay update %d %lu to %lu at %lu\n", _cwnd,
-               (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
-        pacing_delay *= 1000; // ps
-        generic_pacer->cancel();
-        // generic_pacer->schedule_send(pacing_delay);
-        last_pac_change = eventlist().now();
-    }
 
     count_total_ack++;
     if (marked) {

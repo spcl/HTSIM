@@ -422,8 +422,12 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-delta")) {
             LCP_DELTA = atoi(argv[i + 1]);
+            i++;
         } else if (!strcmp(argv[i], "-k")) {
             LCP_K = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-pacing-bonus")) {
+            LCP_PACING_BONUS = atof(argv[i + 1]);
             i++;
         } else if (!strcmp(argv[i], "-fast-increase-threshold")) {
             LCP_FAST_INCREASE_THRESHOLD = atoi(argv[i + 1]);
@@ -496,7 +500,9 @@ int main(int argc, char **argv) {
     }
     queuesize = bdp_local * 0.2;
 
-    LCP_DELTA = bdp_local * 0.05;
+    if (LCP_DELTA == 1) {
+        LCP_DELTA = bdp_local * 0.05;
+    }
     BAREMETAL_RTT = base_rtt_max_hops * 1000;
     TARGET_RTT_LOW = BAREMETAL_RTT * 1.05;
     TARGET_RTT_HIGH = BAREMETAL_RTT * 1.1;
@@ -504,6 +510,13 @@ int main(int argc, char **argv) {
     printf("Baremetal RTT: %lu\n", BAREMETAL_RTT);
     printf("Target RTT Low: %lu\n", TARGET_RTT_LOW);
     printf("Target RTT High: %lu\n", TARGET_RTT_HIGH);
+    cout << " Delta " << LCP_DELTA << endl;
+    cout << " Beta " << LCP_BETA << endl;
+    cout << " Alpha " << LCP_ALPHA << endl;
+    cout << " Gamma " << LCP_GAMMA << endl;
+    cout << " BDP " << bdp_local << endl;
+    cout << " Queue Size " << queuesize << endl;
+
 
     UecSrc::setRouteStrategy(route_strategy);
     UecSink::setRouteStrategy(route_strategy);
