@@ -1263,6 +1263,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
             }
             std::cout << "Maximum finishing time at host " << host << ": " << max << " (" << (double)max / 1e9
                       << " s)\n";
+            FAILURE_GENERATOR->createLoggingData();
         }
 
         // WRITE match queue statistics

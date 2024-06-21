@@ -35,6 +35,16 @@ def main(args):
     os.system("rm -r case2/")
     os.system("rm -r case3/")
     os.system("rm -r case4/")
+    os.system("rm -r switch_failures/")
+    os.system("rm -r cable_failures/")
+    os.system("rm -r switch_drops/")
+    os.system("rm -r cable_drops/")
+    os.system("rm -r routing_failed_switch/")
+    os.system("rm -r routing_failed_cable/")
+    os.system("rm -r switch_degradations/")
+    os.system("rm -r cable_degradations/")
+
+
 
     os.system("cp -a ../sim/output/cwd/. cwd/")
     os.system("cp -a ../sim/output/rtt/. rtt/")
@@ -53,6 +63,14 @@ def main(args):
     os.system("cp -a ../sim/output/case2/. case2/")
     os.system("cp -a ../sim/output/case3/. case3/")
     os.system("cp -a ../sim/output/case4/. case4/")
+    os.system("cp -a ../sim/output/switch_drops/. switch_drops/")
+    os.system("cp -a ../sim/output/cable_drops/. cable_drops/")
+    os.system("cp -a ../sim/output/switch_failures/. switch_failures/")
+    os.system("cp -a ../sim/output/cable_failures/. cable_failures/")
+    os.system("cp -a ../sim/output/routing_failed_switch/. routing_failed_switch/")
+    os.system("cp -a ../sim/output/routing_failed_cable/. routing_failed_cable/")
+    os.system("cp -a ../sim/output/switch_degradations/. switch_degradations/")
+    os.system("cp -a ../sim/output/cable_degradations/. cable_degradations/")
 
     # RTT Data
     colnames=['Time', 'RTT', 'seqno', 'ackno', 'base', 'target']
@@ -519,6 +537,68 @@ def main(args):
         # Reset the index of the new dataframe
         df11.reset_index(drop=True, inplace=True)
 
+
+    # Switch Failures data
+    colnames=['FailTime', 'RecoveryTime'] 
+    dfSwitchFail = pd.DataFrame(columns =colnames)
+    
+    pathlist = Path('switch_failures').glob('**/*.txt')
+    for files in sorted(pathlist):
+        path_in_str = str(files)
+        temp = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
+        dfSwitchFail = pd.concat([dfSwitchFail, temp])
+
+    # Cable Failures data
+    colnames=['FailTime', 'RecoveryTime'] 
+    dfCableFail = pd.DataFrame(columns =colnames)
+    
+    pathlist = Path('cable_failures').glob('**/*.txt')
+    for files in sorted(pathlist):
+        path_in_str = str(files)
+        temp = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
+        dfCableFail = pd.concat([dfCableFail, temp])
+
+
+    # Packet drops Switch data
+    colnames=['DropTime'] 
+    dfSwitchDrops = pd.DataFrame(columns =colnames)
+    
+    pathlist = Path('switch_drops').glob('**/*.txt')
+    for files in sorted(pathlist):
+        path_in_str = str(files)
+        temp = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
+        dfSwitchDrops = pd.concat([dfSwitchDrops, temp])
+
+    # Packet drops Cable data
+    colnames=['DropTime'] 
+    dfCableDrops = pd.DataFrame(columns =colnames)
+    
+    pathlist = Path('cable_drops').glob('**/*.txt')
+    for files in sorted(pathlist):
+        path_in_str = str(files)
+        temp = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
+        dfCableDrops = pd.concat([dfCableDrops, temp])
+
+    # Switch Degradations
+    colnames=['Time'] 
+    dfSwitchDegradations = pd.DataFrame(columns =colnames)
+    
+    pathlist = Path('switch_degradations').glob('**/*.txt')
+    for files in sorted(pathlist):
+        path_in_str = str(files)
+        temp = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
+        dfSwitchDegradations = pd.concat([dfSwitchDegradations, temp])
+        
+    # Switch Degradations
+    colnames=['Time'] 
+    dfCableDegradations = pd.DataFrame(columns =colnames)
+    
+    pathlist = Path('cable_degradations').glob('**/*.txt')
+    for files in sorted(pathlist):
+        path_in_str = str(files)
+        temp = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
+        dfCableDegradations = pd.concat([dfCableDegradations, temp])  
+
     print("Finished Parsing")
     # Create figure with secondary y-axis
     fig = make_subplots(specs=[[{"secondary_y": True}]])
@@ -706,6 +786,38 @@ def main(args):
             go.Scatter(x=sub_df11["Time"], y=sub_df11["MediumI"], mode="markers", marker_symbol="triangle-up", name="MediumI Packet", marker=dict(size=5, color="white"), showlegend=True),
             secondary_y=False
         )
+
+
+
+    fig.add_trace(
+        go.Scatter(x=dfSwitchFail["FailTime"]/1000, y=[7000]*len(dfSwitchFail),  mode="markers", marker_symbol="cross", name="Switch Fail", marker=dict(size=6, color="red"), showlegend=True),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(x=dfSwitchDegradations["Time"]/1000, y=[6500]*len(dfSwitchDegradations),  mode="markers", marker_symbol="diamond", name="Switch Degradation", marker=dict(size=6, color="red"), showlegend=True),
+        secondary_y=False
+    )   
+
+    fig.add_trace(
+        go.Scatter(x=dfSwitchDrops["DropTime"]/1000, y=[6000]*len(dfSwitchDrops),  mode="markers", marker_symbol="circle", name="Switch Packet drop", marker=dict(size=6, color="red"), showlegend=True),
+        secondary_y=False
+    )
+
+    fig.add_trace(
+        go.Scatter(x=dfCableFail["FailTime"]/1000, y=[5000]*len(dfCableFail),  mode="markers", marker_symbol="cross", name="Cable Fail", marker=dict(size=6, color="blue"), showlegend=True),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(x=dfCableDegradations["Time"]/1000, y=[6500]*len(dfCableDegradations),  mode="markers", marker_symbol="diamond", name="Cable Degradation", marker=dict(size=6, color="blue"), showlegend=True),
+        secondary_y=False
+    ) 
+
+    fig.add_trace(
+        go.Scatter(x=dfCableDrops["DropTime"]/1000, y=[4000]*len(dfCableDrops),  mode="markers", marker_symbol="circle", name="Cable Packet drop", marker=dict(size=6, color="blue"), showlegend=True),
+        secondary_y=False
+    )
+
+
 
 
     if args.name is not None:

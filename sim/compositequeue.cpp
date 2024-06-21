@@ -321,6 +321,7 @@ void CompositeQueue::receivePacket(Packet &pkt) {
             pkt.strip_payload();
         }
         pkt.is_failed = true;
+        FAILURE_GENERATOR->_list_switch_packet_drops.push_back(GLOBAL_TIME);
 
         // pkt.free(); Later we will re-enable this
         // return;

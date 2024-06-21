@@ -437,6 +437,7 @@ Route *FatTreeSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
             uint32_t cable_id = next_pipe->getID();
             std::string cable_name = next_pipe->nodename();
             if (FAILURE_GENERATOR->failingCables.find(cable_id) != FAILURE_GENERATOR->failingCables.end()) {
+                FAILURE_GENERATOR->_list_routed_failing_cables.push_back(GLOBAL_TIME);
                 std::cout << "Routed packet to failing cable: " << cable_name << " at time " << GLOBAL_TIME
                           << std::endl;
             }
@@ -446,6 +447,7 @@ Route *FatTreeSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
             std::string switch_name = next_switch->nodename();
 
             if (FAILURE_GENERATOR->failingSwitches.find(switch_id) != FAILURE_GENERATOR->failingSwitches.end()) {
+                FAILURE_GENERATOR->_list_routed_failing_switches.push_back(GLOBAL_TIME);
                 std::cout << "Routed packet to failing switch: " << switch_name << " at time " << GLOBAL_TIME
                           << std::endl;
                 print_route(*decided_route);

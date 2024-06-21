@@ -53,7 +53,7 @@ class failuregenerator {
     float switch_fail_max_percent = 1;
 
     bool switchBER(Packet &pkt, Switch *sw, Queue q);
-    bool dropPacketsSwichtBER(Packet &pkt);
+    bool dropPacketsSwitchBER(Packet &pkt);
     int num_corrupted_packets_switchBER = 0;
     int all_packets_switchBER = 0;
     std::set<uint32_t> corrupted_packets;
@@ -140,6 +140,17 @@ class failuregenerator {
     simtime_picosec nic_worst_case_start = 0;
     simtime_picosec nic_worst_case_period = 0;
     simtime_picosec nic_worst_case_next_fail = 0;
+
+    // For logging
+    void createLoggingData();
+    vector<simtime_picosec> _list_switch_packet_drops;
+    vector<simtime_picosec> _list_cable_packet_drops;
+    vector<pair<simtime_picosec, simtime_picosec>> _list_switch_failures;
+    vector<simtime_picosec> _list_switch_degradations;
+    vector<simtime_picosec> _list_cable_degradations;
+    vector<pair<simtime_picosec, simtime_picosec>> _list_cable_failures;
+    vector<simtime_picosec> _list_routed_failing_switches;
+    vector<simtime_picosec> _list_routed_failing_cables;
 
   private:
 };

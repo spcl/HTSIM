@@ -1098,6 +1098,7 @@ int main(int argc, char **argv) {
     }
     for (int i = 0; i < 10; i++)
         cout << "Hop " << i << " Count " << counts[i] << endl;
+    FAILURE_GENERATOR->createLoggingData();
 }
 
 string ntoa(double n) {

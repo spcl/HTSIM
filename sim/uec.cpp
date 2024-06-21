@@ -2200,13 +2200,25 @@ bool UecSink::already_received(UecPacket &pkt) {
 void UecSink::receivePacket(Packet &pkt) {
     /* printf("Sink Received %d %d - Entropy %d - %lu - \n", pkt.from, pkt.id(), pkt.pathid(), GLOBAL_TIME / 1000); */
 
-    if (FAILURE_GENERATOR->simNICFailures(NULL, this, pkt) || FAILURE_GENERATOR->dropPacketsSwichtBER(pkt)) {
+    if (FAILURE_GENERATOR->simNICFailures(NULL, this, pkt)) {
         // Temporary Hack
         if (!pkt.header_only()) {
             pkt.strip_payload();
         }
         pkt.is_failed = true;
 
+        // pkt.free(); Later we will re-enable this
+        // return;
+    }
+
+    if (FAILURE_GENERATOR->dropPacketsSwitchBER(pkt)) {
+        // Temporary Hack
+        if (!pkt.header_only()) {
+            pkt.strip_payload();
+        }
+        pkt.is_failed = true;
+
+        FAILURE_GENERATOR->_list_switch_packet_drops.push_back(GLOBAL_TIME);
         // pkt.free(); Later we will re-enable this
         // return;
     }

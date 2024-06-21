@@ -28,6 +28,7 @@ void Pipe::receivePacket(Packet &pkt) {
             pkt.strip_payload();
         }
         pkt.is_failed = true;
+        FAILURE_GENERATOR->_list_cable_packet_drops.push_back(GLOBAL_TIME);
 
         // pkt.free(); Later we will re-enable this
         // return;
