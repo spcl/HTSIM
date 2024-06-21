@@ -1417,7 +1417,11 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
         if (_current_rtt_ewma == timeFromMs(0)) {
             _current_rtt_ewma = rtt;
         } else {
-            _current_rtt_ewma = _current_rtt_ewma * (1.0 - LCP_ALPHA) + LCP_ALPHA * rtt;
+            if (LCP_USE_MIN_RTT) {
+                _current_rtt_ewma = min(_current_rtt_ewma, rtt);
+            } else {
+                _current_rtt_ewma = _current_rtt_ewma * (1.0 - LCP_ALPHA) + LCP_ALPHA * rtt;
+            }
         }
         // printf("\t_current_rtt_ewma: %d _previous_rtt_ewma: %d rtt: %d alpha: %f curackno: %lu\n", _current_rtt_ewma, _previous_rtt_ewma, rtt, LCP_ALPHA, ackno);
 
@@ -1523,6 +1527,10 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
                 std::ofstream MyFile4(file_name, std::ios_base::app);
                 MyFile4 << eventlist().now() / 1000 << "," << BAREMETAL_RTT / 1000 << std::endl;
                 MyFile4.close();
+            }
+
+            if (LCP_USE_MIN_RTT) {
+                _current_rtt_ewma = timeFromMs(0);
             }
         }
     }

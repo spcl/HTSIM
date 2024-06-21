@@ -57,6 +57,7 @@ extern bool LCP_USE_QUICK_ADAPT;
 extern bool LCP_USE_PACING;
 extern bool LCP_USE_FAST_INCREASE;
 extern double LCP_PACING_BONUS;
+extern bool LCP_USE_MIN_RTT;
 //
 extern uint64_t MAX_CWD_OLD_NDP;
 extern uint64_t ENABLE_FAST_DROP;

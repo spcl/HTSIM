@@ -438,6 +438,8 @@ int main(int argc, char **argv) {
             LCP_USE_FAST_INCREASE = false;
         } else if (!strcmp(argv[i], "-no-pacing")) {
             LCP_USE_PACING = false;
+        } else if (!strcmp(argv[i], "-use-min")) {
+            LCP_USE_MIN_RTT = true;
         }  else {
             printf("Called with %s\n", argv[i]);
             exit_error(argv[0]);
