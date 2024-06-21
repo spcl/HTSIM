@@ -63,6 +63,7 @@ simtime_picosec TARGET_RTT_HIGH = 0;
 simtime_picosec BAREMETAL_RTT = 0;
 double LCP_ALPHA = 0.5;
 double LCP_BETA = 0.8;
+double LCP_GAMMA = 0.3;
 uint32_t LCP_DELTA = 1;
 int LCP_K = 1;
 uint32_t LCP_FAST_INCREASE_THRESHOLD = 3;

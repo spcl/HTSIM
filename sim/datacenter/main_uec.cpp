@@ -417,6 +417,9 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-beta")) {
             LCP_BETA = atof(argv[i + 1]);
             i++;
+        } else if (!strcmp(argv[i], "-gamma")) {
+            LCP_GAMMA = atof(argv[i + 1]);
+            i++;
         } else if (!strcmp(argv[i], "-delta")) {
             LCP_DELTA = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-k")) {
@@ -485,6 +488,7 @@ int main(int argc, char **argv) {
     } else {
         queuesize = bdp_local * queue_size_ratio;
     }
+    queuesize = bdp_local * 0.2;
 
     LCP_DELTA = bdp_local * 0.05;
     BAREMETAL_RTT = base_rtt_max_hops * 1000;

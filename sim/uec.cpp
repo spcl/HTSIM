@@ -589,6 +589,18 @@ void UecSrc::quick_adapt_drop() {
                                 // code share.
     _list_fast_decrease.push_back(
                     std::make_pair(eventlist().now() / 1000, 1));
+
+    if (use_pacing && generic_pacer != NULL /*&& did_qa*/ &&
+        ((eventlist().now() - last_pac_change) > _base_rtt / 20)) {
+        pacing_delay = (_mss * 8) / ((_cwnd * 8.0) / (_base_rtt / 1000.0));
+        //  pacing_delay -= (4160 * 8 / 80);
+        printf("Setting the pacing delay update %d %lu to %lu at %lu\n", _cwnd,
+               (_base_rtt / 1000), pacing_delay, GLOBAL_TIME / 1000);
+        pacing_delay *= 1000; // ps
+        generic_pacer->cancel();
+        // generic_pacer->schedule_send(pacing_delay);
+        last_pac_change = eventlist().now();
+    }
 }
 
 void UecSrc::quick_adapt(bool trimmed) {
@@ -1563,7 +1575,7 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
                 _previous_rtt_ewma = _current_rtt_ewma;
             }
             int64_t rtt_change = (int64_t) _current_rtt_ewma - (int64_t) _previous_rtt_ewma;
-            printf("Current RTT: %d, Previous RTT: %d, RTT Change: %ld\n", _current_rtt_ewma, _previous_rtt_ewma, rtt_change);
+            cout << "Current RTT: " << _current_rtt_ewma << " Previous RTT: " << _previous_rtt_ewma << " RTT Change: " << rtt_change << endl;
 
             uint32_t cwnd_before = _cwnd;
 
@@ -1579,9 +1591,11 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
                 cout << "    CWND change: " << nodename() << " more than 2x target high, go from " << cwnd_before << " to " << _cwnd << endl;
             } else if (_current_rtt_ewma > TARGET_RTT_HIGH) {
                 double latency_ratio = ((double)TARGET_RTT_HIGH) / ((double) _current_rtt_ewma);
-                double factor = (1.0 - LCP_BETA * (1.0 - latency_ratio));
-                _cwnd *= (1.0 - LCP_BETA * (1.0 - latency_ratio));
-                cout << "    CWND change: " << nodename() << " greater than all, go from " << cwnd_before << " to " << _cwnd << " latency ratio: " << latency_ratio << endl;
+                double latency_factor = LCP_BETA * (1.0 - latency_ratio);
+                double gradient_factor = min(max(-1.0, gradient), 0.0) * LCP_GAMMA;
+                double total_factor = min(max(-1.0, latency_factor + gradient_factor), 1.0);
+                _cwnd *= (1.0 - total_factor);
+                cout << "    CWND change: " << nodename() << " greater than all, go from " << cwnd_before << " to " << _cwnd << " latency factor: " << latency_factor << " gradient factor: " << gradient_factor << " total factor: " << total_factor << endl;
                 // quick_adapt(true);
             } else if (gradient <= 0.0) {
                 _cwnd += _mss;

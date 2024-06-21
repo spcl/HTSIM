@@ -49,6 +49,7 @@ extern simtime_picosec TARGET_RTT_HIGH;
 extern simtime_picosec BAREMETAL_RTT;
 extern double LCP_ALPHA;
 extern double LCP_BETA;
+extern double LCP_GAMMA;
 extern uint32_t LCP_DELTA;
 extern int LCP_K;
 extern uint32_t LCP_FAST_INCREASE_THRESHOLD;
