@@ -21,6 +21,7 @@ int CompositeQueue::_kmin_from_input = 20;
 int CompositeQueue::_kmax_from_input = 80;
 int CompositeQueue::_phantom_queue_slowdown = 10;
 bool CompositeQueue::use_bts = false;
+bool CompositeQueue::use_trimming = true;
 
 CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize, EventList &eventlist, QueueLogger *logger)
         : Queue(bitrate, maxsize, eventlist, logger) {
@@ -337,6 +338,31 @@ void CompositeQueue::receivePacket(Packet &pkt) {
                        pkt.pathid(), pkt.size(), pkt.id(), GLOBAL_TIME / 1000);
             }
         }
+    }
+    failed_link = false;
+
+    if (!pkt.header_only() && GLOBAL_TIME > 32000000 &&
+        (_nodename == "compqueue(100000Mb/s,150000bytes)US1->CS1(0)" ||
+         _nodename == "compqueue(100000Mb/s,150000bytes)US0->CS0(0)" ||
+         _nodename == "compqueue(100000Mb/s,150000bytes)US3->CS3(0)" ||
+         _nodename == "compqueue(100000Mb/s,150000bytes)US3->CS3(0)" ||
+         _nodename == "compqueue(100000Mb/s,150000bytes)US17->CS1(0)" ||
+         _nodename == "compqueue(100000Mb/s,150000bytes)US18->CS10(0)" ||
+         _nodename == "compqueue(100000Mb/s,150000bytes)US20->CS4(0)" ||
+         _nodename == "compqueue(100000Mb/s,150000bytes)US24->CS0(0)" ||
+         _nodename == "compqueue(100000Mb/s,150000bytes)US27->CS11(0)" ||
+         _nodename == "compqueue(100000Mb/s,150000bytes)US28->CS0(0)" ||
+         _nodename == "compqueue(100000Mb/s,150000bytes)US31->CS15(0)" ||
+         _nodename == "compqueue(100000Mb/s,150000bytes)US13->CS5(0)" ||
+         _nodename == "compqueue(100000Mb/s,150000bytes)US11->CS3(0)" ||
+         _nodename == "compqueue(100000Mb/s,150000bytes)US1->CS13(0)" ||
+         _nodename == "compqueue(100000Mb/s,150000bytes)US2->CS14(0)" ||
+         _nodename == "compqueue(100000Mb/s,150000bytes)US12->CS4(0)")) {
+        printf("Dropping Packet, triggering Timeout %d@%d at %lu\n", pkt.from, pkt.to, GLOBAL_TIME / 1000);
+        // pkt.free();
+        // return;
+    } else if (!pkt.header_only()) {
+        // printf("Queue is %s\n", _nodename.c_str());
     }
 
     if (failed_link && !pkt.header_only()) {

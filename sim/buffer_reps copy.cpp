@@ -111,9 +111,9 @@ template <typename T> T CircularBufferREPS<T>::remove_frozen() {
     T element = buffer[head_forzen_mode].value;
 
     if (compressed_acks) {
-        buffer[head_forzen_mode].usable_lifetime--;
-        if (buffer[head_forzen_mode].usable_lifetime < 0) {
-            buffer[head_forzen_mode].isValid = false;
+        buffer[offset].usable_lifetime--;
+        if (buffer[offset].usable_lifetime < 0) {
+            buffer[offset].isValid = false;
             if (old_validity) {
                 number_fresh_entropies--;
             }

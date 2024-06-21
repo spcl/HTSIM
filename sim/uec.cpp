@@ -95,7 +95,7 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList
 
     _rtt = _base_rtt;
     _rto = rtt + _hop_count * queueDrainTime + (rtt * 900000);
-    _rto = _base_rtt * 3;
+    _rto = _base_rtt * 2.7;
     _rto_margin = _rtt / 8;
     _rtx_timeout = timeInf;
     _rtx_timeout_pending = false;
@@ -126,10 +126,10 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList
     _target_based_received = true;
 
     /* printf("Link Delay %d - Link Speed %lu - Pkt Size %d - Base RTT %lu - "
-           "Target RTT is %lu - BDP %lu - CWND %u - Hops %d - Stop Pacing "
-           "%lu\n",
-           LINK_DELAY_MODERN, LINK_SPEED_MODERN, PKT_SIZE_MODERN, _base_rtt, _target_rtt, _bdp, _cwnd, _hop_count,
-           stop_pacing_after_rtt); */
+       "Target RTT is %lu - BDP %lu - CWND %u - Hops %d - Stop Pacing "
+       "%lu\n",
+       LINK_DELAY_MODERN, LINK_SPEED_MODERN, PKT_SIZE_MODERN, _base_rtt, _target_rtt, _bdp, _cwnd, _hop_count,
+       stop_pacing_after_rtt); */
 
     _max_good_entropies = 10; // TODO: experimental value
     _enableDistanceBasedRtx = false;
@@ -154,7 +154,7 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList
         _bts_enabled = false;
     }
 
-    circular_buffer_reps = new CircularBufferREPS<int>(10);
+    circular_buffer_reps = new CircularBufferREPS<int>(CircularBufferREPS<int>::repsBufferSize);
 }
 
 // Add deconstructor and save data once we are done.
@@ -297,6 +297,17 @@ UecSrc::~UecSrc() {
 
         RepsInvalid.close();
 
+        // REPS REC INVALID EXPIRED
+        file_name = PROJECT_ROOT_PATH / ("sim/output/reps_rec_invalid_expired/reps_rec_invalid_expired" + _name + "_" +
+                                         std::to_string(tag) + ".txt");
+        std::ofstream RepsInvalidExpired(file_name, std::ios_base::app);
+
+        for (const auto &p : reps_rec_invalid_expired) {
+            RepsInvalidExpired << p.first << "," << p.second << std::endl;
+        }
+
+        RepsInvalidExpired.close();
+
         // Fast Decrease
         file_name = PROJECT_ROOT_PATH / ("sim/output/fastd/fastd" + _name + "_" + std::to_string(tag) + ".txt");
         std::ofstream MyFileFastDec(file_name, std::ios_base::app);
@@ -415,7 +426,7 @@ void UecSrc::updateParams() {
 
     _rtt = _base_rtt;
     _rto = _base_rtt * 900000;
-    _rto = _base_rtt * 3;
+    _rto = _base_rtt * 2.7;
     _rto_margin = _rtt / 8;
     _rtx_timeout = timeInf;
     _rtx_timeout_pending = false;
@@ -529,7 +540,7 @@ void UecSrc::mark_received(UecAck &pkt) {
         auto timer = _sent_packets[i].timer;
         auto seqno = _sent_packets[i].seqno;
         auto nacked = _sent_packets[i].nacked;
-        _sent_packets[i] = SentPacket(timer, seqno, true, false, false);
+        _sent_packets[i] = SentPacket(timer, seqno, true, false, false, pkt.pathid_echo);
         if (nacked) {
             --_nack_rtx_pending;
         }
@@ -852,7 +863,7 @@ void UecSrc::processNack(UecNack &pkt) {
 
     // mark corresponding packet for retransmission
     auto i = get_sent_packet_idx(pkt.seqno());
-    assert(i < _sent_packets.size());
+    // assert(i < _sent_packets.size());
 
     assert(!_sent_packets[i].acked); // TODO: would it be possible for a packet
                                      // to receive a nack after being acked?
@@ -888,7 +899,7 @@ void UecSrc::simulateTrimEvent(UecAck &pkt) {
 }
 
 /* Choose a route for a particular packet */
-int UecSrc::choose_route() {
+uint16_t UecSrc::choose_route() {
 
     switch (_route_strategy) {
     case PULL_BASED: {
@@ -952,18 +963,67 @@ int UecSrc::choose_route() {
             _crt_path = 0;
         }
         break;
+    case BITMAP: {
+        uint16_t mask = _no_of_paths - 1;
+        uint16_t entropy = (_current_ev_index ^ _path_xor) & mask;
+        bool flag = false;
+        int counter = 0;
+        while (_ev_skip_bitmap[entropy] > 0) {
+            if (flag == false) {
+                _ev_skip_bitmap[entropy]--;
+                if (!_ev_skip_bitmap[entropy]) {
+                    assert(_ev_skip_count > 0);
+                    _ev_skip_count--;
+                }
+            }
+
+            flag = true;
+            counter++;
+            if (counter > _no_of_paths) {
+                break;
+            }
+            _current_ev_index++;
+            if (_current_ev_index == _no_of_paths) {
+                _current_ev_index = 0;
+                _path_xor = rand() & mask;
+            }
+            entropy = (_current_ev_index ^ _path_xor) & mask;
+        }
+
+        // set things for next time
+        _current_ev_index++;
+        if (_current_ev_index == _no_of_paths) {
+            _current_ev_index = 0;
+            _path_xor = rand() & mask;
+        }
+
+        entropy |= _path_random ^ (_path_random & mask); // set upper bits
+        _crt_path = entropy;
+        printf("BITMAP: %dTO%d --> %d\n", from, to, _crt_path);
+        break;
+    }
     case CIRCULAR_REPS: {
 
+        printf("Using Circular Reps %d@%d - Count %d - Valid %d - Fresh %d\n", from, to,
+               circular_buffer_reps->getSize(), circular_buffer_reps->numValid(),
+               circular_buffer_reps->getNumberFreshEntropies());
         if (circular_buffer_reps->isFrozenMode()) {
             if (circular_buffer_reps->isEmpty()) {
                 _crt_path++;
                 if (_crt_path == _paths.size()) {
                     _crt_path = 0;
                 }
+                printf("New Entropy %d to %d at %lu\n", from, to, GLOBAL_TIME / 1000);
                 reps_new.push_back(std::make_pair(eventlist().now() / 1000, 1));
             } else {
+
+                if (circular_buffer_reps->is_valid_frozen()) {
+                    reps_rec_invalid.push_back(std::make_pair(eventlist().now() / 1000, 1));
+                } else {
+                    reps_rec_invalid_expired.push_back(std::make_pair(eventlist().now() / 1000, 1));
+                }
                 _crt_path = circular_buffer_reps->remove_frozen();
-                reps_rec_invalid.push_back(std::make_pair(eventlist().now() / 1000, 1));
+
                 // printf("Returned Entropy %d\n", _crt_path);
             }
         } else {
@@ -972,6 +1032,7 @@ int UecSrc::choose_route() {
                 if (_crt_path == _paths.size()) {
                     _crt_path = 0;
                 }
+                printf("New Entropy Unfrozen %d to %d at %lu\n", from, to, GLOBAL_TIME / 1000);
                 reps_new.push_back(std::make_pair(eventlist().now() / 1000, 1));
             } else {
                 _crt_path = circular_buffer_reps->remove_earliest_fresh();
@@ -1196,15 +1257,37 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
     consecutive_nack = 0;
     bool marked = pkt.flags() & ECN_ECHO; // ECN was marked on data packet and echoed on ACK
 
-    if (GLOBAL_TIME > 140000000) {
-        circular_buffer_reps->setFrozenMode(true);
-    }
-
     // REPS
-    if (!marked && !circular_buffer_reps->isFrozenMode()) {
-        circular_buffer_reps->add(pkt.pathid_echo);
-    } else if ((marked || !marked) && circular_buffer_reps->isFrozenMode()) {
-        circular_buffer_reps->add(pkt.pathid_echo);
+    // if (skip_cum_acks_counter % 4 == 0) {
+    if (_route_strategy == CIRCULAR_REPS) {
+        if (!marked && !circular_buffer_reps->isFrozenMode()) {
+            printf("Adding Reps %d@%d %d\n", from, to, pkt.pathid_echo);
+            circular_buffer_reps->add(pkt.pathid_echo);
+        } else if ((marked || !marked) && circular_buffer_reps->isFrozenMode()) {
+            circular_buffer_reps->add(pkt.pathid_echo);
+        }
+    }
+    //}
+    // skip_cum_acks_counter++;
+
+    if (_route_strategy == BITMAP) {
+        if (marked) {
+            uint16_t mask = _no_of_paths - 1;
+            uint16_t path_id = pkt.pathid_echo;
+            path_id &= mask; // only take the relevant bits for an index
+
+            if (!_ev_skip_bitmap[path_id])
+                _ev_skip_count++;
+
+            uint8_t penalty = 0;
+
+            penalty = 1;
+
+            _ev_skip_bitmap[path_id] += penalty;
+            if (_ev_skip_bitmap[path_id] > _max_penalty) {
+                _ev_skip_bitmap[path_id] = _max_penalty;
+            }
+        }
     }
 
     if (COLLECT_DATA && marked) {
@@ -1250,7 +1333,9 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
 
     if (!marked) {
         _consecutive_no_ecn += _mss;
+        // if (skip_counter_ack % 1 == 0) {
         _next_pathid = pkt.pathid_echo;
+        //}
         _good_entropies_list.push_back(pkt.pathid_echo);
 
         list_good_reps[current_idx_reps] = pkt.pathid_echo;
@@ -1260,10 +1345,14 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
             current_idx_reps = 0;
         }
     } else {
+        // if (skip_counter_ack % 1 == 0) {
         _next_pathid = -1;
+        //}
+
         ecn_last_rtt = true;
         _consecutive_no_ecn = 0;
     }
+    // skip_counter_ack++;
 
     if (COLLECT_DATA) {
         _received_ecn.push_back(std::make_tuple(eventlist().now(), marked, _mss, newRtt));
@@ -1293,6 +1382,7 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
         printf("Flow %d - Total Time %f\n", from, timeAsUs(eventlist().now()) - timeAsUs(_flow_start_time));
 
         printf("Overall Completion at %lu\n", GLOBAL_TIME);
+        // markFlowAsFinished();
         if (_end_trigger) {
             _end_trigger->activate();
         }
@@ -1397,6 +1487,25 @@ void UecSrc::receivePacket(Packet &pkt) {
             if (_trimming_enabled) {
                 _next_pathid = -1;
                 count_received++;
+
+                if (_route_strategy == BITMAP) {
+                    uint16_t mask = _no_of_paths - 1;
+                    uint16_t path_id = pkt.pathid_echo;
+                    path_id &= mask; // only take the relevant bits for an index
+
+                    if (!_ev_skip_bitmap[path_id])
+                        _ev_skip_count++;
+
+                    uint8_t penalty = 0;
+
+                    penalty = 4;
+
+                    _ev_skip_bitmap[path_id] += penalty;
+                    if (_ev_skip_bitmap[path_id] > _max_penalty) {
+                        _ev_skip_bitmap[path_id] = _max_penalty;
+                    }
+                }
+
                 processNack(dynamic_cast<UecNack &>(pkt));
                 pkt.free();
             }
@@ -2018,7 +2127,7 @@ const string &UecSrc::nodename() { return _nodename; }
 void UecSrc::connect(Route *routeout, Route *routeback, UecSink &sink, simtime_picosec starttime) {
     if (_route_strategy == SINGLE_PATH || _route_strategy == ECMP_FIB || _route_strategy == ECMP_FIB_ECN ||
         _route_strategy == REACTIVE_ECN || _route_strategy == ECMP_RANDOM2_ECN || _route_strategy == ECMP_RANDOM_ECN ||
-        _route_strategy == CIRCULAR_REPS) {
+        _route_strategy == CIRCULAR_REPS || _route_strategy == BITMAP) {
         assert(routeout);
         _route = routeout;
     }
@@ -2037,6 +2146,17 @@ void UecSrc::connect(Route *routeout, Route *routeback, UecSink &sink, simtime_p
 void UecSrc::startflow() {
     ideal_x = x_gain;
     _flow_start_time = eventlist().now();
+
+    if (_route_strategy == BITMAP) {
+        _crt_path = 0;
+
+        // reset path penalties
+        _ev_skip_bitmap.resize(_no_of_paths);
+        for (uint32_t i = 0; i < _no_of_paths; i++) {
+            _ev_skip_bitmap[i] = 0;
+        }
+        _max_penalty = 15;
+    }
 
     /* printf("Starting Flow from %d to %d tag %d - RTT %lu - Target %lu - "
            "Time "
@@ -2117,7 +2237,7 @@ void UecSrc::send_packets() {
         UecPacket *p = UecPacket::newpkt(_flow, *_route, _highest_sent + 1, data_seq, _mss, false, _dstaddr);
 
         p->set_route(*_route);
-        int crt = choose_route();
+        uint16_t crt = choose_route();
         p->is_bts_pkt = false;
         p->from = this->from;
         p->to = this->to;
@@ -2145,7 +2265,8 @@ void UecSrc::send_packets() {
         HostQueue *q = dynamic_cast<HostQueue *>(sink);
         assert(q);
         uint32_t service_time = q->serviceTime(*p);
-        _sent_packets.push_back(SentPacket(eventlist().now() + service_time + _rto, p->seqno(), false, false, false));
+        _sent_packets.push_back(
+                SentPacket(eventlist().now() + service_time + _rto, p->seqno(), false, false, false, p->pathid()));
 
         if (generic_pacer != NULL && use_pacing) {
             generic_pacer->just_sent();
@@ -2177,7 +2298,7 @@ void permute_sequence_uec(vector<int> &seq) {
 void UecSrc::set_paths(uint32_t no_of_paths) {
     if (_route_strategy != ECMP_FIB && _route_strategy != ECMP_FIB_ECN && _route_strategy != ECMP_FIB2_ECN &&
         _route_strategy != REACTIVE_ECN && _route_strategy != ECMP_RANDOM_ECN && _route_strategy != ECMP_RANDOM2_ECN &&
-        _route_strategy != CIRCULAR_REPS) {
+        _route_strategy != CIRCULAR_REPS && _route_strategy != BITMAP) {
         cout << "Set paths uec (path_count) called with wrong route "
                 "strategy "
              << _route_strategy << endl;
@@ -2185,6 +2306,7 @@ void UecSrc::set_paths(uint32_t no_of_paths) {
     }
 
     _path_ids.resize(no_of_paths);
+    _no_of_paths = no_of_paths;
     permute_sequence_uec(_path_ids);
 
     _paths.resize(no_of_paths);
@@ -2297,7 +2419,26 @@ void UecSrc::apply_timeout_penalty() {
     }
 }
 
-void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) { retransmit_packet(); }
+void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
+
+    if (_highest_sent == 0)
+        return;
+    if (_rtx_timeout == timeInf || now + period < _rtx_timeout)
+        return;
+    if (GLOBAL_TIME < _base_rtt * 4) {
+        return;
+    }
+
+    if (!_rtx_timeout_pending) {
+        _rtx_timeout_pending = true;
+        // apply_timeout_penalty();
+
+        cout << "At " << timeAsUs(now) << "us RTO " << timeAsUs(_rto) << "us RTT " << timeAsUs(_rtt) << "us SEQ "
+             << _last_acked / _mss << " CWND " << _cwnd / _mss << " Flow ID " << str() << endl;
+        printf("base RTT is %lu\n", _base_rtt);
+    }
+    retransmit_packet();
+}
 
 void UecSrc::track_sending_rate() {
     if (eventlist().now() > last_track_ts + tracking_period) {
@@ -2339,7 +2480,7 @@ bool UecSrc::resend_packet(std::size_t idx) {
     p->is_bts_pkt = false;
 
     p->set_route(*_route);
-    int crt = choose_route();
+    uint16_t crt = choose_route();
 
     p->from = this->from;
     p->to = this->to;
@@ -2379,15 +2520,51 @@ bool UecSrc::resend_packet(std::size_t idx) {
 
 // retransmission for timeout
 void UecSrc::retransmit_packet() {
+    printf("We enter here1\n");
     _rtx_pending = false;
     for (std::size_t i = 0; i < _sent_packets.size(); ++i) {
         auto &sp = _sent_packets[i];
+        printf("We enter here2 %d - %d - %d - %lu < %lu\n", _rtx_timeout_pending, sp.acked, sp.nacked, sp.timer,
+               eventlist().now() + _rto_margin);
         if (_rtx_timeout_pending && !sp.acked && !sp.nacked && sp.timer <= eventlist().now() + _rto_margin) {
-            _cwnd = _mss;
+            //_cwnd = _mss;
+            printf("We enter here3 %d - %d - %d - %lu < %lu\n", _rtx_timeout_pending, sp.acked, sp.nacked, sp.timer,
+                   eventlist().now() + _rto_margin);
+            // printf("Received Failed Pkt %d at %lu\n", pkt.seqno(), eventlist().now() / 1000);
+            _list_fast_decrease.push_back(std::make_pair(eventlist().now() / 1000, 1));
             sp.timedOut = true;
+            //_next_pathid = -1;
+            if (first_timeout == 0) {
+                first_timeout = eventlist().now();
+                if (!circular_buffer_reps->isFrozenMode() && first_timeout != 0) {
+                    circular_buffer_reps->setFrozenMode(true);
+                    printf("Started Freezing Mode for %d at %lu", from, GLOBAL_TIME / 1000);
+                }
+            }
+            if (_route_strategy == BITMAP) {
+                if (_route_strategy == BITMAP) {
+                    uint16_t mask = _no_of_paths - 1;
+                    uint16_t path_id = sp.path_entropy;
+                    path_id &= mask; // only take the relevant bits for an index
+
+                    if (!_ev_skip_bitmap[path_id])
+                        _ev_skip_count++;
+
+                    uint8_t penalty = 0;
+
+                    penalty = _max_penalty;
+
+                    _ev_skip_bitmap[path_id] += penalty;
+                    if (_ev_skip_bitmap[path_id] > _max_penalty) {
+                        _ev_skip_bitmap[path_id] = _max_penalty;
+                    }
+                }
+            }
             reduce_unacked(_mss);
         }
         if (!sp.acked && (sp.timedOut || sp.nacked)) {
+            printf("We enter here4 %d - %d - %d - %lu < %lu\n", _rtx_timeout_pending, sp.acked, sp.nacked, sp.timer,
+                   eventlist().now() + _rto_margin);
             if (!resend_packet(i)) {
                 _rtx_pending = true;
             }
@@ -2564,6 +2741,7 @@ void UecSink::send_ack(simtime_picosec ts, bool marked, UecAck::seq_t seqno, Uec
     case REACTIVE_ECN:
     case ECMP_RANDOM2_ECN:
     case CIRCULAR_REPS:
+    case BITMAP:
     case ECMP_RANDOM_ECN:
         ack = UecAck::newpkt(_src->_flow, *_route, seqno, ackno, 0, _srcaddr);
 
@@ -2625,6 +2803,7 @@ void UecSink::connect(UecSrc &src, const Route *route) {
     case REACTIVE_ECN:
     case ECMP_RANDOM2_ECN:
     case CIRCULAR_REPS:
+    case BITMAP:
     case ECMP_RANDOM_ECN:
         assert(route);
         //("Setting route\n");
@@ -2655,6 +2834,7 @@ void UecSink::set_paths(uint32_t no_of_paths) {
     case ECMP_FIB_ECN:
     case ECMP_RANDOM2_ECN:
     case CIRCULAR_REPS:
+    case BITMAP:
     case REACTIVE_ECN:
         assert(_paths.size() == 0);
         _paths.resize(no_of_paths);
@@ -2691,19 +2871,41 @@ UecRtxTimerScanner::UecRtxTimerScanner(simtime_picosec scanPeriod, EventList &ev
     eventlist.sourceIsPendingRel(*this, 0);
 }
 
-void UecRtxTimerScanner::registerUec(UecSrc &uecsrc) { _uecs.push_back(&uecsrc); }
+void UecRtxTimerScanner::registerUec(UecSrc &uecsrc) {
+    _uecs.push_back(&uecsrc);
+    num_total++;
+}
+
+void UecRtxTimerScanner::markFlowAsFinished() {
+    int finished_tot_flows = 0;
+
+    uecs_t::iterator i;
+    for (i = _uecs.begin(); i != _uecs.end(); i++) {
+        if ((*i)->isFlowFinished()) {
+            finished_tot_flows++;
+        }
+    }
+
+    if (finished_tot_flows == num_total) {
+        // printf("All flows finished2\n");
+        has_finished = true;
+        finished_time = eventlist().now();
+    } else {
+        // printf("Not all flows finished\n");
+        // printf("Finished %d vs %d\n", finished_tot_flows, num_total);
+    }
+}
 
 void UecRtxTimerScanner::doNextEvent() {
     simtime_picosec now = eventlist().now();
+    markFlowAsFinished();
+    if (has_finished && eventlist().now() > finished_time + BASE_RTT_MODERN * 2) {
+        eventlist().cancelPendingSource(*this);
+        return;
+    }
     uecs_t::iterator i;
     for (i = _uecs.begin(); i != _uecs.end(); i++) {
         (*i)->rtx_timer_hook(now, _scanPeriod);
     }
     eventlist().sourceIsPendingRel(*this, _scanPeriod);
 }
-
-/* printf("Decreasing by %d (%f %f) at %lu\n", gent_dec_amount,
-                           (x_gain_up * 1.0) * _mss * ((double)_mss / _cwnd),
-                           (x_gain_up * 2.0) * _mss * ((double)_mss / (_cwnd * ((double)_bdp) / _cwnd)) *
-                                   (((double)_cwnd) / _bdp),
-                           GLOBAL_TIME / 1000); */

@@ -38,6 +38,7 @@ def main(args):
     os.system("rm -r reps_new/")
     os.system("rm -r reps_rec/")
     os.system("rm -r reps_rec_invalid/")
+    os.system("rm -r reps_rec_invalid_expired/")
 
     os.system("cp -a ../sim/output/cwd/. cwd/")
     os.system("cp -a ../sim/output/rtt/. rtt/")
@@ -60,6 +61,7 @@ def main(args):
     os.system("cp -a ../sim/output/reps_new/. reps_new/")
     os.system("cp -a ../sim/output/reps_rec/. reps_rec/")
     os.system("cp -a ../sim/output/reps_rec_invalid/. reps_rec_invalid/")
+    os.system("cp -a ../sim/output/reps_rec_invalid_expired/. reps_rec_invalid_expired/")
 
     # RTT Data
     colnames=['Time', 'RTT', 'seqno', 'ackno', 'base', 'target']
@@ -78,8 +80,8 @@ def main(args):
     base_rtt = df["base"].max()
     target_rtt = df["target"].max()
 
-    if (len(df) > 10001):
-        ratio = len(df) / 10000
+    if (len(df) > 500001):
+        ratio = len(df) / 500000
         # DownScale
         df = df.iloc[::int(ratio)]
         # Reset the index of the new dataframe
@@ -533,6 +535,20 @@ def main(args):
         temp_df42 = temp_df42.assign(Node=name)
         df42 = pd.concat([df42, temp_df42])
 
+    # Reps INV data
+    colnames=['Time', 'REPS_REC_INVALID_EXPIRED'] 
+    df50 = pd.DataFrame(columns =colnames)
+    name = ['0'] * df50.shape[0]
+    df50 = df50.assign(Node=name)
+
+    pathlist = Path('reps_rec_invalid_expired').glob('**/*.txt')
+    for files in sorted(pathlist):
+        path_in_str = str(files)
+        temp_df50 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
+        name = [str(path_in_str)] * temp_df50.shape[0]
+        temp_df50 = temp_df50.assign(Node=name)
+        df50 = pd.concat([df50, temp_df50])
+
     # FastD data
     colnames=['Time', 'FastD'] 
     df10 = pd.DataFrame(columns =colnames)
@@ -586,6 +602,7 @@ def main(args):
     reps_rec = max_rtt * 0.60
     reps_new = max_rtt * 0.55
     reps_invalid = max_rtt * 0.50
+    reps_invalid_expired = max_rtt * 0.45
     mean_rtt = 10000
     count = 0
     for i in df['Node'].unique():
@@ -759,11 +776,23 @@ def main(args):
     for i in df42['Node'].unique():
         sub_df42 = df42.loc[df42['Node'] == str(i)]
         fig.add_trace(
-            go.Scatter(x=sub_df42["Time"], y=sub_df42["REPS_REC_INVALID"], mode="markers", marker_symbol="triangle-up", name="REPS_NEW Packet", marker=dict(size=5, color="yellow"), showlegend=True),
+            go.Scatter(x=sub_df42["Time"], y=sub_df42["REPS_REC_INVALID"], mode="markers", marker_symbol="triangle-up", name="REPS_FROZEN_VALID Packet", marker=dict(size=5, color="yellow"), showlegend=True),
             secondary_y=False
         )
 
     print("REPS INVALID Plot")
+
+    # Reps INVALID EXPIRED
+    mean_sent = df50["Time"].mean()
+    df50['REPS_REC_INVALID_EXPIRED'] = df50['REPS_REC_INVALID_EXPIRED'].multiply(reps_invalid_expired)
+    for i in df50['Node'].unique():
+        sub_df50 = df50.loc[df50['Node'] == str(i)]
+        fig.add_trace(
+            go.Scatter(x=sub_df50["Time"], y=sub_df50["REPS_REC_INVALID_EXPIRED"], mode="markers", marker_symbol="triangle-up", name="REPS_FROZEN_INVALID Packet", marker=dict(size=5, color="#8c564b"), showlegend=True),
+            secondary_y=False
+        )
+
+    print("REPS INVALID EXPIRED Plot")
 
     # FastI
     mean_sent = df41["Time"].mean()

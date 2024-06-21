@@ -55,6 +55,7 @@ class CompositeQueue : public Queue {
 
     void set_bts_threshold(mem_b bts_triggers_at) { _bts_triggering = bts_triggers_at; }
     static void set_bts(bool use_b) { use_bts = use_b; }
+    static void set_trimming(bool use_b) { use_trimming = use_b; }
 
     static void set_drop_when_full(bool do_drop_full) { _drop_when_full = do_drop_full; }
     static void set_use_mixed(bool use_m) { _use_mixed = use_m; }
@@ -113,6 +114,7 @@ class CompositeQueue : public Queue {
     mem_b _ecn_maxthresh;
     mem_b _bts_triggering;
     static bool use_bts;
+    static bool use_trimming;
 
     CircularBuffer<Packet *> _enqueued_low;
     CircularBuffer<Packet *> _enqueued_high;

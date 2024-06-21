@@ -23,15 +23,17 @@ class UecSink;
 
 class SentPacket {
   public:
-    SentPacket(simtime_picosec t, uint64_t s, bool a, bool n, bool to)
-            : timer{t}, seqno{s}, acked{a}, nacked{n}, timedOut{to} {}
+    SentPacket(simtime_picosec t, uint64_t s, bool a, bool n, bool to, uint16_t pe)
+            : timer{t}, seqno{s}, acked{a}, nacked{n}, timedOut{to}, path_entropy{pe} {}
     SentPacket(const SentPacket &sp)
-            : timer{sp.timer}, seqno{sp.seqno}, acked{sp.acked}, nacked{sp.nacked}, timedOut{sp.timedOut} {}
+            : timer{sp.timer}, seqno{sp.seqno}, acked{sp.acked}, nacked{sp.nacked}, timedOut{sp.timedOut},
+              path_entropy{sp.path_entropy} {}
     simtime_picosec timer;
     uint64_t seqno;
     bool acked;
     bool nacked;
     bool timedOut;
+    uint16_t path_entropy;
 };
 
 class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
@@ -69,7 +71,12 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     void setReuse(bool reuse) { _use_good_entropies = reuse; };
     void setIgnoreEcnAck(bool ignore_ecn_ack) { _ignore_ecn_ack = ignore_ecn_ack; };
     void setIgnoreEcnData(bool ignore_ecn_data) { _ignore_ecn_data = ignore_ecn_data; };
-    void setNumberEntropies(int num_entropies) { _num_entropies = num_entropies; };
+    void setNumberEntropies(int num_entropies) {
+        _num_entropies = num_entropies;
+        _path_random = rand() % 0xffff; // random upper bits of EV
+        _path_xor = rand() % num_entropies;
+        _current_ev_index = 0;
+    };
     void setHopCount(int hops) {
         _hop_count = hops;
         printf("Hop Count is %d\n", hops);
@@ -90,7 +97,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     bool supportsTrimming() { return _trimming_enabled; }
     std::size_t getEcnInTargetRtt();
 
-    int choose_route();
+    uint16_t choose_route();
     inline simtime_picosec pacing_delay_f() const { return pacing_delay; }
     int next_route();
 
@@ -155,6 +162,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static void set_stop_after_quick(bool value) { stop_after_quick = value; }
     static void set_stop_pacing(int value) { stop_pacing_after_rtt = value; }
     static void setRouteStrategy(RouteStrategy strat) { _route_strategy = strat; }
+    bool isFlowFinished() { return _flow_finished; }
 
     void set_flow_over_hook(std::function<void(const Packet &)> hook) { f_flow_over_hook = hook; }
 
@@ -205,6 +213,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     bool update_next_window = true;
     bool _start_timer_window = true;
     bool _paced_packet = false;
+    simtime_picosec first_timeout = 0;
     bool fast_drop = false;
     int ignore_for = 0;
     int count_received = 0;
@@ -353,6 +362,8 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     bool _target_based_received;
     bool _using_lgs = false;
     int consecutive_nack = 0;
+    int skip_cum_acks_counter = 0;
+    int skip_counter_ack = 0;
     bool ecn_last_rtt = false;
     int trimmed_last_rtt = 0;
     uint32_t consecutive_good_medium = 0;
@@ -425,6 +436,19 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     vector<pair<simtime_picosec, int>> reps_new;
     vector<pair<simtime_picosec, int>> reps_rec;
     vector<pair<simtime_picosec, int>> reps_rec_invalid;
+    vector<pair<simtime_picosec, int>> reps_rec_invalid_expired;
+
+    // BITMAP
+    uint16_t _no_of_paths;           // must be a power of 2
+    uint16_t _path_random;           // random upper bits of EV, set at startup and never changed
+    uint16_t _path_xor;              // random value set each time we wrap the entropy values - XOR with
+                                     // _current_ev_index
+    uint16_t _current_ev_index;      // count through _no_of_paths and then wrap.  XOR with _path_xor to
+                                     // get EV
+    vector<uint8_t> _ev_skip_bitmap; // paths scores for load balancing
+    uint8_t _max_penalty = 15;       // max value we allow in _path_penalties (typically 1 or 2).
+    uint16_t _ev_skip_count;
+    uint16_t _ev_bad_count;
 
     vector<const Route *> _good_entropies;
     bool _use_good_entropies;
@@ -563,12 +587,17 @@ class UecRtxTimerScanner : public EventSource {
     UecRtxTimerScanner(simtime_picosec scanPeriod, EventList &eventlist);
     void doNextEvent();
     void registerUec(UecSrc &uecsrc);
+    void markFlowAsFinished();
 
   private:
     simtime_picosec _scanPeriod;
     simtime_picosec _lastScan;
     typedef list<UecSrc *> uecs_t;
     uecs_t _uecs;
+    int num_finished = 0;
+    int num_total = 0;
+    bool has_finished = false;
+    simtime_picosec finished_time;
 };
 
 #endif

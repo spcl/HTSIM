@@ -55,7 +55,8 @@ enum RouteStrategy {
     ECMP_FIB2_ECN,
     ECMP_RANDOM2_ECN,
     ECMP_RANDOM_ECN,
-    CIRCULAR_REPS
+    CIRCULAR_REPS,
+    BITMAP
 };
 
 typedef enum {
@@ -279,8 +280,8 @@ class Packet {
 
     // logsim extensions
     bool is_ack = false;
-    int pathid_echo = 0;
-    int pathid_sender = 0;
+    uint16_t pathid_echo = 0;
+    uint16_t pathid_sender = 0;
     uint32_t from = -1;
     uint32_t to = 0;
     uint32_t tag = 0;

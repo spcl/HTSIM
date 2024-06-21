@@ -9,6 +9,7 @@
 #include <sstream>
 #include <string.h>
 // #include "subflow_control.h"
+#include "circular_buffer.h"
 #include "clock.h"
 #include "compositequeue.h"
 #include "connection_matrix.h"
@@ -114,6 +115,7 @@ int main(int argc, char **argv) {
     int target_rtt_percentage_over_base = 50;
     bool collect_data = false;
     int fat_tree_k = 1; // 1:1 default
+    UecRtxTimerScanner *_uecRtxScanner = NULL;
     COLLECT_DATA = collect_data;
     bool use_super_fast_increase = false;
     double y_gain = 1;
@@ -161,6 +163,9 @@ int main(int argc, char **argv) {
     uint64_t max_queue_size = 0;
     double def_end_time = 0.1;
     int num_periods = 1;
+    bool no_trimming = false;
+    int reps_buffer_size = 10;
+    bool reps_use_freezing = false;
 
     int i = 1;
     filename << "logout.dat";
@@ -376,6 +381,17 @@ int main(int argc, char **argv) {
             UecSrc::set_bts(true);
             printf("BTS: %d\n", 1);
             // i++;
+        } else if (!strcmp(argv[i], "-no_trimming")) {
+            CompositeQueue::set_trimming(false);
+            printf("Trimming: %d\n", 0);
+            // i++;
+        } else if (!strcmp(argv[i], "-use_freezing")) {
+            CircularBufferREPS<int>::setUseFreezing(true);
+            // i++;
+        } else if (!strcmp(argv[i], "-reps_buffer_size")) {
+            reps_buffer_size = atoi(argv[i + 1]);
+            CircularBufferREPS<int>::setBufferSize(reps_buffer_size);
+            i++;
         } else if (!strcmp(argv[i], "-phantom_both_queues")) {
             CompositeQueue::set_use_both_queues();
             printf("PhantomUseBothForECNMarking: %d\n", 1);
@@ -531,6 +547,10 @@ int main(int argc, char **argv) {
                 FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
             } else if (!strcmp(argv[i + 1], "circular_reps")) {
                 route_strategy = CIRCULAR_REPS;
+                FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+                FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
+            } else if (!strcmp(argv[i + 1], "bitmap")) {
+                route_strategy = BITMAP;
                 FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
                 FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
             }
@@ -781,6 +801,12 @@ int main(int argc, char **argv) {
     ConnectionMatrix *conns = NULL;
     LogSimInterface *lgs = NULL;
 
+    // TEMP
+    if (_uecRtxScanner == NULL) {
+        _uecRtxScanner = new UecRtxTimerScanner(100000, eventlist);
+    }
+    // END TEMP
+
     if (tm_file != NULL) {
 
         eventlist.setEndtime(timeFromSec(def_end_time));
@@ -880,8 +906,9 @@ int main(int argc, char **argv) {
 
             uecSrc = new UecSrc(NULL, NULL, eventlist, rtt, bdp, 100, 6);
 
-            uecSrc->setNumberEntropies(256);
+            uecSrc->setNumberEntropies(number_entropies);
             uec_srcs.push_back(uecSrc);
+            _uecRtxScanner->registerUec(*uecSrc);
             uecSrc->set_dst(dest);
             printf("Reaching here\n");
             if (crt->flowid) {
@@ -926,6 +953,7 @@ int main(int argc, char **argv) {
             case ECMP_FIB_ECN:
             case ECMP_RANDOM_ECN:
             case CIRCULAR_REPS:
+            case BITMAP:
             case ECMP_RANDOM2_ECN:
             case REACTIVE_ECN: {
                 Route *srctotor = new Route();
