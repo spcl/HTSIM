@@ -508,17 +508,25 @@ int main(int argc, char **argv) {
     BAREMETAL_RTT = base_rtt_max_hops * 1000;
     TARGET_RTT_LOW = BAREMETAL_RTT * 1.05;
     TARGET_RTT_HIGH = BAREMETAL_RTT * 1.1;
-    
-    printf("Baremetal RTT: %lu\n", BAREMETAL_RTT);
-    printf("Target RTT Low: %lu\n", TARGET_RTT_LOW);
-    printf("Target RTT High: %lu\n", TARGET_RTT_HIGH);
-    cout << " Delta " << LCP_DELTA << endl;
-    cout << " Beta " << LCP_BETA << endl;
-    cout << " Alpha " << LCP_ALPHA << endl;
-    cout << " Gamma " << LCP_GAMMA << endl;
-    cout << " BDP " << bdp_local << endl;
-    cout << " Queue Size " << queuesize << endl;
-
+    cout << "==============================" << endl;
+    cout << "Link speed: " << LINK_SPEED_MODERN << " GBps" << endl;
+    cout << "Baremetal RTT: " << BAREMETAL_RTT / 1000000 << " us" << endl;
+    cout << "Target RTT Low: " << TARGET_RTT_LOW / 1000000 << " us" << endl;
+    cout << "Target RTT High: " << TARGET_RTT_HIGH / 1000000 << " us" << endl;
+    cout << "BDP: " << bdp_local / 1000 << " KB" << endl;
+    cout << "Queue Size: " << queuesize << " Bytes" << endl;
+    cout << "Delta: " << LCP_DELTA << endl;
+    cout << "Beta: " << LCP_BETA << endl;
+    cout << "Alpha: " << LCP_ALPHA << endl;
+    cout << "Gamma: " << LCP_GAMMA << endl;
+    cout << "K: " << LCP_K << endl;
+    cout << "Fast Increase Threshold: " << LCP_FAST_INCREASE_THRESHOLD << endl;
+    cout << "Use Quick Adapt: " << LCP_USE_QUICK_ADAPT << endl;
+    cout << "Use Pacing: " << LCP_USE_PACING << endl;
+    cout << "Use Fast Increase: " << LCP_USE_FAST_INCREASE << endl;
+    cout << "Pacing Bonus: " << LCP_PACING_BONUS << endl;
+    cout << "Use Min RTT: " << LCP_USE_MIN_RTT << endl;
+    cout << "==============================" << endl;
 
     UecSrc::setRouteStrategy(route_strategy);
     UecSink::setRouteStrategy(route_strategy);
