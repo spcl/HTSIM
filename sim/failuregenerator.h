@@ -39,6 +39,16 @@ class failuregenerator {
     bool simCableFailures(Pipe *p, Packet &pkt);
     bool simNICFailures(UecSrc *src, UecSink *sink, Packet &pkt);
 
+    // Random Packet drop
+    bool randomPacketDrop = false;
+    int numberOfRandomDroppedPackets = 0;
+    int numberOfRandomDroppedPacketsTest = 0;
+    void addRandomPacketDrop(Packet &pkt, UecSrc *src);
+    void dropRandomPacket(Packet &pkt);
+    void dropRandomPacketSink(Packet &pkt);
+    std::unordered_map<uint32_t, UecSrc *> randomDroppedPackets;
+    uint32_t dropRate = 0;
+
     // Switch
     bool fail_new_switch(Switch *sw);
     std::set<uint32_t> all_switches;
@@ -143,6 +153,7 @@ class failuregenerator {
 
     // For logging
     void createLoggingData();
+    vector<simtime_picosec> _list_random_packet_drops;
     vector<simtime_picosec> _list_switch_packet_drops;
     vector<simtime_picosec> _list_cable_packet_drops;
     vector<pair<simtime_picosec, simtime_picosec>> _list_switch_failures;

@@ -158,6 +158,7 @@ void initializeLoggingFolders() {
     std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/cable_degradations/");
     std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/routing_failed_switch/");
     std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/routing_failed_cable/");
+    std::filesystem::remove_all(PROJECT_ROOT_PATH / "sim/output/random_packet_drops/");
 
     bool ret_val = std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output");
     ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/rtt");
@@ -193,6 +194,7 @@ void initializeLoggingFolders() {
     ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/routing_failed_cable");
     ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/switch_degradations");
     ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/cable_degradations");
+    ret_val &= std::filesystem::create_directory(PROJECT_ROOT_PATH / "sim/output/random_packet_drops");
 }
 
 // Path

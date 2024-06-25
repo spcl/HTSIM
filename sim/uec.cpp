@@ -1158,6 +1158,9 @@ uint64_t UecSrc::get_unacked() {
 void UecSrc::receivePacket(Packet &pkt) {
     // every packet received represents one less packet in flight
 
+    FAILURE_GENERATOR->addRandomPacketDrop(pkt, this);
+    FAILURE_GENERATOR->dropRandomPacket(pkt);
+
     if (FAILURE_GENERATOR->simNICFailures(this, NULL, pkt)) {
         // Temporary Hack
         if (!pkt.header_only()) {
@@ -2279,6 +2282,8 @@ bool UecSink::already_received(UecPacket &pkt) {
 
 void UecSink::receivePacket(Packet &pkt) {
     /* printf("Sink Received %d %d - Entropy %d - %lu - \n", pkt.from, pkt.id(), pkt.pathid(), GLOBAL_TIME / 1000); */
+
+    FAILURE_GENERATOR->dropRandomPacketSink(pkt);
 
     if (FAILURE_GENERATOR->simNICFailures(NULL, this, pkt)) {
         // Temporary Hack

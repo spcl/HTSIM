@@ -141,6 +141,7 @@ Specific to InterDC SMaRTT:
 
 ## Simulating Failures
 The following failures can be simulated:
+ - Random Packet Drop
  - Complete Switch Failure
  - Switch Bit Error Rate
  - Switch Degradation
@@ -152,6 +153,10 @@ The following failures can be simulated:
 
 To turn on or off the failures, add a .txt file in the HTSIM\sim\failures_input folder, where you specify which failures are turned ON or OFF and add the following to the command line: ```-failures_input ../failures_input/file_name.txt```
 An example of the file is below.
+
+### Random Packet Drop
+- ```Random-Packet-Drop``` Simulates a random packet drop rate. If turned on, a packet has a probability of being dropped at a random point on its path, determined by 10^(-Random-Packet-Drop-Rate).
+- ```Random-Packet-Drop-Rate``` Defines the drop rate. The drop rate is 10^(-Random-Packet-Drop-Rate).
 
 ### Switch Failures
 #### Complete Switch Failure
@@ -221,6 +226,8 @@ An example of the file is below.
 
 Here is an example .txt file where the failure modes Switch-Fail and Cable-Fail are activated.
 ```
+Random-Packet-Drop: OFF
+Random-Packet-Drop-Rate: 4
 Switch-Fail: ON
 Switch-Fail-Start-After: 100000000
 Switch-Fail-Period: 10000
@@ -264,4 +271,3 @@ NIC-Worst-Case-Start-After: 100000000
 NIC-Worst-Case-Period: 100000000
 NIC-Worst-Case-Max-Percent: 0.1
 ```
-  

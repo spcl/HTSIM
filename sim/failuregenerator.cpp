@@ -51,7 +51,68 @@ int64_t generateTimeNIC() {
     return std::min(val, int64_t(1800)) * 1e12;
 }
 
-// Map that keeps track of failing switches. Maps from switch id to a pair of time of failure and time of recovery
+void failuregenerator::addRandomPacketDrop(Packet &pkt, UecSrc *src) {
+
+    if (!randomPacketDrop) {
+        return;
+    }
+    // return true with probability 10^-rate
+    std::uniform_real_distribution<> dis(0, 1);
+    if (dis(gen) < std::pow(10, -(float)dropRate)) {
+        uint32_t pkt_id = pkt.id();
+        randomDroppedPackets[pkt_id] = src;
+    }
+}
+
+void failuregenerator::dropRandomPacketSink(Packet &pkt) {
+    uint32_t pkt_id = pkt.id();
+    if (FAILURE_GENERATOR->randomDroppedPackets.find(pkt_id) != FAILURE_GENERATOR->randomDroppedPackets.end()) {
+
+        FAILURE_GENERATOR->randomDroppedPackets.erase(pkt_id);
+        std::cout << "Packet dropped at Random Packet drop at Sink" << std::endl;
+        // Temporary Hack
+        if (!pkt.header_only()) {
+            pkt.strip_payload();
+        }
+        pkt.is_failed = true;
+        FAILURE_GENERATOR->_list_random_packet_drops.push_back(GLOBAL_TIME);
+
+        // pkt.free(); Later we will re-enable this
+        // return;
+    }
+}
+
+void failuregenerator::dropRandomPacket(Packet &pkt) {
+    uint32_t pkt_id = pkt.id();
+    if (FAILURE_GENERATOR->randomDroppedPackets.find(pkt_id) != FAILURE_GENERATOR->randomDroppedPackets.end()) {
+        UecSrc *src = FAILURE_GENERATOR->randomDroppedPackets[pkt_id];
+
+        std::pair<std::pair<std::set<uint32_t>, std::set<uint32_t>>, std::string> switches_cables_on_path_string =
+                get_path_switches_cables(pkt.pathid(), src);
+        std::pair<std::set<uint32_t>, std::set<uint32_t>> switches_cables_on_path =
+                switches_cables_on_path_string.first;
+        std::string found_path = switches_cables_on_path_string.second;
+        std::set<uint32_t> switches_on_path = switches_cables_on_path.first;
+        std::set<uint32_t> cables_on_path = switches_cables_on_path.second;
+
+        int numberOfDevices = switches_on_path.size() + cables_on_path.size();
+
+        if (trueWithProb(1.0 / numberOfDevices)) {
+            FAILURE_GENERATOR->randomDroppedPackets.erase(pkt_id);
+            std::cout << "Packet dropped at Random Packet drop" << std::endl;
+            // Temporary Hack
+            if (!pkt.header_only()) {
+                pkt.strip_payload();
+            }
+            pkt.is_failed = true;
+            numberOfRandomDroppedPacketsTest++;
+            FAILURE_GENERATOR->_list_random_packet_drops.push_back(GLOBAL_TIME);
+
+            // pkt.free(); Later we will re-enable this
+            // return;
+        }
+    }
+}
 
 bool failuregenerator::simSwitchFailures(Packet &pkt, Switch *sw, Queue q) {
     return (switchFail(sw) || switchBER(pkt, sw, q) || switchDegradation(sw) || switchWorstCase(sw));
@@ -804,6 +865,10 @@ void failuregenerator::parseinputfile() {
                 nic_fail_max_percent = std::stof(value);
             } else if (key == "NIC-Degradation-Max-Percent:") {
                 nic_degradation_max_percent = std::stof(value);
+            } else if (key == "Random-Packet-Drop:") {
+                randomPacketDrop = (value == "ON");
+            } else if (key == "Random-Packet-Drop-Rate:") {
+                dropRate = std::stof(value);
             } else {
                 std::cout << "Unknown key in failuregenerator input file: " << key << std::endl;
             }
@@ -886,4 +951,11 @@ void failuregenerator::createLoggingData() {
         MyFileCableDegradations << p << std::endl;
     }
     MyFileCableDegradations.close();
+
+    // Random Packet Drops
+    file_name = PROJECT_ROOT_PATH / ("sim/output/random_packet_drops/random_packet_drops.txt");
+    std::ofstream MyFileRandomPacketDrops(file_name, std::ios_base::app);
+    for (const auto p : _list_random_packet_drops) {
+        MyFileRandomPacketDrops << p << std::endl;
+    }
 }

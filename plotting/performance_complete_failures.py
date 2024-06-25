@@ -43,6 +43,7 @@ def main(args):
     os.system("rm -r routing_failed_cable/")
     os.system("rm -r switch_degradations/")
     os.system("rm -r cable_degradations/")
+    os.system("rm -r random_packet_drops/")
 
 
 
@@ -71,6 +72,7 @@ def main(args):
     os.system("cp -a ../sim/output/routing_failed_cable/. routing_failed_cable/")
     os.system("cp -a ../sim/output/switch_degradations/. switch_degradations/")
     os.system("cp -a ../sim/output/cable_degradations/. cable_degradations/")
+    os.system("cp -a ../sim/output/random_packet_drops/. random_packet_drops/")
 
     # RTT Data
     colnames=['Time', 'RTT', 'seqno', 'ackno', 'base', 'target']
@@ -599,6 +601,17 @@ def main(args):
         temp = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
         dfCableDegradations = pd.concat([dfCableDegradations, temp])  
 
+
+    # Random Packet Drops
+    colnames=['Time']
+    dfRandomPacketDrops = pd.DataFrame(columns =colnames)
+
+    pathlist = Path('random_packet_drops').glob('**/*.txt')
+    for files in sorted(pathlist):
+        path_in_str = str(files)
+        temp = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
+        dfRandomPacketDrops = pd.concat([dfRandomPacketDrops, temp])  
+
     print("Finished Parsing")
     # Create figure with secondary y-axis
     fig = make_subplots(specs=[[{"secondary_y": True}]])
@@ -813,7 +826,11 @@ def main(args):
     ) 
 
     fig.add_trace(
-        go.Scatter(x=dfCableDrops["DropTime"]/1000, y=[4000]*len(dfCableDrops),  mode="markers", marker_symbol="circle", name="Cable Packet drop", marker=dict(size=6, color="blue"), showlegend=True),
+        go.Scatter(x=dfCableDrops["DropTime"]/1000, y=[4500]*len(dfCableDrops),  mode="markers", marker_symbol="circle", name="Cable Packet drop", marker=dict(size=6, color="blue"), showlegend=True),
+        secondary_y=False
+    )
+    fig.add_trace(
+        go.Scatter(x=dfRandomPacketDrops["Time"]/1000, y=[4500]*len(dfRandomPacketDrops),  mode="markers", marker_symbol="circle", name="Random Packet drop", marker=dict(size=6, color="pink"), showlegend=True),
         secondary_y=False
     )
 
