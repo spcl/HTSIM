@@ -73,6 +73,8 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList
     _use_good_entropies = false;
     _next_good_entropy = 0;
 
+    circular_buffer_reps = new CircularBufferREPS<int>(CircularBufferREPS<int>::repsBufferSize);
+
     _nack_rtx_pending = 0;
     current_ecn_rate = 0;
 
@@ -802,6 +804,71 @@ int UecSrc::choose_route() {
             _crt_path = 0;
         }
         break;
+
+    case REPS: {
+        uint64_t allpathssizes = _mss * _paths.size();
+        if (_highest_sent < max(_maxcwnd, (uint64_t)1)) {
+            _crt_path++;
+            if (_crt_path == _paths.size()) {
+                _crt_path = 0;
+            }
+        } else {
+            if (_next_pathid == -1) {
+                assert(_paths.size() > 0);
+                _crt_path = random() % _paths.size();
+            } else {
+                _crt_path = _next_pathid;
+            }
+        }
+        break;
+    }
+    case REPS_CIRCULAR: {
+        if (circular_buffer_reps->isFrozenMode()) {
+            if (circular_buffer_reps->isEmpty()) {
+                _crt_path = rand() % _paths.size();
+                if (_crt_path == _paths.size()) {
+                    _crt_path = 0;
+                }
+            } else {
+                if (circular_buffer_reps->is_valid_frozen()) {
+                    // reps_rec_invalid.push_back(std::make_pair(eventlist().now() / 1000, 1));
+                } else {
+                    // reps_rec_invalid_expired.push_back(std::make_pair(eventlist().now() / 1000, 1));
+                }
+
+                _crt_path = circular_buffer_reps->remove_frozen();
+            }
+        } else {
+            if (circular_buffer_reps->isEmpty() || circular_buffer_reps->getNumberFreshEntropies() == 0) {
+                if (!received_first_ack) {
+                    _crt_path++;
+                    if (_crt_path == _paths.size()) {
+                        _crt_path = 0;
+                    }
+                } else {
+                    _crt_path = rand() % _paths.size();
+                }
+                if (_nodename == "uecSrc 4")
+                    printf("Studying %s: REPS GET RANDOM UNFROZEN %d\n", _nodename.c_str(), _crt_path);
+
+            } else {
+                //_crt_path = circular_buffer_reps->remove_earliest_round();
+                _crt_path = circular_buffer_reps->remove_earliest_fresh();
+                if (_nodename == "uecSrc 4")
+                    printf("Studying %s: REPS GET FRESH UNFROZEN %d\n", _nodename.c_str(), _crt_path);
+            }
+        }
+        break;
+    }
+    case OBLIVIOUS: {
+        // choose a random path for each packet
+        _crt_path = random() % _paths.size();
+        break;
+    }
+    case ECMP_NORMAL: {
+        _crt_path = from;
+        break;
+    }
     case ECMP_RANDOM2_ECN: {
 
         if (false) {
@@ -951,6 +1018,7 @@ void UecSrc::processBts(UecPacket *pkt) {
 }
 
 void UecSrc::processAck(UecAck &pkt, bool force_marked) {
+    received_first_ack = true;
     UecAck::seq_t seqno = pkt.ackno();
     simtime_picosec ts = pkt.ts();
 
@@ -1006,6 +1074,14 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
         _next_pathid = -1;
         ecn_last_rtt = true;
         _consecutive_no_ecn = 0;
+    }
+
+    if (_route_strategy == REPS_CIRCULAR) {
+        if ((!marked) && !circular_buffer_reps->isFrozenMode()) {
+            circular_buffer_reps->add(pkt.pathid_echo);
+        } else if (circular_buffer_reps->isFrozenMode()) {
+            circular_buffer_reps->add(pkt.pathid_echo);
+        }
     }
 
     if (COLLECT_DATA) {
@@ -1761,7 +1837,9 @@ const string &UecSrc::nodename() { return _nodename; }
 
 void UecSrc::connect(Route *routeout, Route *routeback, UecSink &sink, simtime_picosec starttime) {
     if (_route_strategy == SINGLE_PATH || _route_strategy == ECMP_FIB || _route_strategy == ECMP_FIB_ECN ||
-        _route_strategy == REACTIVE_ECN || _route_strategy == ECMP_RANDOM2_ECN || _route_strategy == ECMP_RANDOM_ECN) {
+        _route_strategy == REACTIVE_ECN || _route_strategy == ECMP_RANDOM2_ECN || _route_strategy == ECMP_RANDOM_ECN ||
+        _route_strategy == REPS || _route_strategy == REPS_CIRCULAR || _route_strategy == ECMP_NORMAL ||
+        _route_strategy == OBLIVIOUS) {
         assert(routeout);
         _route = routeout;
     }
@@ -1916,7 +1994,9 @@ void permute_sequence_uec(vector<int> &seq) {
 
 void UecSrc::set_paths(uint32_t no_of_paths) {
     if (_route_strategy != ECMP_FIB && _route_strategy != ECMP_FIB_ECN && _route_strategy != ECMP_FIB2_ECN &&
-        _route_strategy != REACTIVE_ECN && _route_strategy != ECMP_RANDOM_ECN && _route_strategy != ECMP_RANDOM2_ECN) {
+        _route_strategy != REACTIVE_ECN && _route_strategy != ECMP_RANDOM_ECN && _route_strategy != ECMP_RANDOM2_ECN &&
+        _route_strategy != REPS && _route_strategy != REPS_CIRCULAR && _route_strategy != ECMP_NORMAL &&
+        _route_strategy != OBLIVIOUS) {
         cout << "Set paths uec (path_count) called with wrong route "
                 "strategy "
              << _route_strategy << endl;
@@ -2293,6 +2373,10 @@ void UecSink::send_ack(simtime_picosec ts, bool marked, UecAck::seq_t seqno, Uec
     case ECMP_FIB_ECN:
     case REACTIVE_ECN:
     case ECMP_RANDOM2_ECN:
+    case REPS:
+    case REPS_CIRCULAR:
+    case ECMP_NORMAL:
+    case OBLIVIOUS:
     case ECMP_RANDOM_ECN:
         ack = UecAck::newpkt(_src->_flow, *_route, seqno, ackno, 0, _srcaddr);
 
@@ -2351,6 +2435,10 @@ void UecSink::connect(UecSrc &src, const Route *route) {
     case ECMP_FIB_ECN:
     case REACTIVE_ECN:
     case ECMP_RANDOM2_ECN:
+    case REPS:
+    case REPS_CIRCULAR:
+    case ECMP_NORMAL:
+    case OBLIVIOUS:
     case ECMP_RANDOM_ECN:
         assert(route);
         //("Setting route\n");
@@ -2380,6 +2468,10 @@ void UecSink::set_paths(uint32_t no_of_paths) {
     case ECMP_FIB:
     case ECMP_FIB_ECN:
     case ECMP_RANDOM2_ECN:
+    case REPS:
+    case REPS_CIRCULAR:
+    case ECMP_NORMAL:
+    case OBLIVIOUS:
     case REACTIVE_ECN:
         assert(_paths.size() == 0);
         _paths.resize(no_of_paths);

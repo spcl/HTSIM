@@ -161,6 +161,8 @@ int main(int argc, char **argv) {
     uint64_t max_queue_size = 0;
     double def_end_time = 0.1;
     int num_periods = 1;
+    bool ecn = false;
+    mem_b ecn_low = 0, ecn_high = 0;
 
     int i = 1;
     filename << "logout.dat";
@@ -272,7 +274,6 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-precision_ts")) {
             precision_ts = atoi(argv[i + 1]);
-            FatTreeSwitch::set_precision_ts(precision_ts * 1000);
             UecSrc::set_precision_ts(precision_ts * 1000);
             printf("Precision: %d\n", precision_ts * 1000);
             i++;
@@ -393,10 +394,6 @@ int main(int argc, char **argv) {
             UecSrc::set_target_rtt_percentage_over_base(target_rtt_percentage_over_base);
             printf("TargetRTT: %d\n", target_rtt_percentage_over_base);
             i++;
-        } else if (!strcmp(argv[i], "-num_failed_links")) {
-            num_failed_links = atoi(argv[i + 1]);
-            FatTreeTopology::set_failed_links(num_failed_links);
-            i++;
         } else if (!strcmp(argv[i], "-fast_drop_rtt")) {
             UecSrc::set_fast_drop_rtt(atoi(argv[i + 1]));
             i++;
@@ -414,6 +411,11 @@ int main(int argc, char **argv) {
             z_gain = std::stod(argv[i + 1]);
             UecSrc::set_z_gain(z_gain);
             printf("ZGain: %f\n", z_gain);
+            i++;
+        } else if (!strcmp(argv[i], "-use_freezing_reps")) {
+            CircularBufferREPS<int>::setUseFreezing(true);
+        } else if (!strcmp(argv[i], "-reps_buffer_size")) {
+            CircularBufferREPS<int>::setBufferSize(atoi(argv[i + 1]));
             i++;
         } else if (!strcmp(argv[i], "-end_time")) {
             def_end_time = std::stod(argv[i + 1]);
@@ -442,6 +444,12 @@ int main(int argc, char **argv) {
             printf("BaseRTTForced: %d\n", explicit_base_rtt);
             UecSrc::set_explicit_rtt(explicit_base_rtt);
             i++;
+        } else if (!strcmp(argv[i], "-ecn")) {
+            // fraction of queuesize, between 0 and 1
+            ecn = true;
+            ecn_low = atoi(argv[i + 1]);
+            ecn_high = atoi(argv[i + 2]);
+            i += 2;
         } else if (!strcmp(argv[i], "-explicit_target_rtt")) {
             explicit_target_rtt = ((uint64_t)atoi(argv[i + 1])) * 1000;
             printf("TargetRTTForced: %lu\n", explicit_target_rtt);
@@ -529,6 +537,18 @@ int main(int argc, char **argv) {
                 route_strategy = ECMP_RANDOM2_ECN;
                 FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
                 FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
+            } else if (!strcmp(argv[i + 1], "reps")) {
+                route_strategy = REPS;
+                FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+            } else if (!strcmp(argv[i + 1], "reps_circular")) {
+                route_strategy = REPS_CIRCULAR;
+                FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+            } else if (!strcmp(argv[i + 1], "spraying")) {
+                route_strategy = OBLIVIOUS;
+                FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+            } else if (!strcmp(argv[i + 1], "ecmp")) {
+                route_strategy = ECMP_NORMAL;
+                FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
             }
             i++;
         } else if (!strcmp(argv[i], "-topology")) {
@@ -764,6 +784,12 @@ int main(int argc, char **argv) {
         ff->net_paths = net_paths;
 #endif
 
+    if (ecn) {
+        ecn_low = memFromPkt(ecn_low);
+        ecn_high = memFromPkt(ecn_high);
+        FatTreeTopology::set_ecn_parameters(true, true, ecn_low, ecn_high);
+    }
+
     map<int, vector<int> *>::iterator it;
 
     // used just to print out stats data at the end
@@ -785,15 +811,19 @@ int main(int argc, char **argv) {
         FatTreeTopology *top = NULL;
 
         if (topology_normal) {
-            printf("Normal Topology\n");
-            FatTreeTopology::set_tiers(3);
-            FatTreeTopology::set_os_stage_2(fat_tree_k);
-            FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
-            FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
-            FatTreeTopology::set_bts_threshold(bts_threshold);
-            FatTreeTopology::set_ignore_data_ecn(ignore_ecn_data);
-            top = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, queue_choice,
-                                      hop_latency, switch_latency);
+            if (topo_file) {
+                top = FatTreeTopology::load(topo_file, NULL, eventlist, queuesize, COMPOSITE, FAIR_PRIO);
+                if (top->no_of_nodes() != no_of_nodes) {
+                    cerr << "Mismatch between connection matrix (" << no_of_nodes << " nodes) and topology ("
+                         << top->no_of_nodes() << " nodes)" << endl;
+                    exit(1);
+                }
+            } else {
+                printf("Normal Topology\n");
+                FatTreeTopology::set_tiers(3);
+                top = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, queue_choice,
+                                          hop_latency, switch_latency);
+            }
         } else {
             if (interdc_delay != 0) {
                 FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
@@ -921,18 +951,22 @@ int main(int argc, char **argv) {
             case ECMP_FIB:
             case ECMP_FIB_ECN:
             case ECMP_RANDOM2_ECN:
+            case REPS:
+            case REPS_CIRCULAR:
+            case OBLIVIOUS:
+            case ECMP_NORMAL:
             case REACTIVE_ECN: {
                 Route *srctotor = new Route();
                 Route *dsttotor = new Route();
 
                 if (top != NULL) {
-                    srctotor->push_back(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)]);
-                    srctotor->push_back(top->pipes_ns_nlp[src][top->HOST_POD_SWITCH(src)]);
-                    srctotor->push_back(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)]->getRemoteEndpoint());
+                    srctotor->push_back(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)][0]);
+                    srctotor->push_back(top->pipes_ns_nlp[src][top->HOST_POD_SWITCH(src)][0]);
+                    srctotor->push_back(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)][0]->getRemoteEndpoint());
 
-                    dsttotor->push_back(top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]);
-                    dsttotor->push_back(top->pipes_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]);
-                    dsttotor->push_back(top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]->getRemoteEndpoint());
+                    dsttotor->push_back(top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)][0]);
+                    dsttotor->push_back(top->pipes_ns_nlp[dest][top->HOST_POD_SWITCH(dest)][0]);
+                    dsttotor->push_back(top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)][0]->getRemoteEndpoint());
 
                 } else if (top_dc != NULL) {
                     int idx_dc = top_dc->get_dc_id(src);
@@ -1010,11 +1044,11 @@ int main(int argc, char **argv) {
         if (topology_normal) {
             printf("Normal Topology\n");
             FatTreeTopology::set_tiers(3);
-            FatTreeTopology::set_os_stage_2(fat_tree_k);
+            /* FatTreeTopology::set_os_stage_2(fat_tree_k);
             FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
             FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
             FatTreeTopology::set_bts_threshold(bts_threshold);
-            FatTreeTopology::set_ignore_data_ecn(ignore_ecn_data);
+            FatTreeTopology::set_ignore_data_ecn(ignore_ecn_data); */
             FatTreeTopology *top = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
                                                        queue_choice, hop_latency, switch_latency);
             lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);

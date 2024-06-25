@@ -33,15 +33,14 @@
 #define PERIODIC 0
 #include "main.h"
 
-uint32_t RTT =
-        1; // this is per link delay in us; identical RTT microseconds = 0.02 ms
+uint32_t RTT = 1; // this is per link delay in us; identical RTT microseconds = 0.02 ms
 int DEFAULT_NODES = 432;
 #define DEFAULT_QUEUE_SIZE 15
 
 string ntoa(double n);
 string itoa(uint64_t n);
 
-//#define SWITCH_BUFFER (SERVICE * RTT / 1000)
+// #define SWITCH_BUFFER (SERVICE * RTT / 1000)
 #define USE_FIRST_FIT 0
 #define FIRST_FIT_INTERVAL 100
 
@@ -76,16 +75,14 @@ void print_path(std::ofstream &paths, const Route *rt) {
     paths << endl;
 }
 
-void filter_paths(uint32_t src_id, vector<const Route *> &paths,
-                  FatTreeTopology *top) {
+void filter_paths(uint32_t src_id, vector<const Route *> &paths, FatTreeTopology *top) {
     uint32_t num_servers = top->no_of_servers();
     uint32_t num_cores = top->no_of_cores();
     uint32_t num_pods = top->no_of_pods();
     uint32_t pod_switches = top->no_of_switches_per_pod();
 
     uint32_t path_classes = pod_switches / 2;
-    cout << "srv: " << num_servers << " cores: " << num_cores
-         << " pods: " << num_pods << " pod_sw: " << pod_switches
+    cout << "srv: " << num_servers << " cores: " << num_cores << " pods: " << num_pods << " pod_sw: " << pod_switches
          << " classes: " << path_classes << endl;
     uint32_t pclass = src_id % path_classes;
     cout << "src: " << src_id << " class: " << pclass << endl;
@@ -94,8 +91,7 @@ void filter_paths(uint32_t src_id, vector<const Route *> &paths,
         const Route *rt = paths.at(r);
         if (rt->size() == 12) {
             BaseQueue *q = dynamic_cast<BaseQueue *>(rt->at(6));
-            cout << "Q:" << atoi(q->str().c_str() + 2) << " " << q->str()
-                 << endl;
+            cout << "Q:" << atoi(q->str().c_str() + 2) << " " << q->str() << endl;
             uint32_t core = atoi(q->str().c_str() + 2);
             if (core % path_classes != pclass) {
                 paths[r] = NULL;
@@ -165,8 +161,7 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-conns")) {
             no_of_conns = atoi(argv[i + 1]);
             cout << "no_of_conns " << no_of_conns << endl;
-            cout << "!!currently hardcoded to 8, value will be ignored!!"
-                 << endl;
+            cout << "!!currently hardcoded to 8, value will be ignored!!" << endl;
             i++;
         } else if (!strcmp(argv[i], "-nodes")) {
             no_of_nodes = atoi(argv[i + 1]);
@@ -209,8 +204,7 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-mtu")) {
             packet_size = atoi(argv[i + 1]);
-            PKT_SIZE_MODERN =
-                    packet_size; // Saving this for UEC reference, Bytes
+            PKT_SIZE_MODERN = packet_size; // Saving this for UEC reference, Bytes
             i++;
         } else if (!strcmp(argv[i], "-disable_case_3")) {
             disable_case_3 = atoi(argv[i + 1]);
@@ -230,8 +224,7 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-hop_latency")) {
             hop_latency = timeFromNs(atof(argv[i + 1]));
-            LINK_DELAY_MODERN = hop_latency /
-                                1000; // Saving this for UEC reference, ps to ns
+            LINK_DELAY_MODERN = hop_latency / 1000; // Saving this for UEC reference, ps to ns
             i++;
         } else if (!strcmp(argv[i], "-ignore_ecn_data")) {
             ignore_ecn_data = atoi(argv[i + 1]);
@@ -288,8 +281,7 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-target_rtt_percentage_over_base")) {
             target_rtt_percentage_over_base = atoi(argv[i + 1]);
-            UecSrc::set_target_rtt_percentage_over_base(
-                    target_rtt_percentage_over_base);
+            UecSrc::set_target_rtt_percentage_over_base(target_rtt_percentage_over_base);
             printf("TargetRTT: %d\n", target_rtt_percentage_over_base);
             i++;
         } else if (!strcmp(argv[i], "-fast_drop_rtt")) {
@@ -357,6 +349,18 @@ int main(int argc, char **argv) {
                 FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
             } else if (!strcmp(argv[i + 1], "ecmp_host_random2_ecn")) {
                 route_strategy = ECMP_RANDOM2_ECN;
+                FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+            } else if (!strcmp(argv[i + 1], "reps")) {
+                route_strategy = REPS;
+                FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+            } else if (!strcmp(argv[i + 1], "reps_circular")) {
+                route_strategy = REPS_CIRCULAR;
+                FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+            } else if (!strcmp(argv[i + 1], "spraying")) {
+                route_strategy = OBLIVIOUS;
+                FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+            } else if (!strcmp(argv[i + 1], "ecmp")) {
+                route_strategy = ECMP_NORMAL;
                 FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
             }
             i++;
@@ -447,10 +451,8 @@ int main(int argc, char **argv) {
 
     // Calculate Network Info
     int hops = 6; // hardcoded for now
-    uint64_t base_rtt_max_hops =
-            (hops * LINK_DELAY_MODERN) +
-            (PKT_SIZE_MODERN * 8 / LINK_SPEED_MODERN * hops) +
-            (hops * LINK_DELAY_MODERN) + (64 * 8 / LINK_SPEED_MODERN * hops);
+    uint64_t base_rtt_max_hops = (hops * LINK_DELAY_MODERN) + (PKT_SIZE_MODERN * 8 / LINK_SPEED_MODERN * hops) +
+                                 (hops * LINK_DELAY_MODERN) + (64 * 8 / LINK_SPEED_MODERN * hops);
     uint64_t bdp_local = base_rtt_max_hops * LINK_SPEED_MODERN / 8;
     if (queue_size_ratio == 0) {
         queuesize = bdp_local; // Equal to BDP if not other info
@@ -468,12 +470,10 @@ int main(int argc, char **argv) {
 
     QueueLoggerFactory *qlf = 0;
     if (log_tor_downqueue || log_tor_upqueue) {
-        qlf = new QueueLoggerFactory(
-                &logfile, QueueLoggerFactory::LOGGER_SAMPLING, eventlist);
+        qlf = new QueueLoggerFactory(&logfile, QueueLoggerFactory::LOGGER_SAMPLING, eventlist);
         qlf->set_sample_period(timeFromUs(10.0));
     } else if (log_queue_usage) {
-        qlf = new QueueLoggerFactory(&logfile, QueueLoggerFactory::LOGGER_EMPTY,
-                                     eventlist);
+        qlf = new QueueLoggerFactory(&logfile, QueueLoggerFactory::LOGGER_EMPTY, eventlist);
         qlf->set_sample_period(timeFromUs(10.0));
     }
 #ifdef FAT_TREE
@@ -483,19 +483,16 @@ int main(int argc, char **argv) {
     FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
     FatTreeTopology::set_bts_threshold(bts_threshold);
     FatTreeTopology::set_ignore_data_ecn(ignore_ecn_data);
-    FatTreeTopology *top = new FatTreeTopology(
-            no_of_nodes, linkspeed, queuesize, NULL, &eventlist, NULL,
-            queue_choice, hop_latency, switch_latency);
+    FatTreeTopology *top = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, NULL, queue_choice,
+                                               hop_latency, switch_latency);
 #endif
 
 #ifdef OV_FAT_TREE
-    OversubscribedFatTreeTopology *top =
-            new OversubscribedFatTreeTopology(lf, &eventlist, ff);
+    OversubscribedFatTreeTopology *top = new OversubscribedFatTreeTopology(lf, &eventlist, ff);
 #endif
 
 #ifdef MH_FAT_TREE
-    MultihomedFatTreeTopology *top =
-            new MultihomedFatTreeTopology(lf, &eventlist, ff);
+    MultihomedFatTreeTopology *top = new MultihomedFatTreeTopology(lf, &eventlist, ff);
 #endif
 
 #ifdef STAR
@@ -548,8 +545,7 @@ int main(int argc, char **argv) {
     }
 
     if ((int)conns->N != no_of_nodes) {
-        cout << "Connection matrix number of nodes is " << conns->N
-             << " while I am using " << no_of_nodes << endl;
+        cout << "Connection matrix number of nodes is " << conns->N << " while I am using " << no_of_nodes << endl;
         exit(-1);
     }
 
@@ -557,9 +553,8 @@ int main(int argc, char **argv) {
     for (size_t c = 0; c < conns->failures.size(); c++) {
         failure *crt = conns->failures.at(c);
 
-        cout << "Adding link failure switch type" << crt->switch_type
-             << " Switch ID " << crt->switch_id << " link ID " << crt->link_id
-             << endl;
+        cout << "Adding link failure switch type" << crt->switch_type << " Switch ID " << crt->switch_id << " link ID "
+             << crt->link_id << endl;
         top->add_failed_link(crt->switch_type, crt->switch_id, crt->link_id);
     }
 
@@ -576,11 +571,10 @@ int main(int argc, char **argv) {
         path_refcounts[src][dest]++;
         path_refcounts[dest][src]++;
 
-        if (!net_paths[src][dest] && route_strategy != ECMP_FIB &&
-            route_strategy != ECMP_FIB_ECN && route_strategy != REACTIVE_ECN &&
-            route_strategy != ECMP_RANDOM2_ECN) {
-            vector<const Route *> *paths =
-                    top->get_bidir_paths(src, dest, false);
+        if (!net_paths[src][dest] && route_strategy != ECMP_FIB && route_strategy != ECMP_FIB_ECN &&
+            route_strategy != REACTIVE_ECN && route_strategy != ECMP_RANDOM2_ECN && route_strategy != REPS &&
+            route_strategy != REPS_CIRCULAR && route_strategy != OBLIVIOUS && route_strategy != ECMP_NORMAL) {
+            vector<const Route *> *paths = top->get_bidir_paths(src, dest, false);
             net_paths[src][dest] = paths;
             /*
               for (unsigned int i = 0; i < paths->size(); i++) {
@@ -588,11 +582,10 @@ int main(int argc, char **argv) {
               }
             */
         }
-        if (!net_paths[dest][src] && route_strategy != ECMP_FIB &&
-            route_strategy != ECMP_FIB_ECN && route_strategy != REACTIVE_ECN &&
-            route_strategy != ECMP_RANDOM2_ECN) {
-            vector<const Route *> *paths =
-                    top->get_bidir_paths(dest, src, false);
+        if (!net_paths[dest][src] && route_strategy != ECMP_FIB && route_strategy != ECMP_FIB_ECN &&
+            route_strategy != REACTIVE_ECN && route_strategy != ECMP_RANDOM2_ECN && route_strategy != REPS &&
+            route_strategy != REPS_CIRCULAR && route_strategy != ECMP_NORMAL && route_strategy != OBLIVIOUS) {
+            vector<const Route *> *paths = top->get_bidir_paths(dest, src, false);
             net_paths[dest][src] = paths;
         }
     }
@@ -613,11 +606,8 @@ int main(int argc, char **argv) {
 
         int hops = myin->hop_count(); // hardcoded for now
         uint64_t actual_starting_cwnd = 0;
-        uint64_t base_rtt_max_hops =
-                (hops * LINK_DELAY_MODERN) +
-                (PKT_SIZE_MODERN * 8 / LINK_SPEED_MODERN * hops) +
-                (hops * LINK_DELAY_MODERN) +
-                (64 * 8 / LINK_SPEED_MODERN * hops);
+        uint64_t base_rtt_max_hops = (hops * LINK_DELAY_MODERN) + (PKT_SIZE_MODERN * 8 / LINK_SPEED_MODERN * hops) +
+                                     (hops * LINK_DELAY_MODERN) + (64 * 8 / LINK_SPEED_MODERN * hops);
         uint64_t bdp_local = base_rtt_max_hops * LINK_SPEED_MODERN / 8;
 
         if (starting_cwnd_ratio == 0) {
@@ -629,11 +619,10 @@ int main(int argc, char **argv) {
         UecSrc::set_starting_cwnd(actual_starting_cwnd * 2);
         printf("Setting CWND to %lu\n", actual_starting_cwnd);
 
-        printf("Using BDP of %lu - Queue is %lld - Starting Window is %lu\n",
-               bdp_local, queuesize, actual_starting_cwnd);
+        printf("Using BDP of %lu - Queue is %lld - Starting Window is %lu\n", bdp_local, queuesize,
+               actual_starting_cwnd);
 
-        uecSrc = new UecSrc(NULL, NULL, eventlist, rtt, bdp, 100,
-                            myin->hop_count());
+        uecSrc = new UecSrc(NULL, NULL, eventlist, rtt, bdp, 100, myin->hop_count());
         uecSrc->setReuse(1);
         uecSrc->setIgnoreEcnAck(1);
         uecSrc->setIgnoreEcnData(1);
@@ -644,8 +633,7 @@ int main(int argc, char **argv) {
         fflush(stdout);
         if (crt->flowid) {
             uecSrc->set_flowid(crt->flowid);
-            assert(flowmap.find(crt->flowid) ==
-                   flowmap.end()); // don't have dups
+            assert(flowmap.find(crt->flowid) == flowmap.end()); // don't have dups
             flowmap[crt->flowid] = uecSrc;
         }
 
@@ -658,8 +646,7 @@ int main(int argc, char **argv) {
             trig->add_target(*uecSrc);
         }
         if (crt->send_done_trigger) {
-            Trigger *trig =
-                    conns->getTrigger(crt->send_done_trigger, eventlist);
+            Trigger *trig = conns->getTrigger(crt->send_done_trigger, eventlist);
             uecSrc->set_end_trigger(*trig);
         }
 
@@ -675,8 +662,7 @@ int main(int argc, char **argv) {
         uecSnk->setName("uec_sink_" + ntoa(src) + "_" + ntoa(dest));
         logfile.writeName(*uecSnk);
         if (crt->recv_done_trigger) {
-            Trigger *trig =
-                    conns->getTrigger(crt->recv_done_trigger, eventlist);
+            Trigger *trig = conns->getTrigger(crt->recv_done_trigger, eventlist);
             uecSnk->set_end_trigger(*trig);
         }
 
@@ -688,22 +674,14 @@ int main(int argc, char **argv) {
         case ECMP_RANDOM2_ECN:
         case REACTIVE_ECN: {
             Route *srctotor = new Route();
-            srctotor->push_back(
-                    top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)]);
-            srctotor->push_back(
-                    top->pipes_ns_nlp[src][top->HOST_POD_SWITCH(src)]);
-            srctotor->push_back(
-                    top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)]
-                            ->getRemoteEndpoint());
+            srctotor->push_back(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)]);
+            srctotor->push_back(top->pipes_ns_nlp[src][top->HOST_POD_SWITCH(src)]);
+            srctotor->push_back(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)]->getRemoteEndpoint());
 
             Route *dsttotor = new Route();
-            dsttotor->push_back(
-                    top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]);
-            dsttotor->push_back(
-                    top->pipes_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]);
-            dsttotor->push_back(
-                    top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]
-                            ->getRemoteEndpoint());
+            dsttotor->push_back(top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]);
+            dsttotor->push_back(top->pipes_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]);
+            dsttotor->push_back(top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]->getRemoteEndpoint());
 
             uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
             uecSrc->set_paths(number_entropies);
@@ -713,10 +691,8 @@ int main(int argc, char **argv) {
             // TORs.
             assert(top->switches_lp[top->HOST_POD_SWITCH(src)]);
             assert(top->switches_lp[top->HOST_POD_SWITCH(src)]);
-            top->switches_lp[top->HOST_POD_SWITCH(src)]->addHostPort(
-                    src, uecSrc->flow_id(), uecSrc);
-            top->switches_lp[top->HOST_POD_SWITCH(dest)]->addHostPort(
-                    dest, uecSrc->flow_id(), uecSnk);
+            top->switches_lp[top->HOST_POD_SWITCH(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
+            top->switches_lp[top->HOST_POD_SWITCH(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
             break;
         }
         case SINGLE_PATH: {
@@ -725,8 +701,7 @@ int main(int argc, char **argv) {
             routeout = new Route(*(net_paths[src][dest]->at(choice)));
             routeout->add_endpoints(uecSrc, uecSnk);
 
-            routein = new Route(
-                    *top->get_bidir_paths(dest, src, false)->at(choice));
+            routein = new Route(*top->get_bidir_paths(dest, src, false)->at(choice));
             routein->add_endpoints(uecSnk, uecSrc);
             uecSrc->connect(routeout, routein, *uecSnk, crt->start);
             break;
@@ -750,8 +725,7 @@ int main(int argc, char **argv) {
         // free up the routes if no other connection needs them
         if (path_refcounts[src][dest] == 0 && net_paths[src][dest]) {
             vector<const Route *>::iterator i;
-            for (i = net_paths[src][dest]->begin();
-                 i != net_paths[src][dest]->end(); i++) {
+            for (i = net_paths[src][dest]->begin(); i != net_paths[src][dest]->end(); i++) {
                 if ((*i)->reverse())
                     delete (*i)->reverse();
                 delete *i;
@@ -760,8 +734,7 @@ int main(int argc, char **argv) {
         }
         if (path_refcounts[dest][src] == 0 && net_paths[dest][src]) {
             vector<const Route *>::iterator i;
-            for (i = net_paths[dest][src]->begin();
-                 i != net_paths[dest][src]->end(); i++) {
+            for (i = net_paths[dest][src]->begin(); i != net_paths[dest][src]->end(); i++) {
                 if ((*i)->reverse())
                     delete (*i)->reverse();
                 delete *i;
@@ -798,8 +771,7 @@ int main(int argc, char **argv) {
         rtx_pkts += uec_srcs[ix]->_rtx_packets_sent;
         bounce_pkts += uec_srcs[ix]->_bounces_received;
     }
-    cout << "New: " << new_pkts << " Rtx: " << rtx_pkts
-         << " Bounced: " << bounce_pkts << endl;
+    cout << "New: " << new_pkts << " Rtx: " << rtx_pkts << " Bounced: " << bounce_pkts << endl;
 
     for (std::size_t i = 0; i < uec_srcs.size(); ++i) {
         delete uec_srcs[i];

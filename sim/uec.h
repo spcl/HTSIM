@@ -6,8 +6,10 @@
 /*
  * A UEC source and sink
  */
+#include "buffer_reps.h"
 #include "config.h"
 #include "eventlist.h"
+
 #include "fairpullqueue.h"
 #include "smartt_pacer.h"
 // #include "datacenter/logsim-interface.h"
@@ -163,6 +165,8 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     virtual void rtx_timer_hook(simtime_picosec now, simtime_picosec period);
     void pacedSend();
     static void set_interdc_delay(uint64_t delay) { _interdc_delay = delay; }
+    bool received_first_ack = false;
+    CircularBufferREPS<int> *circular_buffer_reps;
     void updateParams();
 
     void track_sending_rate();

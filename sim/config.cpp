@@ -1,6 +1,8 @@
 // -*- c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "config.h"
 #include "tcppacket.h"
+#include <sstream>
+
 #include <math.h>
 
 double drand() {

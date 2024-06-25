@@ -6,97 +6,17 @@ CRT=`pwd`
 INCLUDE= -I/$(CRT)/.. -I$(CRT) 
 LIB=-L.. 
 
-all:	htsim_tcp htsim_ndp htsim_roce htsim_swift htsim_hpcc htsim_ndp_entry_modern htsim_uec_entry_modern htsim_swift_entry htsim_ndp_entry_modern_os htsim_uec_entry_modern_os htsim_uec_drop_entry htsim_uec htsim_swift_trimming htsim_bbr
+all: htsim_uec_entry_modern
 
-
-htsim_tcp: main_tcp.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o dragon_fly_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o
-	$(CC) $(CFLAGS) main_tcp.o firstfit.o vl2_topology.o dragon_fly_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o star_topology.o multihomed_fat_tree_topology.o $(LIB) -lhtsim -o htsim_tcp
-
-
-htsim_ndp: main_ndp.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o fat_tree_switch.o fat_tree_interdc_switch.o
-	$(CC) $(CFLAGS) firstfit.o main_ndp.o vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o star_topology.o multihomed_fat_tree_topology.o $(LIB) -lhtsim -o htsim_ndp
-
-htsim_uec: main_uec.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o fat_tree_switch.o fat_tree_interdc_switch.o
-	$(CC) $(CFLAGS) firstfit.o main_uec.o vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o star_topology.o multihomed_fat_tree_topology.o $(LIB) -lhtsim -o htsim_uec
-
-htsim_bbr: main_bbr.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_interdc_switch.o shortflows.o multihomed_fat_tree_topology.o star_topology.o fat_tree_switch.o
-	$(CC) $(CFLAGS) firstfit.o main_bbr.o vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o star_topology.o multihomed_fat_tree_topology.o $(LIB) -lhtsim -o htsim_bbr
-
-htsim_swift_trimming: main_swift_trimming.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o fat_tree_switch.o fat_tree_interdc_switch.o
-	$(CC) $(CFLAGS) firstfit.o main_swift_trimming.o vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o star_topology.o multihomed_fat_tree_topology.o $(LIB) -lhtsim -o htsim_swift_trimming
-
-htsim_roce: main_roce.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o fat_tree_switch.o fat_tree_interdc_switch.o
-	$(CC) $(CFLAGS) firstfit.o main_roce.o vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o star_topology.o multihomed_fat_tree_topology.o $(LIB) -lhtsim -o htsim_roce
-
-htsim_hpcc: main_hpcc.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o fat_tree_switch.o fat_tree_interdc_switch.o
-	$(CC) $(CFLAGS) firstfit.o main_hpcc.o vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o star_topology.o multihomed_fat_tree_topology.o $(LIB) -lhtsim -o htsim_hpcc
-
-
-htsim_swift: main_swift.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o generic_topology.o
-	$(CC) $(CFLAGS) firstfit.o main_swift.o vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o star_topology.o multihomed_fat_tree_topology.o generic_topology.o $(LIB) -lhtsim -o htsim_swift
 
 htsim_uec_entry_modern: main_uec_entry_modern.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o logsim-interface.o
 	$(CC)  $(CFLAGS) $^ $(LIB) -lhtsim -o htsim_uec_entry_modern
 
-htsim_swift_entry: main_swift_entry.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o logsim-interface.o
-	$(CC)  $(CFLAGS) $^ $(LIB) -lhtsim -o htsim_swift_entry
-
-htsim_ndp_entry_modern: main_ndp_entry_modern.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o logsim-interface.o
-	$(CC)  $(CFLAGS) $^ $(LIB) -lhtsim -o htsim_ndp_entry_modern
-
-htsim_uec_entry_modern_os: main_uec_entry_modern_os.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o logsim-interface.o
-	$(CC)  $(CFLAGS) $^ $(LIB) -lhtsim -o htsim_uec_entry_modern_os
-
-htsim_uec_drop_entry: main_uec_drop_entry.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o logsim-interface.o
-	$(CC)  $(CFLAGS) $^ $(LIB) -lhtsim -o htsim_uec_drop_entry
-
-htsim_ndp_entry_modern_os: main_ndp_entry_modern_os.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o logsim-interface.o
-	$(CC)  $(CFLAGS) $^ $(LIB) -lhtsim -o htsim_ndp_entry_modern_os
-
 main_uec_entry_modern.o: main_uec_entry_modern.cpp ../lgs/logsim.h logsim-interface.h
 	$(CC) $(INCLUDE) $(CFLAGS) -c main_uec_entry_modern.cpp 
 
-main_uec_entry_modern_os.o: main_uec_entry_modern_os.cpp ../lgs/logsim.h logsim-interface.h
-	$(CC) $(INCLUDE) $(CFLAGS) -c main_uec_entry_modern_os.cpp 
-
-main_uec_drop_entry.o: main_uec_drop_entry.cpp ../lgs/logsim.h logsim-interface.h
-	$(CC) $(INCLUDE) $(CFLAGS) -c main_uec_drop_entry.cpp 
-
-main_swift_entry.o: main_swift_entry.cpp ../lgs/logsim.h logsim-interface.h
-	$(CC) $(INCLUDE) $(CFLAGS) -c main_swift_entry.cpp 
-
-main_ndp_entry_modern_os.o: main_ndp_entry_modern_os.cpp ../lgs/logsim.h logsim-interface.h
-	$(CC) $(INCLUDE) $(CFLAGS) -c main_ndp_entry_modern_os.cpp 
-
-main_ndp_entry_modern.o: main_ndp_entry_modern.cpp ../lgs/logsim.h logsim-interface.h
-	$(CC) $(INCLUDE) $(CFLAGS) -c main_ndp_entry_modern.cpp 
-
 logsim-interface.o: logsim-interface.cpp
 	$(CC) $(INCLUDE) $(CFLAGS) -c $< $(LIB)
-
-main_tcp.o: main_tcp.cpp
-	$(CC) $(INCLUDE) $(CFLAGS) -c main_tcp.cpp
-
-main_ndp.o: main_ndp.cpp
-	$(CC) $(INCLUDE) $(CFLAGS) -c main_ndp.cpp 
-
-main_uec.o: main_uec.cpp
-	$(CC) $(INCLUDE) $(CFLAGS) -c main_uec.cpp 
-
-main_swift_trimming.o: main_swift_trimming.cpp
-	$(CC) $(INCLUDE) $(CFLAGS) -c main_swift_trimming.cpp 
-
-main_roce.o: main_roce.cpp
-	$(CC) $(INCLUDE) $(CFLAGS) -c main_roce.cpp
-
-main_hpcc.o: main_hpcc.cpp
-	$(CC) $(INCLUDE) $(CFLAGS) -c main_hpcc.cpp 
-
-main_bbr.o: main_bbr.cpp
-	$(CC) $(INCLUDE) $(CFLAGS) -c main_bbr.cpp 
-
-main_swift.o: main_swift.cpp
-	$(CC) $(INCLUDE) $(CFLAGS) -c main_swift.cpp 
 
 star_topology.o: star_topology.cpp star_topology.h
 	$(CC) $(INCLUDE) $(CFLAGS) -c star_topology.cpp 

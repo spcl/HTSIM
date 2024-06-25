@@ -54,7 +54,11 @@ enum RouteStrategy {
     REACTIVE_ECN,
     ECMP_FIB2_ECN,
     ECMP_RANDOM2_ECN,
-    ECMP_RANDOM_ECN
+    ECMP_RANDOM_ECN,
+    REPS,
+    REPS_CIRCULAR,
+    OBLIVIOUS,
+    ECMP_NORMAL
 };
 
 typedef enum {

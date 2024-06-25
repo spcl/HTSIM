@@ -4,7 +4,7 @@ Switch-Fail-Period: 100000000
 Switch-BER: OFF
 Switch-BER-Start-After: 100000000
 Switch-BER-Period: 10000000
-Switch-Degradation: ON
+Switch-Degradation: OFF
 Switch-Degradation-Start-After: 0
 Switch-Degradation-Period: 100000000
 Switch-Worst-Case: OFF
