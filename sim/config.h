@@ -46,6 +46,10 @@ extern uint64_t BDP_OLD_NDP;
 extern uint64_t MAX_CWD_OLD_NDP;
 extern uint64_t ENABLE_FAST_DROP;
 extern std::filesystem::path PROJECT_ROOT_PATH;
+// LCP.
+extern uint64_t BDP_OLD_LCP;
+extern uint64_t BDP_MODERN_LCP;
+extern uint64_t MAX_CWD_MODERN_LCP;   
 
 int pareto(int xm, int mean);
 double exponential(double lambda);

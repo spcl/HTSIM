@@ -241,6 +241,24 @@ string Packet::str() const {
     case UECNACK_DROP:
         s = "UECNACK_DROP";
         break;
+    case LCP:
+        s = "LCP";
+        break;
+    case LCPACK:
+        s = "LCPACK";
+        break;
+    case LCPNACK:
+        s = "LCPNACK";
+        break;
+    case LCP_DROP:
+        s = "LCP_DROP";
+        break;
+    case LCPACK_DROP:
+        s = "LCPACK_DROP";
+        break;
+    case LCPNACK_DROP:
+        s = "LCPNACK_DROP";
+        break;
     default:
         abort();
         break;

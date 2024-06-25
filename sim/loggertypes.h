@@ -8,6 +8,7 @@ class TcpSrc;
 class NdpSrc;
 class BBRSrc;
 class UecSrc;
+class LcpSrc;
 class UecDropSrc;
 class SwiftTrimmingSrc;
 class SwiftSrc;
@@ -352,6 +353,16 @@ class UecLogger : public Logger {
     enum UecMemoryRecord { MEMORY = 0 };
     virtual void logUec(UecSrc &src, UecEvent ev) = 0;
     virtual ~UecLogger(){};
+};
+
+class LcpLogger : public Logger {
+  public:
+    enum LcpEvent { LCP_RCV = 0, LCP_TIMEOUT = 1 }; // TODO: add more events
+    enum LcpState { LCPSTATE_CNTRL = 0, LCPSTATE_SEQ = 1 };
+    enum LcpRecord { AVE_CWND = 0 };
+    enum LcpMemoryRecord { MEMORY = 0 };
+    virtual void logLcp(LcpSrc &src, LcpEvent ev) = 0;
+    virtual ~LcpLogger(){};
 };
 
 class BBRLogger : public Logger {

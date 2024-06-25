@@ -6,7 +6,7 @@ CRT=`pwd`
 INCLUDE= -I/$(CRT)/.. -I$(CRT) 
 LIB=-L.. 
 
-all:	htsim_tcp htsim_ndp htsim_roce htsim_swift htsim_hpcc htsim_ndp_entry_modern htsim_uec_entry_modern htsim_swift_entry htsim_ndp_entry_modern_os htsim_uec_entry_modern_os htsim_uec_drop_entry htsim_uec htsim_swift_trimming
+all:	htsim_tcp htsim_ndp htsim_roce htsim_swift htsim_hpcc htsim_ndp_entry_modern htsim_uec_entry_modern htsim_swift_entry htsim_ndp_entry_modern_os htsim_uec_entry_modern_os htsim_uec_drop_entry htsim_uec htsim_swift_trimming htsim_lcp
 
 
 htsim_tcp: main_tcp.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o dragon_fly_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o
@@ -19,6 +19,9 @@ htsim_ndp: main_ndp.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.
 htsim_uec: main_uec.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o fat_tree_switch.o fat_tree_interdc_switch.o
 	$(CC) $(CFLAGS) firstfit.o main_uec.o vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o star_topology.o multihomed_fat_tree_topology.o $(LIB) -lhtsim -o htsim_uec
 
+htsim_lcp: main_lcp.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o fat_tree_switch.o fat_tree_interdc_switch.o
+	$(CC) $(CFLAGS) firstfit.o main_lcp.o vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o star_topology.o multihomed_fat_tree_topology.o $(LIB) -lhtsim -o htsim_lcp
+
 htsim_swift_trimming: main_swift_trimming.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o fat_tree_switch.o fat_tree_interdc_switch.o
 	$(CC) $(CFLAGS) firstfit.o main_swift_trimming.o vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o star_topology.o multihomed_fat_tree_topology.o $(LIB) -lhtsim -o htsim_swift_trimming
 
@@ -27,7 +30,6 @@ htsim_roce: main_roce.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topolog
 
 htsim_hpcc: main_hpcc.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o fat_tree_switch.o fat_tree_interdc_switch.o
 	$(CC) $(CFLAGS) firstfit.o main_hpcc.o vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o star_topology.o multihomed_fat_tree_topology.o $(LIB) -lhtsim -o htsim_hpcc
-
 
 htsim_swift: main_swift.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o generic_topology.o
 	$(CC) $(CFLAGS) firstfit.o main_swift.o vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o fat_tree_interdc_switch.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o star_topology.o multihomed_fat_tree_topology.o generic_topology.o $(LIB) -lhtsim -o htsim_swift
@@ -79,6 +81,9 @@ main_ndp.o: main_ndp.cpp
 
 main_uec.o: main_uec.cpp
 	$(CC) $(INCLUDE) $(CFLAGS) -c main_uec.cpp 
+
+main_lcp.o: main_lcp.cpp
+	$(CC) $(INCLUDE) $(CFLAGS) -c main_lcp.cpp
 
 main_swift_trimming.o: main_swift_trimming.cpp
 	$(CC) $(INCLUDE) $(CFLAGS) -c main_swift_trimming.cpp 
@@ -144,4 +149,4 @@ fat_tree_interdc_switch.o: fat_tree_interdc_switch.h fat_tree_interdc_switch.cpp
 	$(CC) $(INCLUDE) $(CFLAGS) -c fat_tree_interdc_switch.cpp
 
 clean:	
-	rm -f *.o htsim_ndp* htsim_swift* htsim_tcp* htsim_dctcp* htsim_roce* htsim_hpcc*
+	rm -f *.o htsim_ndp* htsim_swift* htsim_tcp* htsim_dctcp* htsim_roce* htsim_hpcc* htsim_lcp*

@@ -1,6 +1,6 @@
 SUBDIRS=tests datacenter
-OBJS=eventlist.o tcppacket.o pipe.o queue.o meter.o queue_lossless.o queue_lossless_input.o queue_lossless_output.o ecnqueue.o tcp.o dctcp.o mtcp.o loggers.o logfile.o clock.o config.o network.o qcn.o exoqueue.o randomqueue.o cbr.o cbrpacket.o sent_packets.o ndp.o ndptunnel.o ndppacket.o roce.o rocepacket.o eth_pause_packet.o tcp_transfer.o tcp_periodic.o compositequeue.o compositequeuebts.o prioqueue.o cpqueue.o ndp_transfer.o compositeprioqueue.o switch.o dctcp_transfer.o fairpullqueue.o route.o callback_pipe.o ndptunnelpacket.o swiftpacket.o smartt_pacer.o swift.o swift_scheduler.o routetable.o trigger.o hpccpacket.o hpcc.o strackpacket.o strack.o priopullqueue.o compute_event.o uec.o uecpacket.o bbr.o  uec_drop.o uecpacket_drop.o swifttrimming.o swifttrimmingpacket.o common.o
-HDRS=network.h ndp.h ndptunnel.h queue_lossless.h queue_lossless_input.h queue_lossless_output.h compositequeue.h compositequeuebts.h prioqueue.h cpqueue.h queue.h loggers.h loggertypes.h pipe.h eventlist.h config.h tcp.h dctcp.h mtcp.h sent_packets.h tcppacket.h ndppacket.h rocepacket.h eth_pause_packet.h ndp_transfer.h compositeprioqueue.h ecnqueue.h switch.h dctcp_transfer.h callback_pipe.h meter.h ndptunnelpacket.h swiftpacket.h smartt_pacer.h swift.h swift_scheduler.h routetable.h circular_buffer.h custom_buffer.h trigger.h hpccpacket.h hpcc.h strackpacket.h strack.h priopullqueue.h uec.h uecpacket.h swifttrimming.h swifttrimmingpacket.h uec_drop.h bbr.h uecpacket_drop.h compute_event.h
+OBJS=eventlist.o tcppacket.o pipe.o queue.o meter.o queue_lossless.o queue_lossless_input.o queue_lossless_output.o ecnqueue.o tcp.o dctcp.o mtcp.o loggers.o logfile.o clock.o config.o network.o qcn.o exoqueue.o randomqueue.o cbr.o cbrpacket.o sent_packets.o ndp.o ndptunnel.o ndppacket.o roce.o rocepacket.o eth_pause_packet.o tcp_transfer.o tcp_periodic.o compositequeue.o compositequeuebts.o prioqueue.o cpqueue.o ndp_transfer.o compositeprioqueue.o switch.o dctcp_transfer.o fairpullqueue.o route.o callback_pipe.o ndptunnelpacket.o swiftpacket.o smartt_pacer.o lcp_pacer.o swift.o swift_scheduler.o routetable.o trigger.o hpccpacket.o hpcc.o strackpacket.o strack.o priopullqueue.o compute_event.o lcp.o lcppacket.o uec.o uecpacket.o bbr.o uec_drop.o uecpacket_drop.o swifttrimming.o swifttrimmingpacket.o common.o
+HDRS=network.h ndp.h ndptunnel.h queue_lossless.h queue_lossless_input.h queue_lossless_output.h compositequeue.h compositequeuebts.h prioqueue.h cpqueue.h queue.h loggers.h loggertypes.h pipe.h eventlist.h config.h tcp.h dctcp.h mtcp.h sent_packets.h tcppacket.h ndppacket.h rocepacket.h eth_pause_packet.h ndp_transfer.h compositeprioqueue.h ecnqueue.h switch.h dctcp_transfer.h callback_pipe.h meter.h ndptunnelpacket.h swiftpacket.h smartt_pacer.h lcp_pacer.h swift.h swift_scheduler.h routetable.h circular_buffer.h custom_buffer.h trigger.h hpccpacket.h hpcc.h strackpacket.h strack.h priopullqueue.h lcp.h lcppacket.h uec.h uecpacket.h swifttrimming.h swifttrimmingpacket.h uec_drop.h bbr.h uecpacket_drop.h compute_event.h
 
 CC=g++ -fPIC
 CFLAGS = -Wall -std=c++17 -g -Wsign-compare -Wuninitialized  -fPIC
@@ -94,6 +94,7 @@ strack.o:	strack.cpp $(HDRS)
 tcppacket.o:	tcppacket.cpp $(HDRS)
 swiftpacket.o:	swiftpacket.cpp $(HDRS)
 smartt_pacer.o:	smartt_pacer.cpp $(HDRS)
+lcp_pacer.o:	lcp_pacer.cpp $(HDRS)
 strackpacket.o:	strackpacket.cpp $(HDRS)
 loggers.o:	loggers.cpp $(HDRS)
 logfile.o:	logfile.cpp  $(HDRS)
@@ -111,10 +112,12 @@ roce.o: roce.cpp $(HRDS)
 hpcc.o: hpcc.cpp $(HRDS)
 qcn.o: qcn.cpp qcn.h loggers.h config.h 
 uec.o: uec.cpp $(HDRS)
+lcp.o: lcp.cpp $(HDRS)
 compute_event.o: compute_event.cpp $(HDRS)
 uec_drop.o: uec_drop.cpp $(HDRS)
 bbr.o: bbr.cpp $(HDRS)
 uecpacket.o: uecpacket.cpp $(HDRS)
+lcppacket.o: lcppacket.cpp $(HDRS)
 uecpacket_drop.o: uecpacket_drop.cpp $(HDRS)
 swifttrimming.o: swifttrimming.cpp $(HDRS)
 swifttrimmingpacket.o: swifttrimmingpacket.cpp $(HDRS)
