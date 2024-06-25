@@ -680,6 +680,12 @@ void UecSrc::processNack(UecNack &pkt) {
         }
     }
 
+    if (pkt.is_failed) {
+        if ((_route_strategy == REPS_CIRCULAR) && !circular_buffer_reps->isFrozenMode()) {
+            circular_buffer_reps->setFrozenMode(true);
+        }
+    }
+
     if (use_fast_drop) {
         if (count_received >= ignore_for) {
             if (eventlist().now() > next_qa) {
