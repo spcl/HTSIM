@@ -1,6 +1,7 @@
 // -*- c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "compositequeue.h"
 #include "ecn.h"
+#include "failuregenerator.h"
 #include "uecpacket.h"
 #include <filesystem>
 #include <fstream>
@@ -47,8 +48,6 @@ CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize, EventList &
     stringstream ss;
     ss << "compqueue(" << bitrate / 1000000 << "Mb/s," << maxsize << "bytes)";
     _nodename = ss.str();
-
-    _failure_generator = new failuregenerator();
 }
 
 void CompositeQueue::decreasePhantom() {
@@ -311,20 +310,18 @@ void CompositeQueue::doNextEvent() {
 
 void CompositeQueue::receivePacket(Packet &pkt) {
 
-    // std::cout << "Currently at switch " << _switch->getID() << std::endl;
-    // std::cout << "Packet from " << pkt.from << " to " << pkt.to << std::endl;
-
     pkt.flow().logTraffic(pkt, *this, TrafficLogger::PKT_ARRIVE);
     if (_logger)
         _logger->logQueue(*this, QueueLogger::PKT_ARRIVE, pkt);
     // is this a Tofino packet from the egress pipeline?
 
-    if (_failure_generator->simSwitchFailures(pkt, _switch, *this) || _failure_generator->simNICFailures(*this, pkt)) {
+    if (FAILURE_GENERATOR->simSwitchFailures(pkt, _switch, *this)) {
         // Temporary Hack
         if (!pkt.header_only()) {
             pkt.strip_payload();
         }
         pkt.is_failed = true;
+        FAILURE_GENERATOR->_list_switch_packet_drops.push_back(GLOBAL_TIME);
 
         // pkt.free(); Later we will re-enable this
         // return;

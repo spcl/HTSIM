@@ -1,5 +1,6 @@
 // -*- c-basic-offset: 4; indent-tabs-mode: nil -*-
 #include "pipe.h"
+#include "failuregenerator.h"
 #include <iostream>
 #include <sstream>
 
@@ -15,20 +16,19 @@ Pipe::Pipe(simtime_picosec delay, EventList &eventlist) : EventSource(eventlist,
     stringstream ss;
     ss << "pipe_" << _id << "(" << delay / 1000000 << "us)";
     _nodename = ss.str();
-
-    _failure_generator = new failuregenerator();
 }
 
 void Pipe::receivePacket(Packet &pkt) {
     // pkt.flow().logTraffic(pkt,*this,TrafficLogger::PKT_ARRIVE);
     // if (_inflight.empty()){
 
-    if (_failure_generator->simCableFailures(this, pkt)) {
+    if (FAILURE_GENERATOR->simCableFailures(this, pkt)) {
         // Temporary Hack
         if (!pkt.header_only()) {
             pkt.strip_payload();
         }
         pkt.is_failed = true;
+        FAILURE_GENERATOR->_list_cable_packet_drops.push_back(GLOBAL_TIME);
 
         // pkt.free(); Later we will re-enable this
         // return;

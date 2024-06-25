@@ -156,7 +156,9 @@ class Packet {
     }
 
     virtual PacketSink *sendOn(); // "go on to the next hop along your route"
-                                  // returns what that hop is
+    // returns what that hop is
+
+    virtual PacketSink *getNextHopOfPacket();
 
     virtual PacketSink *previousHop() {
         if (_nexthop >= 2)

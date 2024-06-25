@@ -11,6 +11,7 @@
 #include <sys/types.h>
 
 double drand();
+class failuregenerator;
 
 #ifdef _WIN32
 // Ways to refer to integer types
@@ -28,7 +29,7 @@ typedef uint64_t simtime_picosec;
 extern simtime_picosec GLOBAL_TIME;
 extern int PKT_SIZE_MODERN;
 extern uint64_t LINK_SPEED_MODERN;
-extern int SINGLE_PKT_TRASMISSION_TIME_MODERN;
+extern uint64_t SINGLE_PKT_TRASMISSION_TIME_MODERN;
 extern int LINK_DELAY_MODERN;
 extern uint64_t HOPS;
 extern uint64_t BASE_RTT_MODERN;
@@ -44,8 +45,9 @@ extern uint64_t BDP_MODERN_NDP;
 extern uint64_t MAX_CWD_MODERN_NDP;
 extern uint64_t BDP_OLD_NDP;
 extern uint64_t MAX_CWD_OLD_NDP;
-extern uint64_t ENABLE_FAST_DROP;
+extern bool ENABLE_FAST_DROP;
 extern std::filesystem::path PROJECT_ROOT_PATH;
+extern failuregenerator *FAILURE_GENERATOR;
 
 int pareto(int xm, int mean);
 double exponential(double lambda);

@@ -9,7 +9,6 @@
 #include "config.h"
 #include "drawable.h"
 #include "eventlist.h"
-#include "failuregenerator.h"
 #include "loggertypes.h"
 #include "network.h"
 #include <list>
@@ -32,7 +31,6 @@ class Pipe : public EventSource, public PacketSink, public Drawable {
     void setNext(PacketSink *next_sink) { _next_sink = next_sink; }
     PacketSink *next() const { return _next_sink; }
     simtime_picosec _delay;
-    failuregenerator *_failure_generator;
     uint32_t getID() { return _id; };
 
   protected:

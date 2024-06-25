@@ -92,6 +92,11 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     bool supportsTrimming() { return _trimming_enabled; }
     std::size_t getEcnInTargetRtt();
 
+    std::vector<const Route *> get_paths() { return _paths; }
+    PacketFlow get_flow() { return _flow; }
+    const Route *get_route() { return _route; }
+    std::vector<int> get_path_ids() { return _path_ids; }
+
     int choose_route();
     inline simtime_picosec pacing_delay_f() const { return pacing_delay; }
     int next_route();

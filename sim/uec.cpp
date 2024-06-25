@@ -1,6 +1,7 @@
 // -*- c-basic-offset: 4; tab-width: 8; indent-tabs-mode: t -*-
 #include "uec.h"
 #include "ecn.h"
+#include "failuregenerator.h"
 #include "queue.h"
 #include <filesystem>
 #include <fstream>
@@ -1157,6 +1158,17 @@ uint64_t UecSrc::get_unacked() {
 void UecSrc::receivePacket(Packet &pkt) {
     // every packet received represents one less packet in flight
 
+    if (FAILURE_GENERATOR->simNICFailures(this, NULL, pkt)) {
+        // Temporary Hack
+        if (!pkt.header_only()) {
+            pkt.strip_payload();
+        }
+        pkt.is_failed = true;
+
+        // pkt.free(); Later we will re-enable this
+        // return;
+    }
+
     if (from == 226 && to == 117) {
         printf("Packet Received from %d to %d at %lu - Type %d\n", from, to, GLOBAL_TIME / 1000, pkt.type());
     }
@@ -2267,6 +2279,30 @@ bool UecSink::already_received(UecPacket &pkt) {
 
 void UecSink::receivePacket(Packet &pkt) {
     /* printf("Sink Received %d %d - Entropy %d - %lu - \n", pkt.from, pkt.id(), pkt.pathid(), GLOBAL_TIME / 1000); */
+
+    if (FAILURE_GENERATOR->simNICFailures(NULL, this, pkt)) {
+        // Temporary Hack
+        if (!pkt.header_only()) {
+            pkt.strip_payload();
+        }
+        pkt.is_failed = true;
+
+        // pkt.free(); Later we will re-enable this
+        // return;
+    }
+
+    if (FAILURE_GENERATOR->dropPacketsSwitchBER(pkt)) {
+        // Temporary Hack
+        if (!pkt.header_only()) {
+            pkt.strip_payload();
+        }
+        pkt.is_failed = true;
+
+        FAILURE_GENERATOR->_list_switch_packet_drops.push_back(GLOBAL_TIME);
+        // pkt.free(); Later we will re-enable this
+        // return;
+    }
+
     if (pkt.pfc_just_happened) {
         pfc_just_seen = 1;
     } else {

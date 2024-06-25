@@ -1,6 +1,7 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 
 #include "logsim-interface.h"
+#include "failuregenerator.h"
 #include "lgs/LogGOPSim.hpp"
 #include "lgs/Network.hpp"
 #include "lgs/Noise.hpp"
@@ -149,6 +150,9 @@ void LogSimInterface::send_event(int from, int to, int size, int tag, u_int64_t 
 
         uecSrc->set_dst(to);
         uecSink->set_src(from);
+
+        FAILURE_GENERATOR->addSrc(uecSrc);
+        FAILURE_GENERATOR->addDst(uecSink);
 
         Route *srctotor = new Route();
         Route *dsttotor = new Route();
@@ -1261,6 +1265,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
             }
             std::cout << "Maximum finishing time at host " << host << ": " << max << " (" << (double)max / 1e9
                       << " s)\n";
+            FAILURE_GENERATOR->createLoggingData();
         }
 
         // WRITE match queue statistics

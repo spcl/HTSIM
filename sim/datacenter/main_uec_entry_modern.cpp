@@ -622,7 +622,12 @@ int main(int argc, char **argv) {
                 exit(0);
             }
             i++;
-        } else
+        } else if (!strcmp(argv[i], "-failures_input")) {
+            FAILURE_GENERATOR->setInputFile(argv[i + 1]);
+            i++;
+        }
+
+        else
             exit_error(argv[0]);
 
         i++;
@@ -1004,6 +1009,9 @@ int main(int argc, char **argv) {
                 uecSrc->set_paths(number_entropies);
                 uecSnk->set_paths(number_entropies);
 
+                FAILURE_GENERATOR->addSrc(uecSrc);
+                FAILURE_GENERATOR->addDst(uecSnk);
+
                 // register src and snk to receive packets src their respective
                 // TORs.
                 if (top != NULL) {
@@ -1124,6 +1132,7 @@ int main(int argc, char **argv) {
     }
     for (int i = 0; i < 10; i++)
         cout << "Hop " << i << " Count " << counts[i] << endl;
+    FAILURE_GENERATOR->createLoggingData();
 }
 
 string ntoa(double n) {
