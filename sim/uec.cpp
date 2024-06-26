@@ -1492,7 +1492,19 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
                     _cwnd *= (1.0 - total_factor);
                 }
                 cout << "    CWND change: " << nodename() << " more than 2x target high, go from " << cwnd_before << " to " << _cwnd << endl;
-            } else if (_current_rtt_ewma > TARGET_RTT_HIGH) {
+            } else if (_current_rtt_ewma > TARGET_RTT_HIGH && (gradient * gradient) / gradient < 0.01) {
+                if (LCP_USE_AGGRESSIVE_DECREASE) {
+                    // Target RTT is high and the gradient is near 0. Aggressive decrease.
+                    _cwnd *= 0.5;
+                } else {
+                    double latency_ratio = ((double)TARGET_RTT_HIGH) / ((double) _current_rtt_ewma);
+                    double latency_factor = LCP_BETA * (1.0 - latency_ratio);
+                    double gradient_factor = min(max(-1.0, gradient), 0.0) * LCP_GAMMA;
+                    double total_factor = min(max(-1.0, latency_factor + gradient_factor), 1.0);
+                    _cwnd *= (1.0 - total_factor);
+                }
+            } 
+            else if (_current_rtt_ewma > TARGET_RTT_HIGH) {
                 double latency_ratio = ((double)TARGET_RTT_HIGH) / ((double) _current_rtt_ewma);
                 double latency_factor = LCP_BETA * (1.0 - latency_ratio);
                 double gradient_factor = min(max(-1.0, gradient), 0.0) * LCP_GAMMA;

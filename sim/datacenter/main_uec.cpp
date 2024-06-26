@@ -440,6 +440,8 @@ int main(int argc, char **argv) {
             LCP_USE_PACING = false;
         } else if (!strcmp(argv[i], "-use-min")) {
             LCP_USE_MIN_RTT = true;
+        }  else if (!strcmp(argv[i], "-use-ad")) {
+            LCP_USE_AGGRESSIVE_DECREASE = true;
         }  else {
             printf("Called with %s\n", argv[i]);
             exit_error(argv[0]);
@@ -526,6 +528,7 @@ int main(int argc, char **argv) {
     cout << "Use Fast Increase: " << LCP_USE_FAST_INCREASE << endl;
     cout << "Pacing Bonus: " << LCP_PACING_BONUS << endl;
     cout << "Use Min RTT: " << LCP_USE_MIN_RTT << endl;
+    cout << "Use Aggressive Decrease: " << LCP_USE_AGGRESSIVE_DECREASE << endl;
     cout << "==============================" << endl;
 
     UecSrc::setRouteStrategy(route_strategy);
