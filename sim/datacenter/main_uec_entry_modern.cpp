@@ -126,6 +126,7 @@ int main(int argc, char **argv) {
     uint64_t explicit_starting_cwnd = 0;
     uint64_t explicit_starting_buffer = 0;
     uint64_t explicit_base_rtt = 0;
+    uint64_t rto_value = 0;
     uint64_t explicit_target_rtt = 0;
     uint64_t explicit_bdp = 0;
     double queue_size_ratio = 0;
@@ -468,6 +469,12 @@ int main(int argc, char **argv) {
             drop_value_buffer = std::stod(argv[i + 1]);
             UecSrc::set_buffer_drop(drop_value_buffer);
             printf("BufferDrop: %f\n", drop_value_buffer);
+            i++;
+        } else if (!strcmp(argv[i], "-rto")) {
+            rto_value = atoi(argv[i + 1]);
+            rto_value = timeAsUs(rto_value);
+            UecSrc::set_rto(rto_value);
+            printf("RTO is: %lu\n", rto_value);
             i++;
         } else if (!strcmp(argv[i], "-goal")) {
             goal_filename = argv[i + 1];

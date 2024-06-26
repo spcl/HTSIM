@@ -317,7 +317,17 @@ void CompositeQueue::receivePacket(Packet &pkt) {
 
     FAILURE_GENERATOR->dropRandomPacket(pkt);
 
-    if (FAILURE_GENERATOR->simSwitchFailures(pkt, _switch, *this)) {
+    /* printf("Going through queue %s\n", _nodename.c_str());
+
+    if (_nodename == "compqueue(800000Mb/s,864000bytes)US0->CS1(0)" && !pkt.header_only()) {
+        if (!pkt.header_only()) {
+            pkt.strip_payload();
+            printf("Failing packet\n");
+        }
+        pkt.is_failed = true;
+    } */
+
+    if (FAILURE_GENERATOR->simSwitchFailures(pkt, _switch, *this) && !pkt.header_only()) {
         // Temporary Hack
         if (!pkt.header_only()) {
             pkt.strip_payload();

@@ -42,6 +42,7 @@ double UecSrc::starting_cwnd = 1;
 double UecSrc::bonus_drop = 1;
 double UecSrc::buffer_drop = 1.2;
 int UecSrc::ratio_os_stage_1 = 1;
+uint64_t UecSrc::_rto_value = timeAsUs(30);
 double UecSrc::decrease_on_nack = 1;
 simtime_picosec UecSrc::stop_pacing_after_rtt = 0;
 int UecSrc::reaction_delay = 1;
@@ -99,6 +100,7 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList
     _rtt = _base_rtt;
     _rto = rtt + _hop_count * queueDrainTime + (rtt * 900000);
     _rto = _base_rtt * 3;
+    _rto = _rto_value;
     _rto_margin = _rtt / 8;
     _rtx_timeout = timeInf;
     _rtx_timeout_pending = false;
@@ -386,6 +388,7 @@ void UecSrc::updateParams() {
     _rtt = _base_rtt;
     _rto = _base_rtt * 900000;
     _rto = _base_rtt * 3;
+    _rto = _rto_value;
     _rto_margin = _rtt / 8;
     _rtx_timeout = timeInf;
     _rtx_timeout_pending = false;
@@ -681,8 +684,10 @@ void UecSrc::processNack(UecNack &pkt) {
     }
 
     if (pkt.is_failed) {
+        printf("Failing entropy is %d\n", pkt.pathid_echo);
         if ((_route_strategy == REPS_CIRCULAR) && !circular_buffer_reps->isFrozenMode()) {
             circular_buffer_reps->setFrozenMode(true);
+            printf("%s started freezing mode at %lu\n", _name.c_str(), eventlist().now() / 1000);
         }
     }
 
@@ -865,6 +870,8 @@ int UecSrc::choose_route() {
                     printf("Studying %s: REPS GET FRESH UNFROZEN %d\n", _nodename.c_str(), _crt_path);
             }
         }
+        printf("Selected Path %d at %lu\n", _crt_path, eventlist().now() / 1000);
+        // circular_buffer_reps->print();
         break;
     }
     case OBLIVIOUS: {

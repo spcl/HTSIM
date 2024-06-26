@@ -162,6 +162,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static void set_stop_after_quick(bool value) { stop_after_quick = value; }
     static void set_stop_pacing(int value) { stop_pacing_after_rtt = value; }
     static void setRouteStrategy(RouteStrategy strat) { _route_strategy = strat; }
+    static void set_rto(uint64_t value) { _rto_value = value; }
 
     void set_flow_over_hook(std::function<void(const Packet &)> hook) { f_flow_over_hook = hook; }
 
@@ -318,6 +319,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static double buffer_drop;
     static bool stop_after_quick;
     static simtime_picosec stop_pacing_after_rtt;
+    static uint64_t _rto_value;
     static RouteStrategy _route_strategy;
     static bool use_pacing;
     static simtime_picosec pacing_delay;

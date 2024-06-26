@@ -1,19 +1,14 @@
 #include "buffer_reps.h"
 
 // Static member initialization
-template <typename T>
-bool CircularBufferREPS<T>::repsUseFreezing = false;
-template <typename T>
-int CircularBufferREPS<T>::repsBufferSize = 10;
-template <typename T>
-int CircularBufferREPS<T>::repsMaxLifetimeEntropy = 1;
-template <typename T>
-bool CircularBufferREPS<T>::compressed_acks = false;
+template <typename T> bool CircularBufferREPS<T>::repsUseFreezing = false;
+template <typename T> int CircularBufferREPS<T>::repsBufferSize = 10;
+template <typename T> int CircularBufferREPS<T>::repsMaxLifetimeEntropy = 1;
+template <typename T> bool CircularBufferREPS<T>::compressed_acks = false;
 
 // Constructor
 template <typename T>
-CircularBufferREPS<T>::CircularBufferREPS(int bufferSize)
-    : max_size(bufferSize), head(0), tail(0), count(0) {
+CircularBufferREPS<T>::CircularBufferREPS(int bufferSize) : max_size(bufferSize), head(0), tail(0), count(0) {
     buffer = new Element[max_size];
     for (int i = 0; i < max_size; i++) {
         buffer[i].isValid = false;
@@ -22,16 +17,14 @@ CircularBufferREPS<T>::CircularBufferREPS(int bufferSize)
 }
 
 // Destructor
-template <typename T>
-CircularBufferREPS<T>::~CircularBufferREPS() {
-    delete[] buffer;
-}
+template <typename T> CircularBufferREPS<T>::~CircularBufferREPS() { delete[] buffer; }
 
 // Adds an element to the buffer
-template <typename T>
-void CircularBufferREPS<T>::add(T element) {
+template <typename T> void CircularBufferREPS<T>::add(T element) {
     if (isFrozenMode()) {
         // If the element is contained in the buffer, return
+        /* printf("elment is %d, max size is %d\n", element, max_size);
+        fflush(stdout); */
         if (containsEntropy(element)) {
             // return;
         }
@@ -60,8 +53,7 @@ void CircularBufferREPS<T>::add(T element) {
 }
 
 // Removes an element from the buffer
-template <typename T>
-T CircularBufferREPS<T>::remove() {
+template <typename T> T CircularBufferREPS<T>::remove() {
     if (count == 0) {
         throw std::underflow_error("Buffer is empty");
     }
@@ -78,8 +70,7 @@ T CircularBufferREPS<T>::remove() {
 }
 
 // Removes an element from the buffer
-template <typename T>
-T CircularBufferREPS<T>::remove_earliest_fresh() {
+template <typename T> T CircularBufferREPS<T>::remove_earliest_fresh() {
     if (count == 0 || number_fresh_entropies == 0) {
         throw std::underflow_error("Buffer is empty or no fresh entropies");
         exit(EXIT_FAILURE);
@@ -122,8 +113,7 @@ T CircularBufferREPS<T>::remove_earliest_fresh() {
 }
 
 // Removes an element from the buffer
-template <typename T>
-T CircularBufferREPS<T>::remove_earliest_round() {
+template <typename T> T CircularBufferREPS<T>::remove_earliest_round() {
     if (count == 0 || number_fresh_entropies == 0) {
         throw std::underflow_error("Buffer is empty or no fresh entropies");
         exit(EXIT_FAILURE);
@@ -140,8 +130,7 @@ T CircularBufferREPS<T>::remove_earliest_round() {
 }
 
 // Removes an element from the buffer
-template <typename T>
-T CircularBufferREPS<T>::remove_frozen() {
+template <typename T> T CircularBufferREPS<T>::remove_frozen() {
     if (count == 0) {
         throw std::underflow_error("Buffer is empty");
     }
@@ -180,8 +169,7 @@ T CircularBufferREPS<T>::remove_frozen() {
 }
 
 // Removes an element from the buffer
-template <typename T>
-bool CircularBufferREPS<T>::is_valid_frozen() {
+template <typename T> bool CircularBufferREPS<T>::is_valid_frozen() {
     if (count == 0) {
         throw std::underflow_error("Buffer is empty");
     }
@@ -192,26 +180,16 @@ bool CircularBufferREPS<T>::is_valid_frozen() {
 }
 
 // Returns the number of elements in the buffer
-template <typename T>
-int CircularBufferREPS<T>::getSize() const {
-    return count;
-}
+template <typename T> int CircularBufferREPS<T>::getSize() const { return count; }
 
 // Returns the number of elements in the buffer
-template <typename T>
-int CircularBufferREPS<T>::getNumberFreshEntropies() const {
-    return number_fresh_entropies;
-}
+template <typename T> int CircularBufferREPS<T>::getNumberFreshEntropies() const { return number_fresh_entropies; }
 
 // Checks if the buffer is empty
-template <typename T>
-bool CircularBufferREPS<T>::isEmpty() const {
-    return count == 0;
-}
+template <typename T> bool CircularBufferREPS<T>::isEmpty() const { return count == 0; }
 
 // Checks if the buffer is empty
-template <typename T>
-int CircularBufferREPS<T>::mostValidIdx() const {
+template <typename T> int CircularBufferREPS<T>::mostValidIdx() const {
     int max_lifetime = 0;
     int idx_max_lifetime = -1;
     for (int i = 0; i < max_size; i++) {
@@ -230,14 +208,10 @@ int CircularBufferREPS<T>::mostValidIdx() const {
 }
 
 // Checks if the buffer is full
-template <typename T>
-bool CircularBufferREPS<T>::isFull() const {
-    return count == max_size;
-}
+template <typename T> bool CircularBufferREPS<T>::isFull() const { return count == max_size; }
 
 // Count how many elements are valiud
-template <typename T>
-int CircularBufferREPS<T>::numValid() const {
+template <typename T> int CircularBufferREPS<T>::numValid() const {
     int num_valid = 0;
     for (int i = 0; i < count; ++i) {
         if (buffer[i].isValid) {
@@ -248,19 +222,19 @@ int CircularBufferREPS<T>::numValid() const {
 }
 
 // Prints the elements of the buffer
-template <typename T>
-void CircularBufferREPS<T>::print() {
+template <typename T> void CircularBufferREPS<T>::print() {
     std::cout << "Buffer elements forzen " << isFrozenMode() << " (value, isValid): ";
-    for (int i = 0; i < max_size; ++i) {
+    for (int i = 0; i < max_size; i++) {
         std::cout << "(" << buffer[i].value << ", " << buffer[i].isValid << ") ";
     }
     std::cout << std::endl;
 }
 
 // Prints the elements of the buffer
-template <typename T>
-bool CircularBufferREPS<T>::containsEntropy(uint16_t givenEntropy) {
-    for (int i = 0; i < max_size; ++i) {
+template <typename T> bool CircularBufferREPS<T>::containsEntropy(uint16_t givenEntropy) {
+    for (int i = 0; i < max_size; i++) {
+        /* printf("Checking %d vs %d\n", buffer[i].value, givenEntropy);
+        fflush(stdout); */
         if (buffer[i].value == givenEntropy) {
             return true;
         }
