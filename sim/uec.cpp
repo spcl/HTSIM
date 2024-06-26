@@ -208,6 +208,17 @@ UecSrc::~UecSrc() {
 
         MyFileNack.close();
 
+        // ACK
+        file_name = PROJECT_ROOT_PATH / ("sim/output/acked/ack" + _name + "_" +
+                                         std::to_string(tag) + ".txt");
+        std::ofstream MyFileAck(file_name, std::ios_base::app);
+
+        for (const auto &p : _list_ack) {
+            MyFileAck << p.first << "," << p.second << std::endl;
+        }
+
+        MyFileAck.close();
+
         // BTS
         if (_list_bts.size() > 0) {
             file_name =
@@ -641,9 +652,9 @@ void UecSrc::processNack(UecNack &pkt) {
     // } else {
     //     reduce_cwnd(uint64_t(_mss * decrease_on_nack));
     // }
-    if (LCP_USE_QUICK_ADAPT) {
-        quick_adapt_drop();
-    }
+    // if (LCP_USE_QUICK_ADAPT) {
+    //     quick_adapt_drop();
+    // }
 
     _list_cwd.push_back(std::make_pair(eventlist().now() / 1000, _cwnd));
     _consecutive_no_ecn = 0;
@@ -941,6 +952,8 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
     consecutive_nack = 0;
     bool marked = pkt.flags() &
                   ECN_ECHO; // ECN was marked on data packet and echoed on ACK
+
+    _list_ack.push_back(std::make_pair(eventlist().now() / 1000, 1));
 
     if (COLLECT_DATA && marked) {
         std::string file_name =

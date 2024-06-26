@@ -413,6 +413,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     vector<pair<simtime_picosec, uint64_t>> _list_cwd;
     vector<pair<simtime_picosec, uint64_t>> _list_unacked;
     vector<pair<simtime_picosec, uint64_t>> _list_acked_bytes;
+    vector<pair<simtime_picosec, uint64_t>> _list_ack;
     vector<pair<simtime_picosec, uint64_t>> _list_ecn_rtt;
     vector<pair<simtime_picosec, uint64_t>> _list_ecn_received;
     vector<pair<simtime_picosec, uint64_t>> _list_trimmed_rtt;
