@@ -66,7 +66,8 @@ void failuregenerator::addRandomPacketDrop(Packet &pkt, UecSrc *src) {
 
 void failuregenerator::dropRandomPacketSink(Packet &pkt) {
     uint32_t pkt_id = pkt.id();
-    if (FAILURE_GENERATOR->randomDroppedPackets.find(pkt_id) != FAILURE_GENERATOR->randomDroppedPackets.end()) {
+    if (!pkt.header_only() &&
+        FAILURE_GENERATOR->randomDroppedPackets.find(pkt_id) != FAILURE_GENERATOR->randomDroppedPackets.end()) {
 
         FAILURE_GENERATOR->randomDroppedPackets.erase(pkt_id);
         std::cout << "Packet dropped at Random Packet drop at Sink" << std::endl;
@@ -84,7 +85,8 @@ void failuregenerator::dropRandomPacketSink(Packet &pkt) {
 
 void failuregenerator::dropRandomPacket(Packet &pkt) {
     uint32_t pkt_id = pkt.id();
-    if (FAILURE_GENERATOR->randomDroppedPackets.find(pkt_id) != FAILURE_GENERATOR->randomDroppedPackets.end()) {
+    if (!pkt.header_only() &&
+        FAILURE_GENERATOR->randomDroppedPackets.find(pkt_id) != FAILURE_GENERATOR->randomDroppedPackets.end()) {
         UecSrc *src = FAILURE_GENERATOR->randomDroppedPackets[pkt_id];
 
         std::pair<std::pair<std::set<uint32_t>, std::set<uint32_t>>, std::string> switches_cables_on_path_string =

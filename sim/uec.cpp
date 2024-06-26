@@ -1174,7 +1174,7 @@ void UecSrc::receivePacket(Packet &pkt) {
     FAILURE_GENERATOR->addRandomPacketDrop(pkt, this);
     FAILURE_GENERATOR->dropRandomPacket(pkt);
 
-    if (FAILURE_GENERATOR->simNICFailures(this, NULL, pkt)) {
+    if (!pkt.header_only() && FAILURE_GENERATOR->simNICFailures(this, NULL, pkt)) {
         // Temporary Hack
         if (!pkt.header_only()) {
             pkt.strip_payload();
@@ -2298,7 +2298,7 @@ void UecSink::receivePacket(Packet &pkt) {
 
     FAILURE_GENERATOR->dropRandomPacketSink(pkt);
 
-    if (FAILURE_GENERATOR->simNICFailures(NULL, this, pkt)) {
+    if (!pkt.header_only() && FAILURE_GENERATOR->simNICFailures(NULL, this, pkt)) {
         // Temporary Hack
         if (!pkt.header_only()) {
             pkt.strip_payload();
@@ -2309,7 +2309,7 @@ void UecSink::receivePacket(Packet &pkt) {
         // return;
     }
 
-    if (FAILURE_GENERATOR->dropPacketsSwitchBER(pkt)) {
+    if (!pkt.header_only() && FAILURE_GENERATOR->dropPacketsSwitchBER(pkt)) {
         // Temporary Hack
         if (!pkt.header_only()) {
             pkt.strip_payload();

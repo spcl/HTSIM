@@ -24,7 +24,7 @@ void Pipe::receivePacket(Packet &pkt) {
 
     FAILURE_GENERATOR->dropRandomPacket(pkt);
 
-    if (FAILURE_GENERATOR->simCableFailures(this, pkt)) {
+    if (!pkt.header_only() && FAILURE_GENERATOR->simCableFailures(this, pkt)) {
         // Temporary Hack
         if (!pkt.header_only()) {
             pkt.strip_payload();
