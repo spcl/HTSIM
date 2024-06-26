@@ -1,4 +1,4 @@
 Switch-Fail: ON
 Switch-Fail-Start-After: 0
 Switch-Fail-Period: 0
-Switch-Fail-Max-Percent: 1
+Switch-Fail-Max-Percent: 0.1
