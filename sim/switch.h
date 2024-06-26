@@ -31,16 +31,19 @@ class Switch : public EventSource, public Drawable, public PacketSink {
     Switch(EventList &eventlist) : EventSource(eventlist, "none") {
         _name = "none";
         _id = id++;
+        _unique_id = unique_id++;
     };
     Switch(EventList &eventlist, string s) : EventSource(eventlist, s) {
         _name = s;
         _id = id++;
+        _unique_id = unique_id++;
     }
 
     virtual int addPort(BaseQueue *q);
     virtual void addHostPort(int addr, int flowid, PacketSink *transport) { abort(); };
 
     uint32_t getID() { return _id; };
+    uint32_t getUniqueID() { return _unique_id; };
     virtual uint32_t getType() { return 0; }
 
     // inherited from PacketSink - only use when route strategy implies use of
@@ -76,10 +79,12 @@ class Switch : public EventSource, public Drawable, public PacketSink {
   protected:
     vector<BaseQueue *> _ports;
     uint32_t _id;
+    uint32_t _unique_id;
     string _name;
 
     RouteTable *_fib;
 
     static uint32_t id;
+    static uint32_t unique_id;
 };
 #endif

@@ -122,12 +122,12 @@ bool failuregenerator::simSwitchFailures(Packet &pkt, Switch *sw, Queue q) {
 
 bool failuregenerator::fail_new_switch(Switch *sw) {
 
-    uint32_t switch_id = sw->getID();
+    uint32_t switch_id = sw->getUniqueID();
     std::string switch_name = sw->nodename();
 
     int numberOfFailingSwitches = failingSwitches.size();
     int numberOfAllSwitches = all_switches.size();
-    float percent = (float)numberOfFailingSwitches / numberOfAllSwitches;
+    float percent = (float)numberOfFailingSwitches / (float)numberOfAllSwitches;
     if (percent > switch_fail_max_percent) {
         // std::cout << "Did not fail Switch, because of max-percent Switch-name: " << switch_name << std::endl;
         return false;
@@ -164,7 +164,7 @@ bool failuregenerator::switchFail(Switch *sw) {
     if (!switch_fail) {
         return false;
     }
-    uint32_t switch_id = sw->getID();
+    uint32_t switch_id = sw->getUniqueID();
     std::string switch_name = sw->nodename();
 
     if (failingSwitches.find(switch_id) != failingSwitches.end()) {
@@ -235,7 +235,7 @@ bool failuregenerator::switchDegradation(Switch *sw) {
     if (!switch_degradation) {
         return false;
     }
-    uint32_t switch_id = sw->getID();
+    uint32_t switch_id = sw->getUniqueID();
 
     if (degraded_switches.find(switch_id) != degraded_switches.end()) {
         if (trueWithProb(0.1)) {
@@ -281,7 +281,7 @@ bool failuregenerator::switchWorstCase(Switch *sw) {
     if (!switch_worst_case) {
         return false;
     }
-    uint32_t switch_id = sw->getID();
+    uint32_t switch_id = sw->getUniqueID();
     std::string switch_name = sw->nodename();
 
     if (failingSwitches.find(switch_id) != failingSwitches.end()) {
@@ -697,8 +697,8 @@ failuregenerator::get_path_switches_cables(uint32_t path_id, UecSrc *src) {
         }
         if (next_switch) {
             path += " -> " + next_switch->nodename();
-            switches.insert(next_switch->getID());
-            FAILURE_GENERATOR->all_switches.insert(next_switch->getID());
+            switches.insert(next_switch->getUniqueID());
+            FAILURE_GENERATOR->all_switches.insert(next_switch->getUniqueID());
 
             r = *next_switch->getNextHop(*packet, NULL);
             packet->set_route(r);

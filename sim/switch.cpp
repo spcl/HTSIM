@@ -8,6 +8,7 @@
 #include "queue_lossless_input.h"
 
 uint32_t Switch::id = 0;
+uint32_t Switch::unique_id = 0;
 
 int Switch::addPort(BaseQueue *q) {
     _ports.push_back(q);

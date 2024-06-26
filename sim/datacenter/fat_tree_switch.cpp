@@ -13,6 +13,7 @@ FatTreeSwitch::FatTreeSwitch(EventList &eventlist, string s, switch_type t, uint
                              FatTreeTopology *ft)
         : Switch(eventlist, s) {
     _id = id;
+    _unique_id = unique_id++;
     _type = t;
     _pipe = new CallbackPipe(delay, eventlist, this);
     _uproutes = NULL;
@@ -417,7 +418,7 @@ Route *FatTreeSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
             }
         }
         if (next_switch) {
-            uint32_t switch_id = next_switch->getID();
+            uint32_t switch_id = next_switch->getUniqueID();
             std::string switch_name = next_switch->nodename();
 
             if (FAILURE_GENERATOR->failingSwitches.find(switch_id) != FAILURE_GENERATOR->failingSwitches.end()) {
