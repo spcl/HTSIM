@@ -59,6 +59,10 @@ extern bool LCP_USE_FAST_INCREASE;
 extern double LCP_PACING_BONUS;
 extern bool LCP_USE_MIN_RTT;
 extern bool LCP_USE_AGGRESSIVE_DECREASE;
+// LCP-Gemini
+extern simtime_picosec LCP_GEMINI_TARGET_QUEUEING_LATENCY;
+extern double LCP_GEMINI_H;
+extern double LCP_GEMINI_BETA;
 //
 extern uint64_t MAX_CWD_OLD_NDP;
 extern uint64_t ENABLE_FAST_DROP;

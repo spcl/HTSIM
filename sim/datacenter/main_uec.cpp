@@ -400,6 +400,12 @@ int main(int argc, char **argv) {
             } else if (!strcmp(argv[i + 1], "lcp")) {
                 UecSrc::set_alogirthm("lcp");
                 printf("Name Running: LCP\n");
+            } else if (!strcmp(argv[i + 1], "lcp-gemini")) {
+                UecSrc::set_alogirthm("lcp-gemini");
+                printf("Name Running: LCP Gemini\n");
+            } else {
+                printf("Unknown algorithm exiting...\n");
+                exit(-1);
             } 
             i++;
         } else if (!strcmp(argv[i], "-target-low-us")) {
@@ -507,14 +513,31 @@ int main(int argc, char **argv) {
     if (LCP_DELTA == 1) {
         LCP_DELTA = bdp_local * 0.05;
     }
+
     BAREMETAL_RTT = base_rtt_max_hops * 1000;
     TARGET_RTT_LOW = BAREMETAL_RTT * 1.05;
     TARGET_RTT_HIGH = BAREMETAL_RTT * 1.1;
+
+    // LCP_GEMINI_BETA = 0.2;
+    // LCP_GEMINI_TARGET_QUEUEING_LATENCY = (LCP_GEMINI_BETA / (1.0 - LCP_GEMINI_BETA)) * BAREMETAL_RTT;
+
+    LCP_GEMINI_TARGET_QUEUEING_LATENCY = 0.1 * BAREMETAL_RTT;
+    LCP_GEMINI_BETA = (double)LCP_GEMINI_TARGET_QUEUEING_LATENCY / ((double) LCP_GEMINI_TARGET_QUEUEING_LATENCY + (double) BAREMETAL_RTT);
+
+    double H = 1.2 * pow(10, -7);
+    cout << "Double of H: " << H * (double) bdp_local << endl;
+    LCP_GEMINI_H = max(min((H * (double) bdp_local), 5.0), 0.1) * (double) PKT_SIZE_MODERN;
+    if (LCP_GEMINI_H == 0) {
+        cout << "H is 0, raw value is: " << H * (double) bdp_local << " exiting..." << endl;
+        exit(-1);
+    }
+
     cout << "==============================" << endl;
     cout << "Link speed: " << LINK_SPEED_MODERN << " GBps" << endl;
     cout << "Baremetal RTT: " << BAREMETAL_RTT / 1000000 << " us" << endl;
     cout << "Target RTT Low: " << TARGET_RTT_LOW / 1000000 << " us" << endl;
     cout << "Target RTT High: " << TARGET_RTT_HIGH / 1000000 << " us" << endl;
+    cout << "MSS: " << PKT_SIZE_MODERN << " Bytes" << endl;
     cout << "BDP: " << bdp_local / 1000 << " KB" << endl;
     cout << "Queue Size: " << queuesize << " Bytes" << endl;
     cout << "Delta: " << LCP_DELTA << endl;
@@ -529,6 +552,9 @@ int main(int argc, char **argv) {
     cout << "Pacing Bonus: " << LCP_PACING_BONUS << endl;
     cout << "Use Min RTT: " << LCP_USE_MIN_RTT << endl;
     cout << "Use Aggressive Decrease: " << LCP_USE_AGGRESSIVE_DECREASE << endl;
+    cout << "Gemini Queueing Delay Threshold: " << LCP_GEMINI_TARGET_QUEUEING_LATENCY / 1000000 << " us" << endl;
+    cout << "Gemini Beta: " << LCP_GEMINI_BETA << endl;
+    cout << "Gemini H: " << LCP_GEMINI_H << endl;
     cout << "==============================" << endl;
 
     UecSrc::setRouteStrategy(route_strategy);

@@ -206,7 +206,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     uint64_t _pulls_received;
     uint64_t _implicit_pulls;
     uint64_t _bounces_received;
-    uint32_t _cwnd;
+    double _cwnd;
     uint32_t acked_bytes = 0;
     uint32_t good_bytes = 0;
     uint32_t saved_acked_bytes; // Should initialize in constructor.
@@ -257,6 +257,10 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     // uint64_t _bytes_receieved_since_last_epoch;
     simtime_picosec _time_of_last_qa;
     bool _first_qa_measurement;
+
+    // LCP-Gemini.
+    uint64_t _next_window_seq_no;
+    simtime_picosec _current_rtt_measurement;
 
     // Custom Parameters
     static int adjust_packet_counts;

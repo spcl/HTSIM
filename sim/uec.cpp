@@ -155,6 +155,10 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger,
     _time_of_last_qa = 0;
     saved_acked_bytes = _bdp / 2;
     _first_qa_measurement = true;
+
+    // LCP gemini.
+    _next_window_seq_no = 0;
+    _current_rtt_measurement = timeFromMs(0);
 }
 
 // Add deconstructor and save data once we are done.
@@ -1154,13 +1158,6 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
         exp_avg_rtt = exp_avg_alpha * 0 + (1 - exp_avg_alpha) * exp_avg_rtt;
     }
 
-    if (ecn) {
-        if (saved_acked_bytes != 0 && ecn &&
-            (algorithm_type == "intersmartt")) {
-            _cwnd = min(_cwnd, (uint32_t)(saved_acked_bytes * bonus_drop));
-        }
-    }
-
     // ECN Check
     if (use_exp_avg_ecn) {
         if (exp_avg_ecn > exp_avg_ecn_value) {
@@ -1557,6 +1554,75 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt, ui
             if (LCP_USE_MIN_RTT) {
                 _current_rtt_ewma = timeFromMs(0);
             }
+        }
+    }
+
+    if (algorithm_type == "lcp-gemini") {
+        if (_current_rtt_measurement == timeFromMs(0)) {
+            _current_rtt_measurement = rtt;
+        } else {
+            _current_rtt_measurement = min(_current_rtt_measurement, rtt);
+        }
+        double cwnd_before = _cwnd;
+
+        if (_current_rtt_measurement > BAREMETAL_RTT + LCP_GEMINI_TARGET_QUEUEING_LATENCY) {
+            _consecutive_good_epochs = 0;
+        }
+
+        // Additive increase.
+        if (LCP_USE_FAST_INCREASE && _consecutive_good_epochs > LCP_FAST_INCREASE_THRESHOLD) {
+            printf("Doing fi\n");
+            fast_increase();
+        } {
+            _cwnd += (double)LCP_GEMINI_H / ((double)_cwnd / (double)_mss);
+        }
+
+        cout << "CWND change: " << nodename() << " AI from " << cwnd_before << " to " << _cwnd << " h: " << LCP_GEMINI_H << " current_rtt_measurement: " << _current_rtt_measurement << " target_rtt: " << BAREMETAL_RTT + LCP_GEMINI_TARGET_QUEUEING_LATENCY << " rtt: " << rtt << endl;
+
+        // Make sure the CWND has increased.
+        assert(_cwnd == _maxcwnd || _cwnd > cwnd_before);
+
+        // Window ended, examine RTT.
+        if (ackno >= _next_window_seq_no) {
+            if (_current_rtt_ewma < TARGET_RTT_LOW) {
+                _consecutive_good_epochs++;
+            } else {
+                _consecutive_good_epochs = 0;
+            }
+
+
+            cout << "ByteEpoch time: " << eventlist().now() / 1000000 << " ack sequence number: " << ackno << " next measurement sequence number: " << _next_window_seq_no << " highest sent seq no: " << _highest_sent << " abdul'sfix for measurement: " << _highest_sent + 1 << " cwnd: " << _cwnd << endl;
+            if (_current_rtt_measurement > BAREMETAL_RTT + LCP_GEMINI_TARGET_QUEUEING_LATENCY) {
+                _cwnd *= (1.0 - LCP_GEMINI_BETA);
+                cout << "CWND change: " << nodename() << " MD from " << cwnd_before << " to " << _cwnd << " h: " << LCP_GEMINI_H << " beta: " << LCP_GEMINI_BETA << endl;
+            }
+            
+            _current_rtt_measurement = timeFromMs(0);
+            _next_window_seq_no = _highest_sent + 1;
+        }
+
+        if (COLLECT_DATA) {
+            std::string file_name =
+                    PROJECT_ROOT_PATH /
+                    ("sim/output/current_rtt_ewma/current_rtt_ewma_" + _name + "_" +
+                                        std::to_string(tag) + ".txt");
+            if (_current_rtt_measurement != timeFromMs(0)) {
+                std::ofstream MyFile(file_name, std::ios_base::app);
+                MyFile << eventlist().now() / 1000 << "," << _current_rtt_measurement / 1000 << std::endl;
+                MyFile.close();
+            }
+
+            file_name = PROJECT_ROOT_PATH / ("sim/output/target_rtt_high/target_rtt_high_" + _name + "_" +
+                                        std::to_string(tag) + ".txt");
+            std::ofstream MyFile3(file_name, std::ios_base::app);
+            MyFile3 << eventlist().now() / 1000 << "," << (BAREMETAL_RTT + LCP_GEMINI_TARGET_QUEUEING_LATENCY) / 1000 << std::endl;
+            MyFile3.close();
+
+            file_name = PROJECT_ROOT_PATH / ("sim/output/baremetal_latency/baremetal_latency_" + _name + "_" +
+                                        std::to_string(tag) + ".txt");
+            std::ofstream MyFile4(file_name, std::ios_base::app);
+            MyFile4 << eventlist().now() / 1000 << "," << BAREMETAL_RTT / 1000 << std::endl;
+            MyFile4.close();
         }
     }
 
