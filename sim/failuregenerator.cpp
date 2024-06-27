@@ -256,15 +256,29 @@ bool failuregenerator::switchDegradation(Switch *sw) {
                 // std::endl;
                 return false;
             }
+            if (needed_degraded_switches.find(switch_id) != needed_degraded_switches.end()) {
+                // std::cout << "Did not degrade critical Switch name: " << sw->nodename() << std::endl;
+                return false;
+            }
+
+            temp_degraded_switches = degraded_switches;
+            temp_degraded_switches.insert(switch_id);
+
+            if (!check_connectivity()) {
+                needed_degraded_switches.insert(switch_id);
+                // std::cout << "Did not degrade critical Switch name: " << sw->nodename() << std::endl;
+                return false;
+            }
+
             int port_nrs = sw->portCount();
             for (int i = 0; i < port_nrs; i++) {
                 BaseQueue *q = sw->getPort(i);
                 q->update_bit_rate(400000000000);
-                switch_degradation_next_fail = GLOBAL_TIME + switch_degradation_period;
-                _list_switch_degradations.push_back(GLOBAL_TIME);
-                std::cout << "New Switch degraded at:" << GLOBAL_TIME << "Switch_name: " << q->_name
-                          << " degraded Queue bitrate now 1000bps " << std::endl;
             }
+            switch_degradation_next_fail = GLOBAL_TIME + switch_degradation_period;
+            _list_switch_degradations.push_back(GLOBAL_TIME);
+            std::cout << "New Switch degraded at:" << GLOBAL_TIME << "Switch_name: " << sw->nodename()
+                      << " bitrate now 1000bps" << std::endl;
             degraded_switches.insert(switch_id);
 
             if (trueWithProb(0.1)) {
@@ -460,6 +474,12 @@ bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
             // std::cout << "Did not degrade Cable, because of max-percent Cable-name: " << p->nodename() << std::endl;
             return false;
         }
+
+        if (neededCables.find(cable_id) != neededCables.end()) {
+            // std::cout << "Did not degrade critical Cable name: " << p->nodename() << std::endl;
+            return false;
+        }
+
         std::uniform_real_distribution<double> dist(0.0, 1.0);
 
         double randomValue = dist(gen);
@@ -472,6 +492,15 @@ bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
             decided_type = 2;
         } else {
             decided_type = 3;
+        }
+
+        temp_degraded_cables = degraded_cables;
+        temp_degraded_cables[cable_id] = decided_type;
+
+        if (!check_connectivity()) {
+            needed_degraded_cables.insert(cable_id);
+            std::cout << "Did not degrade critical Cable name: " << p->nodename() << std::endl;
+            return false;
         }
 
         cable_degradation_next_fail = GLOBAL_TIME + cable_degradation_period;
@@ -732,7 +761,8 @@ bool failuregenerator::check_connectivity() {
             bool all_cables_active = true;
 
             for (uint32_t sw : switches_on_path) {
-                if (temp_failingSwitches.find(sw) != temp_failingSwitches.end()) {
+                if (temp_failingSwitches.find(sw) != temp_failingSwitches.end() ||
+                    temp_degraded_switches.find(sw) != temp_degraded_switches.end()) {
                     all_switches_active = false;
                     break;
                 }
@@ -740,7 +770,8 @@ bool failuregenerator::check_connectivity() {
 
             for (uint32_t cable : cables_on_path) {
 
-                if (temp_failingCables.find(cable) != temp_failingCables.end()) {
+                if (temp_failingCables.find(cable) != temp_failingCables.end() ||
+                    temp_degraded_cables.find(cable) != temp_degraded_cables.end()) {
                     all_cables_active = false;
                     break;
                 }

@@ -75,6 +75,8 @@ class failuregenerator {
 
     bool switchDegradation(Switch *sw);
     std::set<uint32_t> degraded_switches;
+    std::set<uint32_t> temp_degraded_switches;
+    std::set<uint32_t> needed_degraded_switches;
     bool switch_degradation = false;
     simtime_picosec switch_degradation_start = 0;
     simtime_picosec switch_degradation_period = 0;
@@ -114,6 +116,8 @@ class failuregenerator {
     bool cableDegradation(Pipe *p, Packet &pkt);
     bool cable_degradation = false;
     std::unordered_map<uint32_t, uint32_t> degraded_cables;
+    std::unordered_map<uint32_t, uint32_t> temp_degraded_cables;
+    std::set<uint32_t> needed_degraded_cables;
     simtime_picosec cable_degradation_start = 0;
     simtime_picosec cable_degradation_period = 0;
     simtime_picosec cable_degradation_next_fail = 0;
