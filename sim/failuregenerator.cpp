@@ -369,9 +369,24 @@ bool failuregenerator::fail_new_cable(Pipe *p) {
     return true;
 }
 
+bool checkUStoCS(const std::string &str) {
+    size_t foundUS = str.find("US");
+    size_t foundCS = str.find("CS");
+    return (foundUS != std::string::npos) && (foundCS != std::string::npos);
+}
+
 bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
     if (!cable_fail) {
         return false;
+    }
+
+    if (only_us_cs) {
+        const Route *route = pkt.get_route();
+        PacketSink *sink = route->at(0);
+        string name = sink->nodename();
+        if (!checkUStoCS(name)) {
+            return false;
+        }
     }
 
     uint32_t cable_id = p->getID();
@@ -902,6 +917,8 @@ void failuregenerator::parseinputfile() {
                 randomPacketDrop = (value == "ON");
             } else if (key == "Random-Packet-Drop-Rate:") {
                 dropRate = std::stof(value);
+            } else if (key == "Only-US-CS-Cable:") {
+                only_us_cs = (value == "ON");
             } else {
                 std::cout << "Unknown key in failuregenerator input file: " << key << std::endl;
             }
