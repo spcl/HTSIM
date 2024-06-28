@@ -12,14 +12,24 @@ from matplotlib.ticker import ScalarFormatter, MaxNLocator
 
 def getListFCT(name_file_to_use):
     temp_list = []
+    number_of_flows = 0
     with open(name_file_to_use) as file:
         for line in file:
             # FCT
             result = re.search(r"Flow Completion time is (\d+.\d+)", line)
+            result2 = re.search(r"Connections: (\d+)", line)
+
             if result:
                 actual = float(result.group(1))
                 temp_list.append(actual)
-    return temp_list
+            if result2:
+                number_of_flows = int(result2.group(1))
+    if len(temp_list) != number_of_flows:
+        raise Exception(
+            "Number of flows does not match, one flow probably did not finish"
+        )
+    else:
+        return temp_list
 
 
 def getNumTrimmed(name_file_to_use):
