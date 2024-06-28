@@ -10,209 +10,64 @@ import re
 import natsort 
 from argparse import ArgumentParser
 
+WORKING_DIR = os.path.dirname(os.path.realpath(__file__))
+EXP_FOLDER = WORKING_DIR + "/../" + "sim/output/"
 
 # Parameters
 skip_small_value = True
 ECN = True
 
-def main(args):
-    # Clean Data and Copy Data
-    os.system("rm -r queue_size_normalized/")
-    os.system("rm -r queue_phantom/")
-    os.system("rm -r rtt/")
-    os.system("rm -r cwd/")
-    os.system("rm -r ecn/")
-    os.system("rm -r sent/")
-    os.system("rm -r nack/")
-    os.system("rm -r acked/")
-    os.system("rm -r fasti/")
-    os.system("rm -r fastd/")
-    os.system("rm -r mediumi/")
-    os.system("rm -r trimmed_rtt/")
-    os.system("rm -r ecn_rtt/")
-    os.system("rm -r case1/")
-    os.system("rm -r case2/")
-    os.system("rm -r case3/")
-    os.system("rm -r case4/")
-
-    os.system("cp -a ../sim/output/cwd/. cwd/")
-    os.system("cp -a ../sim/output/rtt/. rtt/")
-    os.system("cp -a ../sim/output/queue/. queue_size_normalized/")
-    os.system("cp -a ../sim/output/queue_phantom/. queue_phantom/")
-    os.system("cp -a ../sim/output/sent/. sent/")
-    os.system("cp -a ../sim/output/ecn/. ecn/")
-    os.system("cp -a ../sim/output/nack/. nack/")
-    os.system("cp -a ../sim/output/fasti/. fasti/")
-    os.system("cp -a ../sim/output/fastd/. fastd/")
-    os.system("cp -a ../sim/output/mediumi/. mediumi/")
-    os.system("cp -a ../sim/output/acked/. acked/")
-    os.system("cp -a ../sim/output/trimmed_rtt/. trimmed_rtt/")
-    os.system("cp -a ../sim/output/ecn_rtt/. ecn_rtt/")
-    os.system("cp -a ../sim/output/case1/. case1/")
-    os.system("cp -a ../sim/output/case2/. case2/")
-    os.system("cp -a ../sim/output/case3/. case3/")
-    os.system("cp -a ../sim/output/case4/. case4/")
-
-    # RTT Data
-    colnames=['Time', 'RTT', 'seqno', 'ackno', 'base', 'target']
-    df = pd.DataFrame(columns =['Time','RTT', 'seqno', 'ackno', 'base', 'target'])
+def get_df(path, colnames, max_values=None):
+    df = pd.DataFrame(columns=colnames)
     name = ['0'] * df.shape[0]
     df = df.assign(Node=name)
 
-    pathlist = Path('rtt').glob('**/*.txt')
-    for files in sorted(pathlist):
-        path_in_str = str(files)
+    pathlist = Path(EXP_FOLDER + path).absolute().glob('**/*.txt')
+    for file in sorted(pathlist):
+        path_in_str = str(file)
         temp_df = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
-        name = [str(path_in_str)] * temp_df.shape[0]
+        file_name = str(os.path.basename(os.path.normpath(path_in_str)))
+        name = [file_name] * temp_df.shape[0]
         temp_df = temp_df.assign(Node=name)
         df = pd.concat([df, temp_df])
 
-    base_rtt = df["base"].max()
-    target_rtt = df["target"].max()
+    df.drop_duplicates('Time', inplace = True)
 
-    if (len(df) > 100000):
-        ratio = len(df) / 50000
+    if max_values and (len(df) > max_values):
+        ratio = len(df) / 20000
         # DownScale
         df = df.iloc[::int(ratio)]
         # Reset the index of the new dataframe
         df.reset_index(drop=True, inplace=True)
+    return df
 
-    # Cwd Data
-    colnames=['Time', 'Congestion Window'] 
-    df2 = pd.DataFrame(columns =colnames)
-    name = ['0'] * df2.shape[0]
-    df2 = df2.assign(Node=name)
-    df2.drop_duplicates('Time', inplace = True)
+def plot_line(fig, df, x_col, y_col, name, color=None, secondary_y=False):
+    color = color if color else None
+    fig.add_trace(
+        go.Scatter(x=df[x_col], y=df[y_col], mode='markers', marker=dict(size=2), name=name, line=dict(color=color), opacity=0.9, showlegend=True),
+        secondary_y=secondary_y,
+    )
 
-    pathlist = Path('cwd').glob('**/*.txt')
-    for files in sorted(pathlist):
-        path_in_str = str(files)
-        temp_df2 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
-        name = [str(path_in_str)] * temp_df2.shape[0]
-        temp_df2 = temp_df2.assign(Node=name)
-        temp_df2.drop_duplicates('Time', inplace = True)
-        df2 = pd.concat([df2, temp_df2])
-    if (len(df2) > 100000):
-        ratio = len(df2) / 50000
-        # DownScale
-        df2 = df2.iloc[::int(ratio)]
-        # Reset the index of the new dataframe
-        df2.reset_index(drop=True, inplace=True)
-    
-    # Queue Phantom Data
-    colnames=['Time', 'Queue', 'KMin', 'KMax'] 
-    df30= pd.DataFrame(columns =colnames)
-    name = ['0'] * df30.shape[0]
-    df30 = df30.assign(Node=name)
-    df30.drop_duplicates('Time', inplace = True)
+def main(args):
+    df = get_df('rtt', ['Time', 'RTT', 'seqno', 'ackno', 'base', 'target'], max_values=100000)
+    base_rtt = df["base"].max()
+    target_rtt = df["target"].max()
 
-    pathlist = Path('queue_phantom').glob('**/*.txt')
-    for files in natsort.natsorted(pathlist,reverse=False):
-        path_in_str = str(files)
-        temp_df30 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
-        name = [str(path_in_str)] * temp_df30.shape[0]
-        temp_df30 = temp_df30.assign(Node=name)
-        temp_df30.drop_duplicates('Time', inplace = True)
-        df30 = pd.concat([df30, temp_df30])
-
-    kmin = df30["KMin"].max()
-    kmax = df30["KMax"].max()
-
-    if (len(df30) > 100000):
-        ratio = len(df30) / 50000
-        # DownScale
-        df30 = df30.iloc[::int(ratio)]
-        # Reset the index of the new dataframe
-        df30.reset_index(drop=True, inplace=True)
-
-    # Queue Data
-    colnames=['Time', 'Queue', 'KMin', 'KMax'] 
-    df3= pd.DataFrame(columns =colnames)
-    name = ['0'] * df3.shape[0]
-    df3 = df3.assign(Node=name)
-    df3.drop_duplicates('Time', inplace = True)
-
-    pathlist = Path('queue_size_normalized').glob('**/*.txt')
-    for files in natsort.natsorted(pathlist,reverse=False):
-        '''pattern = r'^queue_size_normalized/queueUS_\d+-CS_\d+\.txt$'
-        if not re.match(pattern, str(files)):
-            continue'''
-
-        path_in_str = str(files)
-        temp_df3 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
-        name = [str(path_in_str)] * temp_df3.shape[0]
-        temp_df3 = temp_df3.assign(Node=name)
-        temp_df3.drop_duplicates('Time', inplace = True)
-        df3 = pd.concat([df3, temp_df3])
+    # Cwd data.
+    df2 = get_df('cwd', ['Time', 'Congestion Window'], max_values=100000)
+    df30 = get_df('queue_phantom', ['Time', 'Queue', 'KMin', 'KMax'], max_values=100000)
+    df3 = get_df('queue', ['Time', 'Queue', 'KMin', 'KMax'], max_values=100000)
 
     kmin = df3["KMin"].max()
     kmax = df3["KMax"].max()
 
-    if (len(df3) > 100000):
-        ratio = len(df3) / 50000
-        # DownScale
-        df3 = df3.iloc[::int(ratio)]
-        # Reset the index of the new dataframe
-        df3.reset_index(drop=True, inplace=True)
+    df4 = get_df('ecn', ['Time', 'ECN'], max_values=100000)
 
-    # ECN Data
-    colnames=['Time', 'ECN'] 
-    df4 = pd.DataFrame(columns =colnames)
-    name = ['0'] * df4.shape[0]
-    df4 = df4.assign(Node=name)
-
-    pathlist = Path('ecn').glob('**/*.txt')
-    for files in sorted(pathlist):
-        path_in_str = str(files)
-        temp_df4 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
-        name = [str(path_in_str)] * temp_df4.shape[0]
-        temp_df4 = temp_df4.assign(Node=name)
-        df4 = pd.concat([df4, temp_df4])
-    if (len(df4) > 100000):
-        ratio = len(df) / 50000
-        # DownScale
-        df4 = df4.iloc[::int(ratio)]
-        # Reset the index of the new dataframe
-        df4.reset_index(drop=True, inplace=True)
-
-    # Sent data
-    colnames=['Time', 'Sent', 'Other'] 
-    df5 = pd.DataFrame(columns =colnames)
-    name = ['0'] * df5.shape[0]
-    df5 = df5.assign(Node=name)
-
-    pathlist = Path('sent').glob('*')
-    for files in sorted(pathlist):
-        path_in_str = str(files)
-        temp_df5 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
-        name = [str(path_in_str)] * temp_df5.shape[0]
-        temp_df5 = temp_df5.assign(Node=name)
-        df5 = pd.concat([df5, temp_df5])
-
-    if (len(df5) > 100000):
-        ratio = len(df) / 50000
-        # DownScale
-        df5 = df5.iloc[::int(ratio)]
-        # Reset the index of the new dataframe
-        df5.reset_index(drop=True, inplace=True)
+    df5 = get_df('sent', ['Time', 'Sent'], max_values=100000)
 
     if (args.show_case):
         # Case1 Data
-        colnames=['Time', 'Case1'] 
-        df30= pd.DataFrame(columns =colnames)
-        name = ['0'] * df30.shape[0]
-        df30 = df30.assign(Node=name)
-        df30.drop_duplicates('Time', inplace = True)
-
-        pathlist = Path('case1').glob('**/*.txt')
-        for files in natsort.natsorted(pathlist,reverse=False):
-            path_in_str = str(files)
-            temp_df30 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
-            name = [str(path_in_str)] * temp_df30.shape[0]
-            temp_df30 = temp_df30.assign(Node=name)
-            temp_df30.drop_duplicates('Time', inplace = True)
-            df30 = pd.concat([df30, temp_df30])
-
+        df30 = get_df('case1', ['Time', 'Case1'], max_values=100000)
         df30 = df30.sort_values('Time')
         # Define the sampling_time variable
         sampling_time = base_rtt
@@ -246,12 +101,7 @@ def main(args):
         df30 = pd.DataFrame({'Time': sampled_times, 'Case1': aggregated_values})
 
         print("Case2")
-        # Case2 Data
-        colnames=['Time', 'Case2'] 
-        df31= pd.DataFrame(columns =colnames)
-        name = ['0'] * df31.shape[0]
-        df31 = df31.assign(Node=name)
-        df31.drop_duplicates('Time', inplace = True)
+        df31 = get_df('case2', ['Time', 'Case2'], max_values=100000)
 
         pathlist = Path('case2').glob('**/*.txt')
         for files in natsort.natsorted(pathlist,reverse=False):
@@ -294,20 +144,8 @@ def main(args):
 
         print("Case3")
         # Case3 Data
-        colnames=['Time', 'Case3'] 
-        df32= pd.DataFrame(columns =colnames)
-        name = ['0'] * df32.shape[0]
-        df32 = df32.assign(Node=name)
-        df32.drop_duplicates('Time', inplace = True)
         saved_old_sum = 0
-        pathlist = Path('case3').glob('**/*.txt')
-        for files in natsort.natsorted(pathlist,reverse=False):
-            path_in_str = str(files)
-            temp_df32 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
-            name = [str(path_in_str)] * temp_df32.shape[0]
-            temp_df32 = temp_df32.assign(Node=name)
-            temp_df32.drop_duplicates('Time', inplace = True)
-            df32 = pd.concat([df32, temp_df32])
+        df32 = get_df('case3', ['Time', 'Case3'], max_values=100000)
 
         df32 = df32.sort_values('Time')
         # Define the sampling_time variable
@@ -343,19 +181,7 @@ def main(args):
         # Case4 Data
         saved_old_sum = 0
         colnames=['Time', 'Case4'] 
-        df33= pd.DataFrame(columns =colnames)
-        name = ['0'] * df33.shape[0]
-        df33 = df33.assign(Node=name)
-        df33.drop_duplicates('Time', inplace = True)
-
-        pathlist = Path('case4').glob('**/*.txt')
-        for files in natsort.natsorted(pathlist,reverse=False):
-            path_in_str = str(files)
-            temp_df33 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
-            name = [str(path_in_str)] * temp_df33.shape[0]
-            temp_df33 = temp_df33.assign(Node=name)
-            temp_df33.drop_duplicates('Time', inplace = True)
-            df33 = pd.concat([df33, temp_df33])
+        df33 = pd.DataFrame(columns=colnames)
 
         df33 = df33.sort_values('Time')
         # Define the sampling_time variable
@@ -387,121 +213,42 @@ def main(args):
             # Create a new DataFrame from the sampled data
             df33 = pd.DataFrame({'Time': sampled_times, 'Case4': aggregated_values})
 
+
     # Nack data
-    colnames=['Time', 'Nack'] 
-    df6 = pd.DataFrame(columns =colnames)
-    name = ['0'] * df6.shape[0]
-    df6 = df6.assign(Node=name)
-    
-
-    pathlist = Path('nack').glob('**/*.txt')
-    for files in sorted(pathlist):
-        path_in_str = str(files)
-        temp_df6 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
-        name = [str(path_in_str)] * temp_df6.shape[0]
-        temp_df6 = temp_df6.assign(Node=name)
-        df6 = pd.concat([df6, temp_df6])
-
+    df6 = get_df('nack', ['Time', 'Nack'], max_values=100000)
 
     # Acked Bytes Data
-    colnames=['Time', 'AckedBytes'] 
-    df8 = pd.DataFrame(columns =colnames)
-    name = ['0'] * df8.shape[0]
-    df8 = df8.assign(Node=name)
-    df8.drop_duplicates('Time', inplace = True)
-
-    pathlist = Path('acked').glob('**/*.txt')
-    for files in sorted(pathlist):
-        path_in_str = str(files)
-        temp_df8 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
-        name = [str(path_in_str)] * temp_df8.shape[0]
-        temp_df8 = temp_df8.assign(Node=name)
-        temp_df8.drop_duplicates('Time', inplace = True)
-        df8 = pd.concat([df8, temp_df8])
+    df8 = get_df('acked', ['Time', 'AckedBytes'], max_values=100000)
 
     # ECN in RTT Data
-    colnames=['Time', 'ECNRTT'] 
-    df13 = pd.DataFrame(columns =colnames)
-    name = ['0'] * df13.shape[0]
-    df13 = df13.assign(Node=name)
-    df13.drop_duplicates('Time', inplace = True)
-
-    pathlist = Path('ecn_rtt').glob('**/*.txt')
-    for files in sorted(pathlist):
-        path_in_str = str(files)
-        temp_df13 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
-        name = [str(path_in_str)] * temp_df13.shape[0]
-        temp_df13 = temp_df13.assign(Node=name)
-        temp_df13.drop_duplicates('Time', inplace = True)
-        df13 = pd.concat([df13, temp_df13])
+    df13 = get_df('ecn_rtt', ['Time', 'ECNRTT'], max_values=100000)
 
     # Trimming in RTT Data
-    colnames=['Time', 'TrimmedRTT'] 
-    df14 = pd.DataFrame(columns =colnames)
-    name = ['0'] * df14.shape[0]
-    df14 = df14.assign(Node=name)
-    df14.drop_duplicates('Time', inplace = True)
-
-    pathlist = Path('trimmed_rtt').glob('**/*.txt')
-    for files in sorted(pathlist):
-        path_in_str = str(files)
-        temp_df14 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
-        name = [str(path_in_str)] * temp_df14.shape[0]
-        temp_df14 = temp_df14.assign(Node=name)
-        temp_df14.drop_duplicates('Time', inplace = True)
-        df14 = pd.concat([df14, temp_df14])
-
+    df14 = get_df('trimmed_rtt', ['Time', 'TrimmedRTT'], max_values=100000)
 
     # FastI data
-    colnames=['Time', 'FastI'] 
-    df9 = pd.DataFrame(columns =colnames)
-    name = ['0'] * df9.shape[0]
-    df9 = df9.assign(Node=name)
-    
-
-    pathlist = Path('fasti').glob('**/*.txt')
-    for files in sorted(pathlist):
-        path_in_str = str(files)
-        temp_df9 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
-        name = [str(path_in_str)] * temp_df9.shape[0]
-        temp_df9 = temp_df9.assign(Node=name)
-        df9 = pd.concat([df9, temp_df9])
+    df9 = get_df('fasti', ['Time', 'FastI'], max_values=100000)
 
     # FastD data
-    colnames=['Time', 'FastD'] 
-    df10 = pd.DataFrame(columns =colnames)
-    name = ['0'] * df10.shape[0]
-    df10 = df10.assign(Node=name)
-    
-
-    pathlist = Path('fastd').glob('**/*.txt')
-    for files in sorted(pathlist):
-        path_in_str = str(files)
-        temp_df10 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
-        name = [str(path_in_str)] * temp_df10.shape[0]
-        temp_df10 = temp_df10.assign(Node=name)
-        df10 = pd.concat([df10, temp_df10])
+    df10 = get_df('fastd', ['Time', 'FastD'], max_values=100000)
 
     # MediumI data
-    colnames=['Time', 'MediumI'] 
-    df11 = pd.DataFrame(columns =colnames)
-    name = ['0'] * df11.shape[0]
-    df11 = df11.assign(Node=name)
-    
+    df11 = get_df('mediumi', ['Time', 'MediumI'], max_values=100000)
 
-    pathlist = Path('mediumi').glob('**/*.txt')
-    for files in sorted(pathlist):
-        path_in_str = str(files)
-        temp_df11 = pd.read_csv(path_in_str, names=colnames, header=None, index_col=False, sep=',')
-        name = [str(path_in_str)] * temp_df11.shape[0]
-        temp_df11 = temp_df11.assign(Node=name)
-        df11 = pd.concat([df11, temp_df11])
-    if (len(df11) > 100000):
-        ratio = len(df) / 50000
-        # DownScale
-        df11 = df11.iloc[::int(ratio)]
-        # Reset the index of the new dataframe
-        df11.reset_index(drop=True, inplace=True)
+    # Target RTT low data
+    df_target_rtt_low = get_df('target_rtt_low', ['Time', 'target_rtt_low'])
+
+    # Target RTT high data
+    df_target_rtt_high = get_df('target_rtt_high', ['Time', 'target_rtt_high'])
+
+    # Baremetal RTT data.
+    df_baremetal_latency = get_df('baremetal_latency', ['Time', 'BaremetalLatency'])
+
+    # Consecutive epochs below.
+    df_consecutive_epochs_below = get_df('consecutive_epochs_below', ['Time', 'consecutive_epochs_below'])
+
+    # Current RTT EWMA
+    df_current_rtt_ewma = get_df('current_rtt_ewma', ['Time', 'current_rtt_ewma'])
 
     print("Finished Parsing")
     # Create figure with secondary y-axis
@@ -517,12 +264,11 @@ def main(args):
     y_fasti =max_rtt * 0.75
     y_fastd =max_rtt * 0.70
     y_mediumi =max_rtt * 0.65
-    mean_rtt = 10000
     count = 0
     for i in df['Node'].unique():
         sub_df = df.loc[df['Node'] == str(i)]
         fig.add_trace(
-            go.Scatter(x=sub_df["Time"], y=sub_df['RTT'], mode='markers', marker=dict(size=2), name=str(i), line=dict(color=color[0]), opacity=0.9, showlegend=True),
+            go.Scatter(x=sub_df["Time"], y=sub_df['RTT'], mode='markers', marker=dict(size=2), name=str(i), line=dict(), opacity=0.9, showlegend=True),
             secondary_y=False,
         )
         '''
@@ -564,7 +310,7 @@ def main(args):
         for i in df2['Node'].unique():
             sub_df = df2.loc[df2['Node'] == str(i)]
             fig.add_trace(
-                go.Scatter(x=sub_df["Time"], y=sub_df['Congestion Window'], name="CWD " + str(i), line=dict(dash='dot'), showlegend=True),
+                go.Scatter(x=sub_df["Time"], y=sub_df['Congestion Window'], name=str(i).replace("cwd/cwdEqds_", ""), line=dict(dash='dot'), showlegend=True),
                 secondary_y=True,
             )
     # Trimming RTT Bytes
@@ -596,6 +342,7 @@ def main(args):
     print("Queue Plot")
     count = 0
     df3['Queue'] = pd.to_numeric(df3['Queue'])
+    print(df3)
     max_ele = df3[['Queue']].idxmax(1)
     for i in df3['Node'].unique():
         sub_df = df3.loc[df3['Node'] == str(i)]
@@ -636,9 +383,9 @@ def main(args):
             go.Scatter(x=sub_df4["Time"], y=sub_df4['ECN'], mode="markers", marker_symbol="triangle-up", name="ECN Packet", marker=dict(size=5, color="yellow"), showlegend=True),
             secondary_y=False
         )
-    print("Sent Plot")
+    '''print("Sent Plot")
     # Sent
-    '''mean_sent = df5["Time"].mean()
+    mean_sent = df5["Time"].mean()
     df5['Sent'] = df5['Sent'].multiply(y_sent)
     for i in df5['Node'].unique():
         sub_df5 = df5.loc[df5['Node'] == str(i)]
@@ -692,11 +439,50 @@ def main(args):
         )
 
 
+    # Target RTT low.
+    # df_target_rtt_low['target_rtt_low'] = df_target_rtt_low['target_rtt_low'].multiply(y_target_rtt_low)
+    fig.add_trace(
+        go.Scatter(x=df_target_rtt_low["Time"], y=df_target_rtt_low['target_rtt_low'], name="Target RTT Low", line=dict(dash='dot', color='blue'), showlegend=True),
+        secondary_y=False,
+    )
+
+
+    # Target RTT high.
+    # df_target_rtt_high['target_rtt_high'] = df_target_rtt_high['target_rtt_high'].multiply(y_target_rtt_high)
+    fig.add_trace(
+        go.Scatter(x=df_target_rtt_high["Time"], y=df_target_rtt_high['target_rtt_high'], name="Target RTT High", line=dict(dash='dot', color='red'), showlegend=True),
+        secondary_y=False,
+    )
+
+    # Baremetal RTT.
+    # df_baremetal_latency['BaremetalLatency'] = df_baremetal_latency['BaremetalLatency'].multiply(y_baremetal_latency)
+    fig.add_trace(
+        go.Scatter(x=df_baremetal_latency["Time"], y=df_baremetal_latency['BaremetalLatency'], name="Baremetal RTT", line=dict(dash='dot', color='green'), showlegend=True),
+        secondary_y=False,
+    )
+
+    # # Consecutive epochs below.
+    # df_consecutive_epochs_below['consecutive_epochs_below'] = df_consecutive_epochs_below['consecutive_epochs_below'].multiply(y_consecutive_epochs_below)
+    # for i in df_consecutive_epochs_below['Node'].unique():
+    #     sub_df = df_consecutive_epochs_below.loc[df_consecutive_epochs_below['Node'] == str(i)]
+    #     fig.add_trace(
+    #         go.Scatter(x=sub_df["Time"], y=sub_df['consecutive_epochs_below'], name="Consecutive epochs below", line=dict(dash='dot'), showlegend=True),
+    #         secondary_y=False,
+    #     )
+
+    # df_current_rtt_ewma['current_rtt_ewma'] = df_current_rtt_ewma['current_rtt_ewma'].multiply(y_current_rtt_ewma)
+
+    for i in df_current_rtt_ewma['Node'].unique():
+        sub_df = df_current_rtt_ewma.loc[df_current_rtt_ewma['Node'] == str(i)]
+        fig.add_trace(
+            go.Scatter(x=sub_df["Time"], y=sub_df['current_rtt_ewma'], name=str(i), line=dict(dash='dot'), showlegend=True),
+            secondary_y=False,
+        )
+
     if args.name is not None:
         my_title=args.name
     else:
         my_title="<b>Incast 2:1 – 1:1 FT – 800Gbps – 4KiB MTU – 128MiB Flows - LoadBalancing ON</b>"
-        my_title="Overall Timeline - Parallel Phantom - Gentle Decrease when Rate Increasing"
 
     # Add figure title
     fig.update_layout(title_text=my_title)
@@ -742,79 +528,79 @@ def main(args):
         font=dict(color=color[3], size=13),
         )
 
-    fig.add_shape(
-        type="line",
-        x0=0,  # Start x-coordinate
-        x1=max_x,  # End x-coordinate
-        y0=target_rtt,                          # Y-coordinate
-        y1=target_rtt,                          # Y-coordinate
-        line=dict(color="black", dash="dash"),
-    )
+    # fig.add_shape(
+    #     type="line",
+    #     x0=0,  # Start x-coordinate
+    #     x1=max_x,  # End x-coordinate
+    #     y0=target_rtt,                          # Y-coordinate
+    #     y1=target_rtt,                          # Y-coordinate
+    #     line=dict(color="black", dash="dash"),
+    # )
 
     print("Done Plotting")
-    # Add a text label over the dashed line
-    fig.add_annotation(
-        x=max_x,  # You can adjust the x-coordinate as needed
-        y=target_rtt + 250,                          # Set the y-coordinate to match the dashed line's y-coordinate
-        text="Target RTT",          # The text label you want to display
-        showarrow=False,               # No arrow pointing to the label
-        font=dict(size=12, color="black"),  # Customize the font size and color
-    )
+    # # Add a text label over the dashed line
+    # fig.add_annotation(
+    #     x=max_x,  # You can adjust the x-coordinate as needed
+    #     y=target_rtt + 250,                          # Set the y-coordinate to match the dashed line's y-coordinate
+    #     text="Target RTT",          # The text label you want to display
+    #     showarrow=False,               # No arrow pointing to the label
+    #     font=dict(size=12, color="black"),  # Customize the font size and color
+    # )
 
-    fig.add_shape(
-        type="line",
-        x0=0,  # Start x-coordinate
-        x1=max_x,  # End x-coordinate
-        y0=base_rtt,                          # Y-coordinate
-        y1=base_rtt,                          # Y-coordinate
-        line=dict(color="black", dash="dash"),
-    )
+    # fig.add_shape(
+    #     type="line",
+    #     x0=0,  # Start x-coordinatep
+    #     x1=max_x,  # End x-coordinate
+    #     y0=base_rtt,                          # Y-coordinate
+    #     y1=base_rtt,                          # Y-coordinate
+    #     line=dict(color="black", dash="dash"),
+    # )
 
-    # Add a text label over the dashed line
-    fig.add_annotation(
-        x=max_x,  # You can adjust the x-coordinate as needed
-        y=base_rtt + 250,                          # Set the y-coordinate to match the dashed line's y-coordinate
-        text="Base RTT",          # The text label you want to display
-        showarrow=False,               # No arrow pointing to the label
-        font=dict(size=12, color="black"),  # Customize the font size and color
-    )
+    # # Add a text label over the dashed line
+    # fig.add_annotation(
+    #     x=max_x,  # You can adjust the x-coordinate as needed
+    #     y=base_rtt + 250,                          # Set the y-coordinate to match the dashed line's y-coordinate
+    #     text="Base RTT",          # The text label you want to display
+    #     showarrow=False,               # No arrow pointing to the label
+    #     font=dict(size=12, color="black"),  # Customize the font size and color
+    # )
 
 
-    fig.add_shape(
-        type="line",
-        x0=0,  # Start x-coordinate
-        x1=max_x,  # End x-coordinate
-        y0=kmin,                          # Y-coordinate
-        y1=kmin,                          # Y-coordinate
-        line=dict(color="green", dash="dash"),
-    )
+    # fig.add_shape(
+    #     type="line",
+    #     x0=0,  # Start x-coordinate
+    #     x1=max_x,  # End x-coordinate
+    #     y0=kmin,                          # Y-coordinate
+    #     y1=kmin,                          # Y-coordinate
+    #     line=dict(color="green", dash="dash"),
+    # )
 
-    # Add a text label over the dashed line
-    fig.add_annotation(
-        x=max_x,  # You can adjust the x-coordinate as needed
-        y=kmin + 250,                          # Set the y-coordinate to match the dashed line's y-coordinate
-        text="KMin",          # The text label you want to display
-        showarrow=False,               # No arrow pointing to the label
-        font=dict(size=12, color="green"),  # Customize the font size and color
-    )
+    # # Add a text label over the dashed line
+    # fig.add_annotation(
+    #     x=max_x,  # You can adjust the x-coordinate as needed
+    #     y=kmin + 250,                          # Set the y-coordinate to match the dashed line's y-coordinate
+    #     text="KMin",          # The text label you want to display
+    #     showarrow=False,               # No arrow pointing to the label
+    #     font=dict(size=12, color="green"),  # Customize the font size and color
+    # )
 
-    fig.add_shape(
-        type="line",
-        x0=0,  # Start x-coordinate
-        x1=max_x,  # End x-coordinate
-        y0=kmax,                          # Y-coordinate
-        y1=kmax,                          # Y-coordinate
-        line=dict(color="green", dash="dash"),
-    )
+    # fig.add_shape(
+    #     type="line",
+    #     x0=0,  # Start x-coordinate
+    #     x1=max_x,  # End x-coordinate
+    #     y0=kmax,                          # Y-coordinate
+    #     y1=kmax,                          # Y-coordinate
+    #     line=dict(color="green", dash="dash"),
+    # )
 
-    # Add a text label over the dashed line
-    fig.add_annotation(
-        x=max_x,  # You can adjust the x-coordinate as needed
-        y=kmax + 250,                          # Set the y-coordinate to match the dashed line's y-coordinate
-        text="KMax",          # The text label you want to display
-        showarrow=False,               # No arrow pointing to the label
-        font=dict(size=12, color="green"),  # Customize the font size and color
-    )
+    # # Add a text label over the dashed line
+    # fig.add_annotation(
+    #     x=max_x,  # You can adjust the x-coordinate as needed
+    #     y=kmax + 250,                          # Set the y-coordinate to match the dashed line's y-coordinate
+    #     text="KMax",          # The text label you want to display
+    #     showarrow=False,               # No arrow pointing to the label
+    #     font=dict(size=12, color="green"),  # Customize the font size and color
+    # )
 
     config = {
     'toImageButtonOptions': {
@@ -831,6 +617,14 @@ def main(args):
     # Set y-axes titles
     fig.update_yaxes(title_text="RTT || Queuing Latency (ns)", secondary_y=False)
     fig.update_yaxes(title_text="Congestion Window (B)", secondary_y=True)
+
+    # Set font size for axes and legend.
+    fig.update_layout(
+        font=dict(
+            family="Courier New, monospace",
+            size=20
+        )
+    )
     
     now = datetime.now() # current date and time
     date_time = now.strftime("%m:%d:%Y_%H:%M:%S")
@@ -840,8 +634,14 @@ def main(args):
     print("Showing Plot")
     if (args.output_folder is not None):
         plotly.offline.plot(fig, filename=args.output_folder + "/{}.html".format(args.name))
-    if (args.no_show is None):
-        fig.show()
+        fig.write_image(args.output_folder + "/{}.png".format(args.name), height=809, width=1600, scale=1.0)
+    elif (args.no_show is None):
+        if (args.output_folder is not None):
+            plotly.offline.plot(fig, filename=args.output_folder + "/{}.html".format(args.name))
+            # # Save to png as well with a particular size.
+            # fig.write_image(args.output_folder + "/{}.png".format(args.name), height=550, width=1000, scale=4)
+        else:
+            fig.show()
 
 if __name__ == "__main__":
     parser = ArgumentParser()

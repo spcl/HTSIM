@@ -81,6 +81,7 @@ void print_path(std::ofstream &paths, const Route *rt) {
 
     paths << endl;
 }
+
 int main(int argc, char **argv) {
     Packet::set_packet_size(PKT_SIZE_MODERN);
     eventlist.setEndtime(timeFromSec(1));
@@ -93,14 +94,17 @@ int main(int argc, char **argv) {
     linkspeed_bps linkspeed = speedFromMbps((double)HOST_NIC);
     simtime_picosec hop_latency = timeFromNs((uint32_t)RTT);
     simtime_picosec switch_latency = timeFromNs((uint32_t)0);
+    simtime_picosec pacing_delay = 1000;
     int packet_size = 2048;
     int kmin = -1;
     int kmax = -1;
     int bts_threshold = -1;
     int seed = -1;
+    bool reuse_entropy = false;
     int number_entropies = 256;
     queue_type queue_choice = COMPOSITE;
     bool ignore_ecn_data = true;
+    bool ignore_ecn_ack = true;
     UecSrc::set_fast_drop(false);
     bool do_jitter = false;
     bool do_exponential_gain = false;
@@ -110,7 +114,7 @@ int main(int argc, char **argv) {
     double delay_gain_value_med_inc = 5;
     int target_rtt_percentage_over_base = 50;
     bool collect_data = false;
-    int fat_tree_k = 4; // 1:1 default
+    int fat_tree_k = 1; // 1:1 default
     COLLECT_DATA = collect_data;
     bool use_super_fast_increase = false;
     double y_gain = 1;
@@ -128,13 +132,29 @@ int main(int argc, char **argv) {
     double queue_size_ratio = 0;
     bool disable_case_3 = false;
     bool disable_case_4 = false;
-    simtime_picosec endtime = timeFromMs(1.2);
-    char *tm_file = NULL;
-    int ratio_os_stage_1 = 4;
-    bool log_tor_downqueue = false;
-    bool log_tor_upqueue = false;
-    bool log_switches = false;
-    bool log_queue_usage = false;
+    int ratio_os_stage_1 = 1;
+    int pfc_low = 0;
+    int pfc_high = 0;
+    int pfc_marking = 0;
+    double quickadapt_lossless_rtt = 2.0;
+    int reaction_delay = 1;
+    bool stop_after_quick = false;
+    bool use_pacing = false;
+    int precision_ts = 1;
+    int once_per_rtt = 0;
+    bool use_mixed = false;
+    int phantom_size;
+    int phantom_slowdown = 10;
+    bool use_phantom = false;
+    double exp_avg_ecn_value = .3;
+    double exp_avg_rtt_value = .3;
+    double exp_avg_alpha = 0.125;
+    bool use_exp_avg_ecn = false;
+    bool use_exp_avg_rtt = false;
+    int jump_to = 0;
+    int stop_pacing_after_rtt = 0;
+    int num_failed_links = 0;
+    bool topology_normal = true;
     uint64_t interdc_delay = 0;
     uint64_t max_queue_size = 0;
 
@@ -145,6 +165,9 @@ int main(int argc, char **argv) {
         if (!strcmp(argv[i], "-o")) {
             filename.str(std::string());
             filename << argv[i + 1];
+            i++;
+        } else if (!strcmp(argv[i], "-sub")) {
+            subflow_count = atoi(argv[i + 1]);
             i++;
         } else if (!strcmp(argv[i], "-conns")) {
             no_of_conns = atoi(argv[i + 1]);
@@ -163,6 +186,21 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-q")) {
             queuesize = atoi(argv[i + 1]);
             i++;
+        } else if (!strcmp(argv[i], "-use_mixed")) {
+            use_mixed = atoi(argv[i + 1]);
+            // UecSrc::set_use_mixed(use_mixed);
+            CompositeQueue::set_use_mixed(use_mixed);
+            printf("UseMixed: %d\n", use_mixed);
+            i++;
+        } else if (!strcmp(argv[i], "-once_per_rtt")) {
+            once_per_rtt = atoi(argv[i + 1]);
+            UecSrc::set_once_per_rtt(once_per_rtt);
+            printf("OnceRTTDecrease: %d\n", once_per_rtt);
+            i++;
+        } else if (!strcmp(argv[i], "-stop_pacing_after_rtt")) {
+            stop_pacing_after_rtt = atoi(argv[i + 1]);
+            UecSrc::set_stop_pacing(stop_pacing_after_rtt);
+            i++;
         } else if (!strcmp(argv[i], "-linkspeed")) {
             // linkspeed specified is in Mbps
             linkspeed = speedFromMbps(atof(argv[i + 1]));
@@ -175,6 +213,8 @@ int main(int argc, char **argv) {
             // kmin as percentage of queue size (0..100)
             kmin = atoi(argv[i + 1]);
             printf("KMin: %d\n", atoi(argv[i + 1]));
+            CompositeQueue::set_kMin(kmin);
+            UecSrc::set_kmin(kmin / 100.0);
             i++;
         } else if (!strcmp(argv[i], "-k")) {
             fat_tree_k = atoi(argv[i + 1]);
@@ -187,6 +227,14 @@ int main(int argc, char **argv) {
             // kmin as percentage of queue size (0..100)
             kmax = atoi(argv[i + 1]);
             printf("KMax: %d\n", atoi(argv[i + 1]));
+            CompositeQueue::set_kMax(kmax);
+            UecSrc::set_kmax(kmax / 100.0);
+            i++;
+        } else if (!strcmp(argv[i], "-pfc_marking")) {
+            pfc_marking = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-quickadapt_lossless_rtt")) {
+            quickadapt_lossless_rtt = std::stod(argv[i + 1]);
             i++;
         } else if (!strcmp(argv[i], "-bts_trigger")) {
             bts_threshold = atoi(argv[i + 1]);
@@ -196,15 +244,37 @@ int main(int argc, char **argv) {
             PKT_SIZE_MODERN =
                     packet_size; // Saving this for UEC reference, Bytes
             i++;
+        } else if (!strcmp(argv[i], "-reuse_entropy")) {
+            reuse_entropy = atoi(argv[i + 1]);
+            i++;
         } else if (!strcmp(argv[i], "-disable_case_3")) {
             disable_case_3 = atoi(argv[i + 1]);
             UecSrc::set_disable_case_3(disable_case_3);
             printf("DisableCase3: %d\n", disable_case_3);
             i++;
+        } else if (!strcmp(argv[i], "-jump_to")) {
+            UecSrc::jump_to = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-reaction_delay")) {
+            reaction_delay = atoi(argv[i + 1]);
+            UecSrc::set_reaction_delay(reaction_delay);
+            printf("ReactionDelay: %d\n", reaction_delay);
+            i++;
+        } else if (!strcmp(argv[i], "-precision_ts")) {
+            precision_ts = atoi(argv[i + 1]);
+            FatTreeSwitch::set_precision_ts(precision_ts * 1000);
+            UecSrc::set_precision_ts(precision_ts * 1000);
+            printf("Precision: %d\n", precision_ts * 1000);
+            i++;
         } else if (!strcmp(argv[i], "-disable_case_4")) {
             disable_case_4 = atoi(argv[i + 1]);
             UecSrc::set_disable_case_4(disable_case_4);
             printf("DisableCase4: %d\n", disable_case_4);
+            i++;
+        } else if (!strcmp(argv[i], "-stop_after_quick")) {
+            stop_after_quick = atoi(argv[i + 1]);
+            UecSrc::set_stop_after_quick(stop_after_quick);
+            printf("StopAfterQuick: %d\n", stop_after_quick);
             i++;
         } else if (!strcmp(argv[i], "-number_entropies")) {
             number_entropies = atoi(argv[i + 1]);
@@ -217,8 +287,19 @@ int main(int argc, char **argv) {
             LINK_DELAY_MODERN = hop_latency /
                                 1000; // Saving this for UEC reference, ps to ns
             i++;
+        } else if (!strcmp(argv[i], "-ignore_ecn_ack")) {
+            ignore_ecn_ack = atoi(argv[i + 1]);
+            i++;
         } else if (!strcmp(argv[i], "-ignore_ecn_data")) {
             ignore_ecn_data = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-pacing_delay")) {
+            pacing_delay = atoi(argv[i + 1]);
+            UecSrc::set_pacing_delay(pacing_delay);
+            i++;
+        } else if (!strcmp(argv[i], "-use_pacing")) {
+            use_pacing = atoi(argv[i + 1]);
+            // UecSrc::set_use_pacing(use_pacing);
             i++;
         } else if (!strcmp(argv[i], "-fast_drop")) {
             UecSrc::set_fast_drop(atoi(argv[i + 1]));
@@ -230,6 +311,15 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-interdc_delay")) {
             interdc_delay = atoi(argv[i + 1]);
             interdc_delay *= 1000;
+            i++;
+        } else if (!strcmp(argv[i], "-max_queue_size")) {
+            max_queue_size = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-pfc_low")) {
+            pfc_low = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-pfc_high")) {
+            pfc_high = atoi(argv[i + 1]);
             i++;
         } else if (!strcmp(argv[i], "-collect_data")) {
             collect_data = atoi(argv[i + 1]);
@@ -265,6 +355,18 @@ int main(int argc, char **argv) {
             // UecSrc::set_jitter_value_med_inc(jitter_value_med_inc);
             printf("JitterValue: %f\n", jitter_value_med_inc);
             i++;
+        } else if (!strcmp(argv[i], "-decrease_on_nack")) {
+            double decrease_on_nack = std::stod(argv[i + 1]);
+            UecSrc::set_decrease_on_nack(decrease_on_nack);
+            i++;
+        } else if (!strcmp(argv[i], "-phantom_in_series")) {
+            CompositeQueue::set_use_phantom_in_series();
+            printf("PhantomQueueInSeries: %d\n", 1);
+            // i++;
+        } else if (!strcmp(argv[i], "-phantom_both_queues")) {
+            CompositeQueue::set_use_both_queues();
+            printf("PhantomUseBothForECNMarking: %d\n", 1);
+            i++;
         } else if (!strcmp(argv[i], "-delay_gain_value_med_inc")) {
             delay_gain_value_med_inc = std::stod(argv[i + 1]);
             // UecSrc::set_delay_gain_value_med_inc(delay_gain_value_med_inc);
@@ -275,6 +377,10 @@ int main(int argc, char **argv) {
             UecSrc::set_target_rtt_percentage_over_base(
                     target_rtt_percentage_over_base);
             printf("TargetRTT: %d\n", target_rtt_percentage_over_base);
+            i++;
+        } else if (!strcmp(argv[i], "-num_failed_links")) {
+            num_failed_links = atoi(argv[i + 1]);
+            FatTreeTopology::set_failed_links(num_failed_links);
             i++;
         } else if (!strcmp(argv[i], "-fast_drop_rtt")) {
             UecSrc::set_fast_drop_rtt(atoi(argv[i + 1]));
@@ -303,6 +409,25 @@ int main(int argc, char **argv) {
             starting_cwnd_ratio = std::stod(argv[i + 1]);
             printf("StartingWindowRatio: %f\n", starting_cwnd_ratio);
             i++;
+        } else if (!strcmp(argv[i], "-explicit_starting_cwnd")) {
+            explicit_starting_cwnd = atoi(argv[i + 1]);
+            printf("StartingWindowForced: %d\n", explicit_starting_cwnd);
+            i++;
+        } else if (!strcmp(argv[i], "-explicit_starting_buffer")) {
+            explicit_starting_buffer = atoi(argv[i + 1]);
+            printf("StartingBufferForced: %d\n", explicit_starting_buffer);
+            explicit_bdp = explicit_starting_buffer;
+            i++;
+        } else if (!strcmp(argv[i], "-explicit_base_rtt")) {
+            explicit_base_rtt = ((uint64_t)atoi(argv[i + 1])) * 1000;
+            printf("BaseRTTForced: %d\n", explicit_base_rtt);
+            UecSrc::set_explicit_rtt(explicit_base_rtt);
+            i++;
+        } else if (!strcmp(argv[i], "-explicit_target_rtt")) {
+            explicit_target_rtt = ((uint64_t)atoi(argv[i + 1])) * 1000;
+            printf("TargetRTTForced: %lu\n", explicit_target_rtt);
+            UecSrc::set_explicit_target_rtt(explicit_target_rtt);
+            i++;
         } else if (!strcmp(argv[i], "-queue_size_ratio")) {
             queue_size_ratio = std::stod(argv[i + 1]);
             printf("QueueSizeRatio: %f\n", queue_size_ratio);
@@ -312,10 +437,6 @@ int main(int argc, char **argv) {
             UecSrc::set_bonus_drop(bonus_drop);
             printf("BonusDrop: %f\n", bonus_drop);
             i++;
-        } else if (!strcmp(argv[i], "-phantom_in_series")) {
-            CompositeQueue::set_use_phantom_in_series();
-            printf("PhantomQueueInSeries: %d\n", 1);
-            i++;
         } else if (!strcmp(argv[i], "-drop_value_buffer")) {
             drop_value_buffer = std::stod(argv[i + 1]);
             UecSrc::set_buffer_drop(drop_value_buffer);
@@ -324,85 +445,45 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-goal")) {
             goal_filename = argv[i + 1];
             i++;
-        } else if (!strcmp(argv[i], "-strat")) {
-            if (!strcmp(argv[i + 1], "perm")) {
-                route_strategy = SCATTER_PERMUTE;
-            } else if (!strcmp(argv[i + 1], "rand")) {
-                route_strategy = SCATTER_RANDOM;
-            } else if (!strcmp(argv[i + 1], "pull")) {
-                route_strategy = PULL_BASED;
-            } else if (!strcmp(argv[i + 1], "single")) {
-                route_strategy = SINGLE_PATH;
-            } else if (!strcmp(argv[i + 1], "ecmp_host")) {
-                route_strategy = ECMP_FIB;
-                FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
-                FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
-            } else if (!strcmp(argv[i + 1], "ecmp_host_random_ecn")) {
-                route_strategy = ECMP_RANDOM_ECN;
-                FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
-                FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
-            } else if (!strcmp(argv[i + 1], "ecmp_host_random2_ecn")) {
-                route_strategy = ECMP_RANDOM2_ECN;
-                FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
-                FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
-            }
+        } else if (!strcmp(argv[i], "-use_phantom")) {
+            use_phantom = atoi(argv[i + 1]);
+            printf("UsePhantomQueue: %d\n", use_phantom);
+            CompositeQueue::set_use_phantom_queue(use_phantom);
             i++;
-        } else if (!strcmp(argv[i], "-queue_type")) {
-            if (!strcmp(argv[i + 1], "composite")) {
-                queue_choice = COMPOSITE;
-                UecSrc::set_queue_type("composite");
-            } else if (!strcmp(argv[i + 1], "composite_bts")) {
-                queue_choice = COMPOSITE_BTS;
-                UecSrc::set_queue_type("composite_bts");
-                printf("Name Running: UEC BTS\n");
-            }
+        } else if (!strcmp(argv[i], "-use_exp_avg_ecn")) {
+            use_exp_avg_ecn = atoi(argv[i + 1]);
+            printf("UseExpAvgEcn: %d\n", use_exp_avg_ecn);
+            UecSrc::set_exp_avg_ecn(use_exp_avg_ecn);
             i++;
-        } else if (!strcmp(argv[i], "-algorithm")) {
-            if (!strcmp(argv[i + 1], "delayA")) {
-                UecSrc::set_alogirthm("delayA");
-                printf("Name Running: UEC Version A\n");
-            } else if (!strcmp(argv[i + 1], "delayB")) {
-                UecSrc::set_alogirthm("delayB");
-                printf("Name Running: SMaRTT\n");
-            } else if (!strcmp(argv[i + 1], "delayB_rtt")) {
-                UecSrc::set_alogirthm("delayB_rtt");
-                printf("Name Running: SMaRTT Per RTT\n");
-            } else if (!strcmp(argv[i + 1], "delayC")) {
-                UecSrc::set_alogirthm("delayC");
-            } else if (!strcmp(argv[i + 1], "delayD")) {
-                UecSrc::set_alogirthm("delayD");
-                printf("Name Running: STrack\n");
-            } else if (!strcmp(argv[i + 1], "standard_trimming")) {
-                UecSrc::set_alogirthm("standard_trimming");
-                printf("Name Running: UEC Version D\n");
-            } else if (!strcmp(argv[i + 1], "rtt")) {
-                UecSrc::set_alogirthm("rtt");
-                printf("Name Running: SMaRTT RTT Only\n");
-            } else if (!strcmp(argv[i + 1], "ecn")) {
-                UecSrc::set_alogirthm("ecn");
-                printf("Name Running: SMaRTT ECN Only Constant\n");
-            } else if (!strcmp(argv[i + 1], "custom")) {
-                UecSrc::set_alogirthm("custom");
-                printf("Name Running: SMaRTT ECN Only Variable\n");
-            } else if (!strcmp(argv[i + 1], "lcp")) {
-                UecSrc::set_alogirthm("lcp");
-                printf("Name Running: LCP\n");
-            } else if (!strcmp(argv[i + 1], "lcp-gemini")) {
-                UecSrc::set_alogirthm("lcp-gemini");
-                printf("Name Running: LCP Gemini\n");
-            } else {
-                printf("Unknown algorithm exiting...\n");
-                exit(-1);
-            } 
+        } else if (!strcmp(argv[i], "-use_exp_avg_rtt")) {
+            use_exp_avg_rtt = atoi(argv[i + 1]);
+            printf("UseExpAvgRtt: %d\n", use_exp_avg_rtt);
+            UecSrc::set_exp_avg_rtt(use_exp_avg_rtt);
             i++;
-        } else if (!strcmp(argv[i], "-target-low-us")) {
-            TARGET_RTT_LOW = timeFromUs(atof(argv[i + 1]));
+        } else if (!strcmp(argv[i], "-exp_avg_rtt_value")) {
+            exp_avg_rtt_value = std::stod(argv[i + 1]);
+            printf("UseExpAvgRttValue: %d\n", exp_avg_rtt_value);
+            UecSrc::set_exp_avg_rtt_value(exp_avg_rtt_value);
             i++;
-        } else if (!strcmp(argv[i], "-target-high-us")) {
-            TARGET_RTT_HIGH = timeFromUs(atof(argv[i + 1]));
+        } else if (!strcmp(argv[i], "-exp_avg_ecn_value")) {
+            exp_avg_ecn_value = std::stod(argv[i + 1]);
+            printf("UseExpAvgecn_value: %d\n", exp_avg_ecn_value);
+            UecSrc::set_exp_avg_ecn_value(exp_avg_ecn_value);
             i++;
-        } else if (!strcmp(argv[i], "-baremetal-us")) {
-            BAREMETAL_RTT = timeFromUs(atof(argv[i + 1]));
+        } else if (!strcmp(argv[i], "-exp_avg_alpha")) {
+            exp_avg_alpha = std::stod(argv[i + 1]);
+            printf("UseExpAvgalpha: %d\n", exp_avg_alpha);
+            UecSrc::set_exp_avg_alpha(exp_avg_alpha);
+            i++;
+        } else if (!strcmp(argv[i], "-phantom_size")) {
+            phantom_size = atoi(argv[i + 1]);
+            printf("PhantomQueueSize: %d\n", phantom_size);
+            CompositeQueue::set_phantom_queue_size(phantom_size);
+            i++;
+        } else if (!strcmp(argv[i], "-phantom_slowdown")) {
+            phantom_slowdown = atoi(argv[i + 1]);
+            printf("PhantomQueueSize: %d\n", phantom_slowdown);
+            CompositeQueue::set_phantom_queue_slowdown(phantom_slowdown);
             i++;
         } else if (!strcmp(argv[i], "-alpha")) {
             LCP_ALPHA = atof(argv[i + 1]);
@@ -435,122 +516,111 @@ int main(int argc, char **argv) {
             LCP_USE_MIN_RTT = true;
         }  else if (!strcmp(argv[i], "-use-ad")) {
             LCP_USE_AGGRESSIVE_DECREASE = true;
-        }  else {
-            printf("Called with %s\n", argv[i]);
+        }  else if (!strcmp(argv[i], "-strat")) {
+            if (!strcmp(argv[i + 1], "perm")) {
+                route_strategy = SCATTER_PERMUTE;
+            } else if (!strcmp(argv[i + 1], "rand")) {
+                route_strategy = SCATTER_RANDOM;
+            } else if (!strcmp(argv[i + 1], "pull")) {
+                route_strategy = PULL_BASED;
+            } else if (!strcmp(argv[i + 1], "single")) {
+                route_strategy = SINGLE_PATH;
+            } else if (!strcmp(argv[i + 1], "ecmp_host")) {
+                route_strategy = ECMP_FIB;
+                FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+                FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
+            } else if (!strcmp(argv[i + 1], "ecmp_host_random_ecn")) {
+                route_strategy = ECMP_RANDOM_ECN;
+                FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+                FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
+            } else if (!strcmp(argv[i + 1], "ecmp_host_random2_ecn")) {
+                route_strategy = ECMP_RANDOM2_ECN;
+                FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+                FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
+            }
+            i++;
+        } else if (!strcmp(argv[i], "-topology")) {
+            if (!strcmp(argv[i + 1], "normal")) {
+                topology_normal = true;
+            } else if (!strcmp(argv[i + 1], "interdc")) {
+                topology_normal = false;
+            }
+            i++;
+        } else if (!strcmp(argv[i], "-queue_type")) {
+            if (!strcmp(argv[i + 1], "composite")) {
+                queue_choice = COMPOSITE;
+                UecSrc::set_queue_type("composite");
+            } else if (!strcmp(argv[i + 1], "composite_bts")) {
+                queue_choice = COMPOSITE_BTS;
+                UecSrc::set_queue_type("composite_bts");
+                printf("Name Running: UEC BTS\n");
+            } else if (!strcmp(argv[i + 1], "lossless_input")) {
+                queue_choice = LOSSLESS_INPUT;
+                UecSrc::set_queue_type("lossless_input");
+                printf("Name Running: UEC Queueless\n");
+            }
+            i++;
+        } else if (!strcmp(argv[i], "-algorithm")) {
+            if (!strcmp(argv[i + 1], "delayA")) {
+                UecSrc::set_alogirthm("delayA");
+                printf("Name Running: UEC Version A\n");
+            } else if (!strcmp(argv[i + 1], "smartt")) {
+                UecSrc::set_alogirthm("smartt");
+                printf("Name Running: SMaRTT\n");
+            } else if (!strcmp(argv[i + 1], "delayB_rtt")) {
+                UecSrc::set_alogirthm("delayB_rtt");
+                printf("Name Running: SMaRTT Per RTT\n");
+            } else if (!strcmp(argv[i + 1], "delayC")) {
+                UecSrc::set_alogirthm("delayC");
+            } else if (!strcmp(argv[i + 1], "delayD")) {
+                UecSrc::set_alogirthm("delayD");
+                printf("Name Running: STrack\n");
+            } else if (!strcmp(argv[i + 1], "standard_trimming")) {
+                UecSrc::set_alogirthm("standard_trimming");
+                printf("Name Running: UEC Version D\n");
+            } else if (!strcmp(argv[i + 1], "rtt")) {
+                UecSrc::set_alogirthm("rtt");
+                printf("Name Running: SMaRTT RTT Only\n");
+            } else if (!strcmp(argv[i + 1], "ecn")) {
+                UecSrc::set_alogirthm("ecn");
+                printf("Name Running: SMaRTT ECN Only Constant\n");
+            } else if (!strcmp(argv[i + 1], "custom")) {
+                UecSrc::set_alogirthm("custom");
+                printf("Name Running: SMaRTT ECN Only Variable\n");
+            } else if (!strcmp(argv[i + 1], "intersmartt")) {
+                UecSrc::set_alogirthm("intersmartt");
+                printf("Name Running: SMaRTT InterDataCenter\n");
+            } else if (!strcmp(argv[i + 1], "intersmartt_new")) {
+                UecSrc::set_alogirthm("intersmartt_new");
+                printf("Name Running: SMaRTT InterDataCenter\n");
+            } else if (!strcmp(argv[i + 1], "intersmartt_simple")) {
+                UecSrc::set_alogirthm("intersmartt_simple");
+                printf("Name Running: SMaRTT InterDataCenter\n");
+            } else if (!strcmp(argv[i + 1], "intersmartt")) {
+                UecSrc::set_alogirthm("intersmartt");
+                printf("Name Running: SMaRTT InterDataCenter\n");
+            } else if (!strcmp(argv[i + 1], "intersmartt_composed")) {
+                UecSrc::set_alogirthm("intersmartt_composed");
+                printf("Name Running: SMaRTT InterDataCenter\n");
+            } else if (!strcmp(argv[i + 1], "smartt_2")) {
+                UecSrc::set_alogirthm("smartt_2");
+                printf("Name Running: SMaRTT smartt_2\n");
+            } else if (!strcmp(argv[i + 1], "lcp")) {
+                UecSrc::set_alogirthm("lcp");
+                printf("Name Running: LCP\n");
+            } else if (!strcmp(argv[i + 1], "lcp-gemini")) {
+                UecSrc::set_alogirthm("lcp-gemini");
+                printf("Name Running: LCP Gemini\n");
+            } else {
+                printf("Wrong Algorithm Name\n");
+                exit(0);
+            }
+            i++;
+        } else
             exit_error(argv[0]);
-        }
 
         i++;
     }
-
-//     SINGLE_PKT_TRASMISSION_TIME_MODERN = packet_size * 8 / (LINK_SPEED_MODERN);
-//     // exit(1);
-
-//     // Initialize Seed, Logging and Other variables
-//     if (seed != -1) {
-//         srand(seed);
-//         srandom(seed);
-//     } else {
-//         srand(time(NULL));
-//         srandom(time(NULL));
-//     }
-//     Packet::set_packet_size(packet_size);
-//     initializeLoggingFolders();
-
-//     srand(seed);
-//     srandom(seed);
-//     cout << "Parsed args\n";
-
-//     eventlist.setEndtime(timeFromUs((uint32_t)endtime));
-//     queuesize = memFromPkt(queuesize);
-//     // prepare the loggers
-
-//     cout << "Logging to " << filename.str() << endl;
-//     // Logfile
-//     Logfile logfile(filename.str(), eventlist);
-
-//     cout << "Linkspeed set to " << linkspeed / 1000000000 << "Gbps" << endl;
-//     logfile.setStartTime(timeFromSec(0));
-
-// #if PRINT_PATHS
-//     filename << ".paths";
-//     cout << "Logging path choices to " << filename.str() << endl;
-//     std::ofstream paths(filename.str().c_str());
-//     if (!paths) {
-//         cout << "Can't open for writing paths file!" << endl;
-//         exit(1);
-//     }
-// #endif
-
-//     // Calculate Network Info
-//     // TODO: Fix this is probably wrong. Need to determine what the hops are (probably plus one) and add the interdc_delay.
-//     int hops = 6; // hardcoded for now
-//     uint64_t base_rtt_max_hops =
-//             (hops * LINK_DELAY_MODERN) +
-//             (PKT_SIZE_MODERN * 8 / LINK_SPEED_MODERN * hops) +
-//             (hops * LINK_DELAY_MODERN) + (64 * 8 / LINK_SPEED_MODERN * hops) + 3898;
-
-//     uint64_t bdp_local = base_rtt_max_hops * LINK_SPEED_MODERN / 8;
-//     if (queue_size_ratio == 0) {
-//         queuesize = bdp_local; // Equal to BDP if not other info
-//     } else {
-//         queuesize = bdp_local * queue_size_ratio;
-//     }
-//     queuesize = bdp_local * 0.2;
-
-//     if (LCP_DELTA == 1) {
-//         LCP_DELTA = bdp_local * 0.05;
-//     }
-
-//     BAREMETAL_RTT = base_rtt_max_hops * 1000;
-//     TARGET_RTT_LOW = BAREMETAL_RTT * 1.05;
-//     TARGET_RTT_HIGH = BAREMETAL_RTT * 1.1;
-
-//     // LCP_GEMINI_BETA = 0.2;
-//     // LCP_GEMINI_TARGET_QUEUEING_LATENCY = (LCP_GEMINI_BETA / (1.0 - LCP_GEMINI_BETA)) * BAREMETAL_RTT;
-
-//     LCP_GEMINI_TARGET_QUEUEING_LATENCY = 0.1 * BAREMETAL_RTT;
-//     LCP_GEMINI_BETA = (double)LCP_GEMINI_TARGET_QUEUEING_LATENCY / ((double) LCP_GEMINI_TARGET_QUEUEING_LATENCY + (double) BAREMETAL_RTT);
-
-//     double H = 1.2 * pow(10, -7);
-//     cout << "Double of H: " << H * (double) bdp_local << endl;
-//     LCP_GEMINI_H = max(min((H * (double) bdp_local), 5.0), 0.1) * (double) PKT_SIZE_MODERN;
-//     if (LCP_GEMINI_H == 0) {
-//         cout << "H is 0, raw value is: " << H * (double) bdp_local << " exiting..." << endl;
-//         exit(-1);
-//     }
-
-//     if (route_strategy == NOT_SET) {
-//         fprintf(stderr, "Route Strategy not set.  Use the -strat param.  "
-//                         "\nValid values are perm, rand, pull, rg and single\n");
-//         exit(1);
-//     }
-
-    // cout << "==============================" << endl;
-    // cout << "Link speed: " << LINK_SPEED_MODERN << " GBps" << endl;
-    // cout << "Baremetal RTT: " << BAREMETAL_RTT / 1000000 << " us" << endl;
-    // cout << "Target RTT Low: " << TARGET_RTT_LOW / 1000000 << " us" << endl;
-    // cout << "Target RTT High: " << TARGET_RTT_HIGH / 1000000 << " us" << endl;
-    // cout << "MSS: " << PKT_SIZE_MODERN << " Bytes" << endl;
-    // cout << "BDP: " << bdp_local / 1000 << " KB" << endl;
-    // cout << "Queue Size: " << queuesize << " Bytes" << endl;
-    // cout << "Delta: " << LCP_DELTA << endl;
-    // cout << "Beta: " << LCP_BETA << endl;
-    // cout << "Alpha: " << LCP_ALPHA << endl;
-    // cout << "Gamma: " << LCP_GAMMA << endl;
-    // cout << "K: " << LCP_K << endl;
-    // cout << "Fast Increase Threshold: " << LCP_FAST_INCREASE_THRESHOLD << endl;
-    // cout << "Use Quick Adapt: " << LCP_USE_QUICK_ADAPT << endl;
-    // cout << "Use Pacing: " << LCP_USE_PACING << endl;
-    // cout << "Use Fast Increase: " << LCP_USE_FAST_INCREASE << endl;
-    // cout << "Pacing Bonus: " << LCP_PACING_BONUS << endl;
-    // cout << "Use Min RTT: " << LCP_USE_MIN_RTT << endl;
-    // cout << "Use Aggressive Decrease: " << LCP_USE_AGGRESSIVE_DECREASE << endl;
-    // cout << "Gemini Queueing Delay Threshold: " << LCP_GEMINI_TARGET_QUEUEING_LATENCY / 1000000 << " us" << endl;
-    // cout << "Gemini Beta: " << LCP_GEMINI_BETA << endl;
-    // cout << "Gemini H: " << LCP_GEMINI_H << endl;
-    // cout << "==============================" << endl;
-
 
     SINGLE_PKT_TRASMISSION_TIME_MODERN = packet_size * 8 / (LINK_SPEED_MODERN);
 
@@ -564,6 +634,17 @@ int main(int argc, char **argv) {
     }
     Packet::set_packet_size(packet_size);
     initializeLoggingFolders();
+
+    if (pfc_high != 0) {
+        LosslessInputQueue::_high_threshold = pfc_high;
+        LosslessInputQueue::_low_threshold = pfc_low;
+        LosslessInputQueue::_mark_pfc_amount = pfc_marking;
+    } else {
+        LosslessInputQueue::_high_threshold = Packet::data_packet_size() * 50;
+        LosslessInputQueue::_low_threshold = Packet::data_packet_size() * 25;
+        LosslessInputQueue::_mark_pfc_amount = pfc_marking;
+    }
+    UecSrc::set_quickadapt_lossless_rtt(quickadapt_lossless_rtt);
 
     // Routing
     // float ar_sticky_delta = 10;
@@ -605,18 +686,7 @@ int main(int argc, char **argv) {
         UecSrc::set_explicit_bdp(explicit_bdp);
     }
 
-    UecSrc::set_starting_cwnd(actual_starting_cwnd);
-    if (max_queue_size != 0) {
-        queuesize = max_queue_size;
-        UecSrc::set_switch_queue_size(max_queue_size);
-    }
-
-    printf("Using BDP of %lu - Queue is %lld - Starting Window is %lu - RTT "
-           "%lu - Bandwidth %lu\n",
-           bdp_local, queuesize, actual_starting_cwnd, base_rtt_max_hops,
-           LINK_SPEED_MODERN);
-
-    cout << "Using subflow count " << subflow_count << endl;
+    queuesize = bdp_local * 0.2;
 
     if (LCP_DELTA == 1) {
         LCP_DELTA = bdp_local * 0.05;
@@ -625,12 +695,15 @@ int main(int argc, char **argv) {
     BAREMETAL_RTT = base_rtt_max_hops * 1000;
     TARGET_RTT_LOW = BAREMETAL_RTT * 1.05;
     TARGET_RTT_HIGH = BAREMETAL_RTT * 1.1;
+
     // LCP_GEMINI_BETA = 0.2;
     // LCP_GEMINI_TARGET_QUEUEING_LATENCY = (LCP_GEMINI_BETA / (1.0 - LCP_GEMINI_BETA)) * BAREMETAL_RTT;
+
     LCP_GEMINI_TARGET_QUEUEING_LATENCY = 0.1 * BAREMETAL_RTT;
     LCP_GEMINI_BETA = (double)LCP_GEMINI_TARGET_QUEUEING_LATENCY / ((double) LCP_GEMINI_TARGET_QUEUEING_LATENCY + (double) BAREMETAL_RTT);
 
     double H = 1.2 * pow(10, -7);
+    cout << "Double of H: " << H * (double) bdp_local << endl;
     LCP_GEMINI_H = max(min((H * (double) bdp_local), 5.0), 0.1) * (double) PKT_SIZE_MODERN;
     if (LCP_GEMINI_H == 0) {
         cout << "H is 0, raw value is: " << H * (double) bdp_local << " exiting..." << endl;
@@ -661,6 +734,19 @@ int main(int argc, char **argv) {
     cout << "Gemini Beta: " << LCP_GEMINI_BETA << endl;
     cout << "Gemini H: " << LCP_GEMINI_H << endl;
     cout << "==============================" << endl;
+
+    UecSrc::set_starting_cwnd(actual_starting_cwnd);
+    if (max_queue_size != 0) {
+        queuesize = max_queue_size;
+        UecSrc::set_switch_queue_size(max_queue_size);
+    }
+
+    printf("Using BDP of %lu - Queue is %lld - Starting Window is %lu - RTT "
+           "%lu - Bandwidth %lu\n",
+           bdp_local, queuesize, actual_starting_cwnd, base_rtt_max_hops,
+           LINK_SPEED_MODERN);
+
+    cout << "Using subflow count " << subflow_count << endl;
 
     // prepare the loggers
 
@@ -697,6 +783,11 @@ int main(int argc, char **argv) {
     // double extrastarttime;
 
     int dest;
+
+    if (topology_normal) {
+
+    } else {
+    }
 
 #if USE_FIRST_FIT
     if (subflow_count == 1) {
@@ -751,29 +842,45 @@ int main(int argc, char **argv) {
 
     printf("Starting LGS Interface");
     LogSimInterface *lgs;
-    if (interdc_delay != 0) {
-        FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
-        UecSrc::set_interdc_delay(interdc_delay);
+    if (topology_normal) {
+        printf("Normal Topology\n");
+        FatTreeTopology::set_tiers(3);
+        FatTreeTopology::set_os_stage_2(fat_tree_k);
+        FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
+        FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
+        FatTreeTopology::set_bts_threshold(bts_threshold);
+        FatTreeTopology::set_ignore_data_ecn(ignore_ecn_data);
+        FatTreeTopology *top = new FatTreeTopology(
+                no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+                queue_choice, hop_latency, switch_latency);
+        lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
     } else {
-        FatTreeInterDCTopology::set_interdc_delay(hop_latency);
-        UecSrc::set_interdc_delay(hop_latency);
+        if (interdc_delay != 0) {
+            FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
+            UecSrc::set_interdc_delay(interdc_delay);
+        } else {
+            FatTreeInterDCTopology::set_interdc_delay(hop_latency);
+            UecSrc::set_interdc_delay(hop_latency);
+        }
+        FatTreeInterDCTopology::set_tiers(3);
+        FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
+        FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
+        FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin,
+                                                                       kmax);
+        FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
+        FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
+        FatTreeInterDCTopology *top = new FatTreeInterDCTopology(
+                no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+                queue_choice, hop_latency, switch_latency);
+        lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
     }
-    FatTreeInterDCTopology::set_tiers(3);
-    FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
-    FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
-    FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin,
-                                                                    kmax);
-    FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
-    FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
-    FatTreeInterDCTopology *top = new FatTreeInterDCTopology(
-            no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
-            queue_choice, hop_latency, switch_latency);
-    lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
 
     lgs->set_protocol(UEC_PROTOCOL);
     lgs->set_cwd(cwnd);
     lgs->set_queue_size(queuesize);
+    lgs->setReuse(reuse_entropy);
     // lgs->setNumberEntropies(number_entropies);
+    lgs->setIgnoreEcnAck(ignore_ecn_ack);
     lgs->setIgnoreEcnData(ignore_ecn_data);
     lgs->setNumberPaths(number_entropies);
     start_lgs(goal_filename, *lgs);

@@ -47,3 +47,15 @@ plotting/us_to_cs
 !sim/lgs/input/test8_32.bin
 !sim/lgs/input/test8_64.bin
 !traffic_gen/cdf_files/*.txt
+
+**/logout.dat
+**/logout.dat.paths
+logout.dat
+config/*
+out*
+test*
+time_check.py
+plotting/performance_complete.py
+scripts/*
+.gitignore
+data/*
