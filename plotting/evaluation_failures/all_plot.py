@@ -43,7 +43,19 @@ def getNumTrimmed(name_file_to_use):
     return num_nack
 
 
+def getNrDroppedPackets(name_file_to_use):
+    res = 0
+    with open(name_file_to_use) as file:
+        for line in file:
+            result = re.search(r"Total number of dropped packets: (\d+)", line)
+            if result:
+                return int(result.group(1))
+    raise Exception("Number of dropped Packets not found")
+
+
 def run(short_title, title, failures_input, msg_size):
+
+    print("Running {}".format(title))
 
     os.system("mkdir -p experiments")
     os.system("rm -rf experiments/{}".format(short_title))
@@ -56,6 +68,7 @@ def run(short_title, title, failures_input, msg_size):
     os.system(string_to_run)
     list_reps = getListFCT(out_name)
     num_nack_reps = getNumTrimmed(out_name)
+    num_lost_packets_reps = getNrDroppedPackets(out_name)
     print(
         "REPS: Flow Diff {} - Total {}".format(
             max(list_reps) - min(list_reps), max(list_reps)
@@ -69,6 +82,7 @@ def run(short_title, title, failures_input, msg_size):
     os.system(string_to_run)
     list_repsC = getListFCT(out_name)
     num_nack_repsC = getNumTrimmed(out_name)
+    num_lost_packets_repsC = getNrDroppedPackets(out_name)
     print(
         "REPS Circular: Flow Diff {} - Total {}".format(
             max(list_repsC) - min(list_repsC), max(list_repsC)
@@ -82,12 +96,18 @@ def run(short_title, title, failures_input, msg_size):
     os.system(string_to_run)
     list_spraying = getListFCT(out_name)
     num_nack_spraying = getNumTrimmed(out_name)
+    num_lost_packets_spraying = getNrDroppedPackets(out_name)
     print(
         "Spraying: Flow Diff {} - Total {}".format(
             max(list_spraying) - min(list_spraying), max(list_spraying)
         )
     )
 
+    list_lost_packets = [
+        num_lost_packets_reps,
+        num_lost_packets_repsC,
+        num_lost_packets_spraying,
+    ]
     list_fct = [list_reps, list_repsC, list_spraying]
     list_max = [max(list_reps), max(list_repsC), max(list_spraying)]
     list_nacks = [num_nack_reps, num_nack_repsC, num_nack_spraying]
@@ -220,6 +240,35 @@ def run(short_title, title, failures_input, msg_size):
         "experiments/{}/violin_fct.svg".format(short_title), bbox_inches="tight"
     )
     plt.close()
+
+    # PLOT 5 (LOST PACKETS)
+
+    plt.figure(figsize=(7, 5))
+    numbers = list_lost_packets
+    labels = list_labels
+
+    # Make bar chart
+    data3 = pd.DataFrame({"Lost Packets": numbers, "Algorithm": labels})
+    ax4 = sns.barplot(x="Algorithm", y="Lost Packets", data=data3)
+    ax4.tick_params(labelsize=9.5)
+    # Format y-axis tick labels without scientific notation
+    ax4.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+
+    for p in ax4.patches:
+        ax4.annotate(
+            format(int(p.get_height()), ""),
+            (p.get_x() + p.get_width() / 2.0, p.get_height()),
+            ha="center",
+            va="center",
+            xytext=(0, 7),
+            textcoords="offset points",
+        )
+
+    plt.title(title, fontsize=17)
+    plt.grid()
+    plt.savefig(
+        "experiments/{}/lost_packets.svg".format(short_title), bbox_inches="tight"
+    )
 
 
 def main():

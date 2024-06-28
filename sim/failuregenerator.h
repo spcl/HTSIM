@@ -13,6 +13,8 @@
 class failuregenerator {
 
   public:
+    uint64_t nr_total_packets = 0;
+    uint64_t nr_dropped_packets = 0;
     uint32_t path_nr = 0;
     std::set<UecSrc *> all_srcs;
     std::set<UecSink *> all_sinks;

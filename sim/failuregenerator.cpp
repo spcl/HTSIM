@@ -76,6 +76,7 @@ void failuregenerator::dropRandomPacketSink(Packet &pkt) {
             pkt.strip_payload();
         }
         pkt.is_failed = true;
+        FAILURE_GENERATOR->nr_dropped_packets++;
         FAILURE_GENERATOR->_list_random_packet_drops.push_back(GLOBAL_TIME);
 
         // pkt.free(); Later we will re-enable this
@@ -107,6 +108,7 @@ void failuregenerator::dropRandomPacket(Packet &pkt) {
                 pkt.strip_payload();
             }
             pkt.is_failed = true;
+            FAILURE_GENERATOR->nr_dropped_packets++;
             numberOfRandomDroppedPacketsTest++;
             FAILURE_GENERATOR->_list_random_packet_drops.push_back(GLOBAL_TIME);
 
@@ -932,6 +934,8 @@ void failuregenerator::parseinputfile() {
 // Generate logging data
 
 void failuregenerator::createLoggingData() {
+
+    std::cout << "Total number of dropped packets: " << nr_dropped_packets << std::endl;
 
     // Switch Packet drops
     string file_name = PROJECT_ROOT_PATH / ("sim/output/switch_drops/switch_drops.txt");
