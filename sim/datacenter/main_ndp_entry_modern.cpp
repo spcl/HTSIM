@@ -29,6 +29,22 @@
 //#include "multihomed_fat_tree_topology.h"
 //#include "star_topology.h"
 //#include "bcube_topology.h"
+#include "dragonfly_topology.h"
+#include "dragonfly_topology.cpp"
+#include "dragonfly_switch.h"
+#include "dragonfly_switch.cpp"
+#include "slimfly_topology.h"
+#include "slimfly_topology.cpp"
+#include "slimfly_switch.h"
+#include "slimfly_switch.cpp"
+#include "hammingmesh_topology.h"
+#include "hammingmesh_topology.cpp"
+#include "hammingmesh_switch.h"
+#include "hammingmesh_switch.cpp"
+#include "b-cube_topology.h"
+#include "b-cube_topology.cpp"
+#include "b-cube_switch.h"
+#include "b-cube_switch.cpp"
 #include <list>
 
 // Simulation params
@@ -103,6 +119,26 @@ int main(int argc, char **argv) {
     bool topology_normal = true;
     uint64_t interdc_delay = 0;
     //uint64_t max_queue_size = 0;
+    
+    queue_type queue_choice = COMPOSITE;
+    TopologyCase topology = FAT_TREE_CASE;
+    uint32_t p = 0;
+    uint32_t a = 0;
+    uint32_t h = 0;
+    DragonflySwitch::routing_strategy df_routing_strategy = DragonflySwitch::NIX;
+    uint32_t q_base = 0;
+    uint32_t q_exp = 0;
+    SlimflySwitch::routing_strategy sf_routing_strategy = SlimflySwitch::NIX;
+    uint32_t height = 0;
+    uint32_t width = 0;
+    uint32_t height_board = 0;
+    uint32_t width_board = 0;
+    HammingmeshSwitch::routing_strategy hm_routing_strategy = HammingmeshSwitch::NIX;
+    uint32_t n_bcube = 0;
+    uint32_t k_bcube = 0;
+    BCubeSwitch::routing_strategy bc_routing_strategy = BCubeSwitch::NIX;
+    uint64_t interdc_delay = 0;
+    uint64_t max_queue_size = 0;
 
     int i = 1;
     filename << "logout.dat";
@@ -142,14 +178,7 @@ int main(int argc, char **argv) {
             kmax = atoi(argv[i + 1]);
             printf("KMax: %d\n", atoi(argv[i + 1]));
             i++;
-        } else if (!strcmp(argv[i], "-topology")) {
-            if (!strcmp(argv[i + 1], "normal")) {
-                topology_normal = true;
-            } else if (!strcmp(argv[i + 1], "interdc")) {
-                topology_normal = false;
-            }
-            i++;
-        }else if (!strcmp(argv[i], "-kmin")) {
+        } else if (!strcmp(argv[i], "-kmin")) {
             // kmin as percentage of queue size (0..100)
             kmin = atoi(argv[i + 1]);
             printf("KMin: %d\n", atoi(argv[i + 1]));
@@ -220,6 +249,99 @@ int main(int argc, char **argv) {
                 route_strategy = ECMP_RANDOM2_ECN;
                 FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
                 FatTreeInterDCSwitch::set_strategy(FatTreeInterDCSwitch::ECMP);
+            }
+            i++;
+        }  else if (!strcmp(argv[i], "-topology")) {
+            if (!strcmp(argv[i + 1], "fat_tree")) {
+                topology = FAT_TREE_CASE;
+            }
+            else if (!strcmp(argv[i + 1], "fat_tree_dc")) {
+                topology = FAT_TREE_DC_CASE;
+            }
+            else if (!strcmp(argv[i + 1], "dragonfly")) {
+                topology = DRAGONFLY_CASE;
+            }
+            else if (!strcmp(argv[i + 1], "slimfly")) {
+                topology = SLIMFLY_CASE;
+            }
+            else if (!strcmp(argv[i + 1], "hammingmesh")) {
+                topology = HAMMINGMESH_CASE;
+            }
+            else if (!strcmp(argv[i + 1], "bcube")) {
+                topology = BCUBE_CASE;
+            }
+            i++;
+        } else if (!strcmp(argv[i], "-p")) {
+            p = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-a")) {
+            a = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-h")) {
+            h = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-df_strategy")){
+            if (!strcmp(argv[i + 1], "nix")) {
+                df_routing_strategy = DragonflySwitch::NIX;
+            } else if (!strcmp(argv[i + 1], "minimal")) {
+                df_routing_strategy = DragonflySwitch::MINIMAL;
+            } else if (!strcmp(argv[i + 1], "valiants")) {
+                df_routing_strategy = DragonflySwitch::VALIANTS;
+            } else {
+                cerr << "Wrong strategy for dragonfly chosen.\n";
+            }
+            i++;
+        } else if (!strcmp(argv[i], "-q_base")) {
+            q_base = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-q_exp")) {
+            q_exp = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-sf_strategy")){
+            if (!strcmp(argv[i + 1], "nix")) {
+                sf_routing_strategy = SlimflySwitch::NIX;
+            } else if (!strcmp(argv[i + 1], "minimal")) {
+                sf_routing_strategy = SlimflySwitch::MINIMAL;
+            } else if (!strcmp(argv[i + 1], "valiants")) {
+                sf_routing_strategy = SlimflySwitch::VALIANTS;
+            } else {
+                cerr << "Wrong strategy for slimfly chosen.\n";
+            }
+            i++;
+        } else if (!strcmp(argv[i], "-height")) {
+            height = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-width")) {
+            width = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-height_board")) {
+            height_board = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-width_board")) {
+            width_board = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-hm_strategy")){
+            if (!strcmp(argv[i + 1], "nix")) {
+                hm_routing_strategy = HammingmeshSwitch::NIX;
+            } else if (!strcmp(argv[i + 1], "minimal")) {
+                hm_routing_strategy = HammingmeshSwitch::MINIMAL;
+            } else {
+                cerr << "Wrong strategy for hammingmesh chosen.\n";
+            }
+            i++;
+        } else if (!strcmp(argv[i], "-n_bcube")) {
+            n_bcube = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-k_bcube")) {
+            k_bcube = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-bc_strategy")){
+            if (!strcmp(argv[i + 1], "nix")) {
+                bc_routing_strategy = BCubeSwitch::NIX;
+            } else if (!strcmp(argv[i + 1], "minimal")) {
+                bc_routing_strategy = BCubeSwitch::MINIMAL;
+            } else {
+                cerr << "Wrong strategy for bcube chosen.\n";
             }
             i++;
         } else
@@ -370,37 +492,61 @@ int main(int argc, char **argv) {
 
     printf("Starting LGS Interface");
     LogSimInterface *lgs;
-    if (topology_normal) {
-        printf("Normal Topology\n");
-        FatTreeTopology::set_tiers(3);
-        FatTreeTopology::set_os_stage_2(fat_tree_k);
-        FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
-        FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
-        FatTreeTopology *top = new FatTreeTopology(
-                no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
-                COMPOSITE, hop_latency, switch_latency);
-        lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
-    } else {
-        if (interdc_delay != 0) {
-            FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
-            UecSrc::set_interdc_delay(interdc_delay);
-        } else {
-            FatTreeInterDCTopology::set_interdc_delay(hop_latency);
-            UecSrc::set_interdc_delay(hop_latency);
+
+    switch (topology) {
+        case (FAT_TREE_CASE): {
+            printf("Fat-Tree Topology\n");
+            FatTreeTopology::set_tiers(3);
+            FatTreeTopology::set_os_stage_2(fat_tree_k);
+            FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
+            FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
+            FatTreeTopology *top = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+                                                    queue_choice, hop_latency, switch_latency);
+            lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+            break;
+        } 
+        case (FAT_TREE_DC_CASE): {
+            if (interdc_delay != 0) {
+                FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
+                UecSrc::set_interdc_delay(interdc_delay);
+            } else {
+                FatTreeInterDCTopology::set_interdc_delay(hop_latency);
+                UecSrc::set_interdc_delay(hop_latency);
+            }
+            FatTreeInterDCTopology::set_tiers(3);
+            FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
+            FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
+            FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
+            FatTreeInterDCTopology *top = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+                                                    queue_choice, hop_latency, switch_latency);
+            lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+            break;
         }
-        FatTreeInterDCTopology::set_tiers(3);
-        FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
-        FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
-        FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin,
-                                                                       kmax);
-        FatTreeInterDCTopology *top = new FatTreeInterDCTopology(
-                no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
-                COMPOSITE, hop_latency, switch_latency);
-        lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+        case (DRAGONFLY_CASE): {
+            // Hier Code einfügen.
+            // DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q);
+            DragonflyTopology *top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice);
+            break;
+        }
+        case (SLIMFLY_CASE): {
+            // Hier Code einfügen.
+            // SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type q);
+            SlimflyTopology *top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice);
+            break;
+        }
+        case (HAMMINGMESH_CASE): {
+            HammingmeshTopology *top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize, &eventlist, queue_choice);
+            break;
+        }
+        case (BCUBE_CASE): {
+            BCubeTopology *top_bc = new BCubeTopology(n_bcube, k_bcube, queuesize, &eventlist, queue_choice);
+            break;
+        }
     }
 
-    lgs->set_protocol(NDP_PROTOCOL);
+    lgs->set_protocol(UEC_PROTOCOL);
     lgs->set_cwd(cwnd);
+    lgs->set_queue_size(queuesize);
     lgs->setNumberPaths(number_entropies);
     start_lgs(goal_filename, *lgs);
 
@@ -419,7 +565,6 @@ int main(int argc, char **argv) {
     double rtt = timeAsSec(timeFromUs(RTT));
     logfile.write("# rtt =" + ntoa(rtt));
 
-    // GO!
     while (eventlist.doNextEvent()) {
     }
 

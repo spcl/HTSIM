@@ -1239,13 +1239,11 @@ int main(int argc, char **argv) {
                 break;
             }
             case (DRAGONFLY_CASE): {
-                // Hier Code einfügen.
                 // DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q);
                 DragonflyTopology *top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice);
                 break;
             }
             case (SLIMFLY_CASE): {
-                // Hier Code einfügen.
                 // SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type q);
                 SlimflyTopology *top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice);
                 break;
