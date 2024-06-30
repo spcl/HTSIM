@@ -116,7 +116,6 @@ int main(int argc, char **argv) {
     int kmax = -1;
     int ratio_os_stage_1 = 1;
     int flowsize = -1;
-    bool topology_normal = true;
     uint64_t interdc_delay = 0;
     //uint64_t max_queue_size = 0;
     
@@ -137,7 +136,7 @@ int main(int argc, char **argv) {
     uint32_t n_bcube = 0;
     uint32_t k_bcube = 0;
     BCubeSwitch::routing_strategy bc_routing_strategy = BCubeSwitch::NIX;
-    uint64_t interdc_delay = 0;
+    //uint64_t interdc_delay = 0;
     uint64_t max_queue_size = 0;
 
     int i = 1;
@@ -167,10 +166,10 @@ int main(int argc, char **argv) {
             interdc_delay = atoi(argv[i + 1]);
             interdc_delay *= 1000;
             i++;
-        } /* else if (!strcmp(argv[i], "-max_queue_size")) {
+        } else if (!strcmp(argv[i], "-max_queue_size")) {
             max_queue_size = atoi(argv[i + 1]);
             i++;
-        } */ else if (!strcmp(argv[i], "-number_entropies")) {
+        } else if (!strcmp(argv[i], "-number_entropies")) {
             number_entropies = atoi(argv[i + 1]);
             i++;
         } else if (!strcmp(argv[i], "-kmax")) {
@@ -442,10 +441,10 @@ int main(int argc, char **argv) {
     StarTopology *top = new StarTopology(&logfile, &eventlist, ff);
 #endif
 
-#ifdef BCUBE
+/* #ifdef BCUBE
     BCubeTopology *top = new BCubeTopology(&logfile, &eventlist, ff);
     cout << "BCUBE " << K << endl;
-#endif
+#endif */
 
 #ifdef VL2
     VL2Topology *top = new VL2Topology(&logfile, &eventlist, ff);
@@ -500,9 +499,9 @@ int main(int argc, char **argv) {
             FatTreeTopology::set_os_stage_2(fat_tree_k);
             FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
             FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
-            FatTreeTopology *top = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+            FatTreeTopology *top_ft = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
                                                     queue_choice, hop_latency, switch_latency);
-            lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+            lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top_ft, NULL);
             break;
         } 
         case (FAT_TREE_DC_CASE): {
@@ -517,38 +516,42 @@ int main(int argc, char **argv) {
             FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
             FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
             FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
-            FatTreeInterDCTopology *top = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+            FatTreeInterDCTopology *top_dc = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
                                                     queue_choice, hop_latency, switch_latency);
-            lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+            lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top_dc, NULL);
             break;
         }
         case (DRAGONFLY_CASE): {
             // Hier Code einfügen.
             // DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q);
-            DragonflyTopology *top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice);
+            DragonflyTopology *top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice, df_routing_strategy);
+            //lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top_df, NULL);
             break;
         }
         case (SLIMFLY_CASE): {
             // Hier Code einfügen.
             // SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type q);
-            SlimflyTopology *top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice);
+            SlimflyTopology *top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice, sf_routing_strategy);
+            //lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top_sf, NULL);
             break;
         }
         case (HAMMINGMESH_CASE): {
-            HammingmeshTopology *top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize, &eventlist, queue_choice);
+            HammingmeshTopology *top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize, &eventlist, queue_choice, hm_routing_strategy);
+            //lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top_hm, NULL);
             break;
         }
         case (BCUBE_CASE): {
-            BCubeTopology *top_bc = new BCubeTopology(n_bcube, k_bcube, queuesize, &eventlist, queue_choice);
+            BCubeTopology *top_bc = new BCubeTopology(n_bcube, k_bcube, queuesize, &eventlist, queue_choice, bc_routing_strategy);
+            //lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top_bc, NULL);
             break;
         }
     }
 
-    lgs->set_protocol(UEC_PROTOCOL);
+/*     lgs->set_protocol(NDP_PROTOCOL);
     lgs->set_cwd(cwnd);
     lgs->set_queue_size(queuesize);
     lgs->setNumberPaths(number_entropies);
-    start_lgs(goal_filename, *lgs);
+    start_lgs(goal_filename, *lgs); */
 
     cout << "Mean number of subflows " << ntoa((double)tot_subs / cnt_con)
          << endl;
@@ -560,7 +563,7 @@ int main(int argc, char **argv) {
     logfile.write("# hostnicrate = " + ntoa(HOST_NIC) + " pkt/sec");
     logfile.write("# corelinkrate = " + ntoa(HOST_NIC * CORE_TO_HOST) +
                   " pkt/sec");
-    printf("Host Link Rate %d - Core Link Rate %d - Pkt Size %d", HOST_NIC,
+    printf("Host Link Rate %d - Core Link Rate %d - Pkt Size %d\n", HOST_NIC,
            CORE_TO_HOST, pktsize);
     double rtt = timeAsSec(timeFromUs(RTT));
     logfile.write("# rtt =" + ntoa(rtt));

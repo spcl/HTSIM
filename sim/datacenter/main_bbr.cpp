@@ -171,7 +171,7 @@ int main(int argc, char **argv) {
     uint32_t n_bcube = 0;
     uint32_t k_bcube = 0;
     BCubeSwitch::routing_strategy bc_routing_strategy = BCubeSwitch::NIX;
-    uint64_t interdc_delay = 0;
+    //uint64_t interdc_delay = 0;
     uint64_t max_queue_size = 0;
 
     int i = 1;
@@ -662,10 +662,10 @@ int main(int argc, char **argv) {
     StarTopology *top = new StarTopology(lf, &eventlist, ff);
 #endif
 
-#ifdef BCUBE
+/* #ifdef BCUBE
     BCubeTopology *top = new BCubeTopology(lf, &eventlist, ff);
     cout << "BCUBE " << K << endl;
-#endif
+#endif */
 
 #ifdef VL2
     VL2Topology *top = new VL2Topology(lf, &eventlist, ff);

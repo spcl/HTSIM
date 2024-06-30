@@ -410,10 +410,10 @@ int main(int argc, char **argv) {
     StarTopology *top = new StarTopology(&logfile, &eventlist, ff);
 #endif
 
-#ifdef BCUBE
+/* #ifdef BCUBE
     BCubeTopology *top = new BCubeTopology(&logfile, &eventlist, ff);
     cout << "BCUBE " << K << endl;
-#endif
+#endif */
 
 #ifdef VL2
     VL2Topology *top = new VL2Topology(&logfile, &eventlist, ff);

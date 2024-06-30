@@ -79,6 +79,54 @@ LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger, Ev
     printf("Running Dragonfly.\n");
 }
 
+LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList,
+                                 SlimflyTopology *topo, std::vector<const Route *> ***routes) {
+    _logger = logger;
+    _flow = pktLogger;
+    _eventlist = &eventList;
+    _topo_sf = topo;
+    _netPaths = routes;
+    _latest_recv = new graph_node_properties();
+    if (compute_events_handler == NULL) {
+        compute_events_handler = new ComputeEvent(_logger, *_eventlist);
+        compute_events_handler->set_compute_over_hook(
+                std::bind(&LogSimInterface::compute_over, this, std::placeholders::_1));
+    }
+    printf("Running Slimfly.\n");
+}
+
+LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList,
+                                 HammingmeshTopology *topo, std::vector<const Route *> ***routes) {
+    _logger = logger;
+    _flow = pktLogger;
+    _eventlist = &eventList;
+    _topo_hm = topo;
+    _netPaths = routes;
+    _latest_recv = new graph_node_properties();
+    if (compute_events_handler == NULL) {
+        compute_events_handler = new ComputeEvent(_logger, *_eventlist);
+        compute_events_handler->set_compute_over_hook(
+                std::bind(&LogSimInterface::compute_over, this, std::placeholders::_1));
+    }
+    printf("Running Hammingmesh.\n");
+}
+
+LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList,
+                                 BCubeTopology *topo, std::vector<const Route *> ***routes) {
+    _logger = logger;
+    _flow = pktLogger;
+    _eventlist = &eventList;
+    _topo_bc = topo;
+    _netPaths = routes;
+    _latest_recv = new graph_node_properties();
+    if (compute_events_handler == NULL) {
+        compute_events_handler = new ComputeEvent(_logger, *_eventlist);
+        compute_events_handler->set_compute_over_hook(
+                std::bind(&LogSimInterface::compute_over, this, std::placeholders::_1));
+    }
+    printf("Running BCube.\n");
+}
+
 void LogSimInterface::set_cwd(int cwd) { _cwd = cwd; }
 
 void LogSimInterface::htsim_schedule(u_int32_t host, int to, int size, int tag, u_int64_t start_time_event,

@@ -7,6 +7,9 @@
 #include "fat_tree_interdc_topology.h"
 #include "fat_tree_topology.h"
 #include "dragonfly_topology.h"
+#include "slimfly_topology.h"
+#include "hammingmesh_topology.h"
+#include "b-cube_topology.h"
 #include "lgs/logsim.h"
 #include "uec.h"
 #include "uec_drop.h"
@@ -52,6 +55,12 @@ class LogSimInterface {
                     std::vector<const Route *> ***);
     LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList, DragonflyTopology *topo,
                     std::vector<const Route *> ***routes);
+    LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList, SlimflyTopology *topo,
+                    std::vector<const Route *> ***routes);
+    LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList, HammingmeshTopology *topo,
+                    std::vector<const Route *> ***routes);
+    LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList, BCubeTopology *topo,
+                    std::vector<const Route *> ***routes);
     std::unordered_map<std::string, MsgInfo> active_sends;
     int compute_started = 0;
     std::unordered_map<std::string, UecSrc *> connection_log;
@@ -96,6 +105,9 @@ class LogSimInterface {
     FatTreeTopology *_topo = NULL;
     FatTreeInterDCTopology *_topo_inter_dc = NULL;
     DragonflyTopology *_topo_df = NULL;
+    SlimflyTopology *_topo_sf = NULL;
+    HammingmeshTopology *_topo_hm = NULL;
+    BCubeTopology *_topo_bc = NULL;
     std::vector<const Route *> ***_netPaths;
     int _cwd;
     ComputeEvent *compute_events_handler;
