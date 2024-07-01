@@ -328,7 +328,7 @@ void CompositeQueue::receivePacket(Packet &pkt) {
         pkt.is_failed = true;
     } */
 
-    if (FAILURE_GENERATOR->simSwitchFailures(pkt, _switch, *this) && !pkt.header_only()) {
+    if (FAILURE_GENERATOR->simSwitchFailures(pkt, _switch, *this)) {
 
         FAILURE_GENERATOR->nr_dropped_packets++;
         FAILURE_GENERATOR->_list_switch_packet_drops.push_back(GLOBAL_TIME);
@@ -343,8 +343,7 @@ void CompositeQueue::receivePacket(Packet &pkt) {
             }
             pkt.is_failed = true;
         }
-        // pkt.free(); Later we will re-enable this
-        // return;
+
     } else if (!pkt.header_only()) {
         //  Queue
         /* printf("Remote is %s vs %s %d %d - Switch ID - %d %d\n", this->getRemoteEndpoint()->nodename().c_str(),

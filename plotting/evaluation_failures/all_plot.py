@@ -151,9 +151,10 @@ def run(
     os.system("mkdir experiments/{}".format(short_title))
 
     balancer = "reps"
-    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}".format(
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}".format(
             balancer, nodes, topology, connection_matrix, failures_input, balancer
         )
+    print(string_to_run)
     execute_string(string_to_run, short_title, balancer)
     filename = "experiments/{}/{}.txt".format(short_title,balancer)
     list_reps = getListFCT(filename)
@@ -171,7 +172,7 @@ def run(
     )
 
     balancer = "reps_circular"
-    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}".format(
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}".format(
             balancer, nodes, topology, connection_matrix, failures_input, balancer
         )
     execute_string(string_to_run, short_title, balancer)
@@ -186,12 +187,12 @@ def run(
     complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
     print(
         "REPS circular: Flow Diff {} - Total {}".format(
-            max(list_reps) - min(list_reps), max(list_reps)
+            max(list_repsC) - min(list_repsC), max(list_repsC)
         )
     )
 
     balancer = "spraying"
-    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}".format(
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}".format(
             balancer, nodes, topology, connection_matrix, failures_input, balancer
         )
     execute_string(string_to_run, short_title, balancer)
@@ -206,7 +207,7 @@ def run(
     complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
     print(
         "Spraying: Flow Diff {} - Total {}".format(
-            max(list_reps) - min(list_reps), max(list_reps)
+            max(list_spraying) - min(list_spraying), max(list_spraying)
         )
     )
 

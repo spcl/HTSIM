@@ -14,6 +14,7 @@
 
 std::random_device rd;
 std::mt19937 gen(rd());
+bool failuregenerator::_use_timeouts = false;
 
 // returns true with probability prob
 bool trueWithProb(double prob) {
@@ -66,28 +67,27 @@ void failuregenerator::addRandomPacketDrop(Packet &pkt, UecSrc *src) {
 
 void failuregenerator::dropRandomPacketSink(Packet &pkt) {
     uint32_t pkt_id = pkt.id();
-    if (!pkt.header_only() &&
-        FAILURE_GENERATOR->randomDroppedPackets.find(pkt_id) != FAILURE_GENERATOR->randomDroppedPackets.end()) {
-
+    if (FAILURE_GENERATOR->randomDroppedPackets.find(pkt_id) != FAILURE_GENERATOR->randomDroppedPackets.end()) {
         FAILURE_GENERATOR->randomDroppedPackets.erase(pkt_id);
-        std::cout << "Packet dropped at Random Packet drop at Sink" << std::endl;
-        // Temporary Hack
-        if (!pkt.header_only()) {
-            pkt.strip_payload();
-        }
-        pkt.is_failed = true;
         FAILURE_GENERATOR->nr_dropped_packets++;
         FAILURE_GENERATOR->_list_random_packet_drops.push_back(GLOBAL_TIME);
 
-        // pkt.free(); Later we will re-enable this
-        // return;
+        // Return if using a timeout, otherwise transform it in a trim and mark it as failed
+        if (_use_timeouts) {
+            pkt.free();
+            return;
+        } else {
+            if (!pkt.header_only()) {
+                pkt.strip_payload();
+            }
+            pkt.is_failed = true;
+        }
     }
 }
 
 void failuregenerator::dropRandomPacket(Packet &pkt) {
     uint32_t pkt_id = pkt.id();
-    if (!pkt.header_only() &&
-        FAILURE_GENERATOR->randomDroppedPackets.find(pkt_id) != FAILURE_GENERATOR->randomDroppedPackets.end()) {
+    if (FAILURE_GENERATOR->randomDroppedPackets.find(pkt_id) != FAILURE_GENERATOR->randomDroppedPackets.end()) {
         UecSrc *src = FAILURE_GENERATOR->randomDroppedPackets[pkt_id];
 
         std::pair<std::pair<std::set<uint32_t>, std::set<uint32_t>>, std::string> switches_cables_on_path_string =
@@ -102,18 +102,21 @@ void failuregenerator::dropRandomPacket(Packet &pkt) {
 
         if (trueWithProb(1.0 / numberOfDevices)) {
             FAILURE_GENERATOR->randomDroppedPackets.erase(pkt_id);
-            std::cout << "Packet dropped at Random Packet drop" << std::endl;
-            // Temporary Hack
-            if (!pkt.header_only()) {
-                pkt.strip_payload();
-            }
-            pkt.is_failed = true;
             FAILURE_GENERATOR->nr_dropped_packets++;
             numberOfRandomDroppedPacketsTest++;
             FAILURE_GENERATOR->_list_random_packet_drops.push_back(GLOBAL_TIME);
+            std::cout << "Packet dropped at Random Packet drop" << std::endl;
 
-            // pkt.free(); Later we will re-enable this
-            // return;
+            // Return if using a timeout, otherwise transform it in a trim and mark it as failed
+            if (_use_timeouts) {
+                pkt.free();
+                return;
+            } else {
+                if (!pkt.header_only()) {
+                    pkt.strip_payload();
+                }
+                pkt.is_failed = true;
+            }
         }
     }
 }

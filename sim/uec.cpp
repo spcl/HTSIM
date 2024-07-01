@@ -15,6 +15,7 @@
 
 // Static Parameters
 bool UecSrc::_use_timeouts = false;
+bool UecSink::_use_timeouts = false;
 int UecSrc::jump_to = 0;
 double UecSrc::kmax_double;
 bool UecSrc::use_bts = false;
@@ -1170,16 +1171,17 @@ void UecSrc::receivePacket(Packet &pkt) {
     FAILURE_GENERATOR->addRandomPacketDrop(pkt, this);
     FAILURE_GENERATOR->dropRandomPacket(pkt);
 
-    if (!pkt.header_only() && FAILURE_GENERATOR->simNICFailures(this, NULL, pkt)) {
-        // Temporary Hack
-        if (!pkt.header_only()) {
-            pkt.strip_payload();
+    if (FAILURE_GENERATOR->simNICFailures(this, NULL, pkt)) {
+        // Return if using a timeout, otherwise transform it in a trim and mark it as failed
+        if (_use_timeouts) {
+            pkt.free();
+            return;
+        } else {
+            if (!pkt.header_only()) {
+                pkt.strip_payload();
+            }
+            pkt.is_failed = true;
         }
-        pkt.is_failed = true;
-        FAILURE_GENERATOR->nr_dropped_packets++;
-
-        // pkt.free(); Later we will re-enable this
-        // return;
     }
 
     if (from == 226 && to == 117) {
@@ -2314,29 +2316,30 @@ void UecSink::receivePacket(Packet &pkt) {
 
     FAILURE_GENERATOR->dropRandomPacketSink(pkt);
 
-    if (!pkt.header_only() && FAILURE_GENERATOR->simNICFailures(NULL, this, pkt)) {
-        // Temporary Hack
-        if (!pkt.header_only()) {
-            pkt.strip_payload();
+    if (FAILURE_GENERATOR->simNICFailures(NULL, this, pkt)) {
+        // Return if using a timeout, otherwise transform it in a trim and mark it as failed
+        if (_use_timeouts) {
+            pkt.free();
+            return;
+        } else {
+            if (!pkt.header_only()) {
+                pkt.strip_payload();
+            }
+            pkt.is_failed = true;
         }
-        pkt.is_failed = true;
-        FAILURE_GENERATOR->nr_dropped_packets++;
-
-        // pkt.free(); Later we will re-enable this
-        // return;
     }
 
-    if (!pkt.header_only() && FAILURE_GENERATOR->dropPacketsSwitchBER(pkt)) {
-        // Temporary Hack
-        if (!pkt.header_only()) {
-            pkt.strip_payload();
+    if (FAILURE_GENERATOR->dropPacketsSwitchBER(pkt)) {
+        // Return if using a timeout, otherwise transform it in a trim and mark it as failed
+        if (_use_timeouts) {
+            pkt.free();
+            return;
+        } else {
+            if (!pkt.header_only()) {
+                pkt.strip_payload();
+            }
+            pkt.is_failed = true;
         }
-        pkt.is_failed = true;
-        FAILURE_GENERATOR->nr_dropped_packets++;
-
-        FAILURE_GENERATOR->_list_switch_packet_drops.push_back(GLOBAL_TIME);
-        // pkt.free(); Later we will re-enable this
-        // return;
     }
 
     if (pkt.pfc_just_happened) {

@@ -23,6 +23,8 @@ class failuregenerator {
     std::unordered_map<uint32_t, std::set<uint64_t>> path_switches;
     // map from path to cables in this path
     std::unordered_map<uint32_t, std::set<uint64_t>> path_cables;
+    static void setUseTimeouts(bool use_timeouts) { _use_timeouts = use_timeouts; }
+    static bool _use_timeouts;
 
     void addSrc(UecSrc *src) { all_srcs.insert(src); }
     void addDst(UecSink *sink) { all_sinks.insert(sink); }

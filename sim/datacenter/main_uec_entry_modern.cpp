@@ -421,6 +421,7 @@ int main(int argc, char **argv) {
             CompositeQueue::setUseTimeouts(true);
             UecSrc::setUseTimeouts(true);
             Pipe::setUseTimeouts(true);
+            failuregenerator::setUseTimeouts(true);
         } else if (!strcmp(argv[i], "-reps_buffer_size")) {
             CircularBufferREPS<int>::setBufferSize(atoi(argv[i + 1]));
             i++;

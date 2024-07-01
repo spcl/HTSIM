@@ -534,6 +534,8 @@ class UecSink : public PacketSink, public DataReceiver {
     static RouteStrategy _route_strategy;
     Trigger *_end_trigger = 0;
     int pfc_just_seen = -10;
+    static bool _use_timeouts;
+    static void setUseTimeouts(bool use_timeouts) { _use_timeouts = use_timeouts; }
 
   private:
     UecAck::seq_t _cumulative_ack;

@@ -25,11 +25,12 @@ void Pipe::receivePacket(Packet &pkt) {
 
     FAILURE_GENERATOR->dropRandomPacket(pkt);
 
-    if (!pkt.header_only() && FAILURE_GENERATOR->simCableFailures(this, pkt)) {
+    if (FAILURE_GENERATOR->simCableFailures(this, pkt)) {
 
         FAILURE_GENERATOR->nr_dropped_packets++;
         FAILURE_GENERATOR->_list_cable_packet_drops.push_back(GLOBAL_TIME);
 
+        // Return if using a timeout, otherwise transform it in a trim and mark it as failed
         if (_use_timeouts) {
             pkt.free();
             return;
@@ -39,9 +40,6 @@ void Pipe::receivePacket(Packet &pkt) {
             }
             pkt.is_failed = true;
         }
-
-        // pkt.free(); Later we will re-enable this
-        // return;
     }
 
     if (pkt.is_bts_pkt && pkt.id() == 356350 && pkt.from == 1) {
