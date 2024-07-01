@@ -16,6 +16,7 @@ class failuregenerator {
     uint64_t nr_total_packets = 0;
     uint64_t nr_dropped_packets = 0;
     uint32_t path_nr = 0;
+    std::unordered_map<UecSink *, vector<uint64_t>> map_list_packet_seq;
     std::set<UecSrc *> all_srcs;
     std::set<UecSink *> all_sinks;
     // map from path to switches in this path

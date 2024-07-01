@@ -2373,6 +2373,7 @@ void UecSink::receivePacket(Packet &pkt) {
     p->free();
 
     _packets += size;
+    FAILURE_GENERATOR->map_list_packet_seq[this].push_back(seqno);
 
     if (seqno == _cumulative_ack + 1) { // next expected seq no
         _cumulative_ack = seqno + size - 1;

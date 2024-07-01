@@ -131,7 +131,7 @@ bool failuregenerator::fail_new_switch(Switch *sw) {
     int numberOfAllSwitches = all_switches.size();
     float percent = (float)numberOfFailingSwitches / (float)numberOfAllSwitches;
     if (percent > switch_fail_max_percent) {
-        // std::cout << "Did not fail Switch, because of max-percent Switch-name: " << switch_name << std::endl;
+        std::cout << "Did not fail Switch, because of max-percent Switch-name: " << switch_name << std::endl;
         return false;
     }
 
@@ -148,7 +148,7 @@ bool failuregenerator::fail_new_switch(Switch *sw) {
 
     if (!check_connectivity()) {
         neededSwitches.insert(switch_id);
-        // std::cout << "Did not fail critical Switch name: " << switch_name << std::endl;
+        std::cout << "Did not fail critical Switch name: " << switch_name << std::endl;
         return false;
     }
     failingSwitches[switch_id] = std::make_pair(failureTime, recoveryTime);
@@ -211,7 +211,7 @@ bool failuregenerator::switchBER(Packet &pkt, Switch *sw, Queue q) {
                 (float)FAILURE_GENERATOR->num_corrupted_packets_switchBER / FAILURE_GENERATOR->all_packets_switchBER;
 
         if (percent > switch_ber_max_percent) {
-            // std::cout << "Did not corrupt packet at SwitchBER, because of max-percent" << std::endl;
+            std::cout << "Did not corrupt packet at SwitchBER, because of max-percent" << std::endl;
             return false;
         }
         std::cout << "Added new corrupted packet at SwitchBER" << std::endl;
@@ -254,8 +254,8 @@ bool failuregenerator::switchDegradation(Switch *sw) {
             int numberOfAllSwitches = all_switches.size();
             float percent = (float)numberOfDegradedSwitches / numberOfAllSwitches;
             if (percent > switch_degradation_max_percent) {
-                // std::cout << "Did not degrade Switch, because of max-percent Switch-name: " << sw->nodename() <<
-                // std::endl;
+                std::cout << "Did not degrade Switch, because of max-percent Switch-name: " << sw->nodename()
+                          << std::endl;
                 return false;
             }
             if (needed_degraded_switches.find(switch_id) != needed_degraded_switches.end()) {
@@ -268,7 +268,7 @@ bool failuregenerator::switchDegradation(Switch *sw) {
 
             if (!check_connectivity()) {
                 needed_degraded_switches.insert(switch_id);
-                // std::cout << "Did not degrade critical Switch name: " << sw->nodename() << std::endl;
+                std::cout << "Did not degrade critical Switch name: " << sw->nodename() << std::endl;
                 return false;
             }
 
@@ -340,7 +340,7 @@ bool failuregenerator::fail_new_cable(Pipe *p) {
     float percent = (float)numberOfFailingCables / numberOfAllCables;
 
     if (percent > cable_fail_max_percent) {
-        // std::cout << "Did not fail Cable, because of max-percent Cable-name: " << p->nodename() << std::endl;
+        std::cout << "Did not fail Cable, because of max-percent Cable-name: " << p->nodename() << std::endl;
         return false;
     }
 
@@ -357,7 +357,7 @@ bool failuregenerator::fail_new_cable(Pipe *p) {
 
     if (!check_connectivity()) {
         neededCables.insert(cable_id);
-        // std::cout << "Did not fail critical Cable name: " << cable_name << std::endl;
+        std::cout << "Did not fail critical Cable name: " << cable_name << std::endl;
         return false;
     }
 
@@ -387,6 +387,7 @@ bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
         PacketSink *sink = route->at(0);
         string name = sink->nodename();
         if (!checkUStoCS(name)) {
+            std::cout << "Did not fail Cable, because of only_us_cs: " << name << std::endl;
             return false;
         }
     }
@@ -440,7 +441,7 @@ bool failuregenerator::cableBER(Packet &pkt) {
                 (float)FAILURE_GENERATOR->num_corrupted_packets_cableBER / FAILURE_GENERATOR->all_packets_cableBER;
 
         if (percent > cable_ber_max_percent) {
-            // std::cout << "Did not corrupt packet at CableBER, because of max-percent" << std::endl;
+            std::cout << "Did not corrupt packet at CableBER, because of max-percent" << std::endl;
             return false;
         }
         num_corrupted_packets_cableBER++;
@@ -488,7 +489,7 @@ bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
         int numberOfAllCables = all_cables.size();
         float percent = (float)numberOfDegradedCables / numberOfAllCables;
         if (percent > cable_degradation_max_percent) {
-            // std::cout << "Did not degrade Cable, because of max-percent Cable-name: " << p->nodename() << std::endl;
+            std::cout << "Did not degrade Cable, because of max-percent Cable-name: " << p->nodename() << std::endl;
             return false;
         }
 
@@ -567,7 +568,7 @@ bool failuregenerator::fail_new_nic(u_int32_t nic_id) {
     int numberOfAllNICs = all_srcs.size() + all_sinks.size();
     float percent = (float)numberOfFailingNICs / numberOfAllNICs;
     if (percent > nic_fail_max_percent) {
-        // std::cout << "Did not fail NIC, because of max-percent NIC-name: " << nic_id << std::endl;
+        std::cout << "Did not fail NIC, because of max-percent NIC-name: " << nic_id << std::endl;
         return false;
     }
 
@@ -638,7 +639,7 @@ bool failuregenerator::nicDegradation(UecSrc *src, UecSink *sink, Packet &pkt) {
             int numberOfAllNICs = all_srcs.size() + all_sinks.size();
             float percent = (float)numberOfDegradedNICs / numberOfAllNICs;
             if (percent > nic_degradation_max_percent) {
-                // std::cout << "Did not degrade NIC, because of max-percent NIC-name: " << nic_id << std::endl;
+                std::cout << "Did not degrade NIC, because of max-percent NIC-name: " << nic_id << std::endl;
                 return false;
             }
             // int port_nrs = q.getSwitch()->portCount();
@@ -1011,5 +1012,19 @@ void failuregenerator::createLoggingData() {
     std::ofstream MyFileRandomPacketDrops(file_name, std::ios_base::app);
     for (const auto p : _list_random_packet_drops) {
         MyFileRandomPacketDrops << p << std::endl;
+    }
+
+    for (const auto &pair : map_list_packet_seq) {
+        UecSink *key = pair.first;
+        const std::vector<uint64_t> &values = pair.second;
+
+        file_name = PROJECT_ROOT_PATH /
+                    ("sim/output/packet_seq/packet_seq" + key->_name + "_" + std::to_string(key->tag) + ".txt");
+        std::ofstream MyFilePacketSeq(file_name, std::ios_base::app);
+
+        for (const auto &p : values) {
+            MyFilePacketSeq << p / PKT_SIZE_MODERN << std::endl;
+        }
+        MyFilePacketSeq.close();
     }
 }
