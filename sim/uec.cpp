@@ -718,10 +718,7 @@ void UecSrc::processNack(UecNack &pkt) {
 
     // mark corresponding packet for retransmission
     auto i = get_sent_packet_idx(pkt.seqno());
-    assert(i < _sent_packets.size());
 
-    assert(!_sent_packets[i].acked); // TODO: would it be possible for a packet
-                                     // to receive a nack after being acked?
     if (!_sent_packets[i].nacked) {
         // ignore duplicate nacks for the same packet
         _sent_packets[i].nacked = true;
@@ -2192,8 +2189,6 @@ bool UecSrc::resend_packet(std::size_t idx) {
             return false;
         }
     }
-
-    assert(!_sent_packets[idx].acked);
 
     // this will cause retransmission not only of the offending
     // packet, but others close to timeout
