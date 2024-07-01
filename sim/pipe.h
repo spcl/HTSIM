@@ -32,6 +32,8 @@ class Pipe : public EventSource, public PacketSink, public Drawable {
     PacketSink *next() const { return _next_sink; }
     simtime_picosec _delay;
     uint32_t getID() { return _id; };
+    static bool _use_timeouts;
+    static void setUseTimeouts(bool use_timeouts) { _use_timeouts = use_timeouts; }
 
   protected:
     string _nodename;

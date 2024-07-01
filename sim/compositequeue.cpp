@@ -22,6 +22,7 @@ int CompositeQueue::_kmin_from_input = 20;
 int CompositeQueue::_kmax_from_input = 80;
 int CompositeQueue::_phantom_queue_slowdown = 10;
 bool CompositeQueue::use_bts = false;
+bool CompositeQueue::_use_timeouts = false;
 
 CompositeQueue::CompositeQueue(linkspeed_bps bitrate, mem_b maxsize, EventList &eventlist, QueueLogger *logger)
         : Queue(bitrate, maxsize, eventlist, logger) {
@@ -328,14 +329,20 @@ void CompositeQueue::receivePacket(Packet &pkt) {
     } */
 
     if (FAILURE_GENERATOR->simSwitchFailures(pkt, _switch, *this) && !pkt.header_only()) {
-        // Temporary Hack
-        if (!pkt.header_only()) {
-            pkt.strip_payload();
-        }
-        pkt.is_failed = true;
+
         FAILURE_GENERATOR->nr_dropped_packets++;
         FAILURE_GENERATOR->_list_switch_packet_drops.push_back(GLOBAL_TIME);
 
+        // Return if using a timeout, otherwise transform it in a trim and mark it as failed
+        if (_use_timeouts) {
+            pkt.free();
+            return;
+        } else {
+            if (!pkt.header_only()) {
+                pkt.strip_payload();
+            }
+            pkt.is_failed = true;
+        }
         // pkt.free(); Later we will re-enable this
         // return;
     } else if (!pkt.header_only()) {

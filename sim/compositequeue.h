@@ -67,10 +67,12 @@ class CompositeQueue : public Queue {
     static void set_phantom_queue_size(int phantom_size) { _phantom_queue_size = phantom_size; }
 
     static void set_phantom_queue_slowdown(int phantom_size_slow) { _phantom_queue_slowdown = phantom_size_slow; }
+    static void setUseTimeouts(bool use_timeouts) { _use_timeouts = use_timeouts; }
 
     /*void set_os_link_ratio(int os_link_ratio) {
         _os_link_ratio = os_link_ratio;
     }*/
+    static bool _use_timeouts;
     static bool _use_mixed;
     static bool _drop_when_full;
     static bool _use_phantom;

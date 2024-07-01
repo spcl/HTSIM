@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 
+bool Pipe::_use_timeouts = false;
 uint32_t Pipe::id = 0;
 
 Pipe::Pipe(simtime_picosec delay, EventList &eventlist) : EventSource(eventlist, "pipe"), _delay(delay) {
@@ -25,13 +26,21 @@ void Pipe::receivePacket(Packet &pkt) {
     FAILURE_GENERATOR->dropRandomPacket(pkt);
 
     if (!pkt.header_only() && FAILURE_GENERATOR->simCableFailures(this, pkt)) {
-        // Temporary Hack
-        if (!pkt.header_only()) {
-            pkt.strip_payload();
-        }
-        pkt.is_failed = true;
+
         FAILURE_GENERATOR->nr_dropped_packets++;
         FAILURE_GENERATOR->_list_cable_packet_drops.push_back(GLOBAL_TIME);
+
+        if (_use_timeouts) {
+            printf("Dropping a PKT\n");
+            pkt.free();
+            return;
+        } else {
+            printf("Not dnroppig a PKT\n");
+            if (!pkt.header_only()) {
+                pkt.strip_payload();
+            }
+            pkt.is_failed = true;
+        }
 
         // pkt.free(); Later we will re-enable this
         // return;

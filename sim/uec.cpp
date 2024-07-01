@@ -14,6 +14,7 @@
 #define timeInf 0
 
 // Static Parameters
+bool UecSrc::_use_timeouts = false;
 int UecSrc::jump_to = 0;
 double UecSrc::kmax_double;
 bool UecSrc::use_bts = false;
@@ -130,11 +131,11 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList
     target_window = _cwnd;
     _target_based_received = true;
 
-    /* printf("Link Delay %d - Link Speed %lu - Pkt Size %d - Base RTT %lu - "
+    printf("Link Delay %d - Link Speed %lu - Pkt Size %d - Base RTT %lu - "
            "Target RTT is %lu - BDP %lu - CWND %u - Hops %d - Stop Pacing "
            "%lu\n",
            LINK_DELAY_MODERN, LINK_SPEED_MODERN, PKT_SIZE_MODERN, _base_rtt, _target_rtt, _bdp, _cwnd, _hop_count,
-           stop_pacing_after_rtt); */
+           stop_pacing_after_rtt);
 
     _max_good_entropies = 10; // TODO: experimental value
     _enableDistanceBasedRtx = false;
@@ -684,7 +685,6 @@ void UecSrc::processNack(UecNack &pkt) {
     }
 
     if (pkt.is_failed) {
-        printf("Failing entropy is %d\n", pkt.pathid_echo);
         if ((_route_strategy == REPS_CIRCULAR) && !circular_buffer_reps->isFrozenMode()) {
             circular_buffer_reps->setFrozenMode(true);
             printf("%s started freezing mode at %lu\n", _name.c_str(), eventlist().now() / 1000);
@@ -819,7 +819,7 @@ int UecSrc::choose_route() {
 
     case REPS: {
         uint64_t allpathssizes = _mss * _paths.size();
-        if (_highest_sent < max(_maxcwnd, (uint64_t)1)) {
+        if (!received_first_ack) {
             _crt_path++;
             if (_crt_path == _paths.size()) {
                 _crt_path = 0;
@@ -860,17 +860,12 @@ int UecSrc::choose_route() {
                 } else {
                     _crt_path = rand() % _paths.size();
                 }
-                if (_nodename == "uecSrc 4")
-                    printf("Studying %s: REPS GET RANDOM UNFROZEN %d\n", _nodename.c_str(), _crt_path);
 
             } else {
                 //_crt_path = circular_buffer_reps->remove_earliest_round();
                 _crt_path = circular_buffer_reps->remove_earliest_fresh();
-                if (_nodename == "uecSrc 4")
-                    printf("Studying %s: REPS GET FRESH UNFROZEN %d\n", _nodename.c_str(), _crt_path);
             }
         }
-        printf("Selected Path %d at %lu\n", _crt_path, eventlist().now() / 1000);
         // circular_buffer_reps->print();
         break;
     }
@@ -1229,7 +1224,6 @@ void UecSrc::receivePacket(Packet &pkt) {
         case UECACK:
             count_received++;
             total_pkt++;
-
             processAck(dynamic_cast<UecAck &>(pkt), false);
 
             pkt.free();
@@ -1244,7 +1238,9 @@ void UecSrc::receivePacket(Packet &pkt) {
             //  fflush(stdout);
             //  total_nack++;
             if (_trimming_enabled) {
-                _next_pathid = -1;
+                if (!pkt.is_failed) {
+                    _next_pathid = -1;
+                }
                 count_received++;
                 processNack(dynamic_cast<UecNack &>(pkt));
                 pkt.free();
@@ -1975,6 +1971,7 @@ void UecSrc::send_packets() {
         p->to = this->to;
         p->tag = this->tag;
         p->my_idx = data_count_idx++;
+        p->is_failed = false;
 
         p->flow().logTraffic(*p, *this, TrafficLogger::PKT_CREATESEND);
         p->set_ts(eventlist().now());
@@ -2191,11 +2188,11 @@ bool UecSrc::resend_packet(std::size_t idx) {
     p->from = this->from;
     p->to = this->to;
     p->tag = this->tag;
+    p->is_failed = false;
 
     // printf("Resending to %d\n", this->from);
 
     p->set_pathid(_path_ids[crt]);
-
     p->flow().logTraffic(*p, *this, TrafficLogger::PKT_CREATE);
     /* printf("Send on at %lu -- %d %d\n", GLOBAL_TIME / 1000, pause_send, stop_after_quick); */
     PacketSink *sink = p->sendOn();

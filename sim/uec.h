@@ -143,6 +143,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     static void set_x_gain(double value) { x_gain = value; }
     static void set_z_gain(double value) { z_gain = value; }
     static void set_w_gain(double value) { w_gain = value; }
+    static void setUseTimeouts(bool use_timeouts) { _use_timeouts = use_timeouts; }
     void resetQACounting();
     static void set_os_ratio_stage_1(double value) { ratio_os_stage_1 = value; }
     static void set_once_per_rtt(int value) { once_per_rtt = value; }
@@ -192,6 +193,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     uint64_t _implicit_pulls;
     uint64_t _bounces_received;
     uint32_t _cwnd;
+    static bool _use_timeouts;
     uint32_t acked_bytes = 0;
     uint32_t good_bytes = 0;
     uint32_t saved_acked_bytes = 0;

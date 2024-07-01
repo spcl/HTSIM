@@ -135,6 +135,7 @@ int main(int argc, char **argv) {
     int ratio_os_stage_1 = 1;
     int pfc_low = 0;
     int pfc_high = 0;
+    bool using_timeout = false;
     int pfc_marking = 0;
     double quickadapt_lossless_rtt = 2.0;
     int reaction_delay = 1;
@@ -415,6 +416,11 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-use_freezing_reps")) {
             CircularBufferREPS<int>::setUseFreezing(true);
+        } else if (!strcmp(argv[i], "-use_timeouts")) {
+            using_timeout = true;
+            CompositeQueue::setUseTimeouts(true);
+            UecSrc::setUseTimeouts(true);
+            Pipe::setUseTimeouts(true);
         } else if (!strcmp(argv[i], "-reps_buffer_size")) {
             CircularBufferREPS<int>::setBufferSize(atoi(argv[i + 1]));
             i++;
@@ -887,6 +893,8 @@ int main(int argc, char **argv) {
         UecSrc *uecSrc;
         UecSink *uecSnk;
 
+        UecRtxTimerScanner uecRtxScanner(timeFromNs((uint32_t)100), eventlist);
+
         for (size_t c = 0; c < all_conns->size(); c++) {
             connection *crt = all_conns->at(c);
             int src = crt->src;
@@ -957,7 +965,9 @@ int main(int argc, char **argv) {
                 uecSnk->set_end_trigger(*trig);
             }
 
-            // uecRtxScanner->registerUec(*uecSrc);
+            if (using_timeout) {
+                uecRtxScanner.registerUec(*uecSrc);
+            }
 
             switch (route_strategy) {
             case ECMP_FIB:

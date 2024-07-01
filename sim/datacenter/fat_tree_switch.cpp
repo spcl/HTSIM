@@ -25,6 +25,7 @@ FatTreeSwitch::FatTreeSwitch(EventList &eventlist, string s, switch_type t, uint
 }
 
 void FatTreeSwitch::receivePacket(Packet &pkt) {
+
     if (pkt.type() == ETH_PAUSE) {
         EthPausePacket *p = (EthPausePacket *)&pkt;
         // I must be in lossless mode!
@@ -52,6 +53,28 @@ void FatTreeSwitch::receivePacket(Packet &pkt) {
         // emulate the switching latency between ingress and packet arriving at the egress queue.
         _pipe->receivePacket(pkt);
     } else {
+
+        pkt.hop_count++;
+        if ((pkt.hop_count == 1 && pkt.size() > 100) &&
+            (pkt.type() == UEC || pkt.type() == NDP || pkt.type() == SWIFTTRIMMING || pkt.type() == UEC_DROP ||
+             pkt.type() == BBR)) {
+
+            simtime_picosec my_time =
+                    (GLOBAL_TIME - (4160 * 8 / LINK_SPEED_MODERN * 1000) - (LINK_DELAY_MODERN * 1000));
+
+            pkt.set_ts(my_time);
+
+            if (COLLECT_DATA) {
+                // Sent
+                std::string file_name = PROJECT_ROOT_PATH / ("sim/output/sent/s" + std::to_string(pkt.from) + ".txt ");
+                std::ofstream MyFile(file_name, std::ios_base::app);
+
+                MyFile << my_time / 1000 << "," << 1 << "," << pkt.id() << std::endl;
+
+                MyFile.close();
+            }
+        }
+
         _packets.erase(&pkt);
 
         // egress queue processing.
