@@ -239,6 +239,7 @@ template <typename T> bool CircularBufferREPS<T>::containsEntropy(uint16_t given
             return true;
         }
     }
+    return false;
 }
 
 // Explicitly instantiate templates for common types (if needed)
