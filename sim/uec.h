@@ -66,6 +66,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
 
     inline void set_flowid(flowid_t flow_id) { _flow.set_flowid(flow_id); }
     inline flowid_t flow_id() const { return _flow.flow_id(); }
+    bool isFlowFinished() { return _flow_finished; }
 
     void setCwnd(uint64_t cwnd) { _cwnd = cwnd; };
     void setReuse(bool reuse) { _use_good_entropies = reuse; };
@@ -563,12 +564,17 @@ class UecRtxTimerScanner : public EventSource {
     UecRtxTimerScanner(simtime_picosec scanPeriod, EventList &eventlist);
     void doNextEvent();
     void registerUec(UecSrc &uecsrc);
+    void markFlowAsFinished();
 
   private:
     simtime_picosec _scanPeriod;
     simtime_picosec _lastScan;
     typedef list<UecSrc *> uecs_t;
     uecs_t _uecs;
+    int num_finished = 0;
+    int num_total = 0;
+    bool has_finished = false;
+    simtime_picosec finished_time;
 };
 
 #endif

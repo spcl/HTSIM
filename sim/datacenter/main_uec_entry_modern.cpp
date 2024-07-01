@@ -893,7 +893,7 @@ int main(int argc, char **argv) {
         UecSrc *uecSrc;
         UecSink *uecSnk;
 
-        UecRtxTimerScanner uecRtxScanner(timeFromNs((uint32_t)100), eventlist);
+        UecRtxTimerScanner uecRtxScanner(timeFromNs((uint32_t)500), eventlist);
 
         for (size_t c = 0; c < all_conns->size(); c++) {
             connection *crt = all_conns->at(c);

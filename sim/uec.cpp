@@ -102,6 +102,7 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList
     _rto = rtt + _hop_count * queueDrainTime + (rtt * 900000);
     _rto = _base_rtt * 3;
     _rto = _rto_value;
+    _rto = _base_rtt * 5;
     _rto_margin = _rtt / 8;
     _rtx_timeout = timeInf;
     _rtx_timeout_pending = false;
@@ -388,8 +389,8 @@ void UecSrc::updateParams() {
 
     _rtt = _base_rtt;
     _rto = _base_rtt * 900000;
-    _rto = _base_rtt * 3;
     _rto = _rto_value;
+    _rto = _base_rtt * 5;
     _rto_margin = _rtt / 8;
     _rtx_timeout = timeInf;
     _rtx_timeout_pending = false;
@@ -2142,7 +2143,25 @@ void UecSrc::apply_timeout_penalty() {
     }
 }
 
-void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) { retransmit_packet(); }
+void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
+
+    if (_highest_sent == 0)
+        return;
+    if (_rtx_timeout == timeInf || now + period < _rtx_timeout)
+        return;
+    if (GLOBAL_TIME < _base_rtt * 2) {
+        return;
+    }
+
+    if (!_rtx_timeout_pending) {
+        _rtx_timeout_pending = true;
+        // apply_timeout_penalty();
+
+        cout << "At " << timeAsUs(now) << "us RTO " << timeAsUs(_rto) << "us RTT " << timeAsUs(_rtt) << "us SEQ "
+             << _last_acked / _mss << " CWND " << _cwnd / _mss << " Flow ID " << str() << endl;
+    }
+    retransmit_packet();
+}
 
 void UecSrc::track_sending_rate() {
     if (eventlist().now() > last_track_ts + tracking_period) {
@@ -2225,7 +2244,6 @@ void UecSrc::retransmit_packet() {
     for (std::size_t i = 0; i < _sent_packets.size(); ++i) {
         auto &sp = _sent_packets[i];
         if (_rtx_timeout_pending && !sp.acked && !sp.nacked && sp.timer <= eventlist().now() + _rto_margin) {
-            _cwnd = _mss;
             sp.timedOut = true;
             reduce_unacked(_mss);
         }
@@ -2562,19 +2580,41 @@ UecRtxTimerScanner::UecRtxTimerScanner(simtime_picosec scanPeriod, EventList &ev
     eventlist.sourceIsPendingRel(*this, 0);
 }
 
-void UecRtxTimerScanner::registerUec(UecSrc &uecsrc) { _uecs.push_back(&uecsrc); }
+void UecRtxTimerScanner::registerUec(UecSrc &uecsrc) {
+    _uecs.push_back(&uecsrc);
+    num_total++;
+}
+
+void UecRtxTimerScanner::markFlowAsFinished() {
+    int finished_tot_flows = 0;
+
+    uecs_t::iterator i;
+    for (i = _uecs.begin(); i != _uecs.end(); i++) {
+        if ((*i)->isFlowFinished()) {
+            finished_tot_flows++;
+        }
+    }
+
+    if (finished_tot_flows == num_total) {
+        // printf("All flows finished2\n");
+        has_finished = true;
+        finished_time = eventlist().now();
+    } else {
+        // printf("Not all flows finished\n");
+        // printf("Finished %d vs %d\n", finished_tot_flows, num_total);
+    }
+}
 
 void UecRtxTimerScanner::doNextEvent() {
     simtime_picosec now = eventlist().now();
+    markFlowAsFinished();
+    if (has_finished && eventlist().now() > finished_time + BASE_RTT_MODERN * 2) {
+        eventlist().cancelPendingSource(*this);
+        return;
+    }
     uecs_t::iterator i;
     for (i = _uecs.begin(); i != _uecs.end(); i++) {
         (*i)->rtx_timer_hook(now, _scanPeriod);
     }
     eventlist().sourceIsPendingRel(*this, _scanPeriod);
 }
-
-/* printf("Decreasing by %d (%f %f) at %lu\n", gent_dec_amount,
-                           (x_gain_up * 1.0) * _mss * ((double)_mss / _cwnd),
-                           (x_gain_up * 2.0) * _mss * ((double)_mss / (_cwnd * ((double)_bdp) / _cwnd)) *
-                                   (((double)_cwnd) / _bdp),
-                           GLOBAL_TIME / 1000); */

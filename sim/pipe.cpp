@@ -31,11 +31,9 @@ void Pipe::receivePacket(Packet &pkt) {
         FAILURE_GENERATOR->_list_cable_packet_drops.push_back(GLOBAL_TIME);
 
         if (_use_timeouts) {
-            printf("Dropping a PKT\n");
             pkt.free();
             return;
         } else {
-            printf("Not dnroppig a PKT\n");
             if (!pkt.header_only()) {
                 pkt.strip_payload();
             }
