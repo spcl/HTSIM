@@ -18,38 +18,10 @@ skip_small_value = True
 ECN = True
 
 
-def run(string_to_run, title):
+def run(title,experiment):
     # Clean Data and Copy Data
-    os.chdir("../../sim/datacenter/")
-    os.system(string_to_run)
-    os.chdir("../../plotting/")
-    os.system("rm -r queue_size_normalized/")
-    os.system("rm -r rtt/")
-    os.system("rm -r cwd/")
-    os.system("rm -r switch_failures/")
-    os.system("rm -r cable_failures/")
-    os.system("rm -r switch_drops/")
-    os.system("rm -r cable_drops/")
-    os.system("rm -r routing_failed_switch/")
-    os.system("rm -r routing_failed_cable/")
-    os.system("rm -r switch_degradations/")
-    os.system("rm -r cable_degradations/")
-    os.system("rm -r random_packet_drops/")
-
-    os.system("cp -a ../sim/output/cwd/. cwd/")
-    os.system("cp -a ../sim/output/rtt/. rtt/")
-    os.system("cp -a ../sim/output/queue/. queue_size_normalized/")
-    os.system("cp -a ../sim/output/switch_drops/. switch_drops/")
-    os.system("cp -a ../sim/output/cable_drops/. cable_drops/")
-    os.system("cp -a ../sim/output/switch_failures/. switch_failures/")
-    os.system("cp -a ../sim/output/cable_failures/. cable_failures/")
-    os.system("cp -a ../sim/output/routing_failed_switch/. routing_failed_switch/")
-    os.system("cp -a ../sim/output/routing_failed_cable/. routing_failed_cable/")
-    os.system("cp -a ../sim/output/switch_degradations/. switch_degradations/")
-    os.system("cp -a ../sim/output/cable_degradations/. cable_degradations/")
-    os.system("cp -a ../sim/output/random_packet_drops/. random_packet_drops/")
-
     # RTT Data
+    os.chdir("experiments/" + experiment+"/")
     colnames = ["Time", "RTT", "seqno", "ackno", "base", "target"]
     df = pd.DataFrame(columns=["Time", "RTT", "seqno", "ackno", "base", "target"])
     name = ["0"] * df.shape[0]
@@ -212,7 +184,6 @@ def run(string_to_run, title):
         )
         dfRandomPacketDrops = pd.concat([dfRandomPacketDrops, temp])
 
-    print("Finished Parsing")
     # Create figure with secondary y-axis
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     color = [
@@ -248,7 +219,6 @@ def run(string_to_run, title):
             secondary_y=False,
         )
 
-    print("Congestion Plot")
     for i in df2["Node"].unique():
         sub_df = df2.loc[df2["Node"] == str(i)]
         fig.add_trace(
@@ -263,7 +233,6 @@ def run(string_to_run, title):
         )
 
     # Queue
-    print("Queue Plot")
     count = 0
     df3["Queue"] = pd.to_numeric(df3["Queue"])
     max_ele = df3[["Queue"]].idxmax(1)
@@ -387,7 +356,6 @@ def run(string_to_run, title):
         line=dict(color="black", dash="dash"),
     )
 
-    print("Done Plotting")
     # Add a text label over the dashed line
     fig.add_annotation(
         x=max_x,  # You can adjust the x-coordinate as needed
@@ -435,45 +403,9 @@ def run(string_to_run, title):
 
     now = datetime.now()  # current date and time
     date_time = now.strftime("%m:%d:%Y_%H:%M:%S")
-    print("Saving Plot")
     # fig.write_image("out/fid_simple_{}.png".format(date_time))
     # plotly.offline.plot(fig, filename='out/fid_simple_{}.html'.format(date_time))
-    print("Showing Plot")
     # save plot as pdf file without legend
+    fig.update_layout(showlegend=False, width=1024, height=512)
+    os.chdir("../..")    
     return fig
-
-
-if __name__ == "__main__":
-
-    os.system("rm -rf plots/")
-    os.system("mkdir plots/")
-
-    strings_to_run = [
-        "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -strat reps -use_freezing_reps  -end_time 10 -bonus_drop 1.5 -nodes 1024 -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo topologies/fat_tree_1024_8os_800.topo -tm connection_matrices/incast_1024_32_4MiB -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/degrade_one_cable.txt > out.tmp",
-        "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -strat reps_circular -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes 1024 -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo topologies/fat_tree_1024_8os_800.topo -tm connection_matrices/incast_1024_32_4MiB -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/degrade_one_cable.txt > out.tmp",
-        "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -strat spraying  -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes 1024 -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo topologies/fat_tree_1024_8os_800.topo -tm connection_matrices/incast_1024_32_4MiB -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/degrade_one_cable.txt > out.tmp",
-    ]
-    algo = [
-        "REPS (With one degraded Cable)",
-        "REPS Circular (With one degraded Cable)",
-        "Spraying (With one degraded Cable)",
-    ]
-    experiment = [
-        "Incast 32:1",
-        "Incast 32:1",
-        "Incast 32:1",
-        "Incast 32:1",
-    ]
-    data = [
-        "800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows",
-        "800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows",
-        "800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows",
-    ]
-
-    for i in range(0, len(strings_to_run)):
-        print("Running: " + algo[i])
-        title = algo[i] + " - " + experiment[i] + " - " + data[i]
-        fig = run(strings_to_run[i], title)
-        fig.update_layout(showlegend=False, width=1024, height=512)
-        os.chdir("evaluation_failures/")
-        fig.write_image("plots/{}.svg".format(title))

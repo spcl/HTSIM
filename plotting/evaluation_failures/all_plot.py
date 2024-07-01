@@ -8,6 +8,29 @@ from matplotlib.ticker import FuncFormatter
 import seaborn as sns
 import pandas as pd
 from matplotlib.ticker import ScalarFormatter, MaxNLocator
+from complete_plot import run as run_complete
+from pathlib import Path
+
+
+def execute_string(string_to_run, experiment, out_name):
+    os.chdir("../../sim/datacenter/")
+    os.system(string_to_run)
+    os.chdir("../../plotting/evaluation_failures/")
+
+    os.system("cp -a ../../sim/output/cwd/. experiments/{}/cwd/".format(experiment))
+    os.system("cp -a ../../sim/output/rtt/. experiments/{}/rtt/".format(experiment))
+    os.system("cp -a ../../sim/output/queue/. experiments/{}/queue_size_normalized/".format(experiment))
+    os.system("cp -a ../../sim/output/switch_drops/. experiments/{}/switch_drops/".format(experiment))
+    os.system("cp -a ../../sim/output/cable_drops/. experiments/{}/cable_drops/".format(experiment))
+    os.system("cp -a ../../sim/output/switch_failures/. experiments/{}/switch_failures/".format(experiment))
+    os.system("cp -a ../../sim/output/cable_failures/. experiments/{}/cable_failures/".format(experiment))
+    os.system("cp -a ../../sim/output/routing_failed_switch/. experiments/{}/routing_failed_switch/".format(experiment))
+    os.system("cp -a ../../sim/output/routing_failed_cable/. experiments/{}/routing_failed_cable/".format(experiment))
+    os.system("cp -a ../../sim/output/switch_degradations/. experiments/{}/switch_degradations/".format(experiment))
+    os.system("cp -a ../../sim/output/cable_degradations/. experiments/{}/cable_degradations/".format(experiment))
+    os.system("cp -a ../../sim/output/random_packet_drops/. experiments/{}/random_packet_drops/".format(experiment))
+    os.system("cp -a ../../sim/output/packet_seq/. experiments/{}/packet_seq/".format(experiment))
+    os.system("cp -a ../../sim/datacenter/{} experiments/{}/{}.txt".format(out_name, experiment,out_name))
 
 
 def getListFCT(name_file_to_use):
@@ -53,53 +76,137 @@ def getNrDroppedPackets(name_file_to_use):
     raise Exception("Number of dropped Packets not found")
 
 
-def run(short_title, title, failures_input, msg_size):
+def getTotalOutofOrderPackets(sequence):
+    res = 0
+    cur_max = 0
+    for index, row in sequence.iterrows():
+        val = row['Index']
+        if val < cur_max:
+            res += 1
+        if val > cur_max:
+            cur_max = val
+    return res
+
+def getMaxTotalOutOfOrderPackets(experiment):
+    os.chdir("experiments/" + experiment+"/")
+    pathlist = Path("packet_seq").glob("**/*.txt")
+    max = 0
+    for files in sorted(pathlist):
+        path_in_str = str(files)
+        df = pd.read_csv(path_in_str, names=["Index"], header=None, index_col=False, sep=",")
+        cur = getTotalOutofOrderPackets(df)
+        if cur > max:
+            max = cur
+    os.chdir("../..")
+    return max
+
+def getOutofOrderRatio(experiment):
+    os.chdir("experiments/" + experiment+"/")
+    pathlist = Path("packet_seq").glob("**/*.txt")
+    max = 0
+    for files in sorted(pathlist):
+        path_in_str = str(files)
+        df = pd.read_csv(path_in_str, names=["Index"], header=None, index_col=False, sep=",")
+        cur = getTotalOutofOrderPackets(df)
+        res = cur/len(df)
+        if res > max:
+            max = res
+    os.chdir("../..")
+    return max
+
+def getDistance(sequence):
+    cur_max = 0
+    max_distance = 0
+    for index, row in sequence.iterrows():
+        val = row['Index']
+        if val < cur_max:
+            distance = abs(index - val)
+            if distance > max_distance:
+                max_distance = distance
+        if val > cur_max:
+            cur_max = val
+    return max_distance
+
+
+def getOutOfOrderDistance(experiment):
+    os.chdir("experiments/" + experiment+"/")
+    pathlist = Path("packet_seq").glob("**/*.txt")
+    max = 0
+    for files in sorted(pathlist):
+        path_in_str = str(files)
+        df = pd.read_csv(path_in_str, names=["Index"], header=None, index_col=False, sep=",")
+        cur = getDistance(df)
+        if cur > max:
+            max = cur
+    os.chdir("../..")
+    return max
+
+
+def run(
+    short_title, title, failures_input, msg_size, nodes, topology, connection_matrix
+):
 
     print("Running {}".format(title))
 
-    os.system("mkdir -p experiments")
-    os.system("rm -rf experiments/{}".format(short_title))
     os.system("mkdir experiments/{}".format(short_title))
 
-    out_name = "experiments/{}/out-reps.txt".format(short_title)
-    string_to_run = "../../sim/datacenter/htsim_uec_entry_modern -o uec_entry -algorithm smartt -strat reps -use_freezing_reps  -end_time 10 -bonus_drop 1.5 -nodes 1024 -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo ../../sim/datacenter/topologies/fat_tree_1024_8os_800.topo -tm ../../sim/datacenter/connection_matrices/incast_1024_32_4MiB -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../../sim/datacenter/../failures_input/{}.txt > {}".format(
-        failures_input, out_name
-    )
-    os.system(string_to_run)
-    list_reps = getListFCT(out_name)
-    num_nack_reps = getNumTrimmed(out_name)
-    num_lost_packets_reps = getNrDroppedPackets(out_name)
+    balancer = "reps"
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}".format(
+            balancer, nodes, topology, connection_matrix, failures_input, balancer
+        )
+    execute_string(string_to_run, short_title, balancer)
+    filename = "experiments/{}/{}.txt".format(short_title,balancer)
+    list_reps = getListFCT(filename)
+    num_nack_reps = getNumTrimmed(filename)
+    num_lost_packets_reps = getNrDroppedPackets(filename)
+    max_total_out_of_order_reps = getMaxTotalOutOfOrderPackets(short_title)
+    max_out_of_order_ratio_reps = getOutofOrderRatio(short_title)
+    max_out_of_order_distance_reps = getOutOfOrderDistance(short_title)
+    complete_plot = run_complete(title,short_title)
+    complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
     print(
         "REPS: Flow Diff {} - Total {}".format(
             max(list_reps) - min(list_reps), max(list_reps)
         )
     )
 
-    out_name = "experiments/{}/out-repsC.txt".format(short_title)
-    string_to_run = "../../sim/datacenter/htsim_uec_entry_modern -o uec_entry -algorithm smartt -strat reps_circular -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes 1024 -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo ../../sim/datacenter/topologies/fat_tree_1024_8os_800.topo -tm ../../sim/datacenter/connection_matrices/incast_1024_32_4MiB -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../../sim/datacenter/../failures_input/{}.txt > {}".format(
-        failures_input, out_name
-    )
-    os.system(string_to_run)
-    list_repsC = getListFCT(out_name)
-    num_nack_repsC = getNumTrimmed(out_name)
-    num_lost_packets_repsC = getNrDroppedPackets(out_name)
+    balancer = "reps_circular"
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}".format(
+            balancer, nodes, topology, connection_matrix, failures_input, balancer
+        )
+    execute_string(string_to_run, short_title, balancer)
+    filename = "experiments/{}/{}.txt".format(short_title,balancer)
+    list_repsC = getListFCT(filename)
+    num_nack_repsC = getNumTrimmed(filename)
+    num_lost_packets_repsC = getNrDroppedPackets(filename)
+    max_total_out_of_order_repsC = getMaxTotalOutOfOrderPackets(short_title)
+    max_out_of_order_ratio_repsC = getOutofOrderRatio(short_title)
+    max_out_of_order_distance_repsC = getOutOfOrderDistance(short_title)
+    complete_plot = run_complete(title,short_title)
+    complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
     print(
-        "REPS Circular: Flow Diff {} - Total {}".format(
-            max(list_repsC) - min(list_repsC), max(list_repsC)
+        "REPS circular: Flow Diff {} - Total {}".format(
+            max(list_reps) - min(list_reps), max(list_reps)
         )
     )
 
-    out_name = "experiments/{}/out-Spraying.txt".format(short_title)
-    string_to_run = "../../sim/datacenter/htsim_uec_entry_modern -o uec_entry -algorithm smartt -strat spraying -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes 1024 -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo ../../sim/datacenter/topologies/fat_tree_1024_8os_800.topo -tm ../../sim/datacenter/connection_matrices/incast_1024_32_4MiB -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../../sim/datacenter/../failures_input/{}.txt > {}".format(
-        failures_input, out_name
-    )
-    os.system(string_to_run)
-    list_spraying = getListFCT(out_name)
-    num_nack_spraying = getNumTrimmed(out_name)
-    num_lost_packets_spraying = getNrDroppedPackets(out_name)
+    balancer = "spraying"
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}".format(
+            balancer, nodes, topology, connection_matrix, failures_input, balancer
+        )
+    execute_string(string_to_run, short_title, balancer)
+    filename = "experiments/{}/{}.txt".format(short_title,balancer)
+    list_spraying = getListFCT(filename)
+    num_nack_spraying = getNumTrimmed(filename)
+    num_lost_packets_spraying = getNrDroppedPackets(filename)
+    max_total_out_of_order_spraying = getMaxTotalOutOfOrderPackets(short_title)
+    max_out_of_order_ratio_spraying = getOutofOrderRatio(short_title)
+    max_out_of_order_distance_spraying = getOutOfOrderDistance(short_title)
+    complete_plot = run_complete(title,short_title)
+    complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
     print(
         "Spraying: Flow Diff {} - Total {}".format(
-            max(list_spraying) - min(list_spraying), max(list_spraying)
+            max(list_reps) - min(list_reps), max(list_reps)
         )
     )
 
@@ -111,6 +218,9 @@ def run(short_title, title, failures_input, msg_size):
     list_fct = [list_reps, list_repsC, list_spraying]
     list_max = [max(list_reps), max(list_repsC), max(list_spraying)]
     list_nacks = [num_nack_reps, num_nack_repsC, num_nack_spraying]
+    list_total_out_of_order = [max_total_out_of_order_reps, max_total_out_of_order_repsC, max_total_out_of_order_spraying]
+    list_out_of_order_ratio = [max_out_of_order_ratio_reps, max_out_of_order_ratio_repsC, max_out_of_order_ratio_spraying]
+    list_out_of_order_distance = [max_out_of_order_distance_reps, max_out_of_order_distance_repsC, max_out_of_order_distance_spraying]
     list_labels = ["REPS", "REPS Circular", "Spraying"]
 
     # Combine all data into a list of lists
@@ -269,9 +379,96 @@ def run(short_title, title, failures_input, msg_size):
     plt.savefig(
         "experiments/{}/lost_packets.svg".format(short_title), bbox_inches="tight"
     )
+    plt.close()
+
+
+    # PLOT 6 (Max total out of order Packets)
+    plt.figure(figsize=(7, 5))
+    numbers = list_total_out_of_order
+    labels = list_labels
+
+    # Make bar chart
+    data4 = pd.DataFrame({"Max Total Out of order packets:": numbers, "Algorithm": labels})
+    ax5 = sns.barplot(x="Algorithm", y="Max Total Out of order packets:", data=data4)
+    ax5.tick_params(labelsize=9.5)
+    # Format y-axis tick labels without scientific notation
+    ax5.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+
+    for p in ax5.patches:
+        ax5.annotate(
+            format(int(p.get_height()), ""),
+            (p.get_x() + p.get_width() / 2.0, p.get_height()),
+            ha="center",
+            va="center",
+            xytext=(0, 7),
+            textcoords="offset points",
+        )
+
+    plt.title(title, fontsize=17)
+    plt.grid()
+    plt.savefig("experiments/{}/total_out_of_order.svg".format(short_title), bbox_inches="tight")
+    plt.close()
+
+
+    # PLOT 7 (Out of order ratio)
+    plt.figure(figsize=(7, 5))
+    numbers = list_out_of_order_ratio
+    labels = list_labels
+
+    # Make bar chart
+    data4 = pd.DataFrame({"Max out of order ratio:": numbers, "Algorithm": labels})
+    ax5 = sns.barplot(x="Algorithm", y="Max out of order ratio:", data=data4)
+    ax5.tick_params(labelsize=9.5)
+    # Format y-axis tick labels without scientific notation
+    ax5.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+
+    for p in ax5.patches:
+        ax5.annotate(
+            format(round(p.get_height(),2), ""),
+            (p.get_x() + p.get_width() / 2.0, p.get_height()),
+            ha="center",
+            va="center",
+            xytext=(0, 7),
+            textcoords="offset points",
+        )
+
+    plt.title(title, fontsize=17)
+    plt.grid()
+    plt.savefig("experiments/{}/out_of_order_ratio.svg".format(short_title), bbox_inches="tight")
+    plt.close()
+
+    # PLOT 7 (Out of order Distance)
+    plt.figure(figsize=(7, 5))
+    numbers = list_out_of_order_distance
+    labels = list_labels
+
+    # Make bar chart
+    data4 = pd.DataFrame({"Max out of order Distance:": numbers, "Algorithm": labels})
+    ax5 = sns.barplot(x="Algorithm", y="Max out of order Distance:", data=data4)
+    ax5.tick_params(labelsize=9.5)
+    # Format y-axis tick labels without scientific notation
+    ax5.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+
+    for p in ax5.patches:
+        ax5.annotate(
+            format(int(p.get_height()), ""),
+            (p.get_x() + p.get_width() / 2.0, p.get_height()),
+            ha="center",
+            va="center",
+            xytext=(0, 7),
+            textcoords="offset points",
+        )
+
+    plt.title(title, fontsize=17)
+    plt.grid()
+    plt.savefig("experiments/{}/out_of_order_distance.svg".format(short_title), bbox_inches="tight")
+    plt.close()
 
 
 def main():
+
+    os.system("rm -rf experiments/")
+    os.system("mkdir -p experiments")
 
     titles = [
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: One failed switch",
@@ -301,9 +498,59 @@ def main():
         "30_percent_degraded_switches",
         "30_percent_degraded_cables",
     ]
+    nodes = [
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+    ]
+    topology = [
+        "fat_tree_1024_8os_800.topo",
+        "fat_tree_1024_8os_800.topo",
+        "fat_tree_1024_8os_800.topo",
+        "fat_tree_1024_8os_800.topo",
+        "fat_tree_1024_8os_800.topo",
+        "fat_tree_1024_8os_800.topo",
+        "fat_tree_1024_8os_800.topo",
+        "fat_tree_1024_8os_800.topo",
+        "fat_tree_1024_8os_800.topo",
+        "fat_tree_1024_8os_800.topo",
+        "fat_tree_1024_8os_800.topo",
+        "fat_tree_1024_8os_800.topo",
+    ]
+    connection_matrix = [
+        "incast_1024_32_4MiB",
+        "incast_1024_32_4MiB",
+        "incast_1024_32_4MiB",
+        "incast_1024_32_4MiB",
+        "incast_1024_32_4MiB",
+        "incast_1024_32_4MiB",
+        "incast_1024_32_4MiB",
+        "incast_1024_32_4MiB",
+        "incast_1024_32_4MiB",
+        "incast_1024_32_4MiB",
+        "incast_1024_32_4MiB",
+        "incast_1024_32_4MiB",
+    ]
 
     for i, title in enumerate(titles):
-        run(failures_input[i], title, failures_input[i], 2**22)
+        run(
+            failures_input[i],
+            title,
+            failures_input[i],
+            2**22,
+            nodes[i],
+            topology[i],
+            connection_matrix[i],
+        )
 
 
 if __name__ == "__main__":
