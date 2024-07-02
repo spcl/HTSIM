@@ -2275,7 +2275,7 @@ void UecSink::send_nack(simtime_picosec ts, bool marked, UecAck::seq_t seqno, Ue
     nack->tag = this->tag;
 
     // printf("Sending NACK at %lu\n", GLOBAL_TIME);
-    nack->set_pathid(_path_ids[_crt_path]);
+    nack->set_pathid(_path_ids[path_id]);
     _crt_path++;
     if (_crt_path == _paths.size()) {
         _crt_path = 0;
@@ -2477,6 +2477,7 @@ void UecSink::send_ack(simtime_picosec ts, bool marked, UecAck::seq_t seqno, Uec
         break;
     }
     assert(ack);
+    ack->set_pathid(_path_ids[path_id]);
     ack->pathid_echo = path_id;
     ack->pfc_just_happened = false;
     if (pfc_just_seen == 1) {
