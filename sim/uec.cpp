@@ -2243,6 +2243,10 @@ void UecSrc::retransmit_packet() {
         if (_rtx_timeout_pending && !sp.acked && !sp.nacked && sp.timer <= eventlist().now() + _rto_margin) {
             sp.timedOut = true;
             reduce_unacked(_mss);
+            if ((_route_strategy == REPS_CIRCULAR) && !circular_buffer_reps->isFrozenMode()) {
+                circular_buffer_reps->setFrozenMode(true);
+                printf("%s started freezing mode at %lu\n", _name.c_str(), eventlist().now() / 1000);
+            }
         }
         if (!sp.acked && (sp.timedOut || sp.nacked)) {
             if (!resend_packet(i)) {

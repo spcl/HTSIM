@@ -182,7 +182,7 @@ bool failuregenerator::switchFail(Switch *sw) {
             failingSwitches.erase(switch_id);
             return false;
         } else {
-            std::cout << "Packet dropped at SwitchFail" << std::endl;
+            std::cout << "Packet dropped at SwitchFail " << switch_name << std::endl;
             return true;
         }
     } else {
