@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <random>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 
@@ -126,6 +127,9 @@ bool failuregenerator::simSwitchFailures(Packet &pkt, Switch *sw, Queue q) {
 }
 
 bool failuregenerator::fail_new_switch(Switch *sw) {
+    if (pause_fail_switch) {
+        return false;
+    }
 
     uint32_t switch_id = sw->getUniqueID();
     std::string switch_name = sw->nodename();
@@ -135,6 +139,7 @@ bool failuregenerator::fail_new_switch(Switch *sw) {
     float percent = (float)numberOfFailingSwitches / (float)numberOfAllSwitches;
     if (percent > switch_fail_max_percent) {
         std::cout << "Did not fail Switch, because of max-percent Switch-name: " << switch_name << std::endl;
+        pause_fail_switch = true;
         return false;
     }
 
@@ -179,6 +184,7 @@ bool failuregenerator::switchFail(Switch *sw) {
         if (GLOBAL_TIME > recoveryTime) {
             std::cout << "Recovered from Fail" << std::endl;
             neededSwitches.clear();
+            pause_fail_switch = false;
             failingSwitches.erase(switch_id);
             return false;
         } else {
@@ -329,6 +335,9 @@ bool failuregenerator::simCableFailures(Pipe *p, Packet &pkt) {
 }
 
 bool failuregenerator::fail_new_cable(Pipe *p) {
+    if (pause_fail_cable) {
+        return false;
+    }
 
     uint32_t cable_id = p->getID();
     std::string cable_name = p->nodename();
@@ -344,6 +353,7 @@ bool failuregenerator::fail_new_cable(Pipe *p) {
 
     if (percent > cable_fail_max_percent) {
         std::cout << "Did not fail Cable, because of max-percent Cable-name: " << p->nodename() << std::endl;
+        pause_fail_cable = true;
         return false;
     }
 
@@ -403,6 +413,7 @@ bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
         if (GLOBAL_TIME > recoveryTime) {
             std::cout << "Recovered from Fail" << std::endl;
             neededCables.clear();
+            pause_fail_cable = false;
             failingCables.erase(cable_id);
             return false;
         } else {
