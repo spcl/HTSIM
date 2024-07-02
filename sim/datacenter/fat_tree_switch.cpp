@@ -448,7 +448,7 @@ Route *FatTreeSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 FAILURE_GENERATOR->_list_routed_failing_switches.push_back(GLOBAL_TIME);
                 // std::cout << "Routed packet to failing switch: " << switch_name << " at time " << GLOBAL_TIME
                 //           << std::endl;
-                print_route(*decided_route);
+                // print_route(*decided_route);
             }
         }
 

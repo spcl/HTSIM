@@ -1,8 +1,8 @@
 Switch-Fail: ON
 Switch-Fail-Start-After: 100000
 Switch-Fail-Period: 100000
-Switch-Fail-Max-Percent: 0.3
+Switch-Fail-Max-Percent: 0.2
 Cable-Fail: ON
 Cable-Fail-Start-After: 100000
 Cable-Fail-Period: 100000
-Cable-Fail-Max-Percent: 0.3
+Cable-Fail-Max-Percent: 0.2

@@ -30,7 +30,7 @@ def execute_string(string_to_run, experiment, out_name):
     os.system("cp -a ../../sim/output/cable_degradations/. experiments/{}/cable_degradations/".format(experiment))
     os.system("cp -a ../../sim/output/random_packet_drops/. experiments/{}/random_packet_drops/".format(experiment))
     os.system("cp -a ../../sim/output/packet_seq/. experiments/{}/packet_seq/".format(experiment))
-    os.system("cp -a ../../sim/datacenter/{} experiments/{}/{}.txt".format(out_name, experiment,out_name))
+    os.system("cp -a ../../sim/datacenter/{}.txt experiments/{}/{}.txt".format(out_name, experiment,out_name))
 
 
 def getListFCT(name_file_to_use):
@@ -151,7 +151,7 @@ def run(
     os.system("mkdir experiments/{}".format(short_title))
 
     balancer = "reps"
-    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}".format(
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}.txt".format(
             balancer, nodes, topology, connection_matrix, failures_input, balancer
         )
     print(string_to_run)
@@ -172,9 +172,10 @@ def run(
     )
 
     balancer = "reps_circular"
-    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}".format(
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}.txt".format(
             balancer, nodes, topology, connection_matrix, failures_input, balancer
         )
+    print(string_to_run)
     execute_string(string_to_run, short_title, balancer)
     filename = "experiments/{}/{}.txt".format(short_title,balancer)
     list_repsC = getListFCT(filename)
@@ -192,9 +193,10 @@ def run(
     )
 
     balancer = "spraying"
-    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}".format(
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}.txt".format(
             balancer, nodes, topology, connection_matrix, failures_input, balancer
         )
+    print(string_to_run)
     execute_string(string_to_run, short_title, balancer)
     filename = "experiments/{}/{}.txt".format(short_title,balancer)
     list_spraying = getListFCT(filename)
@@ -475,32 +477,29 @@ def main():
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: One failed switch",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: One failed cable",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: One failed switch and cable",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: 30% failed switches",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: 30% failed cables",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: 30% failed switches and cables",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: Only one healthy path",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: 20% failed switches",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: 20% failed cables",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: 20% failed switches and cables",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: Packet drop rate of 10^-4",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: One switch degraded",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: One cable degraded",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: 30% degraded switches",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: 30% degraded cables",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: 20% degraded switches",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: 20% degraded cables",
     ]
     failures_input = [
         "fail_one_switch",
         "fail_one_cable",
         "fail_one_switch_one_cable",
-        "30_percent_failed_switches",
-        "30_percent_failed_cables",
-        "30_percent_failed_switches_and_cables",
-        "fail_all_switches_and_cables_except_one_path",
+        "20_percent_failed_switches",
+        "20_percent_failed_cables",
+        "20_percent_failed_switches_and_cables",
         "packet_drop_rate_10^-4",
         "degrade_one_switch",
         "degrade_one_cable",
-        "30_percent_degraded_switches",
-        "30_percent_degraded_cables",
+        "20_percent_degraded_switches",
+        "20_percent_degraded_cables",
     ]
     nodes = [
-        1024,
         1024,
         1024,
         1024,
@@ -525,10 +524,8 @@ def main():
         "fat_tree_1024_8os_800.topo",
         "fat_tree_1024_8os_800.topo",
         "fat_tree_1024_8os_800.topo",
-        "fat_tree_1024_8os_800.topo",
     ]
     connection_matrix = [
-        "incast_1024_32_4MiB",
         "incast_1024_32_4MiB",
         "incast_1024_32_4MiB",
         "incast_1024_32_4MiB",

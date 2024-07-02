@@ -1,4 +1,4 @@
 Cable-Degradation: ON
 Cable-Degradation-Start-After: 100000
 Cable-Degradation-Period: 100000
-Cable-Degradation-Max-Percent: 0.3
+Cable-Degradation-Max-Percent: 0.2
