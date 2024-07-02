@@ -330,7 +330,7 @@ void CompositeQueue::receivePacket(Packet &pkt) {
 
     if (FAILURE_GENERATOR->simSwitchFailures(pkt, _switch, *this)) {
 
-        printf("Dropping a PKT - Size %d Entropy %d %d\n", pkt.size(), pkt.pathid(), pkt.pathid_echo);
+        // printf("Dropping a PKT - Size %d Entropy %d %d\n", pkt.size(), pkt.pathid(), pkt.pathid_echo);
 
         FAILURE_GENERATOR->nr_dropped_packets++;
         FAILURE_GENERATOR->_list_switch_packet_drops.push_back(GLOBAL_TIME);
