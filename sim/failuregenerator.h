@@ -106,6 +106,10 @@ class failuregenerator {
     bool cable_fail = false;
     bool only_us_cs = false;
     bool pause_fail_cable = false;
+    bool cable_fail_per_switch = false;
+    // Map from switch to cables going away fromt this switch
+    unordered_map<uint32_t, std::set<uint32_t>> CablesPerSwitch;
+    void addCablePerSwitch(uint32_t switch_id, uint32_t cable_id);
     std::set<uint32_t> neededCables;
     simtime_picosec cable_fail_start = 0;
     simtime_picosec cable_fail_period = 0;

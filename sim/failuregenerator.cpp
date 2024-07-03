@@ -5,10 +5,12 @@
 #include "pipe.h"
 #include "switch.h"
 #include "uec.h"
+#include <algorithm>
 #include <ctime>
 #include <fstream>
 #include <iostream>
 #include <random>
+#include <set>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -348,13 +350,35 @@ bool failuregenerator::fail_new_cable(Pipe *p) {
 
     int numberOfFailingCables = failingCables.size();
     int numberOfAllCables = all_cables.size();
+    std::set<uint32_t> failingCablesIDs;
+    for (const auto &pair : failingCables) {
+        failingCablesIDs.insert(pair.first);
+    }
 
-    float percent = (float)numberOfFailingCables / numberOfAllCables;
+    if (cable_fail_per_switch) {
+        for (const auto &pair : CablesPerSwitch) {
+            const std::set<uint32_t> &cables = pair.second;
+            if (cables.find(cable_id) == cables.end()) {
+                continue;
+            }
+            std::set<uint32_t> intersection;
+            std::set_intersection(cables.begin(), cables.end(), failingCablesIDs.begin(), failingCablesIDs.end(),
+                                  std::inserter(intersection, intersection.begin()));
+            int numberOfCablesSwitch = cables.size();
+            int numberOfFailingCablesSwitch = intersection.size();
+            float percent = (float)numberOfFailingCablesSwitch / numberOfCablesSwitch;
+            if (percent > cable_fail_max_percent) {
+                return false;
+            }
+        }
 
-    if (percent > cable_fail_max_percent) {
-        std::cout << "Did not fail Cable, because of max-percent Cable-name: " << p->nodename() << std::endl;
-        pause_fail_cable = true;
-        return false;
+    } else {
+        float percent = (float)numberOfFailingCables / numberOfAllCables;
+        if (percent > cable_fail_max_percent) {
+            std::cout << "Did not fail Cable, because of max-percent Cable-name: " << p->nodename() << std::endl;
+            pause_fail_cable = true;
+            return false;
+        }
     }
 
     if (neededCables.find(cable_id) != neededCables.end()) {
@@ -400,7 +424,7 @@ bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
         PacketSink *sink = route->at(0);
         string name = sink->nodename();
         if (!checkUStoCS(name)) {
-            std::cout << "Did not fail Cable, because of only_us_cs: " << name << std::endl;
+            // std::cout << "Did not fail Cable, because of only_us_cs: " << name << std::endl;
             return false;
         }
     }
@@ -706,6 +730,16 @@ bool failuregenerator::nicWorstCase(UecSrc *src, UecSink *sink, Packet &pkt) {
     }
 }
 
+void failuregenerator::addCablePerSwitch(uint32_t switch_id, uint32_t cable_id) {
+    if (CablesPerSwitch.find(switch_id) == CablesPerSwitch.end()) {
+        std::set<uint32_t> cables;
+        cables.insert(cable_id);
+        CablesPerSwitch[switch_id] = cables;
+    } else {
+        CablesPerSwitch[switch_id].insert(cable_id);
+    }
+}
+
 std::pair<std::pair<std::set<uint32_t>, std::set<uint32_t>>, std::string>
 failuregenerator::get_path_switches_cables(uint32_t path_id, UecSrc *src) {
 
@@ -729,6 +763,11 @@ failuregenerator::get_path_switches_cables(uint32_t path_id, UecSrc *src) {
         Queue *next_queue = dynamic_cast<Queue *>(packet->getNextHopOfPacket());
         Pipe *next_pipe = dynamic_cast<Pipe *>(packet->getNextHopOfPacket());
         Switch *next_switch = dynamic_cast<Switch *>(packet->getNextHopOfPacket());
+
+        if (next_queue->getSwitch() != nullptr) {
+            addCablePerSwitch(next_queue->getSwitch()->getUniqueID(), next_pipe->getID());
+        }
+
         if (next_switch == nullptr) {
             if (next_queue) {
                 path += " -> " + next_queue->nodename();
@@ -936,6 +975,8 @@ void failuregenerator::parseinputfile() {
                 dropRate = std::stof(value);
             } else if (key == "Only-US-CS-Cable:") {
                 only_us_cs = (value == "ON");
+            } else if (key == "Cable-Fail-Percent-Per-Switch:") {
+                cable_fail_per_switch = (value == "ON");
             } else {
                 std::cout << "Unknown key in failuregenerator input file: " << key << std::endl;
             }

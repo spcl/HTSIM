@@ -188,6 +188,8 @@ An example of the file is below.
 - ```Cable-Fail-Start-After```: Defines after how many picoseconds the first cable fails.
 - ```Cable-Fail-Period```: Defines after how many picoseconds since the last cable failed the next cable fails.
 - ```Cable-Fail-Max-Percent```: Between 0 and 1, defines the maximum percentage of failing cables.
+- ```Cable-Fail-Percent-Per-Switch:```: If turned on the specified percentage applies per switch and not overall.
+- ```Only-US-CS-Cable::```: If turned on only US-CS cable will fail.
 <br/><br/>
 - ```Cable-Worst-Case```: Simulates complete failure of a cable. If turned on, affected cables are failing with 80% probability uniformly between 0 and 5 minutes long, and with 20% probability geometrically (with parameter 0.1) between 5 and 60 minutes long.
 - ```Cable-Worst-Case-Start-After```: Defines after how many picoseconds the first cable fails.
@@ -230,7 +232,7 @@ Random-Packet-Drop: OFF
 Random-Packet-Drop-Rate: 4
 Switch-Fail: ON
 Switch-Fail-Start-After: 100000000
-Switch-Fail-Period: 10000
+Switch-Fail-Period: 1000000000000000000
 Switch-Fail-Max-Percent: 0.1
 Switch-BER: OFF
 Switch-BER-Start-After: 100000000
@@ -247,6 +249,8 @@ Cable-Fail: ON
 Cable-Fail-Start-After: 100000000
 Cable-Fail-Period: 10000
 Cable-Fail-Max-Percent: 0.1
+Only-US-CS-Cable: OFF
+Cable-Fail-Percent-Per-Switch: OFF
 Cable-BER: OFF
 Cable-BER-Start-After: 100000000
 Cable-BER-Period: 10000

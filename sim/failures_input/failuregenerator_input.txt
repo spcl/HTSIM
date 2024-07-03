@@ -19,6 +19,8 @@ Cable-Fail: OFF
 Cable-Fail-Start-After: 1000
 Cable-Fail-Period: 1000000000000000000
 Cable-Fail-Max-Percent: 0.1
+Only-US-CS-Cable: OFF
+Cable-Fail-Percent-Per-Switch: OFF
 Cable-BER: OFF
 Cable-BER-Start-After: 100000000
 Cable-BER-Period: 10000
