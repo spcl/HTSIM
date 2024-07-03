@@ -90,29 +90,27 @@ def getTotalOutofOrderPackets(sequence):
 def getMaxTotalOutOfOrderPackets(experiment):
     os.chdir("experiments/" + experiment+"/")
     pathlist = Path("packet_seq").glob("**/*.txt")
-    max = 0
+    list = []
     for files in sorted(pathlist):
         path_in_str = str(files)
         df = pd.read_csv(path_in_str, names=["Index"], header=None, index_col=False, sep=",")
         cur = getTotalOutofOrderPackets(df)
-        if cur > max:
-            max = cur
+        list.append(cur)
     os.chdir("../..")
-    return max
+    return list
 
 def getOutofOrderRatio(experiment):
     os.chdir("experiments/" + experiment+"/")
     pathlist = Path("packet_seq").glob("**/*.txt")
-    max = 0
+    list = []
     for files in sorted(pathlist):
         path_in_str = str(files)
         df = pd.read_csv(path_in_str, names=["Index"], header=None, index_col=False, sep=",")
         cur = getTotalOutofOrderPackets(df)
         res = cur/len(df)
-        if res > max:
-            max = res
+        list.append(res)
     os.chdir("../..")
-    return max
+    return list
 
 def getDistance(sequence):
     cur_max = 0
@@ -131,15 +129,14 @@ def getDistance(sequence):
 def getOutOfOrderDistance(experiment):
     os.chdir("experiments/" + experiment+"/")
     pathlist = Path("packet_seq").glob("**/*.txt")
-    max = 0
+    list = []
     for files in sorted(pathlist):
         path_in_str = str(files)
         df = pd.read_csv(path_in_str, names=["Index"], header=None, index_col=False, sep=",")
         cur = getDistance(df)
-        if cur > max:
-            max = cur
+        list.append(cur)
     os.chdir("../..")
-    return max
+    return list
 
 
 def run(
@@ -151,7 +148,7 @@ def run(
     os.system("mkdir experiments/{}".format(short_title))
 
     balancer = "reps"
-    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 700 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}.txt".format(
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}.txt".format(
             balancer, nodes, topology, connection_matrix, failures_input, balancer
         )
     print(string_to_run)
@@ -160,9 +157,9 @@ def run(
     list_reps = getListFCT(filename)
     num_nack_reps = getNumTrimmed(filename)
     num_lost_packets_reps = getNrDroppedPackets(filename)
-    max_total_out_of_order_reps = getMaxTotalOutOfOrderPackets(short_title)
-    max_out_of_order_ratio_reps = getOutofOrderRatio(short_title)
-    max_out_of_order_distance_reps = getOutOfOrderDistance(short_title)
+    list_total_out_of_order_reps = getMaxTotalOutOfOrderPackets(short_title)
+    list_out_of_order_ratio_reps = getOutofOrderRatio(short_title)
+    list_out_of_order_distance_reps = getOutOfOrderDistance(short_title)
     complete_plot = run_complete(title,short_title)
     complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
     print(
@@ -181,14 +178,35 @@ def run(
     list_repsC = getListFCT(filename)
     num_nack_repsC = getNumTrimmed(filename)
     num_lost_packets_repsC = getNrDroppedPackets(filename)
-    max_total_out_of_order_repsC = getMaxTotalOutOfOrderPackets(short_title)
-    max_out_of_order_ratio_repsC = getOutofOrderRatio(short_title)
-    max_out_of_order_distance_repsC = getOutOfOrderDistance(short_title)
+    list_total_out_of_order_repsC = getMaxTotalOutOfOrderPackets(short_title)
+    list_out_of_order_ratio_repsC = getOutofOrderRatio(short_title)
+    list_out_of_order_distance_repsC = getOutOfOrderDistance(short_title)
     complete_plot = run_complete(title,short_title)
     complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
     print(
         "REPS circular: Flow Diff {} - Total {}".format(
             max(list_repsC) - min(list_repsC), max(list_repsC)
+        )
+    )
+
+    balancer = "reps_circular"
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}Freezing.txt".format(
+            balancer, nodes, topology, connection_matrix, failures_input, balancer
+        )
+    print(string_to_run)
+    execute_string(string_to_run, short_title, balancer+"Freezing")
+    filename = "experiments/{}/{}Freezing.txt".format(short_title,balancer)
+    list_repsCF = getListFCT(filename)
+    num_nack_repsCF = getNumTrimmed(filename)
+    num_lost_packets_repsCF = getNrDroppedPackets(filename)
+    list_total_out_of_order_repsCF = getMaxTotalOutOfOrderPackets(short_title)
+    list_out_of_order_ratio_repsCF = getOutofOrderRatio(short_title)
+    list_out_of_order_distance_repsCF = getOutOfOrderDistance(short_title)
+    complete_plot = run_complete(title,short_title)
+    complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
+    print(
+        "repsCF: Flow Diff {} - Total {}".format(
+            max(list_repsCF) - min(list_repsCF), max(list_repsCF)
         )
     )
 
@@ -202,9 +220,9 @@ def run(
     list_spraying = getListFCT(filename)
     num_nack_spraying = getNumTrimmed(filename)
     num_lost_packets_spraying = getNrDroppedPackets(filename)
-    max_total_out_of_order_spraying = getMaxTotalOutOfOrderPackets(short_title)
-    max_out_of_order_ratio_spraying = getOutofOrderRatio(short_title)
-    max_out_of_order_distance_spraying = getOutOfOrderDistance(short_title)
+    list_total_out_of_order_spraying = getMaxTotalOutOfOrderPackets(short_title)
+    list_out_of_order_ratio_spraying = getOutofOrderRatio(short_title)
+    list_out_of_order_distance_spraying = getOutOfOrderDistance(short_title)
     complete_plot = run_complete(title,short_title)
     complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
     print(
@@ -216,15 +234,22 @@ def run(
     list_lost_packets = [
         num_lost_packets_reps,
         num_lost_packets_repsC,
+        num_lost_packets_repsCF,
         num_lost_packets_spraying,
     ]
-    list_fct = [list_reps, list_repsC, list_spraying]
-    list_max = [max(list_reps), max(list_repsC), max(list_spraying)]
-    list_nacks = [num_nack_reps, num_nack_repsC, num_nack_spraying]
-    list_total_out_of_order = [max_total_out_of_order_reps, max_total_out_of_order_repsC, max_total_out_of_order_spraying]
-    list_out_of_order_ratio = [max_out_of_order_ratio_reps, max_out_of_order_ratio_repsC, max_out_of_order_ratio_spraying]
-    list_out_of_order_distance = [max_out_of_order_distance_reps, max_out_of_order_distance_repsC, max_out_of_order_distance_spraying]
-    list_labels = ["REPS", "REPS Circular", "Spraying"]
+    list_fct = [list_reps, list_repsC, list_repsCF, list_spraying]
+    list_max = [max(list_reps), max(list_repsC), max(list_repsCF), max(list_spraying)]
+    list_nacks = [num_nack_reps, num_nack_repsC, num_nack_repsCF, num_nack_spraying]
+    list_mean_total_out_of_order = [np.mean(list_total_out_of_order_reps), np.mean(list_total_out_of_order_repsC),np.mean(list_total_out_of_order_repsCF), np.mean(list_total_out_of_order_spraying)]
+    list_std_total_out_of_order = [np.std(list_total_out_of_order_reps), np.std(list_total_out_of_order_repsC), np.std(list_total_out_of_order_repsCF), np.std(list_total_out_of_order_spraying)]
+    list_max_total_out_of_order = [max(list_total_out_of_order_reps), max(list_total_out_of_order_repsC),max(list_total_out_of_order_repsCF), max(list_total_out_of_order_spraying)]
+    list_mean_total_out_of_order_ratio = [np.mean(list_out_of_order_ratio_reps), np.mean(list_out_of_order_ratio_repsC),np.mean(list_out_of_order_ratio_repsCF), np.mean(list_out_of_order_ratio_spraying)]
+    list_std_total_out_of_order_ratio = [np.std(list_out_of_order_ratio_reps), np.std(list_out_of_order_ratio_repsC),np.std(list_out_of_order_ratio_repsCF), np.std(list_out_of_order_ratio_spraying)]
+    list_max_total_out_of_order_ratio = [max(list_out_of_order_ratio_reps), max(list_out_of_order_ratio_repsC), max(list_out_of_order_ratio_repsCF), max(list_out_of_order_ratio_spraying)]
+    list_mean_total_out_of_order_distance = [np.mean(list_out_of_order_distance_reps), np.mean(list_out_of_order_distance_repsC),np.mean(list_out_of_order_distance_repsCF), np.mean(list_out_of_order_distance_spraying)]
+    list_std_total_out_of_order_distance = [np.std(list_out_of_order_distance_reps), np.std(list_out_of_order_distance_repsC),np.std(list_out_of_order_distance_repsCF), np.std(list_out_of_order_distance_spraying)]
+    list_max_total_out_of_order_distance = [max(list_out_of_order_distance_reps), max(list_out_of_order_distance_repsC),max(list_out_of_order_distance_repsCF), max(list_out_of_order_distance_spraying)]
+    list_labels = ["REPS", "REPS Circular", "REPS Circular\n without freezing", "Spraying"]
 
     # Combine all data into a list of lists
 
@@ -387,25 +412,29 @@ def run(
 
     # PLOT 6 (Max total out of order Packets)
     plt.figure(figsize=(7, 5))
-    numbers = list_total_out_of_order
+    means = list_mean_total_out_of_order
+    maxs = list_max_total_out_of_order
+    errors = list_std_total_out_of_order
     labels = list_labels
 
     # Make bar chart
-    data4 = pd.DataFrame({"Max Total Out of order packets:": numbers, "Algorithm": labels})
-    ax5 = sns.barplot(x="Algorithm", y="Max Total Out of order packets:", data=data4)
+    data4 = pd.DataFrame({"Total out of order packets": means, "Algorithm": labels, "Errors": errors})
+    ax5 = sns.barplot(x="Algorithm", y="Total out of order packets", data=data4)
     ax5.tick_params(labelsize=9.5)
+
+    for index, row in data4.iterrows():
+        ax5.errorbar(x=index, y=row["Total out of order packets"], yerr=errors[index], fmt='none', capsize=5, color='black')
     # Format y-axis tick labels without scientific notation
     ax5.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
 
-    for p in ax5.patches:
-        ax5.annotate(
-            format(int(p.get_height()), ""),
-            (p.get_x() + p.get_width() / 2.0, p.get_height()),
-            ha="center",
-            va="center",
-            xytext=(0, 7),
-            textcoords="offset points",
-        )
+    for index, p in enumerate(ax5.patches):
+        mean_value = round(means[index],2)
+        max_value = round(maxs[index],2)
+        error = round(errors[index],2)
+        ax5.annotate(f'Mean: {mean_value}\nMax: {max_value}\n Std Dev: {error}',
+                    (p.get_x() + p.get_width() / 2.0, 0),
+                    ha="center", va="bottom", fontsize=8, color='black',
+                    xytext=(0, 7), textcoords='offset points')
 
     plt.title(title, fontsize=17)
     plt.grid()
@@ -415,25 +444,29 @@ def run(
 
     # PLOT 7 (Out of order ratio)
     plt.figure(figsize=(7, 5))
-    numbers = list_out_of_order_ratio
+    means = list_mean_total_out_of_order_ratio
+    maxs = list_max_total_out_of_order_ratio
+    errors = list_std_total_out_of_order_ratio
     labels = list_labels
 
     # Make bar chart
-    data4 = pd.DataFrame({"Max out of order ratio:": numbers, "Algorithm": labels})
-    ax5 = sns.barplot(x="Algorithm", y="Max out of order ratio:", data=data4)
+    data4 = pd.DataFrame({"Out of order ratio": means, "Algorithm": labels,"Errors": errors})
+    ax5 = sns.barplot(x="Algorithm", y="Out of order ratio", data=data4)
     ax5.tick_params(labelsize=9.5)
+
+    for index, row in data4.iterrows():
+        ax5.errorbar(x=index, y=row["Out of order ratio"], yerr=errors[index], fmt='none', capsize=5, color='black')
     # Format y-axis tick labels without scientific notation
     ax5.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
 
-    for p in ax5.patches:
-        ax5.annotate(
-            format(round(p.get_height(),2), ""),
-            (p.get_x() + p.get_width() / 2.0, p.get_height()),
-            ha="center",
-            va="center",
-            xytext=(0, 7),
-            textcoords="offset points",
-        )
+    for index, p in enumerate(ax5.patches):
+        mean_value = round(means[index],2)
+        max_value = round(maxs[index],2)
+        error = round(errors[index],2)
+        ax5.annotate(f'Mean: {mean_value}\nMax: {max_value}\n Std Dev: {error}',
+                    (p.get_x() + p.get_width() / 2.0, 0),
+                    ha="center", va="bottom", fontsize=8, color='black',
+                    xytext=(0, 7), textcoords='offset points')
 
     plt.title(title, fontsize=17)
     plt.grid()
@@ -442,25 +475,30 @@ def run(
 
     # PLOT 7 (Out of order Distance)
     plt.figure(figsize=(7, 5))
-    numbers = list_out_of_order_distance
+    means = list_mean_total_out_of_order_distance
+    maxs = list_max_total_out_of_order_distance
+    errors = list_std_total_out_of_order_distance
     labels = list_labels
 
     # Make bar chart
-    data4 = pd.DataFrame({"Max out of order Distance:": numbers, "Algorithm": labels})
-    ax5 = sns.barplot(x="Algorithm", y="Max out of order Distance:", data=data4)
+    data4 = pd.DataFrame({"Out of order Distance": means, "Algorithm": labels, "Errors": errors})
+    ax5 = sns.barplot(x="Algorithm", y="Out of order Distance", data=data4)
     ax5.tick_params(labelsize=9.5)
+
+    for index, row in data4.iterrows():
+        ax5.errorbar(x=index, y=row["Out of order Distance"], yerr=errors[index], fmt='none', capsize=5, color='black')
+    
     # Format y-axis tick labels without scientific notation
     ax5.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
 
-    for p in ax5.patches:
-        ax5.annotate(
-            format(int(p.get_height()), ""),
-            (p.get_x() + p.get_width() / 2.0, p.get_height()),
-            ha="center",
-            va="center",
-            xytext=(0, 7),
-            textcoords="offset points",
-        )
+    for index, p in enumerate(ax5.patches):
+        mean_value = round(means[index],2)
+        max_value = round(maxs[index],2)
+        error = round(errors[index],2)
+        ax5.annotate(f'Mean: {mean_value}\nMax: {max_value}\n Std Dev: {error}',
+                    (p.get_x() + p.get_width() / 2.0, 0),
+                    ha="center", va="bottom", fontsize=8, color='black',
+                    xytext=(0, 7), textcoords='offset points')
 
     plt.title(title, fontsize=17)
     plt.grid()
@@ -474,6 +512,7 @@ def main():
     os.system("mkdir -p experiments")
 
     titles = [
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed US-CS cables per switch",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: One failed switch",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: One failed cable",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: One failed switch and cable",
@@ -487,6 +526,7 @@ def main():
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: 20% degraded cables",
     ]
     failures_input = [
+        "10_percent_us-cs-cables-per-switch",
         "fail_one_switch",
         "fail_one_cable",
         "fail_one_switch_one_cable",
@@ -500,6 +540,7 @@ def main():
         "20_percent_degraded_cables",
     ]
     nodes = [
+        128,
         1024,
         1024,
         1024,
@@ -513,6 +554,7 @@ def main():
         1024,
     ]
     topology = [
+        "fat_tree_128_8os_800.topo",
         "fat_tree_1024_8os_800.topo",
         "fat_tree_1024_8os_800.topo",
         "fat_tree_1024_8os_800.topo",
@@ -526,6 +568,7 @@ def main():
         "fat_tree_1024_8os_800.topo",
     ]
     connection_matrix = [
+        "perm_128_2",
         "incast_1024_32_4MiB",
         "incast_1024_32_4MiB",
         "incast_1024_32_4MiB",

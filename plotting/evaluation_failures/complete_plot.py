@@ -360,10 +360,10 @@ def run(title,experiment):
     fig.add_annotation(
         x=max_x,  # You can adjust the x-coordinate as needed
         y=target_rtt
-        + 250,  # Set the y-coordinate to match the dashed line's y-coordinate
+        + 300,  # Set the y-coordinate to match the dashed line's y-coordinate
         text="Target RTT",  # The text label you want to display
         showarrow=False,  # No arrow pointing to the label
-        font=dict(size=12, color="black"),  # Customize the font size and color
+        font=dict(size=8, color="black"),  # Customize the font size and color
     )
 
     fig.add_shape(
@@ -379,10 +379,10 @@ def run(title,experiment):
     fig.add_annotation(
         x=max_x,  # You can adjust the x-coordinate as needed
         y=base_rtt
-        + 250,  # Set the y-coordinate to match the dashed line's y-coordinate
+        + 300,  # Set the y-coordinate to match the dashed line's y-coordinate
         text="Base RTT",  # The text label you want to display
         showarrow=False,  # No arrow pointing to the label
-        font=dict(size=12, color="black"),  # Customize the font size and color
+        font=dict(size=8, color="black"),  # Customize the font size and color
     )
 
     config = {
@@ -406,6 +406,6 @@ def run(title,experiment):
     # fig.write_image("out/fid_simple_{}.png".format(date_time))
     # plotly.offline.plot(fig, filename='out/fid_simple_{}.html'.format(date_time))
     # save plot as pdf file without legend
-    fig.update_layout(showlegend=False, width=1024, height=512)
+    fig.update_layout(showlegend=False, width=1024, height=550)
     os.chdir("../..")    
     return fig
