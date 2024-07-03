@@ -26,23 +26,23 @@
 
 // Fat Tree topology was modified to work with this script, others won't work
 // correctly
-#include "fat_tree_interdc_topology.h"
-#include "dragonfly_topology.h"
-#include "dragonfly_topology.cpp"
-#include "dragonfly_switch.h"
-#include "dragonfly_switch.cpp"
-#include "slimfly_topology.h"
-#include "slimfly_topology.cpp"
-#include "slimfly_switch.h"
-#include "slimfly_switch.cpp"
-#include "hammingmesh_topology.h"
-#include "hammingmesh_topology.cpp"
-#include "hammingmesh_switch.h"
-#include "hammingmesh_switch.cpp"
-#include "b-cube_topology.h"
-#include "b-cube_topology.cpp"
-#include "b-cube_switch.h"
 #include "b-cube_switch.cpp"
+#include "b-cube_switch.h"
+#include "b-cube_topology.cpp"
+#include "b-cube_topology.h"
+#include "dragonfly_switch.cpp"
+#include "dragonfly_switch.h"
+#include "dragonfly_topology.cpp"
+#include "dragonfly_topology.h"
+#include "fat_tree_interdc_topology.h"
+#include "hammingmesh_switch.cpp"
+#include "hammingmesh_switch.h"
+#include "hammingmesh_topology.cpp"
+#include "hammingmesh_topology.h"
+#include "slimfly_switch.cpp"
+#include "slimfly_switch.h"
+#include "slimfly_topology.cpp"
+#include "slimfly_topology.h"
 // #include "oversubscribed_fat_tree_topology.h"
 // #include "multihomed_fat_tree_topology.h"
 // #include "star_topology.h"
@@ -153,7 +153,7 @@ int main(int argc, char **argv) {
     int pfc_marking = 0;
     double quickadapt_lossless_rtt = 2.0;
     int reaction_delay = 1;
-    //bool stop_after_quick = false;
+    // bool stop_after_quick = false;
     char *tm_file = NULL;
     bool use_pacing = false;
     int precision_ts = 1;
@@ -161,13 +161,15 @@ int main(int argc, char **argv) {
     bool use_mixed = false;
     int phantom_size;
     int phantom_slowdown = 10;
+    bool ecn = false;
+    mem_b ecn_low = 0, ecn_high = 0;
     bool use_phantom = false;
     double exp_avg_ecn_value = .3;
     double exp_avg_rtt_value = .3;
     double exp_avg_alpha = 0.125;
     bool use_exp_avg_ecn = false;
     bool use_exp_avg_rtt = false;
-    //int jump_to = 0;
+    // int jump_to = 0;
     int stop_pacing_after_rtt = 0;
     int num_failed_links = 0;
     TopologyCase topology = FAT_TREE_CASE;
@@ -188,6 +190,7 @@ int main(int argc, char **argv) {
     BCubeSwitch::routing_strategy bc_routing_strategy = BCubeSwitch::NIX;
     uint64_t interdc_delay = 0;
     uint64_t max_queue_size = 0;
+    char *topo_file = NULL;
 
     int i = 1;
     filename << "logout.dat";
@@ -291,7 +294,6 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-precision_ts")) {
             precision_ts = atoi(argv[i + 1]);
-            FatTreeSwitch::set_precision_ts(precision_ts * 1000);
             UecSrc::set_precision_ts(precision_ts * 1000);
             printf("Precision: %d\n", precision_ts * 1000);
             i++;
@@ -409,7 +411,6 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-num_failed_links")) {
             num_failed_links = atoi(argv[i + 1]);
-            FatTreeTopology::set_failed_links(num_failed_links);
             i++;
         } else if (!strcmp(argv[i], "-fast_drop_rtt")) {
             UecSrc::set_fast_drop_rtt(atoi(argv[i + 1]));
@@ -494,6 +495,16 @@ int main(int argc, char **argv) {
             printf("UseExpAvgRttValue: %f\n", exp_avg_rtt_value);
             UecSrc::set_exp_avg_rtt_value(exp_avg_rtt_value);
             i++;
+        } else if (!strcmp(argv[i], "-topo")) {
+            topo_file = argv[i + 1];
+            cout << "FatTree topology input file: " << topo_file << endl;
+            i++;
+        } else if (!strcmp(argv[i], "-ecn")) {
+            // fraction of queuesize, between 0 and 1
+            ecn = true;
+            ecn_low = atoi(argv[i + 1]);
+            ecn_high = atoi(argv[i + 2]);
+            i += 2;
         } else if (!strcmp(argv[i], "-exp_avg_ecn_value")) {
             exp_avg_ecn_value = std::stod(argv[i + 1]);
             printf("UseExpAvgecn_value: %f\n", exp_avg_ecn_value);
@@ -544,20 +555,15 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-topology")) {
             if (!strcmp(argv[i + 1], "fat_tree")) {
                 topology = FAT_TREE_CASE;
-            }
-            else if (!strcmp(argv[i + 1], "fat_tree_dc")) {
+            } else if (!strcmp(argv[i + 1], "fat_tree_dc")) {
                 topology = FAT_TREE_DC_CASE;
-            }
-            else if (!strcmp(argv[i + 1], "dragonfly")) {
+            } else if (!strcmp(argv[i + 1], "dragonfly")) {
                 topology = DRAGONFLY_CASE;
-            }
-            else if (!strcmp(argv[i + 1], "slimfly")) {
+            } else if (!strcmp(argv[i + 1], "slimfly")) {
                 topology = SLIMFLY_CASE;
-            }
-            else if (!strcmp(argv[i + 1], "hammingmesh")) {
+            } else if (!strcmp(argv[i + 1], "hammingmesh")) {
                 topology = HAMMINGMESH_CASE;
-            }
-            else if (!strcmp(argv[i + 1], "bcube")) {
+            } else if (!strcmp(argv[i + 1], "bcube")) {
                 topology = BCUBE_CASE;
             }
             i++;
@@ -570,7 +576,7 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-h")) {
             h = atoi(argv[i + 1]);
             i++;
-        } else if (!strcmp(argv[i], "-df_strategy")){
+        } else if (!strcmp(argv[i], "-df_strategy")) {
             if (!strcmp(argv[i + 1], "nix")) {
                 df_routing_strategy = DragonflySwitch::NIX;
             } else if (!strcmp(argv[i + 1], "minimal")) {
@@ -587,7 +593,7 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-q_exp")) {
             q_exp = atoi(argv[i + 1]);
             i++;
-        } else if (!strcmp(argv[i], "-sf_strategy")){
+        } else if (!strcmp(argv[i], "-sf_strategy")) {
             if (!strcmp(argv[i + 1], "nix")) {
                 sf_routing_strategy = SlimflySwitch::NIX;
             } else if (!strcmp(argv[i + 1], "minimal")) {
@@ -610,7 +616,7 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-width_board")) {
             width_board = atoi(argv[i + 1]);
             i++;
-        } else if (!strcmp(argv[i], "-hm_strategy")){
+        } else if (!strcmp(argv[i], "-hm_strategy")) {
             if (!strcmp(argv[i + 1], "nix")) {
                 hm_routing_strategy = HammingmeshSwitch::NIX;
             } else if (!strcmp(argv[i + 1], "minimal")) {
@@ -625,7 +631,7 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-k_bcube")) {
             k_bcube = atoi(argv[i + 1]);
             i++;
-        } else if (!strcmp(argv[i], "-bc_strategy")){
+        } else if (!strcmp(argv[i], "-bc_strategy")) {
             if (!strcmp(argv[i + 1], "nix")) {
                 bc_routing_strategy = BCubeSwitch::NIX;
             } else if (!strcmp(argv[i + 1], "minimal")) {
@@ -855,7 +861,7 @@ int main(int argc, char **argv) {
     // used just to print out stats data at the end
     list<const Route *> routes;
 
-    //int connID = 0;
+    // int connID = 0;
     dest = 1;
     // int receiving_node = 127;
     vector<int> subflows_chosen;
@@ -872,63 +878,77 @@ int main(int argc, char **argv) {
         HammingmeshTopology *top_hm = NULL;
         BCubeTopology *top_bc = NULL;
 
-        switch (topology){
-            case (FAT_TREE_CASE): {
-                printf("Case Fat-Tree.\n");
-                FatTreeTopology::set_tiers(3);
-                FatTreeTopology::set_os_stage_2(fat_tree_k);
-                FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
-                FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
-                FatTreeTopology::set_bts_threshold(bts_threshold);
-                FatTreeTopology::set_ignore_data_ecn(ignore_ecn_data);
-                top = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, queue_choice, hop_latency, switch_latency);
-                break;
+        switch (topology) {
+        case (FAT_TREE_CASE): {
+            if (ecn) {
+                ecn_low = memFromPkt(ecn_low);
+                ecn_high = memFromPkt(ecn_high);
+                FatTreeTopology::set_ecn_parameters(true, true, ecn_low, ecn_high);
             }
-            case (FAT_TREE_DC_CASE): {
-                printf("Case Fat-Tree-DC.");
-                if (interdc_delay != 0) {
-                    FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
-                    UecSrc::set_interdc_delay(interdc_delay);
-                } else {
-                    FatTreeInterDCTopology::set_interdc_delay(hop_latency);
-                    UecSrc::set_interdc_delay(hop_latency);
+            if (topo_file) {
+                top = FatTreeTopology::load(topo_file, NULL, eventlist, queuesize, COMPOSITE, FAIR_PRIO);
+                if (top->no_of_nodes() != no_of_nodes) {
+                    cerr << "Mismatch between connection matrix (" << no_of_nodes << " nodes) and topology ("
+                         << top->no_of_nodes() << " nodes)" << endl;
+                    exit(1);
                 }
-                FatTreeInterDCTopology::set_tiers(3);
-                FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
-                FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
-                FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
-                FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
-                FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
-                top_dc = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, queue_choice, hop_latency, switch_latency);
-                break;
+            } else {
+                printf("Normal Topology\n");
+                FatTreeTopology::set_tiers(3);
+                top = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, queue_choice,
+                                          hop_latency, switch_latency);
             }
-            case (DRAGONFLY_CASE): {
-                // Hier Code einfügen.
-                printf("Case Dragonfly.\tp = %u,\ta = %u,\th = %u\n", p, a, h);
-                top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice, df_routing_strategy);
-                no_of_nodes = a * p * (a * h + 1);
-                break;
+            break;
+        }
+        case (FAT_TREE_DC_CASE): {
+            printf("Case Fat-Tree-DC.");
+            if (interdc_delay != 0) {
+                FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
+                UecSrc::set_interdc_delay(interdc_delay);
+            } else {
+                FatTreeInterDCTopology::set_interdc_delay(hop_latency);
+                UecSrc::set_interdc_delay(hop_latency);
             }
-            case (SLIMFLY_CASE): {
-                // Hier Code einfügen.
-                printf("Case Slimfly.\tp = %u,\tq_base = %u,\tq_exp = %u\n", p, q_base, q_exp);
-                top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice, sf_routing_strategy);
-                int q = pow(q_base, q_exp);
-                no_of_nodes = 2 * pow(q, 2);
-                break;
-            }
-            case (HAMMINGMESH_CASE): {
-                printf("Case Hammingmesh.\theight = %u,\twidth = %u,\theight_board = %u,\twidth_board = %u,\tstrategy = %u.\n", height, width, height_board, width_board, hm_routing_strategy);
-                top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize, &eventlist, queue_choice, hm_routing_strategy);
-                no_of_nodes = top_hm->get_no_nodes();
-                break;
-            }
-            case (BCUBE_CASE): {
-                printf("Case BCube.\n = %u,\tk = %u,\tstrategy = %u.\n", n_bcube, k_bcube, hm_routing_strategy);
-                top_bc = new BCubeTopology(n_bcube, k_bcube, queuesize, &eventlist, queue_choice, bc_routing_strategy);
-                no_of_nodes = top_bc->get_no_of_nodes();
-                break;
-            }
+            FatTreeInterDCTopology::set_tiers(3);
+            FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
+            FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
+            FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
+            FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
+            FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
+            top_dc = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, queue_choice,
+                                                hop_latency, switch_latency);
+            break;
+        }
+        case (DRAGONFLY_CASE): {
+            // Hier Code einfügen.
+            printf("Case Dragonfly.\tp = %u,\ta = %u,\th = %u\n", p, a, h);
+            top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice, df_routing_strategy);
+            no_of_nodes = a * p * (a * h + 1);
+            break;
+        }
+        case (SLIMFLY_CASE): {
+            // Hier Code einfügen.
+            printf("Case Slimfly.\tp = %u,\tq_base = %u,\tq_exp = %u\n", p, q_base, q_exp);
+            top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice, sf_routing_strategy);
+            int q = pow(q_base, q_exp);
+            no_of_nodes = 2 * pow(q, 2);
+            break;
+        }
+        case (HAMMINGMESH_CASE): {
+            printf("Case Hammingmesh.\theight = %u,\twidth = %u,\theight_board = %u,\twidth_board = %u,\tstrategy = "
+                   "%u.\n",
+                   height, width, height_board, width_board, hm_routing_strategy);
+            top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize, &eventlist,
+                                             queue_choice, hm_routing_strategy);
+            no_of_nodes = top_hm->get_no_nodes();
+            break;
+        }
+        case (BCUBE_CASE): {
+            printf("Case BCube.\n = %u,\tk = %u,\tstrategy = %u.\n", n_bcube, k_bcube, hm_routing_strategy);
+            top_bc = new BCubeTopology(n_bcube, k_bcube, queuesize, &eventlist, queue_choice, bc_routing_strategy);
+            no_of_nodes = top_bc->get_no_of_nodes();
+            break;
+        }
         }
 
         conns = new ConnectionMatrix(no_of_nodes);
@@ -957,7 +977,7 @@ int main(int argc, char **argv) {
             int dest = crt->dst;
             uint64_t rtt = BASE_RTT_MODERN * 1000;
             uint64_t bdp = BDP_MODERN_UEC;
-            //printf("Reaching here1\n");
+            // printf("Reaching here1\n");
             fflush(stdout);
 
             /* Route *myin = new Route(*top->get_paths(src, dest)->at(0));
@@ -985,7 +1005,7 @@ int main(int argc, char **argv) {
             uecSrc->setNumberEntropies(256);
             uec_srcs.push_back(uecSrc);
             uecSrc->set_dst(dest);
-            //printf("Reaching here\n");
+            // printf("Reaching here\n");
             if (crt->flowid) {
                 uecSrc->set_flowid(crt->flowid);
                 assert(flowmap.find(crt->flowid) == flowmap.end()); // don't have dups
@@ -1024,174 +1044,186 @@ int main(int argc, char **argv) {
             // uecRtxScanner->registerUec(*uecSrc);
 
             switch (route_strategy) {
-                case ECMP_FIB:
-                case ECMP_FIB_ECN:
-                case ECMP_RANDOM2_ECN:
-                case REACTIVE_ECN: {
-                    Route *srctotor = new Route();
-                    Route *dsttotor = new Route();
+            case ECMP_FIB:
+            case ECMP_FIB_ECN:
+            case ECMP_RANDOM2_ECN:
+            case REACTIVE_ECN: {
+                Route *srctotor = new Route();
+                Route *dsttotor = new Route();
 
-                    switch (topology) {
-                        case (FAT_TREE_CASE): {
-                            srctotor->push_back(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)]);
-                            srctotor->push_back(top->pipes_ns_nlp[src][top->HOST_POD_SWITCH(src)]);
-                            srctotor->push_back(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)]->getRemoteEndpoint());
+                switch (topology) {
+                case (FAT_TREE_CASE): {
+                    srctotor->push_back(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)][0]);
+                    srctotor->push_back(top->pipes_ns_nlp[src][top->HOST_POD_SWITCH(src)][0]);
+                    srctotor->push_back(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)][0]->getRemoteEndpoint());
 
-                            dsttotor->push_back(top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]);
-                            dsttotor->push_back(top->pipes_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]);
-                            dsttotor->push_back(top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)]->getRemoteEndpoint());
+                    dsttotor->push_back(top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)][0]);
+                    dsttotor->push_back(top->pipes_ns_nlp[dest][top->HOST_POD_SWITCH(dest)][0]);
+                    dsttotor->push_back(top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)][0]->getRemoteEndpoint());
 
-                            uecSrc->from = src;
-                            uecSnk->to = dest;
-                            uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
-                            uecSrc->set_paths(number_entropies);
-                            uecSnk->set_paths(number_entropies);
+                    uecSrc->from = src;
+                    uecSnk->to = dest;
+                    uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
+                    uecSrc->set_paths(number_entropies);
+                    uecSnk->set_paths(number_entropies);
 
-                            top->switches_lp[top->HOST_POD_SWITCH(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
-                            top->switches_lp[top->HOST_POD_SWITCH(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
-                            break;
-                        }
-                        case (FAT_TREE_DC_CASE): {
-                            int idx_dc = top_dc->get_dc_id(src);
-                            int idx_dc_to = top_dc->get_dc_id(dest);
-                            uecSrc->src_dc = top_dc->get_dc_id(src);
-                            uecSrc->dest_dc = top_dc->get_dc_id(dest);
-                            uecSrc->updateParams();
+                    top->switches_lp[top->HOST_POD_SWITCH(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
+                    top->switches_lp[top->HOST_POD_SWITCH(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
+                    break;
+                }
+                case (FAT_TREE_DC_CASE): {
+                    int idx_dc = top_dc->get_dc_id(src);
+                    int idx_dc_to = top_dc->get_dc_id(dest);
+                    uecSrc->src_dc = top_dc->get_dc_id(src);
+                    uecSrc->dest_dc = top_dc->get_dc_id(dest);
+                    uecSrc->updateParams();
 
-                            printf("Source in Datacenter %d - Dest in Datacenter %d\n", idx_dc, idx_dc_to);
+                    printf("Source in Datacenter %d - Dest in Datacenter %d\n", idx_dc, idx_dc_to);
 
-                            srctotor->push_back(top_dc->queues_ns_nlp[idx_dc][src % top_dc->no_of_nodes()][top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]);
-                            srctotor->push_back(top_dc->pipes_ns_nlp[idx_dc][src % top_dc->no_of_nodes()][top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]);
-                            srctotor->push_back(top_dc->queues_ns_nlp[idx_dc][src % top_dc->no_of_nodes()][top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]->getRemoteEndpoint());
+                    srctotor->push_back(top_dc->queues_ns_nlp[idx_dc][src % top_dc->no_of_nodes()]
+                                                             [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]);
+                    srctotor->push_back(top_dc->pipes_ns_nlp[idx_dc][src % top_dc->no_of_nodes()]
+                                                            [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]);
+                    srctotor->push_back(top_dc->queues_ns_nlp[idx_dc][src % top_dc->no_of_nodes()]
+                                                             [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]
+                                                                     ->getRemoteEndpoint());
 
-                            dsttotor->push_back(top_dc->queues_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()][top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]);
-                            dsttotor->push_back(top_dc->pipes_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()][top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]);
-                            dsttotor->push_back(top_dc->queues_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()][top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]->getRemoteEndpoint());
-                            
-                            uecSrc->from = src;
-                            uecSnk->to = dest;
-                            uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
-                            uecSrc->set_paths(number_entropies);
-                            uecSnk->set_paths(number_entropies);
+                    dsttotor->push_back(top_dc->queues_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
+                                                             [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]);
+                    dsttotor->push_back(top_dc->pipes_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
+                                                            [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]);
+                    dsttotor->push_back(top_dc->queues_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
+                                                             [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]
+                                                                     ->getRemoteEndpoint());
 
-                            top_dc->switches_lp[idx_dc][top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]->addHostPort(
-                                    src % top_dc->no_of_nodes(), uecSrc->flow_id(), uecSrc);
-                            top_dc->switches_lp[idx_dc_to][top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]->addHostPort(
-                                    dest % top_dc->no_of_nodes(), uecSrc->flow_id(), uecSnk);
-                            
-                            break;
-                        }
-                        case (DRAGONFLY_CASE): {
-                            // Hier Code einfügen.
-                            // srctotor und dsttotor müssen noch gefüllt werden damit in sendOn() _nexthop > 0
-                            // und _nexthop < _route->size().
+                    uecSrc->from = src;
+                    uecSnk->to = dest;
+                    uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
+                    uecSrc->set_paths(number_entropies);
+                    uecSnk->set_paths(number_entropies);
 
-                            // Anpassen:
-                            srctotor->push_back(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]);
-                            srctotor->push_back(top_df->pipes_host_switch[src][top_df->HOST_TOR_FKT(src)]);
-                            srctotor->push_back(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint());
-                            // Anpassen: Evlt. zu queues/pipes _host_switch ändern.
-                            dsttotor->push_back(top_df->queues_host_switch[dest][top_df->HOST_TOR_FKT(dest)]);
-                            dsttotor->push_back(top_df->pipes_host_switch[dest][top_df->HOST_TOR_FKT(dest)]);
-                            dsttotor->push_back(top_df->queues_host_switch[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint());
-                            // printf("srctotor_size: %ld\tdsttotor_size: %ld\n", srctotor->size(), dsttotor->size());
+                    top_dc->switches_lp[idx_dc][top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]->addHostPort(
+                            src % top_dc->no_of_nodes(), uecSrc->flow_id(), uecSrc);
+                    top_dc->switches_lp[idx_dc_to][top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]->addHostPort(
+                            dest % top_dc->no_of_nodes(), uecSrc->flow_id(), uecSnk);
 
-                            if(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint() == NULL){
-                                printf("src-remoteEndpoit is NULL!\n");
-                            }
-                            if(top_df->queues_host_switch[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint() == NULL){
-                                printf("dst-remoteEndpoint is NULL!\n");
-                            }
+                    break;
+                }
+                case (DRAGONFLY_CASE): {
+                    // Hier Code einfügen.
+                    // srctotor und dsttotor müssen noch gefüllt werden damit in sendOn() _nexthop > 0
+                    // und _nexthop < _route->size().
 
-                            uecSrc->from = src;
-                            uecSnk->to = dest;
-                            uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
-                            uecSrc->set_paths(number_entropies);
-                            uecSnk->set_paths(number_entropies);
+                    // Anpassen:
+                    srctotor->push_back(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]);
+                    srctotor->push_back(top_df->pipes_host_switch[src][top_df->HOST_TOR_FKT(src)]);
+                    srctotor->push_back(
+                            top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint());
+                    // Anpassen: Evlt. zu queues/pipes _host_switch ändern.
+                    dsttotor->push_back(top_df->queues_host_switch[dest][top_df->HOST_TOR_FKT(dest)]);
+                    dsttotor->push_back(top_df->pipes_host_switch[dest][top_df->HOST_TOR_FKT(dest)]);
+                    dsttotor->push_back(
+                            top_df->queues_host_switch[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint());
+                    // printf("srctotor_size: %ld\tdsttotor_size: %ld\n", srctotor->size(), dsttotor->size());
 
-                            top_df->switches[top_df->HOST_TOR_FKT(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
-                            top_df->switches[top_df->HOST_TOR_FKT(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
-                            break;
-                        }
-                        case (SLIMFLY_CASE): {
-                            // Hier Code einfügen.
-                            // srctotor und dsttotor müssen noch gefüllt werden damit in sendOn() _nexthop > 0
-                            // und _nexthop < _route->size().
-
-                            srctotor->push_back(top_sf->queues_host_switch[src][top_sf->HOST_TOR_FKT(src)]);
-                            srctotor->push_back(top_sf->pipes_host_switch[src][top_sf->HOST_TOR_FKT(src)]);
-                            srctotor->push_back(top_sf->queues_host_switch[src][top_sf->HOST_TOR_FKT(src)]->getRemoteEndpoint());
-                            
-                            dsttotor->push_back(top_sf->queues_host_switch[dest][top_sf->HOST_TOR_FKT(dest)]);
-                            dsttotor->push_back(top_sf->pipes_host_switch[dest][top_sf->HOST_TOR_FKT(dest)]);
-                            dsttotor->push_back(top_sf->queues_host_switch[dest][top_sf->HOST_TOR_FKT(dest)]->getRemoteEndpoint());
-
-                            if(top_sf->queues_host_switch[src][top_sf->HOST_TOR_FKT(src)]->getRemoteEndpoint() == NULL){
-                                printf("src-remoteEndpoit is NULL!\n");
-                            }
-                            if(top_sf->queues_host_switch[dest][top_sf->HOST_TOR_FKT(dest)]->getRemoteEndpoint() == NULL){
-                                printf("dst-remoteEndpoint is NULL!\n");
-                            }
-
-                            uecSrc->from = src;
-                            uecSnk->to = dest;
-                            uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
-                            uecSrc->set_paths(number_entropies);
-                            uecSnk->set_paths(number_entropies);
-
-                            top_sf->switches[top_sf->HOST_TOR_FKT(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
-                            top_sf->switches[top_sf->HOST_TOR_FKT(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
-                            break;
-                        }
-                        case (HAMMINGMESH_CASE): {
-                            srctotor->push_back(top_hm->queues_host_switch[src][src]);
-                            srctotor->push_back(top_hm->pipes_host_switch[src][src]);
-                            srctotor->push_back(top_hm->queues_host_switch[src][src]->getRemoteEndpoint());
-                            
-                            dsttotor->push_back(top_hm->queues_host_switch[dest][dest]);
-                            dsttotor->push_back(top_hm->pipes_host_switch[dest][dest]);
-                            dsttotor->push_back(top_hm->queues_host_switch[dest][dest]->getRemoteEndpoint());
-
-                            uecSrc->from = src;
-                            uecSnk->to = dest;
-                            uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
-                            uecSrc->set_paths(number_entropies);
-                            uecSnk->set_paths(number_entropies);
-
-                            top_hm->switches[src]->addHostPort(src, uecSrc->flow_id(), uecSrc);
-                            top_hm->switches[dest]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
-                            break;
-                        }
-                        case (BCUBE_CASE): {
-                            srctotor->push_back(top_bc->queues_host_switch[src][src]);
-                            srctotor->push_back(top_bc->pipes_host_switch[src][src]);
-                            srctotor->push_back(top_bc->queues_host_switch[src][src]->getRemoteEndpoint());
-                            
-                            dsttotor->push_back(top_bc->queues_host_switch[dest][dest]);
-                            dsttotor->push_back(top_bc->pipes_host_switch[dest][dest]);
-                            dsttotor->push_back(top_bc->queues_host_switch[dest][dest]->getRemoteEndpoint());
-
-                            uecSrc->from = src;
-                            uecSnk->to = dest;
-                            uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
-                            uecSrc->set_paths(number_entropies);
-                            uecSnk->set_paths(number_entropies);
-
-                            top_bc->switches[src]->addHostPort(src, uecSrc->flow_id(), uecSrc);
-                            top_bc->switches[dest]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
-                            break;
-                        }
+                    if (top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint() == NULL) {
+                        printf("src-remoteEndpoit is NULL!\n");
                     }
+                    if (top_df->queues_host_switch[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint() == NULL) {
+                        printf("dst-remoteEndpoint is NULL!\n");
+                    }
+
+                    uecSrc->from = src;
+                    uecSnk->to = dest;
+                    uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
+                    uecSrc->set_paths(number_entropies);
+                    uecSnk->set_paths(number_entropies);
+
+                    top_df->switches[top_df->HOST_TOR_FKT(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
+                    top_df->switches[top_df->HOST_TOR_FKT(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
                     break;
                 }
-                case NOT_SET: {
-                    abort();
+                case (SLIMFLY_CASE): {
+                    // Hier Code einfügen.
+                    // srctotor und dsttotor müssen noch gefüllt werden damit in sendOn() _nexthop > 0
+                    // und _nexthop < _route->size().
+
+                    srctotor->push_back(top_sf->queues_host_switch[src][top_sf->HOST_TOR_FKT(src)]);
+                    srctotor->push_back(top_sf->pipes_host_switch[src][top_sf->HOST_TOR_FKT(src)]);
+                    srctotor->push_back(
+                            top_sf->queues_host_switch[src][top_sf->HOST_TOR_FKT(src)]->getRemoteEndpoint());
+
+                    dsttotor->push_back(top_sf->queues_host_switch[dest][top_sf->HOST_TOR_FKT(dest)]);
+                    dsttotor->push_back(top_sf->pipes_host_switch[dest][top_sf->HOST_TOR_FKT(dest)]);
+                    dsttotor->push_back(
+                            top_sf->queues_host_switch[dest][top_sf->HOST_TOR_FKT(dest)]->getRemoteEndpoint());
+
+                    if (top_sf->queues_host_switch[src][top_sf->HOST_TOR_FKT(src)]->getRemoteEndpoint() == NULL) {
+                        printf("src-remoteEndpoit is NULL!\n");
+                    }
+                    if (top_sf->queues_host_switch[dest][top_sf->HOST_TOR_FKT(dest)]->getRemoteEndpoint() == NULL) {
+                        printf("dst-remoteEndpoint is NULL!\n");
+                    }
+
+                    uecSrc->from = src;
+                    uecSnk->to = dest;
+                    uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
+                    uecSrc->set_paths(number_entropies);
+                    uecSnk->set_paths(number_entropies);
+
+                    top_sf->switches[top_sf->HOST_TOR_FKT(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
+                    top_sf->switches[top_sf->HOST_TOR_FKT(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
                     break;
                 }
-                default: {
-                    abort();
+                case (HAMMINGMESH_CASE): {
+                    srctotor->push_back(top_hm->queues_host_switch[src][src]);
+                    srctotor->push_back(top_hm->pipes_host_switch[src][src]);
+                    srctotor->push_back(top_hm->queues_host_switch[src][src]->getRemoteEndpoint());
+
+                    dsttotor->push_back(top_hm->queues_host_switch[dest][dest]);
+                    dsttotor->push_back(top_hm->pipes_host_switch[dest][dest]);
+                    dsttotor->push_back(top_hm->queues_host_switch[dest][dest]->getRemoteEndpoint());
+
+                    uecSrc->from = src;
+                    uecSnk->to = dest;
+                    uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
+                    uecSrc->set_paths(number_entropies);
+                    uecSnk->set_paths(number_entropies);
+
+                    top_hm->switches[src]->addHostPort(src, uecSrc->flow_id(), uecSrc);
+                    top_hm->switches[dest]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
                     break;
                 }
+                case (BCUBE_CASE): {
+                    srctotor->push_back(top_bc->queues_host_switch[src][src]);
+                    srctotor->push_back(top_bc->pipes_host_switch[src][src]);
+                    srctotor->push_back(top_bc->queues_host_switch[src][src]->getRemoteEndpoint());
+
+                    dsttotor->push_back(top_bc->queues_host_switch[dest][dest]);
+                    dsttotor->push_back(top_bc->pipes_host_switch[dest][dest]);
+                    dsttotor->push_back(top_bc->queues_host_switch[dest][dest]->getRemoteEndpoint());
+
+                    uecSrc->from = src;
+                    uecSnk->to = dest;
+                    uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
+                    uecSrc->set_paths(number_entropies);
+                    uecSnk->set_paths(number_entropies);
+
+                    top_bc->switches[src]->addHostPort(src, uecSrc->flow_id(), uecSrc);
+                    top_bc->switches[dest]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
+                    break;
+                }
+                }
+                break;
+            }
+            case NOT_SET: {
+                abort();
+                break;
+            }
+            default: {
+                abort();
+                break;
+            }
             }
         }
 
@@ -1206,56 +1238,53 @@ int main(int argc, char **argv) {
         printf("Starting LGS Interface");
 
         switch (topology) {
-            case (FAT_TREE_CASE): {
-                printf("Fat-Tree Topology\n");
-                FatTreeTopology::set_tiers(3);
-                FatTreeTopology::set_os_stage_2(fat_tree_k);
-                FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
-                FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
-                FatTreeTopology::set_bts_threshold(bts_threshold);
-                FatTreeTopology::set_ignore_data_ecn(ignore_ecn_data);
-                FatTreeTopology *top = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
-                                                        queue_choice, hop_latency, switch_latency);
-                lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
-                break;
-            } 
-            case (FAT_TREE_DC_CASE): {
-                if (interdc_delay != 0) {
-                    FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
-                    UecSrc::set_interdc_delay(interdc_delay);
-                } else {
-                    FatTreeInterDCTopology::set_interdc_delay(hop_latency);
-                    UecSrc::set_interdc_delay(hop_latency);
-                }
-                FatTreeInterDCTopology::set_tiers(3);
-                FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
-                FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
-                FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
-                FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
-                FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
-                FatTreeInterDCTopology *top = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
-                                                        queue_choice, hop_latency, switch_latency);
-                lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
-                break;
+        case (FAT_TREE_CASE): {
+            printf("Fat-Tree Topology\n");
+            FatTreeTopology::set_tiers(3);
+            FatTreeTopology *top = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+                                                       queue_choice, hop_latency, switch_latency);
+            lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+            break;
+        }
+        case (FAT_TREE_DC_CASE): {
+            if (interdc_delay != 0) {
+                FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
+                UecSrc::set_interdc_delay(interdc_delay);
+            } else {
+                FatTreeInterDCTopology::set_interdc_delay(hop_latency);
+                UecSrc::set_interdc_delay(hop_latency);
             }
-            case (DRAGONFLY_CASE): {
-                // DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q);
-                DragonflyTopology *top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice);
-                break;
-            }
-            case (SLIMFLY_CASE): {
-                // SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type q);
-                SlimflyTopology *top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice);
-                break;
-            }
-            case (HAMMINGMESH_CASE): {
-                HammingmeshTopology *top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize, &eventlist, queue_choice);
-                break;
-            }
-            case (BCUBE_CASE): {
-                BCubeTopology *top_bc = new BCubeTopology(n_bcube, k_bcube, queuesize, &eventlist, queue_choice);
-                break;
-            }
+            FatTreeInterDCTopology::set_tiers(3);
+            FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
+            FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
+            FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
+            FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
+            FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
+            FatTreeInterDCTopology *top = new FatTreeInterDCTopology(
+                    no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, queue_choice, hop_latency, switch_latency);
+            lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+            break;
+        }
+        case (DRAGONFLY_CASE): {
+            // DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q);
+            DragonflyTopology *top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice);
+            break;
+        }
+        case (SLIMFLY_CASE): {
+            // SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type
+            // q);
+            SlimflyTopology *top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice);
+            break;
+        }
+        case (HAMMINGMESH_CASE): {
+            HammingmeshTopology *top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize,
+                                                                  &eventlist, queue_choice);
+            break;
+        }
+        case (BCUBE_CASE): {
+            BCubeTopology *top_bc = new BCubeTopology(n_bcube, k_bcube, queuesize, &eventlist, queue_choice);
+            break;
+        }
         }
 
         lgs->set_protocol(UEC_PROTOCOL);

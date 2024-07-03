@@ -839,7 +839,7 @@ int UecSrc::choose_route() {
     case ECMP_RANDOM2_ECN: {
 
         if (false) {
-            //uint64_t allpathssizes = _mss * _paths.size();
+            // uint64_t allpathssizes = _mss * _paths.size();
             if (_highest_sent < max(_maxcwnd, (uint64_t)1)) {
                 curr_entropy++;
                 _crt_path++;
@@ -857,7 +857,7 @@ int UecSrc::choose_route() {
             }
             break;
         } else {
-            //uint64_t allpathssizes = _mss * _paths.size();
+            // uint64_t allpathssizes = _mss * _paths.size();
             if (_highest_sent < max(_maxcwnd, (uint64_t)1)) {
                 /*printf("Trying this for %d // Highest Sent %d - cwnd %d - "
                        "allpathsize %d\n",
@@ -1305,7 +1305,7 @@ void UecSrc::adjust_window(simtime_picosec ts, bool ecn, simtime_picosec rtt) {
             if (t_last_decrease == 0) {
                 t_last_decrease = eventlist().now();
             }
-            //bool time_enough = (eventlist().now() - t_last_decrease) > _base_rtt;
+            // bool time_enough = (eventlist().now() - t_last_decrease) > _base_rtt;
 
             if (count_received < ignore_for && ecn) {
                 return;
@@ -1910,7 +1910,6 @@ bool UecSrc::resend_packet(std::size_t idx) {
     p->flow().logTraffic(*p, *this, TrafficLogger::PKT_CREATE);
     /* printf("Send on at %lu -- %d %d\n", GLOBAL_TIME / 1000, pause_send, stop_after_quick); */
     PacketSink *sink = p->sendOn();
-    track_sending_rate();
     tracking_bytes += _mss;
     HostQueue *q = dynamic_cast<HostQueue *>(sink);
     assert(q);

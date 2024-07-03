@@ -111,8 +111,8 @@ LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger, Ev
     printf("Running Hammingmesh.\n");
 }
 
-LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList,
-                                 BCubeTopology *topo, std::vector<const Route *> ***routes) {
+LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList, BCubeTopology *topo,
+                                 std::vector<const Route *> ***routes) {
     _logger = logger;
     _flow = pktLogger;
     _eventlist = &eventList;
@@ -218,13 +218,13 @@ void LogSimInterface::send_event(int from, int to, int size, int tag, u_int64_t 
         Route *dsttotor = new Route();
 
         if (_topo != NULL) {
-            srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-            srctotor->push_back(_topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-            srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]->getRemoteEndpoint());
+            srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)][0]);
+            srctotor->push_back(_topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)][0]);
+            srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)][0]->getRemoteEndpoint());
 
-            dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-            dsttotor->push_back(_topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-            dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]->getRemoteEndpoint());
+            dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)][0]);
+            dsttotor->push_back(_topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)][0]);
+            dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)][0]->getRemoteEndpoint());
 
         } else if (_topo_inter_dc != NULL) {
             int idx_dc = _topo_inter_dc->get_dc_id(from);
@@ -345,14 +345,15 @@ void LogSimInterface::send_event(int from, int to, int size, int tag, u_int64_t 
         uecSink->set_src(from);
 
         Route *srctotor = new Route();
-        srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-        srctotor->push_back(_topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-        srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]->getRemoteEndpoint());
 
         Route *dsttotor = new Route();
-        dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-        dsttotor->push_back(_topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-        dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]->getRemoteEndpoint());
+        srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)][0]);
+        srctotor->push_back(_topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)][0]);
+        srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)][0]->getRemoteEndpoint());
+
+        dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)][0]);
+        dsttotor->push_back(_topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)][0]);
+        dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)][0]->getRemoteEndpoint());
 
         if (tag == 989) {
             uecSrc->connect(srctotor, dsttotor, *uecSink, GLOBAL_TIME + 100000);
@@ -422,14 +423,15 @@ void LogSimInterface::send_event(int from, int to, int size, int tag, u_int64_t 
         swiftTrimmingSink->set_src(from);
 
         Route *srctotor = new Route();
-        srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-        srctotor->push_back(_topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-        srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]->getRemoteEndpoint());
 
         Route *dsttotor = new Route();
-        dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-        dsttotor->push_back(_topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-        dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]->getRemoteEndpoint());
+        srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)][0]);
+        srctotor->push_back(_topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)][0]);
+        srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)][0]->getRemoteEndpoint());
+
+        dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)][0]);
+        dsttotor->push_back(_topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)][0]);
+        dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)][0]->getRemoteEndpoint());
 
         swiftTrimmingSrc->connect(srctotor, dsttotor, *swiftTrimmingSink, GLOBAL_TIME);
         swiftTrimmingSrc->set_paths(path_entropy_size);
@@ -478,13 +480,13 @@ void LogSimInterface::send_event(int from, int to, int size, int tag, u_int64_t 
         Route *dsttotor = new Route();
 
         if (_topo != NULL) {
-            srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-            srctotor->push_back(_topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]);
-            srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)]->getRemoteEndpoint());
+            srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)][0]);
+            srctotor->push_back(_topo->pipes_ns_nlp[from][_topo->HOST_POD_SWITCH(from)][0]);
+            srctotor->push_back(_topo->queues_ns_nlp[from][_topo->HOST_POD_SWITCH(from)][0]->getRemoteEndpoint());
 
-            dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-            dsttotor->push_back(_topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]);
-            dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)]->getRemoteEndpoint());
+            dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)][0]);
+            dsttotor->push_back(_topo->pipes_ns_nlp[to][_topo->HOST_POD_SWITCH(to)][0]);
+            dsttotor->push_back(_topo->queues_ns_nlp[to][_topo->HOST_POD_SWITCH(to)][0]->getRemoteEndpoint());
 
         } else if (_topo_inter_dc != NULL) {
             int idx_dc = _topo_inter_dc->get_dc_id(from);
@@ -815,7 +817,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
     // printf("Initial AQ Size is %d\n\n", aq.size());
 
     // bool new_events = true;
-    //bool first_cycle = true;
+    // bool first_cycle = true;
     // uint lastperc = 0;
     int cycles = 0;
 
@@ -833,7 +835,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                aq.empty(), aq.top().time, lgs_interface->htsim_time, 1, first_cycle, size_queue(rq, p),
                size_queue(uq, p), aq.size(), aq.top().host, aq.top().target, aq.top().tag); */
 
-        //graph_node_properties temp_elem = aq.top();
+        // graph_node_properties temp_elem = aq.top();
 
         while (!aq.empty() && aq.top().time <= (lgs_interface->htsim_time)) {
             /* printf("Active Queue Size %d - Top Time %lu Type %d - HTSIM Time "
@@ -1239,7 +1241,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
             /* printf("..... NOT Received a MSG\n"); */
         }
 
-        //first_cycle = false;
+        // first_cycle = false;
         cycles++;
 
         /* printf("----------------------------    LEAVING TOP WHILE        // "
