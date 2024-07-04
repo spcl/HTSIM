@@ -85,6 +85,15 @@ class SlimflyTopology : public Topology {
     vector<uint32_t> get_X() { return _X;}
     vector<uint32_t> get_Xp() { return _Xp;}
 
+    static void set_ecn_parameters(bool enable_ecn, mem_b ecn_low, mem_b ecn_high) {
+        _enable_ecn = enable_ecn;
+        _ecn_low = ecn_low;
+        _ecn_high = ecn_high;
+    }
+
+    static bool _enable_ecn;
+    static mem_b _ecn_low, _ecn_high;
+
   private:
     void set_params();
     uint32_t get_generator(uint32_t q);

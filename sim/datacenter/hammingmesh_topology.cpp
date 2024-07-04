@@ -20,6 +20,11 @@
 // RoundTrip Time.
 extern uint32_t RTT;
 
+// Explicit Congestion Notification (ECN)
+bool HammingmeshTopology::_enable_ecn = false;
+mem_b HammingmeshTopology::_ecn_low = 0;
+mem_b HammingmeshTopology::_ecn_high = 0;
+
 // Convertes: Number (double) TO Ascii (string); Integer (uint64_t) TO Ascii (string).
 string ntoa(double n);
 string itoa(uint64_t n);
@@ -136,8 +141,13 @@ Queue *HammingmeshTopology::alloc_queue(QueueLogger *queueLogger, mem_b queuesiz
 Queue *HammingmeshTopology::alloc_queue(QueueLogger *queueLogger, uint64_t speed, mem_b queuesize, bool tor) {
     if (_qt == RANDOM)
         return new RandomQueue(speedFromMbps(speed), queuesize, *_eventlist, queueLogger, memFromPkt(RANDOM_BUFFER));
-    else if (_qt == COMPOSITE)
-        return new CompositeQueue(speedFromMbps(speed), queuesize, *_eventlist, queueLogger);
+    else if (_qt == COMPOSITE){
+        CompositeQueue *q = new CompositeQueue(speedFromMbps(speed), queuesize, *_eventlist, queueLogger);
+        if (_enable_ecn) {
+            q->set_ecn_thresholds(_ecn_low, _ecn_high);
+        }
+        return q;
+    }
     else if (_qt == CTRL_PRIO)
         return new CtrlPrioQueue(speedFromMbps(speed), queuesize, *_eventlist, queueLogger);
     else if (_qt == ECN)

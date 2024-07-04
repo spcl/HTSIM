@@ -76,6 +76,15 @@ class HammingmeshTopology : public Topology {
       return (_height * _width * _height_board * _width_board) + (_width * _width_board * ft_size_h) + (_height * _height_board * ft_size_w);
     }
 
+    static void set_ecn_parameters(bool enable_ecn, mem_b ecn_low, mem_b ecn_high) {
+      _enable_ecn = enable_ecn;
+      _ecn_low = ecn_low;
+      _ecn_high = ecn_high;
+    }
+
+    static bool _enable_ecn;
+    static mem_b _ecn_low, _ecn_high;
+
   private:
     void set_params();
     int modulo(int x, int y);
