@@ -21,6 +21,7 @@ ECN = True
 def run(title,experiment):
     # Clean Data and Copy Data
     # RTT Data
+    title = title.replace("\n", "<br>")
     os.chdir("experiments/" + experiment+"/")
     colnames = ["Time", "RTT", "seqno", "ackno", "base", "target"]
     df = pd.DataFrame(columns=["Time", "RTT", "seqno", "ackno", "base", "target"])
@@ -211,26 +212,41 @@ def run(title,experiment):
                 y=sub_df["RTT"],
                 mode="markers",
                 marker=dict(size=2),
-                name=str(i),
+                name="RTT",
                 line=dict(color=color[0]),
                 opacity=0.9,
-                showlegend=True,
+                showlegend=False,
             ),
             secondary_y=False,
         )
+    fig.add_trace(
+        go.Scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            marker=dict(size=7),
+            name="RTT",
+            line=dict(color=color[0]),
+            opacity=0.9,
+            showlegend=True,
+        ),
+        secondary_y=False,
+    )
 
+    legend = True
     for i in df2["Node"].unique():
         sub_df = df2.loc[df2["Node"] == str(i)]
         fig.add_trace(
             go.Scatter(
                 x=sub_df["Time"],
                 y=sub_df["Congestion Window"],
-                name="CWD " + str(i),
+                name="CWD",
                 line=dict(dash="dot"),
-                showlegend=True,
+                showlegend=legend,
             ),
             secondary_y=True,
         )
+        legend = False
 
     # Queue
     count = 0
@@ -246,15 +262,27 @@ def run(title,experiment):
             go.Scatter(
                 x=sub_df["Time"],
                 y=sub_df["Queue"],
-                name="Queue " + str(i),
+                name="Queue",
                 mode="markers",
                 marker=dict(size=1.4),
                 line=dict(dash="dash", color="black", width=3),
-                showlegend=True,
+                showlegend=False,
             ),
             secondary_y=False,
         )
         count += 1
+    fig.add_trace(
+        go.Scatter(
+            x=[None],
+            y=[None],
+            name="Queue",
+            mode="markers",
+            marker=dict(size=7),
+            line=dict(dash="dash", color="black", width=3),
+            showlegend=True,
+        ),
+        secondary_y=False,
+    )
 
     fig.add_trace(
         go.Scatter(
@@ -262,8 +290,21 @@ def run(title,experiment):
             y=[7000] * len(dfSwitchFail),
             mode="markers",
             marker_symbol="cross",
-            name="Switch Fail",
-            marker=dict(size=2, color="red"),
+            name="Switch fail",
+            marker=dict(size=4, color="red"),
+            showlegend=False,
+        ),
+        secondary_y=False,
+    )
+    
+    fig.add_trace(
+        go.Scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            marker_symbol="cross",
+            name="Switch fail",
+            marker=dict(size=7, color="red"),
             showlegend=True,
         ),
         secondary_y=False,
@@ -274,8 +315,20 @@ def run(title,experiment):
             y=[6500] * len(dfSwitchDegradations),
             mode="markers",
             marker_symbol="diamond",
-            name="Switch Degradation",
-            marker=dict(size=2, color="red"),
+            name="Switch degradation",
+            marker=dict(size=4, color="red"),
+            showlegend=False,
+        ),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            marker_symbol="diamond",
+            name="Switch degradation",
+            marker=dict(size=7, color="red"),
             showlegend=True,
         ),
         secondary_y=False,
@@ -287,8 +340,20 @@ def run(title,experiment):
             y=[6000] * len(dfSwitchDrops),
             mode="markers",
             marker_symbol="circle",
-            name="Switch Packet drop",
+            name="Switch packet drop",
             marker=dict(size=2, color="red"),
+            showlegend=False,
+        ),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            marker_symbol="circle",
+            name="Switch packet drop",
+            marker=dict(size=7, color="red"),
             showlegend=True,
         ),
         secondary_y=False,
@@ -300,20 +365,45 @@ def run(title,experiment):
             y=[5000] * len(dfCableFail),
             mode="markers",
             marker_symbol="cross",
-            name="Cable Fail",
-            marker=dict(size=2, color="blue"),
+            name="Cable fail",
+            marker=dict(size=4, color="blue"),
+            showlegend=False,
+        ),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            marker_symbol="cross",
+            name="Cable fail",
+            marker=dict(size=7, color="blue"),
             showlegend=True,
         ),
         secondary_y=False,
     )
+
     fig.add_trace(
         go.Scatter(
             x=dfCableDegradations["Time"] / 1000,
             y=[6500] * len(dfCableDegradations),
             mode="markers",
             marker_symbol="diamond",
-            name="Cable Degradation",
-            marker=dict(size=2, color="blue"),
+            name="Cable degradation",
+            marker=dict(size=4, color="blue"),
+            showlegend=False,
+        ),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            marker_symbol="diamond",
+            name="Cable degradation",
+            marker=dict(size=7, color="blue"),
             showlegend=True,
         ),
         secondary_y=False,
@@ -325,27 +415,49 @@ def run(title,experiment):
             y=[4500] * len(dfCableDrops),
             mode="markers",
             marker_symbol="circle",
-            name="Cable Packet drop",
+            name="Cable packet drop",
             marker=dict(size=2, color="blue"),
+            showlegend=False,
+        ),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            marker_symbol="circle",
+            name="Cable packet drop",
+            marker=dict(size=7, color="blue"),
             showlegend=True,
         ),
         secondary_y=False,
     )
+
     fig.add_trace(
         go.Scatter(
             x=dfRandomPacketDrops["Time"] / 1000,
             y=[4500] * len(dfRandomPacketDrops),
             mode="markers",
             marker_symbol="circle",
-            name="Random Packet drop",
+            name="Random packet drop   ",
             marker=dict(size=2, color="pink"),
+            showlegend=False,
+        ),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            marker_symbol="circle",
+            name="Random packet drop   ",
+            marker=dict(size=7, color="pink"),
             showlegend=True,
         ),
         secondary_y=False,
     )
-
-    # Add figure title
-    fig.update_layout(title_text=title)
 
     fig.add_shape(
         type="line",
@@ -401,11 +513,24 @@ def run(title,experiment):
     fig.update_yaxes(title_text="RTT || Queuing Latency (ns)", secondary_y=False)
     fig.update_yaxes(title_text="Congestion Window (B)", secondary_y=True)
 
+    fig.update_layout(title_text=title, title_x=0.5, title_xanchor='center')
+    fig.update_layout(    
+        legend=dict(
+        orientation="h",
+        font=dict(size=10),
+        bordercolor='black',
+        borderwidth=1,
+        x=0.47,
+        xanchor='center',
+        y=-0.21,
+        yanchor='bottom'
+    ))
+
     now = datetime.now()  # current date and time
     date_time = now.strftime("%m:%d:%Y_%H:%M:%S")
     # fig.write_image("out/fid_simple_{}.png".format(date_time))
     # plotly.offline.plot(fig, filename='out/fid_simple_{}.html'.format(date_time))
     # save plot as pdf file without legend
-    fig.update_layout(showlegend=False, width=1024, height=550)
+    fig.update_layout(width=1300, height=550)
     os.chdir("../..")    
     return fig

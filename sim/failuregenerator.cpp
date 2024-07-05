@@ -26,26 +26,34 @@ bool trueWithProb(double prob) {
 }
 
 int64_t generateTimeSwitch() {
-    std::uniform_real_distribution<> dis(0, 1);
-    if (dis(gen) < 0.5) {
-        std::uniform_int_distribution<> dis(0, 360);
-        return dis(gen) * 1e+12;
+    if (FAILURE_GENERATOR->switch_fail_duration) {
+        return FAILURE_GENERATOR->switch_fail_duration_time;
     } else {
-        std::geometric_distribution<> dis(0.1);
-        int64_t val = dis(gen) + 360;
-        return std::min(val, int64_t(18000)) * 1e12;
+        std::uniform_real_distribution<> dis(0, 1);
+        if (dis(gen) < 0.5) {
+            std::uniform_int_distribution<> dis(0, 360);
+            return dis(gen) * 1e+12;
+        } else {
+            std::geometric_distribution<> dis(0.1);
+            int64_t val = dis(gen) + 360;
+            return std::min(val, int64_t(18000)) * 1e12;
+        }
     }
 }
 
 int64_t generateTimeCable() {
-    std::uniform_real_distribution<> dis(0, 1);
-    if (dis(gen) < 0.8) {
-        std::uniform_int_distribution<> dis(0, 300);
-        return dis(gen) * 1e+12;
+    if (FAILURE_GENERATOR->cable_fail_duration) {
+        return FAILURE_GENERATOR->cable_fail_duration_time;
     } else {
-        std::geometric_distribution<> dis(0.1);
-        int64_t val = dis(gen) + 300;
-        return std::min(val, int64_t(3600)) * 1e12;
+        std::uniform_real_distribution<> dis(0, 1);
+        if (dis(gen) < 0.8) {
+            std::uniform_int_distribution<> dis(0, 300);
+            return dis(gen) * 1e+12;
+        } else {
+            std::geometric_distribution<> dis(0.1);
+            int64_t val = dis(gen) + 300;
+            return std::min(val, int64_t(3600)) * 1e12;
+        }
     }
 }
 
@@ -286,7 +294,7 @@ bool failuregenerator::switchDegradation(Switch *sw) {
             int port_nrs = sw->portCount();
             for (int i = 0; i < port_nrs; i++) {
                 BaseQueue *q = sw->getPort(i);
-                q->update_bit_rate(400000000000);
+                q->update_bit_rate(125000);
             }
             switch_degradation_next_fail = GLOBAL_TIME + switch_degradation_period;
             _list_switch_degradations.push_back(GLOBAL_TIME);
@@ -848,7 +856,7 @@ bool failuregenerator::check_connectivity() {
                 }
             }
             if (all_switches_active && all_cables_active) {
-                std::cout << "Path " << src->nodename() << " is connected by" << found_path << ::endl;
+                // std::cout << "Path " << src->nodename() << " is connected by" << found_path << ::endl;
                 src_dst_connected = true;
                 break;
             }
@@ -977,6 +985,14 @@ void failuregenerator::parseinputfile() {
                 only_us_cs = (value == "ON");
             } else if (key == "Cable-Fail-Percent-Per-Switch:") {
                 cable_fail_per_switch = (value == "ON");
+            } else if (key == "Switch-Fail-Duration:") {
+                switch_fail_duration = (value == "ON");
+            } else if (key == "Switch-Fail-Duration-Time:") {
+                switch_fail_duration_time = std::stof(value);
+            } else if (key == "Cable-Fail-Duration:") {
+                cable_fail_duration = (value == "ON");
+            } else if (key == "Cable-Fail-Duration-Time:") {
+                cable_fail_duration_time = std::stof(value);
             } else {
                 std::cout << "Unknown key in failuregenerator input file: " << key << std::endl;
             }

@@ -60,6 +60,8 @@ class failuregenerator {
     bool switchFail(Switch *sw);
     bool switch_fail = false;
     bool pause_fail_switch = false;
+    bool switch_fail_duration = false;
+    int switch_fail_duration_time = 0;
     std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> failingSwitches;
     std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> temp_failingSwitches;
     std::set<uint32_t> neededSwitches;
@@ -107,6 +109,8 @@ class failuregenerator {
     bool only_us_cs = false;
     bool pause_fail_cable = false;
     bool cable_fail_per_switch = false;
+    bool cable_fail_duration = false;
+    int cable_fail_duration_time = 0;
     // Map from switch to cables going away fromt this switch
     unordered_map<uint32_t, std::set<uint32_t>> CablesPerSwitch;
     void addCablePerSwitch(uint32_t switch_id, uint32_t cable_id);

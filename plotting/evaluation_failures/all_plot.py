@@ -161,8 +161,8 @@ def run(
     list_total_out_of_order_reps = getMaxTotalOutOfOrderPackets(short_title)
     list_out_of_order_ratio_reps = getOutofOrderRatio(short_title)
     list_out_of_order_distance_reps = getOutOfOrderDistance(short_title)
-    # complete_plot = run_complete(title,short_title)
-    # complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
+    complete_plot = run_complete(title,short_title)
+    complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
     print(
         "REPS: Flow Diff {} - Total {}".format(
             max(list_reps) - min(list_reps), max(list_reps)
@@ -202,8 +202,8 @@ def run(
     list_total_out_of_order_repsC = getMaxTotalOutOfOrderPackets(short_title)
     list_out_of_order_ratio_repsC = getOutofOrderRatio(short_title)
     list_out_of_order_distance_repsC = getOutOfOrderDistance(short_title)
-    # complete_plot = run_complete(title,short_title)
-    # complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
+    complete_plot = run_complete(title,short_title)
+    complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
     print(
         "REPS circular: Flow Diff {} - Total {}".format(
             max(list_repsC) - min(list_repsC), max(list_repsC)
@@ -230,20 +230,20 @@ def run(
 
     #REPS Circular without freezing
     balancer = "reps_circular"
-    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}Freezing.txt".format(
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}NoFreezing.txt".format(
             balancer, nodes, topology, connection_matrix, failures_input, balancer
         )
     print(string_to_run)
-    execute_string(string_to_run, short_title, balancer+"Freezing")
-    filename = "experiments/{}/{}Freezing.txt".format(short_title,balancer)
+    execute_string(string_to_run, short_title, balancer+"NoFreezing")
+    filename = "experiments/{}/{}NoFreezing.txt".format(short_title,balancer)
     list_repsCF = getListFCT(filename)
     num_nack_repsCF = getNumTrimmed(filename)
     num_lost_packets_repsCF = getNrDroppedPackets(filename)
     list_total_out_of_order_repsCF = getMaxTotalOutOfOrderPackets(short_title)
     list_out_of_order_ratio_repsCF = getOutofOrderRatio(short_title)
     list_out_of_order_distance_repsCF = getOutOfOrderDistance(short_title)
-    # complete_plot = run_complete(title,short_title)
-    # complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
+    complete_plot = run_complete(title,short_title)
+    complete_plot.write_image("experiments/{}/complete_plot_{}NoFreezing.svg".format(short_title,balancer))
     print(
         "repsCF: Flow Diff {} - Total {}".format(
             max(list_repsCF) - min(list_repsCF), max(list_repsCF)
@@ -251,12 +251,12 @@ def run(
     )
         ## REPS Circular without freezing without failures
     balancer = "reps_circular"
-    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 > {}FreezingNoFailures.txt".format(
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 > {}NoFreezingNoFailures.txt".format(
             balancer, nodes, topology, connection_matrix, balancer
         )
     print(string_to_run)
-    execute_string(string_to_run, short_title, balancer+"Freezing"+"NoFailures")
-    filename = "experiments/{}/{}FreezingNoFailures.txt".format(short_title,balancer)
+    execute_string(string_to_run, short_title, balancer+"NoFreezing"+"NoFailures")
+    filename = "experiments/{}/{}NoFreezingNoFailures.txt".format(short_title,balancer)
     list_repsCFNoFailures = getListFCT(filename)
     num_nack_repsCFNoFailures = getNumTrimmed(filename)
     list_total_out_of_order_repsCFNoFailures = getMaxTotalOutOfOrderPackets(short_title)
@@ -283,8 +283,8 @@ def run(
     list_total_out_of_order_spraying = getMaxTotalOutOfOrderPackets(short_title)
     list_out_of_order_ratio_spraying = getOutofOrderRatio(short_title)
     list_out_of_order_distance_spraying = getOutOfOrderDistance(short_title)
-    # complete_plot = run_complete(title,short_title)
-    # complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
+    complete_plot = run_complete(title,short_title)
+    complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
     print(
         "Spraying: Flow Diff {} - Total {}".format(
             max(list_spraying) - min(list_spraying), max(list_spraying)
@@ -325,19 +325,34 @@ def run(
     list_baseline_nacks = [num_nack_repsNoFailures, num_nack_repsCNoFailures, num_nack_repsCFNoFailures, num_nack_sprayingNoFailures]
 
     list_mean_total_out_of_order = [np.mean(list_total_out_of_order_reps), np.mean(list_total_out_of_order_repsC),np.mean(list_total_out_of_order_repsCF), np.mean(list_total_out_of_order_spraying)]
-    list_std_total_out_of_order = [np.std(list_total_out_of_order_reps), np.std(list_total_out_of_order_repsC), np.std(list_total_out_of_order_repsCF), np.std(list_total_out_of_order_spraying)]
-    list_max_total_out_of_order = [max(list_total_out_of_order_reps), max(list_total_out_of_order_repsC),max(list_total_out_of_order_repsCF), max(list_total_out_of_order_spraying)]
     list_baseline_mean_total_out_of_order = [np.mean(list_total_out_of_order_repsNoFailures), np.mean(list_total_out_of_order_repsCNoFailures),np.mean(list_total_out_of_order_repsCFNoFailures), np.mean(list_total_out_of_order_sprayingNoFailures)]
 
+    list_std_total_out_of_order = [np.std(list_total_out_of_order_reps), np.std(list_total_out_of_order_repsC), np.std(list_total_out_of_order_repsCF), np.std(list_total_out_of_order_spraying)]
+    list_baseline_std_total_out_of_order = [np.std(list_total_out_of_order_repsNoFailures), np.std(list_total_out_of_order_repsCNoFailures),np.std(list_total_out_of_order_repsCFNoFailures), np.std(list_total_out_of_order_sprayingNoFailures)]
+
+    list_max_total_out_of_order = [max(list_total_out_of_order_reps), max(list_total_out_of_order_repsC),max(list_total_out_of_order_repsCF), max(list_total_out_of_order_spraying)]
+    list_baseline_max_total_out_of_order = [max(list_total_out_of_order_repsNoFailures), max(list_total_out_of_order_repsCNoFailures),max(list_total_out_of_order_repsCFNoFailures), max(list_total_out_of_order_sprayingNoFailures)]
+    
+
     list_mean_total_out_of_order_ratio = [np.mean(list_out_of_order_ratio_reps), np.mean(list_out_of_order_ratio_repsC),np.mean(list_out_of_order_ratio_repsCF), np.mean(list_out_of_order_ratio_spraying)]
-    list_std_total_out_of_order_ratio = [np.std(list_out_of_order_ratio_reps), np.std(list_out_of_order_ratio_repsC),np.std(list_out_of_order_ratio_repsCF), np.std(list_out_of_order_ratio_spraying)]
-    list_max_total_out_of_order_ratio = [max(list_out_of_order_ratio_reps), max(list_out_of_order_ratio_repsC), max(list_out_of_order_ratio_repsCF), max(list_out_of_order_ratio_spraying)]
     list_baseline_mean_total_out_of_order_ratio = [np.mean(list_out_of_order_ratio_repsNoFailures), np.mean(list_out_of_order_ratio_repsCNoFailures),np.mean(list_out_of_order_ratio_repsCFNoFailures), np.mean(list_out_of_order_ratio_sprayingNoFailures)]
 
+    list_std_total_out_of_order_ratio = [np.std(list_out_of_order_ratio_reps), np.std(list_out_of_order_ratio_repsC),np.std(list_out_of_order_ratio_repsCF), np.std(list_out_of_order_ratio_spraying)]
+    list_baseline_std_total_out_of_order_ratio = [np.std(list_out_of_order_ratio_repsNoFailures), np.std(list_out_of_order_ratio_repsCNoFailures),np.std(list_out_of_order_ratio_repsCFNoFailures), np.std(list_out_of_order_ratio_sprayingNoFailures)]
+
+    list_max_total_out_of_order_ratio = [max(list_out_of_order_ratio_reps), max(list_out_of_order_ratio_repsC), max(list_out_of_order_ratio_repsCF), max(list_out_of_order_ratio_spraying)]
+    list_baseline_max_total_out_of_order_ratio = [max(list_out_of_order_ratio_repsNoFailures), max(list_out_of_order_ratio_repsCNoFailures), max(list_out_of_order_ratio_repsCFNoFailures), max(list_out_of_order_ratio_sprayingNoFailures)]
+    
+
     list_mean_total_out_of_order_distance = [np.mean(list_out_of_order_distance_reps), np.mean(list_out_of_order_distance_repsC),np.mean(list_out_of_order_distance_repsCF), np.mean(list_out_of_order_distance_spraying)]
-    list_std_total_out_of_order_distance = [np.std(list_out_of_order_distance_reps), np.std(list_out_of_order_distance_repsC),np.std(list_out_of_order_distance_repsCF), np.std(list_out_of_order_distance_spraying)]
-    list_max_total_out_of_order_distance = [max(list_out_of_order_distance_reps), max(list_out_of_order_distance_repsC),max(list_out_of_order_distance_repsCF), max(list_out_of_order_distance_spraying)]
     list_baseline_mean_total_out_of_order_distance = [np.mean(list_out_of_order_distance_repsNoFailures), np.mean(list_out_of_order_distance_repsCNoFailures),np.mean(list_out_of_order_distance_repsCFNoFailures), np.mean(list_out_of_order_distance_sprayingNoFailures)]
+
+    list_std_total_out_of_order_distance = [np.std(list_out_of_order_distance_reps), np.std(list_out_of_order_distance_repsC),np.std(list_out_of_order_distance_repsCF), np.std(list_out_of_order_distance_spraying)]
+    list_baseline_std_total_out_of_order_distance = [np.std(list_out_of_order_distance_repsNoFailures), np.std(list_out_of_order_distance_repsCNoFailures),np.std(list_out_of_order_distance_repsCFNoFailures), np.std(list_out_of_order_distance_sprayingNoFailures)]
+
+    list_max_total_out_of_order_distance = [max(list_out_of_order_distance_reps), max(list_out_of_order_distance_repsC),max(list_out_of_order_distance_repsCF), max(list_out_of_order_distance_spraying)]
+    list_baseline_max_total_out_of_order_distance = [max(list_out_of_order_distance_repsNoFailures), max(list_out_of_order_distance_repsCNoFailures),max(list_out_of_order_distance_repsCFNoFailures), max(list_out_of_order_distance_sprayingNoFailures)]
+    
 
     list_labels = ["REPS", "REPS Circular", "REPS Circular\n without freezing", "Spraying"]
 
@@ -377,9 +392,9 @@ def run(
     ax.set_yticklabels([str(round(i, 1)) for i in ax.get_yticks()], fontsize=16)
 
     # Add a vertical dashed line at x=1000 with lower opacity
-    best_time = (msg_size * 32 / 100 / 1000) + 12
-    print("Best Time {}".format(best_time))
-    plt.axvline(x=best_time, linestyle="--", color="#3b3b3b", alpha=0.55, linewidth=3)
+    # best_time = (msg_size * 32 / 100 / 1000) + 12
+    # print("Best Time {}".format(best_time))
+    # plt.axvline(x=best_time, linestyle="--", color="#3b3b3b", alpha=0.55, linewidth=3)
 
     # Set labels and title
     plt.xlabel("Flow Completion Time ({})".format(unit), fontsize=19.5)
@@ -388,7 +403,7 @@ def run(
     plt.grid()  # just add this
     plt.legend(frameon=False)
 
-     
+    plt.title(title, fontsize=16.5)
     plt.tight_layout()
     plt.savefig("experiments/{}/cdf.svg".format(short_title), bbox_inches="tight")
     plt.close()
@@ -515,109 +530,141 @@ def run(
     means = list_mean_total_out_of_order
     maxs = list_max_total_out_of_order
     errors = list_std_total_out_of_order
+    
+    means_baseline = list_baseline_mean_total_out_of_order
+    maxs_baseline = list_baseline_max_total_out_of_order
+    errors_baseline = list_baseline_std_total_out_of_order
+
     labels = list_labels
 
-    # Make bar chart
-    data4 = pd.DataFrame({"Total out of order packets": means, "Algorithm": labels, "Errors": errors})
-    ax5 = sns.barplot(x="Algorithm", y="Total out of order packets", data=data4)
-    ax5.tick_params(labelsize=9.5)
+    num_bars = len(labels)
+    bar_width = 0.9
+    index = np.arange(num_bars)
 
-    for index, row in data4.iterrows():
-        ax5.errorbar(x=index, y=row["Total out of order packets"], yerr=errors[index], fmt='none', capsize=5, color='black')
+    fig, ax = plt.subplots(figsize=(10, 6))
 
-    for idx, baseline in enumerate(list_baseline_mean_total_out_of_order):
-        bar_center = ax5.patches[idx].get_x() + ax5.patches[idx].get_width() / 2.0
-        ax5.plot([bar_center - 0.4, bar_center + 0.4], [baseline, baseline], color='black', linestyle='dashed', linewidth=1)
+    bars1 = ax.bar(index - bar_width/4, means, bar_width/2, yerr=errors, capsize=5, label='With Failures')
+    bars2 = ax.bar(index + bar_width/4, means_baseline, bar_width/2, yerr=errors_baseline, capsize=5, label='Without Failures')
 
+    ax.set_xlabel('Algorithm')
+    ax.set_ylabel('Total out of order packets')
+    ax.set_title(title)
+    ax.set_xticks(index)
+    ax.set_xticklabels(labels, rotation=0, ha='center')
+    
+    def autolabel(bars, max_values, errors):
+        for bar, max_val, error in zip(bars, max_values, errors):
+            height = bar.get_height()
+            ax.annotate(f'Max: {max_val:.2f}\nMean: {height:.2f}\nStd Dev: {error:.2f}',
+                        xy=(bar.get_x() + bar.get_width() / 2, 0),
+                        xytext=(0, 7), 
+                        textcoords="offset points",
+                        ha='center', va='bottom', fontsize=6)
 
-    # Format y-axis tick labels without scientific notation
-    ax5.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+    autolabel(bars1, maxs, errors)
+    autolabel(bars2, maxs_baseline, errors_baseline)
+    plt.legend(title='Type', loc='upper right', fancybox=True, bbox_to_anchor=(1.25, 1))
 
-    for index, p in enumerate(ax5.patches):
-        mean_value = round(means[index],2)
-        max_value = round(maxs[index],2)
-        error = round(errors[index],2)
-        ax5.annotate(f'Mean: {mean_value}\nMax: {max_value}\n Std Dev: {error}',
-                    (p.get_x() + p.get_width() / 2.0, 0),
-                    ha="center", va="bottom", fontsize=8, color='black',
-                    xytext=(0, 7), textcoords='offset points')
-
-    plt.title(title, fontsize=17)
-    plt.grid()
+    
+    plt.title(title, fontsize=15)
+    plt.tight_layout()
+    plt.grid(True)
     plt.savefig("experiments/{}/total_out_of_order.svg".format(short_title), bbox_inches="tight")
     plt.close()
 
 
     # PLOT 7 (Out of order ratio)
-    plt.figure(figsize=(7, 5))
     means = list_mean_total_out_of_order_ratio
     maxs = list_max_total_out_of_order_ratio
     errors = list_std_total_out_of_order_ratio
+
+    means_baseline = list_baseline_mean_total_out_of_order_ratio
+    maxs_baseline = list_baseline_max_total_out_of_order_ratio
+    errors_baseline = list_baseline_std_total_out_of_order_ratio
+
     labels = list_labels
 
-    # Make bar chart
-    data4 = pd.DataFrame({"Out of order ratio": means, "Algorithm": labels,"Errors": errors})
-    ax5 = sns.barplot(x="Algorithm", y="Out of order ratio", data=data4)
-    ax5.tick_params(labelsize=9.5)
+    num_bars = len(labels)
+    bar_width = 0.9
+    index = np.arange(num_bars)
 
-    for index, row in data4.iterrows():
-        ax5.errorbar(x=index, y=row["Out of order ratio"], yerr=errors[index], fmt='none', capsize=5, color='black')
+    fig, ax = plt.subplots(figsize=(10, 6))
 
-    for idx, baseline in enumerate(list_baseline_mean_total_out_of_order_ratio):
-        bar_center = ax5.patches[idx].get_x() + ax5.patches[idx].get_width() / 2.0
-        ax5.plot([bar_center - 0.4, bar_center + 0.4], [baseline, baseline], color='black', linestyle='dashed', linewidth=1)
+    bars1 = ax.bar(index - bar_width/4, means, bar_width/2, yerr=errors, capsize=5, label='With Failures')
+    bars2 = ax.bar(index + bar_width/4, means_baseline, bar_width/2, yerr=errors_baseline, capsize=5, label='Without Failures')
 
+    ax.set_xlabel('Algorithm')
+    ax.set_ylabel('Out of order ratio')
+    ax.set_title(title)
+    ax.set_xticks(index)
+    ax.set_xticklabels(labels, rotation=0, ha='center')
+    
+    def autolabel(bars, max_values, errors):
+        for bar, max_val, error in zip(bars, max_values, errors):
+            height = bar.get_height()
+            ax.annotate(f'Max: {max_val:.2f}\nMean: {height:.2f}\nStd Dev: {error:.2f}',
+                        xy=(bar.get_x() + bar.get_width() / 2, 0),
+                        xytext=(0, 7), 
+                        textcoords="offset points",
+                        ha='center', va='bottom', fontsize=6)
 
-    # Format y-axis tick labels without scientific notation
-    ax5.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+    autolabel(bars1, maxs, errors)
+    autolabel(bars2, maxs_baseline, errors_baseline)
+    plt.legend(title='Type', loc='upper right', fancybox=True, bbox_to_anchor=(1.25, 1))
 
-    for index, p in enumerate(ax5.patches):
-        mean_value = round(means[index],2)
-        max_value = round(maxs[index],2)
-        error = round(errors[index],2)
-        ax5.annotate(f'Mean: {mean_value}\nMax: {max_value}\n Std Dev: {error}',
-                    (p.get_x() + p.get_width() / 2.0, 0),
-                    ha="center", va="bottom", fontsize=8, color='black',
-                    xytext=(0, 7), textcoords='offset points')
-
-    plt.title(title, fontsize=17)
-    plt.grid()
+    
+    plt.title(title, fontsize=15)
+    plt.tight_layout()
+    plt.grid(True)
     plt.savefig("experiments/{}/out_of_order_ratio.svg".format(short_title), bbox_inches="tight")
     plt.close()
+    
 
     # PLOT 7 (Out of order Distance)
     plt.figure(figsize=(7, 5))
     means = list_mean_total_out_of_order_distance
     maxs = list_max_total_out_of_order_distance
     errors = list_std_total_out_of_order_distance
+
+    means_baseline = list_baseline_mean_total_out_of_order_distance
+    maxs_baseline = list_baseline_max_total_out_of_order_distance
+    errors_baseline = list_baseline_std_total_out_of_order_distance
+
+
     labels = list_labels
 
-    # Make bar chart
-    data4 = pd.DataFrame({"Out of order Distance": means, "Algorithm": labels, "Errors": errors})
-    ax5 = sns.barplot(x="Algorithm", y="Out of order Distance", data=data4)
-    ax5.tick_params(labelsize=9.5)
+    num_bars = len(labels)
+    bar_width = 0.9
+    index = np.arange(num_bars)
 
-    for index, row in data4.iterrows():
-        ax5.errorbar(x=index, y=row["Out of order Distance"], yerr=errors[index], fmt='none', capsize=5, color='black')
+    fig, ax = plt.subplots(figsize=(10, 6))
 
-    for idx, baseline in enumerate(list_baseline_mean_total_out_of_order_distance):
-        bar_center = ax5.patches[idx].get_x() + ax5.patches[idx].get_width() / 2.0
-        ax5.plot([bar_center - 0.4, bar_center + 0.4], [baseline, baseline], color='black', linestyle='dashed', linewidth=1)
+    bars1 = ax.bar(index - bar_width/4, means, bar_width/2, yerr=errors, capsize=5, label='With Failures')
+    bars2 = ax.bar(index + bar_width/4, means_baseline, bar_width/2, yerr=errors_baseline, capsize=5, label='Without Failures')
+
+    ax.set_xlabel('Algorithm')
+    ax.set_ylabel('Out of order distance')
+    ax.set_title(title)
+    ax.set_xticks(index)
+    ax.set_xticklabels(labels, rotation=0, ha='center')
     
-    # Format y-axis tick labels without scientific notation
-    ax5.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
+    def autolabel(bars, max_values, errors):
+        for bar, max_val, error in zip(bars, max_values, errors):
+            height = bar.get_height()
+            ax.annotate(f'Max: {max_val:.2f}\nMean: {height:.2f}\nStd Dev: {error:.2f}',
+                        xy=(bar.get_x() + bar.get_width() / 2, 0),
+                        xytext=(0, 7), 
+                        textcoords="offset points",
+                        ha='center', va='bottom', fontsize=6)
 
-    for index, p in enumerate(ax5.patches):
-        mean_value = round(means[index],2)
-        max_value = round(maxs[index],2)
-        error = round(errors[index],2)
-        ax5.annotate(f'Mean: {mean_value}\nMax: {max_value}\n Std Dev: {error}',
-                    (p.get_x() + p.get_width() / 2.0, 0),
-                    ha="center", va="bottom", fontsize=8, color='black',
-                    xytext=(0, 7), textcoords='offset points')
+    autolabel(bars1, maxs, errors)
+    autolabel(bars2, maxs_baseline, errors_baseline)
+    plt.legend(title='Type', loc='upper right', fancybox=True, bbox_to_anchor=(1.25, 1))
 
-    plt.title(title, fontsize=17)
-    plt.grid()
+    
+    plt.title(title, fontsize=15)
+    plt.tight_layout()
+    plt.grid(True)
     plt.savefig("experiments/{}/out_of_order_distance.svg".format(short_title), bbox_inches="tight")
     plt.close()
 
@@ -628,79 +675,231 @@ def main():
     os.system("mkdir -p experiments")
 
     titles = [
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: One failed cable",
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed US-CS cables per switch",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: One failed switch",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: One failed switch and cable",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: 20% failed switches",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: 20% failed cables",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: 20% failed switches and cables",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: Packet drop rate of 10^-4",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: One switch degraded",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: One cable degraded",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: 20% degraded switches",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 4MiB Flows \n Failure mode: 20% degraded cables",
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch at 10µs for 100µs", 
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch at 10µs for 100µs",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch at 10µs for 100µs",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch at 10µs for 100µs",
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch", 
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch",        
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable at 10µs for 100µs", 
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable at 10µs for 100µs",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable at 10µs for 100µs",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable at 10µs for 100µs",
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable", 
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable",
+
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded switch", 
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded switch",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded switch",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded switch",   
+         "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded cable", 
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded cable",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded cable",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded cable",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed switches", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed switches",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed switches",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed switches",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed cables", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed cables",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed cables",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed cables",
+
+
     ]
+
     failures_input = [
-        "fail_one_cable",
-        "10_percent_us-cs-cables-per-switch",
-        "fail_one_switch",
-        "fail_one_switch_one_cable",
-        "20_percent_failed_switches",
-        "20_percent_failed_cables",
-        "20_percent_failed_switches_and_cables",
-        "packet_drop_rate_10^-4",
+        # "fail_one_switch_after_10us_for_100us",
+        # "fail_one_switch_after_10us_for_100us",
+        # "fail_one_switch_after_10us_for_100us",
+        # "fail_one_switch_after_10us_for_100us",
+        # "fail_one_switch",
+        # "fail_one_switch",
+        # "fail_one_switch",
+        # "fail_one_switch",
+        # "fail_one_cable_after_10us_for_100us",
+        # "fail_one_cable_after_10us_for_100us",
+        # "fail_one_cable_after_10us_for_100us",
+        # "fail_one_cable_after_10us_for_100us",
+        # "fail_one_cable",
+        # "fail_one_cable",
+        # "fail_one_cable",
+        # "fail_one_cable",
+
         "degrade_one_switch",
-        "degrade_one_cable",
-        "20_percent_degraded_switches",
-        "20_percent_degraded_cables",
+        # "degrade_one_switch",
+        # "degrade_one_switch",
+        # "degrade_one_switch",
+         "degrade_one_cable",
+        # "degrade_one_cable",
+        # "degrade_one_cable",
+        # "degrade_one_cable",
+        "10_percent_failed_switches",
+        "10_percent_failed_switches",
+        "10_percent_failed_switches",
+        "10_percent_failed_switches",
+        "10_percent_failed_cables",
+        "10_percent_failed_cables",
+        "10_percent_failed_cables",
+        "10_percent_failed_cables",
+
+
+
+
+    ]
+
+    short_title = [
+        # "fail_one_switch_after_10us_for_100us_1os",
+        # "fail_one_switch_after_10us_for_100us_8os",
+        # "fail_one_switch_after_10us_for_100us_1os_incast",
+        # "fail_one_switch_after_10us_for_100us_8os_incast",
+        # "fail_one_switch_1os",
+        # "fail_one_switch_8os",
+        # "fail_one_switch_1os_incast",
+        # "fail_one_switch_8os_incast",
+        # "fail_one_cable_after_10us_for_100us_1os",
+        # "fail_one_cable_after_10us_for_100us_8os",
+        # "fail_one_cable_after_10us_for_100us_1os_incast",
+        # "fail_one_cable_after_10us_for_100us_8os_incast",
+        # "fail_one_cable_1os",
+        # "fail_one_cable_8os",
+        # "fail_one_cable_1os_incast",
+        # "fail_one_cable_8os_incast",
+
+         "degrade_one_switch_1os",
+        # "degrade_one_switch_8os",
+        # "degrade_one_switch_1os_incast",
+        # "degrade_one_switch_8os_incast",
+        # "degrade_one_cable_1os",
+         "degrade_one_cable_8os",
+        # "degrade_one_cable_1os_incast",
+        # "degrade_one_cable_8os_incast",
+        "10_percent_failed_switches_1os",
+        "10_percent_failed_switches_8os",
+        "10_percent_failed_switches_1os_incast",
+        "10_percent_failed_switches_8os_incast",
+        "10_percent_failed_cables_1os",
+        "10_percent_failed_cables_8os",
+        "10_percent_failed_cables_1os_incast",
+        "10_percent_failed_cables_8os_incast",
+
+
     ]
     nodes = [
-        1024,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+
+         128,
+        # 128,
+        # 128,
+        # 128,
+         128,
+        # 128,
+        # 128,
+        # 128,
         128,
-        1024,
-        1024,
-        1024,
-        1024,
-        1024,
-        1024,
-        1024,
-        1024,
-        1024,
-        1024,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
     ]
+
     topology = [
-        "fat_tree_1024_8os_800.topo",
+        # "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_8os_800.topo",
+        # "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_8os_800.topo",
+        # "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_8os_800.topo",
+        # "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_8os_800.topo",
+        # "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_8os_800.topo",
+        # "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_8os_800.topo",
+        # "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_8os_800.topo",
+        # "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_8os_800.topo",
+
+         "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_8os_800.topo",
+        # "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_8os_800.topo",
+         "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_8os_800.topo",
+        # "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_8os_800.topo",
+        "fat_tree_128_1os_800.topo",
         "fat_tree_128_8os_800.topo",
-        "fat_tree_1024_8os_800.topo",
-        "fat_tree_1024_8os_800.topo",
-        "fat_tree_1024_8os_800.topo",
-        "fat_tree_1024_8os_800.topo",
-        "fat_tree_1024_8os_800.topo",
-        "fat_tree_1024_8os_800.topo",
-        "fat_tree_1024_8os_800.topo",
-        "fat_tree_1024_8os_800.topo",
-        "fat_tree_1024_8os_800.topo",
-        "fat_tree_1024_8os_800.topo",
+        "fat_tree_128_1os_800.topo",
+        "fat_tree_128_8os_800.topo",
+        "fat_tree_128_1os_800.topo",
+        "fat_tree_128_8os_800.topo",
+        "fat_tree_128_1os_800.topo",
+        "fat_tree_128_8os_800.topo",
+        
     ]
     connection_matrix = [
-        "incast_1024_32_4MiB",
-        "perm_128_2",
-        "incast_1024_32_4MiB",
-        "incast_1024_32_4MiB",
-        "incast_1024_32_4MiB",
-        "incast_1024_32_4MiB",
-        "incast_1024_32_4MiB",
-        "incast_1024_32_4MiB",
-        "incast_1024_32_4MiB",
-        "incast_1024_32_4MiB",
-        "incast_1024_32_4MiB",
-        "incast_1024_32_4MiB",
+        # "perm_128_2MB",
+        # "perm_128_2MB",
+        # "incast_32_1_2MB",
+        # "incast_32_1_2MB",
+        # "perm_128_2MB",
+        # "perm_128_2MB",
+        # "incast_32_1_2MB",
+        # "incast_32_1_2MB",
+        # "perm_128_2MB",
+        # "perm_128_2MB",
+        # "incast_32_1_2MB",
+        # "incast_32_1_2MB",
+        # "perm_128_2MB",
+        # "perm_128_2MB",
+        # "incast_32_1_2MB",
+        # "incast_32_1_2MB",
+
+        # "perm_128_2MB",
+        # "perm_128_2MB",
+        # "incast_32_1_2MB",
+        # "incast_32_1_2MB",
+        # "perm_128_2MB",
+        # "perm_128_2MB",
+        # "incast_32_1_2MB",
+        # "incast_32_1_2MB",
+        "perm_128_2MB",
+        "perm_128_2MB",
+        "incast_32_1_2MB",
+        "incast_32_1_2MB",
+        "perm_128_2MB",
+        "perm_128_2MB",
+        "incast_32_1_2MB",
+        "incast_32_1_2MB",
     ]
 
     for i, title in enumerate(titles):
         run(
-            failures_input[i],
+            short_title[i],
             title,
             failures_input[i],
             2**22,

@@ -1,0 +1,6 @@
+Switch-Fail: ON
+Switch-Fail-Start-After: 0
+Switch-Fail-Period: 100000000
+Switch-Fail-Duration: ON
+Switch-Fail-Duration-Time: 200000000
+Switch-Fail-Max-Percent: 1
