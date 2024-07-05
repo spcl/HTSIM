@@ -79,7 +79,7 @@ HammingmeshTopology::HammingmeshTopology(uint32_t height, uint32_t width, uint32
     _height = height;
     _width = width;
     _height_board = height_board;
-    _width_board =width_board;
+    _width_board = width_board;
 
     _queuesize = queuesize;
     _eventlist = ev;
