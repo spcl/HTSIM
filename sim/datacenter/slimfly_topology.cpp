@@ -58,20 +58,63 @@ SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, me
     _q = pow(q_base, q_exp);
     _xi = get_generator(_q);
 
-    uint32_t q_half = (_q - 1) / 2;
-    _X.resize(q_half, 0);
-    _Xp.resize(q_half, 0);
-    uint32_t x = 1;
-    uint32_t xp = _xi;
-    for (uint32_t i = 0; i < q_half; i++) {
-        _X[i] = x;
-        _Xp[i] = xp;
-        x = (x * (_xi * _xi)) % _q;
-        xp = (xp * (_xi * _xi)) % _q;
+    uint32_t q_half;
+
+    uint32_t l = _q / 4;
+    int _delta;
+    if (4 * l == _q){
+        _delta = 0;
+
+        q_half = _q / 2;
+        _X.resize(q_half, 0);
+        _Xp.resize(q_half, 0);
+        uint32_t x = 1;
+        uint32_t xp = _xi;
+        for (uint32_t i = 0; i < q_half; i++) {
+            _X[i] = x;
+            _Xp[i] = xp;
+            x = (x * (_xi * _xi)) % _q;
+            xp = (xp * (_xi * _xi)) % _q;
+        }
     }
-    for(uint32_t i = 0; i < _X.size(); i++){
-        if(!is_element(_X, _q - _X[i])){_X.push_back(_q - _X[i]);}
-        if(!is_element(_Xp, _q - _Xp[i])){_Xp.push_back(_q - _Xp[i]);}
+    else if (4 * l + 1 == _q){
+        _delta = 1;
+
+        q_half = _q / 2;
+        _X.resize(q_half, 0);
+        _Xp.resize(q_half, 0);
+        uint32_t x = 1;
+        uint32_t xp = _xi;
+        for (uint32_t i = 0; i < q_half; i++) {
+            _X[i] = x;
+            _Xp[i] = xp;
+            x = (x * (_xi * _xi)) % _q;
+            xp = (xp * (_xi * _xi)) % _q;
+        }
+    }
+    else{
+        _delta = -1;
+        l++;
+
+        q_half = (_q - 1) / 2;
+        _X.resize(q_half, 0);
+        _Xp.resize(q_half, 0);
+        uint32_t x = 1;
+        uint32_t xp = _xi;
+        for (uint32_t i = 0; i < l; i++) {
+            _X[i] = x;
+            _Xp[i] = xp;
+            x = (x * (_xi * _xi)) % _q;
+            xp = (xp * (_xi * _xi)) % _q;
+        }
+        x = (_X[l-1] * _xi) % _q;
+        xp = (_Xp[l-1] * _xi) % _q;
+        for (uint32_t i = l; i < q_half; i++) {
+            _X[i] = x;
+            _Xp[i] = xp;
+            x = (x * (_xi * _xi)) % _q;
+            xp = (xp * (_xi * _xi)) % _q;
+        }
     }
 
     _queuesize = queuesize;
@@ -115,20 +158,63 @@ SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, me
     _q = pow(q_base, q_exp);
     _xi = get_generator(_q);
 
-    uint32_t q_half = (_q - 1) / 2;
-    _X.resize(q_half, 0);
-    _Xp.resize(q_half, 0);
-    uint32_t x = 1;
-    uint32_t xp = _xi;
-    for (uint32_t i = 0; i < q_half; i++) {
-        _X[i] = x;
-        _Xp[i] = xp;
-        x = (x * (_xi * _xi)) % _q;
-        xp = (xp * (_xi * _xi)) % _q;
+    uint32_t q_half;
+
+    uint32_t l = _q / 4;
+    int _delta;
+    if (4 * l == _q){
+        _delta = 0;
+
+        q_half = _q / 2;
+        _X.resize(q_half, 0);
+        _Xp.resize(q_half, 0);
+        uint32_t x = 1;
+        uint32_t xp = _xi;
+        for (uint32_t i = 0; i < q_half; i++) {
+            _X[i] = x;
+            _Xp[i] = xp;
+            x = (x * (_xi * _xi)) % _q;
+            xp = (xp * (_xi * _xi)) % _q;
+        }
     }
-    for(uint32_t i = 0; i < _X.size(); i++){
-        if(!is_element(_X, _q - _X[i])){_X.push_back(_q - _X[i]);}
-        if(!is_element(_Xp, _q - _Xp[i])){_Xp.push_back(_q - _Xp[i]);}
+    else if (4 * l + 1 == _q){
+        _delta = 1;
+
+        q_half = _q / 2;
+        _X.resize(q_half, 0);
+        _Xp.resize(q_half, 0);
+        uint32_t x = 1;
+        uint32_t xp = _xi;
+        for (uint32_t i = 0; i < q_half; i++) {
+            _X[i] = x;
+            _Xp[i] = xp;
+            x = (x * (_xi * _xi)) % _q;
+            xp = (xp * (_xi * _xi)) % _q;
+        }
+    }
+    else{
+        _delta = -1;
+        l++;
+
+        q_half = (_q + 1) / 2;
+        _X.resize(q_half, 0);
+        _Xp.resize(q_half, 0);
+        uint32_t x = 1;
+        uint32_t xp = _xi;
+        for (uint32_t i = 0; i < l; i++) {
+            _X[i] = x;
+            _Xp[i] = xp;
+            x = (x * (_xi * _xi)) % _q;
+            xp = (xp * (_xi * _xi)) % _q;
+        }
+        x = (_X[l-1] * _xi) % _q;
+        xp = (_Xp[l-1] * _xi) % _q;
+        for (uint32_t i = l; i < q_half; i++) {
+            _X[i] = x;
+            _Xp[i] = xp;
+            x = (x * (_xi * _xi)) % _q;
+            xp = (xp * (_xi * _xi)) % _q;
+        }
     }
 
     printf("_X = [");
