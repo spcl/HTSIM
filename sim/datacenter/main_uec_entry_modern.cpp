@@ -750,6 +750,7 @@ int main(int argc, char **argv) {
 
     // Calculate Network Info
     int hops = 6; // hardcoded for now
+    queuesize = memFromPkt(queuesize);
     uint64_t actual_starting_cwnd = 0;
     uint64_t base_rtt_max_hops = (hops * LINK_DELAY_MODERN) + (PKT_SIZE_MODERN * 8 / LINK_SPEED_MODERN * hops) +
                                  (hops * LINK_DELAY_MODERN) + (64 * 8 / LINK_SPEED_MODERN * hops);
@@ -982,8 +983,6 @@ int main(int argc, char **argv) {
             int dest = crt->dst;
             uint64_t rtt = BASE_RTT_MODERN * 1000;
             uint64_t bdp = BDP_MODERN_UEC;
-            // printf("Reaching here1\n");
-            fflush(stdout);
 
             /* Route *myin = new Route(*top->get_paths(src, dest)->at(0));
             int hops = myin->hop_count(); // hardcoded for now */
@@ -999,8 +998,7 @@ int main(int argc, char **argv) {
                 actual_starting_cwnd = bdp_local * starting_cwnd_ratio;
             }
 
-            UecSrc::set_starting_cwnd(actual_starting_cwnd * 2);
-            // printf("Setting CWND to %lu\n", actual_starting_cwnd);
+            UecSrc::set_starting_cwnd(actual_starting_cwnd * 1);
 
             /* printf("Using BDP of %lu - Queue is %lld - Starting Window is %lu\n", bdp_local, queuesize,
                    actual_starting_cwnd); */
@@ -1010,6 +1008,9 @@ int main(int argc, char **argv) {
             uecSrc->setNumberEntropies(256);
             uec_srcs.push_back(uecSrc);
             uecSrc->set_dst(dest);
+
+            uecSrc->from = src;
+            uecSrc->to = dest;
             // printf("Reaching here\n");
             if (crt->flowid) {
                 uecSrc->set_flowid(crt->flowid);
@@ -1032,7 +1033,7 @@ int main(int argc, char **argv) {
 
             uecSnk = new UecSink();
 
-            // uecSrc->setName("uec_" + ntoa(src) + "_" + ntoa(dest));
+            uecSrc->setName("uec_" + ntoa(src) + "_" + ntoa(dest));
 
             cout << "uec_" + ntoa(src) + "_" + ntoa(dest) << endl;
             logfile.writeName(*uecSrc);
