@@ -878,11 +878,12 @@ int main(int argc, char **argv) {
         HammingmeshTopology *top_hm = NULL;
         BCubeTopology *top_bc = NULL;
 
+        ecn_low = memFromPkt(ecn_low);
+        ecn_high = memFromPkt(ecn_high);
+
         switch (topology) {
         case (FAT_TREE_CASE): {
             if (ecn) {
-                ecn_low = memFromPkt(ecn_low);
-                ecn_high = memFromPkt(ecn_high);
                 FatTreeTopology::set_ecn_parameters(true, true, ecn_low, ecn_high);
             }
             if (topo_file) {
@@ -922,7 +923,7 @@ int main(int argc, char **argv) {
         case (DRAGONFLY_CASE): {
             // Hier Code einfügen.
             printf("Case Dragonfly.\tp = %u,\ta = %u,\th = %u\n", p, a, h);
-            DragonflyTopology::set_ecn_parameters(true, kmin, kmax);
+            DragonflyTopology::set_ecn_parameters(true, ecn_low, ecn_high);
             top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice, df_routing_strategy);
             no_of_nodes = a * p * (a * h + 1);
             break;
@@ -930,7 +931,7 @@ int main(int argc, char **argv) {
         case (SLIMFLY_CASE): {
             // Hier Code einfügen.
             printf("Case Slimfly.\tp = %u,\tq_base = %u,\tq_exp = %u\n", p, q_base, q_exp);
-            SlimflyTopology::set_ecn_parameters(true, kmin, kmax);
+            SlimflyTopology::set_ecn_parameters(true, ecn_low, ecn_high);
             top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice, sf_routing_strategy);
             int q = pow(q_base, q_exp);
             no_of_nodes = 2 * pow(q, 2);
@@ -940,7 +941,7 @@ int main(int argc, char **argv) {
             printf("Case Hammingmesh.\theight = %u,\twidth = %u,\theight_board = %u,\twidth_board = %u,\tstrategy = "
                    "%u.\n",
                    height, width, height_board, width_board, hm_routing_strategy);
-            HammingmeshTopology::set_ecn_parameters(true, kmin, kmax);
+            HammingmeshTopology::set_ecn_parameters(true, ecn_low, ecn_high);
             top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize, &eventlist,
                                              queue_choice, hm_routing_strategy);
             no_of_nodes = top_hm->get_no_nodes();
@@ -948,7 +949,7 @@ int main(int argc, char **argv) {
         }
         case (BCUBE_CASE): {
             printf("Case BCube.\n = %u,\tk = %u,\tstrategy = %u.\n", n_bcube, k_bcube, hm_routing_strategy);
-            BCubeTopology::set_ecn_parameters(true, kmin, kmax);
+            BCubeTopology::set_ecn_parameters(true, ecn_low, ecn_high);
             top_bc = new BCubeTopology(n_bcube, k_bcube, queuesize, &eventlist, queue_choice, bc_routing_strategy);
             no_of_nodes = top_bc->get_no_of_nodes();
             break;

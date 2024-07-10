@@ -1081,12 +1081,11 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
             f_flow_over_hook(pkt);
         }
 
-        /* cout << "Flow " << nodename() << " finished at " << timeAsMs(eventlist().now()) << endl;
+        cout << "Flow " << nodename() << " finished at " << timeAsMs(eventlist().now()) << endl;
         cout << "Flow " << nodename() << " completion time is " << timeAsMs(eventlist().now() - _flow_start_time)
-             << endl; */
+             << endl;
 
-        // printf("Completion Time Flow is %lu - Overall Time %lu\n", eventlist().now() - _flow_start_time,
-        // GLOBAL_TIME);
+        printf("Completion Time Flow is %lu - Overall Time %lu\n", eventlist().now() - _flow_start_time, GLOBAL_TIME);
 
         /* printf("Overall Completion at %lu\n", GLOBAL_TIME); */
         if (_end_trigger) {
@@ -1171,7 +1170,7 @@ void UecSrc::receivePacket(Packet &pkt) {
         pkt.free();
         return;
     case UECNACK:
-        printf("\nNACK at %lu %d@%d@%d - %d\n", GLOBAL_TIME / 1000, from, to, tag, pkt.is_failed);
+        // printf("\nNACK at %lu %d@%d@%d - %d\n", GLOBAL_TIME / 1000, from, to, tag, pkt.is_failed);
         // fflush(stdout);
         total_nack++;
         if (_trimming_enabled) {
