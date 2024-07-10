@@ -1081,14 +1081,17 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
             f_flow_over_hook(pkt);
         }
 
-        /* cout << "Flow " << nodename() << " finished at " << timeAsMs(eventlist().now()) << endl;
-        cout << "Flow " << nodename() << " completion time is " << timeAsMs(eventlist().now() - _flow_start_time)
-             << endl; */
+        cout << "Flow " << nodename() << " finished at "
+             << timeAsMs(eventlist().now()) << endl;
+        cout << "Flow " << nodename() << " completion time is "
+             << timeAsMs(eventlist().now() - _flow_start_time) << endl;
 
-        // printf("Completion Time Flow is %lu - Overall Time %lu\n", eventlist().now() - _flow_start_time,
-        // GLOBAL_TIME);
+        printf("Flow Completion time is %f - Flow Finishing Time %lu - Flow "
+               "Start Time %lu\n",
+               timeAsUs(eventlist().now()) - timeAsUs(_flow_start_time),
+               eventlist().now(), _flow_start_time);
 
-        /* printf("Overall Completion at %lu\n", GLOBAL_TIME); */
+        printf("Overall Completion at %lu\n", GLOBAL_TIME);
         if (_end_trigger) {
             _end_trigger->activate();
         }
@@ -1707,7 +1710,7 @@ void UecSrc::send_packets() {
         // Getting time until packet is really sent
         /* printf("Send on at %lu -- %d %d\n", GLOBAL_TIME / 1000, pause_send, stop_after_quick); */
         PacketSink *sink = p->sendOn();
-        track_sending_rate();
+        //track_sending_rate();
         tracking_bytes += _mss;
         HostQueue *q = dynamic_cast<HostQueue *>(sink);
         assert(q);
