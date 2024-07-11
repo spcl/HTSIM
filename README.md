@@ -180,7 +180,7 @@ An example of the file is below.
 - ```Switch-BER-Max-Percent```: Between 0 and 1, defines the maximum percentage of corrupted packets.
 
 #### Switch Degradation
-- ```Switch-Degradation```: Simulates the degradation of a switch. If turned on, affected switches have a 10% packet loss rate and transmit only at 1 Kbps.
+- ```Switch-Degradation```: Simulates the degradation of a switch. If turned on, affected switches have a 10% packet loss rate and transmits only at 10% of the original speed.
 - ```Switch-Degradation-Start-After```: Defines after how many picoseconds the first switch gets degraded.
 - ```Switch-Degradation-Period```: Defines after how many picoseconds since the last switch got degraded the next switch gets degraded.
 - ```Switch-Degradation-Max-Percent```: Between 0 and 1, defines the maximum percentage of degraded switches.

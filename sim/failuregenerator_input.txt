@@ -4,6 +4,8 @@ Switch-Fail: ON
 Switch-Fail-Start-After: 100000000
 Switch-Fail-Period: 1000000000000000000
 Switch-Fail-Max-Percent: 0.1
+Switch-Fail-Duration: OFF
+Switch-Fail-Duration-Time: 200000000
 Switch-BER: OFF
 Switch-BER-Start-After: 100000000
 Switch-BER-Period: 10000
@@ -19,6 +21,8 @@ Cable-Fail: OFF
 Cable-Fail-Start-After: 1000
 Cable-Fail-Period: 1000000000000000000
 Cable-Fail-Max-Percent: 0.1
+Cable-Fail-Duration: ON
+Cable-Fail-Duration-Time: 200000000
 Cable-BER: OFF
 Cable-BER-Start-After: 100000000
 Cable-BER-Period: 10000

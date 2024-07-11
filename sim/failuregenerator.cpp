@@ -294,7 +294,8 @@ bool failuregenerator::switchDegradation(Switch *sw) {
             int port_nrs = sw->portCount();
             for (int i = 0; i < port_nrs; i++) {
                 BaseQueue *q = sw->getPort(i);
-                q->update_bit_rate(125000);
+                linkspeed_bps speed = q->_bitrate;
+                q->update_bit_rate(speed / 10);
             }
             switch_degradation_next_fail = GLOBAL_TIME + switch_degradation_period;
             _list_switch_degradations.push_back(GLOBAL_TIME);
