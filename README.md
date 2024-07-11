@@ -164,6 +164,9 @@ An example of the file is below.
 - ```Switch-Fail-Start-After```: Defines after how many picoseconds the first switch fails.
 - ```Switch-Fail-Period```: Defines after how many picoseconds since the last error the next switch fails.
 - ```Switch-Fail-Max-Percent```: Between 0 and 1, defines the maximum percentage of failing switches.
+- ```Switch-Fail-Duration```:  If turned on, the switch fails for the duration specified in "Switch-Fail-Duration-Time."
+- ```Switch-Fail-Duration-Time```: Defines how many picoseconds the switch fails if "Switch-Fail-Duration" is turned on.
+
 <br/><br/>
 - ```Switch-Worst-Case```: Simulates complete failure of a switch. If turned on, affected switches are failing with 50% probability uniformly between 0 and 6 minutes long, and with 50% probability geometrically (with parameter 0.1) between 6 and 300 minutes long.
 - ```Switch-Worst-Case-Start-After```: Defines after how many picoseconds the first switch fails.
@@ -190,6 +193,8 @@ An example of the file is below.
 - ```Cable-Fail-Max-Percent```: Between 0 and 1, defines the maximum percentage of failing cables.
 - ```Cable-Fail-Percent-Per-Switch:```: If turned on the specified percentage applies per switch and not overall.
 - ```Only-US-CS-Cable::```: If turned on only US-CS cable will fail.
+- ```Cable-Fail-Duration```:  If turned on, the cable fails for the duration specified in "Switch-Fail-Duration-Time."
+- ```Cable-Fail-Duration-Time```: Defines how many picoseconds the cable fails if "Switch-Fail-Duration" is turned on.
 <br/><br/>
 - ```Cable-Worst-Case```: Simulates complete failure of a cable. If turned on, affected cables are failing with 80% probability uniformly between 0 and 5 minutes long, and with 20% probability geometrically (with parameter 0.1) between 5 and 60 minutes long.
 - ```Cable-Worst-Case-Start-After```: Defines after how many picoseconds the first cable fails.
@@ -226,7 +231,7 @@ An example of the file is below.
 - ```NIC-Degradation-Period```: Defines after how many picoseconds since the last NIC got degraded the next NIC gets degraded.
 - ```NIC-Degradation-Max-Percent```: Between 0 and 1, defines the maximum percentage of degraded NICs.
 
-Here is an example .txt file where the failure modes Switch-Fail and Cable-Fail are activated.
+Here is an complete example .txt file where the failure modes Switch-Fail and Cable-Fail are activated. There is now need to include all options in the .txt file. You can only include the ones you want to activate.
 ```
 Random-Packet-Drop: OFF
 Random-Packet-Drop-Rate: 4
@@ -234,6 +239,8 @@ Switch-Fail: ON
 Switch-Fail-Start-After: 100000000
 Switch-Fail-Period: 1000000000000000000
 Switch-Fail-Max-Percent: 0.1
+Switch-Fail-Duration: OFF
+Switch-Fail-Duration-Time: 200000000
 Switch-BER: OFF
 Switch-BER-Start-After: 100000000
 Switch-BER-Period: 10000
@@ -245,12 +252,12 @@ Switch-Degradation-Max-Percent: 0.1
 Switch-Worst-Case: OFF
 Switch-Worst-Case-Start-After: 100000000
 Switch-Worst-Case-Period: 10000
-Cable-Fail: ON
-Cable-Fail-Start-After: 100000000
-Cable-Fail-Period: 10000
+Cable-Fail: OFF
+Cable-Fail-Start-After: 1000
+Cable-Fail-Period: 1000000000000000000
 Cable-Fail-Max-Percent: 0.1
-Only-US-CS-Cable: OFF
-Cable-Fail-Percent-Per-Switch: OFF
+Cable-Fail-Duration: ON
+Cable-Fail-Duration-Time: 200000000
 Cable-BER: OFF
 Cable-BER-Start-After: 100000000
 Cable-BER-Period: 10000
