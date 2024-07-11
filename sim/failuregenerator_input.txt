@@ -17,6 +17,12 @@ Switch-Degradation-Max-Percent: 0.1
 Switch-Worst-Case: OFF
 Switch-Worst-Case-Start-After: 100000000
 Switch-Worst-Case-Period: 10000
+Switch-Periodic-Packet-Loss: OFF
+Switch-Periodic-Packet-Loss-Start-After: 100000000
+Switch-Periodic-Packet-Loss-Period: 1000000000000000000
+Switch-Periodic-Packet-Loss-PktNr: 100
+Switch-Periodic-Packet-Loss-Drop-Period: 1000000000
+Switch-Periodic-Packet-Loss-Max-Percent: 0.1
 Cable-Fail: OFF
 Cable-Fail-Start-After: 1000
 Cable-Fail-Period: 1000000000000000000
@@ -34,6 +40,12 @@ Cable-Degradation-Max-Percent: 0.1
 Cable-Worst-Case: OFF
 Cable-Worst-Case-Start-After: 100000000
 Cable-Worst-Case-Period: 10000
+Cable-Periodic-Packet-Loss: OFF
+Cable-Periodic-Packet-Loss-Start-After: 100000000
+Cable-Periodic-Packet-Loss-Period: 1000000000000000000
+Cable-Periodic-Packet-Loss-PktNr: 100
+Cable-Periodic-Packet-Loss-Drop-Period: 1000000000
+Cable-Periodic-Packet-Loss-Max-Percent: 0.1
 NIC-Fail: OFF
 NIC-Fail-Start-After: 100000000
 NIC-Fail-Period: 100000000

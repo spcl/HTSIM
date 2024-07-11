@@ -97,6 +97,22 @@ class failuregenerator {
     simtime_picosec switch_worst_case_period = 0;
     simtime_picosec switch_worst_case_next_fail = 0;
 
+    bool switchPeriodicDrop(Switch *sw);
+    bool fail_new_periodic_switch(Switch *sw);
+    std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> periodicfailingSwitches;
+    std::unordered_map<uint32_t, uint32_t> SwitchToNrDrops;
+    std::unordered_map<uint32_t, simtime_picosec> SwitchToNextDropTime;
+
+    std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> temp_periodicfailingSwitches;
+    bool switch_periodic_loss = false;
+    bool pause_switch_periodic_loss = false;
+    simtime_picosec switch_periodic_loss_start = 0;
+    simtime_picosec switch_periodic_loss_period = 0;
+    simtime_picosec switch_periodic_loss_next_fail = 0;
+    float switch_periodic_loss_max_percent = 1;
+    int switch_periodic_loss_pkt_amount = 0;
+    simtime_picosec switch_periodic_loss_drop_period = 0;
+
     // Cable
     bool fail_new_cable(Pipe *p);
 
@@ -144,6 +160,21 @@ class failuregenerator {
     simtime_picosec cable_worst_case_start = 0;
     simtime_picosec cable_worst_case_period = 0;
     simtime_picosec cable_worst_case_next_fail = 0;
+
+    bool cablePeriodicDrop(Pipe *p, Packet &pkt);
+    bool fail_new_periodic_cable(Pipe *p);
+    unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> periodicFailingCables;
+    unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> temp_periodicFailingCables;
+    std::unordered_map<uint32_t, uint32_t> CableToNrDrops;
+    std::unordered_map<uint32_t, simtime_picosec> CableToNextDropTime;
+    bool pause_cable_periodic_loss = false;
+    bool cable_periodic_loss = false;
+    simtime_picosec cable_periodic_loss_start = 0;
+    simtime_picosec cable_periodic_loss_period = 0;
+    simtime_picosec cable_periodic_loss_next_fail = 0;
+    float cable_periodic_loss_max_percent = 1;
+    int cable_periodic_loss_pkt_amount = 0;
+    simtime_picosec cable_periodic_loss_drop_period = 0;
 
     // NIC
     bool nic_fail = false;

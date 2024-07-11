@@ -133,7 +133,8 @@ void failuregenerator::dropRandomPacket(Packet &pkt) {
 }
 
 bool failuregenerator::simSwitchFailures(Packet &pkt, Switch *sw, Queue q) {
-    return (switchFail(sw) || switchBER(pkt, sw, q) || switchDegradation(sw) || switchWorstCase(sw));
+    return (switchFail(sw) || switchBER(pkt, sw, q) || switchDegradation(sw) || switchWorstCase(sw) ||
+            switchPeriodicDrop(sw));
 }
 
 bool failuregenerator::fail_new_switch(Switch *sw) {
@@ -176,6 +177,50 @@ bool failuregenerator::fail_new_switch(Switch *sw) {
     _list_switch_failures.push_back(std::make_pair(failureTime, recoveryTime));
     std::cout << "Failed a new Switch name: " << switch_name << " at " << std::to_string(failureTime) << " for "
               << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
+
+    return true;
+}
+
+bool failuregenerator::fail_new_periodic_switch(Switch *sw) {
+    if (pause_switch_periodic_loss) {
+        return false;
+    }
+
+    uint32_t switch_id = sw->getUniqueID();
+    std::string switch_name = sw->nodename();
+
+    int numberOfFailingSwitches = periodicfailingSwitches.size();
+    int numberOfAllSwitches = all_switches.size();
+    float percent = (float)numberOfFailingSwitches / (float)numberOfAllSwitches;
+    if (percent > switch_periodic_loss_max_percent) {
+        std::cout << "Did not fail Switch, because of max-percent Switch-name: " << switch_name << std::endl;
+        pause_switch_periodic_loss = true;
+        return false;
+    }
+
+    if (neededSwitches.find(switch_id) != neededSwitches.end()) {
+        return false;
+    }
+
+    uint64_t failureTime = GLOBAL_TIME;
+    uint64_t recoveryTime = GLOBAL_TIME + generateTimeSwitch();
+
+    temp_periodicfailingSwitches = periodicfailingSwitches;
+    temp_periodicfailingSwitches[switch_id] = std::make_pair(failureTime, recoveryTime);
+
+    if (!check_connectivity()) {
+        neededSwitches.insert(switch_id);
+        std::cout << "Did not fail critical Switch name: " << switch_name << std::endl;
+        return false;
+    }
+    periodicfailingSwitches[switch_id] = std::make_pair(failureTime, recoveryTime);
+    SwitchToNrDrops[switch_id] = 1;
+    SwitchToNextDropTime[switch_id] = 0;
+
+    switch_periodic_loss_next_fail = GLOBAL_TIME + switch_periodic_loss_period;
+
+    std::cout << "Periodically failed a new Switch name: " << switch_name << " at " << std::to_string(failureTime)
+              << " for " << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
 
     return true;
 }
@@ -341,8 +386,54 @@ bool failuregenerator::switchWorstCase(Switch *sw) {
     }
 }
 
+bool failuregenerator::switchPeriodicDrop(Switch *sw) {
+
+    if (!switch_periodic_loss) {
+        return false;
+    }
+
+    uint32_t switch_id = sw->getUniqueID();
+    std::string switch_name = sw->nodename();
+
+    if (periodicfailingSwitches.find(switch_id) != periodicfailingSwitches.end()) {
+        std::pair<uint64_t, uint64_t> curSwitch = periodicfailingSwitches[switch_id];
+        uint64_t recoveryTime = curSwitch.second;
+
+        if (GLOBAL_TIME > recoveryTime) {
+            std::cout << "Recovered from Fail" << std::endl;
+            neededSwitches.clear();
+            pause_switch_periodic_loss = false;
+            periodicfailingSwitches.erase(switch_id);
+            return false;
+        } else {
+            simtime_picosec nextDropTime = SwitchToNextDropTime[switch_id];
+            if (GLOBAL_TIME < nextDropTime) {
+                return false;
+            }
+            uint32_t nrDrops = SwitchToNrDrops[switch_id];
+            SwitchToNrDrops[switch_id] = nrDrops + 1;
+            if (nrDrops + 1 == switch_periodic_loss_pkt_amount) {
+                SwitchToNrDrops[switch_id] = 0;
+                SwitchToNextDropTime[switch_id] = GLOBAL_TIME + switch_periodic_loss_drop_period;
+                std::cout << "Packet dropped at switchPeriodicDrop " << switch_name << std::endl;
+                return true;
+            }
+
+            std::cout << "Packet dropped at switchPeriodicDrop " << switch_name << std::endl;
+            return true;
+        }
+    } else {
+        if (GLOBAL_TIME < switch_periodic_loss_next_fail) {
+            return false;
+        }
+
+        return fail_new_periodic_switch(sw);
+    }
+}
+
 bool failuregenerator::simCableFailures(Pipe *p, Packet &pkt) {
-    return (cableFail(p, pkt) || cableBER(pkt) || cableDegradation(p, pkt) || cableWorstCase(p, pkt));
+    return (cableFail(p, pkt) || cableBER(pkt) || cableDegradation(p, pkt) || cableWorstCase(p, pkt) ||
+            cablePeriodicDrop(p, pkt));
 }
 
 bool failuregenerator::fail_new_cable(Pipe *p) {
@@ -414,6 +505,56 @@ bool failuregenerator::fail_new_cable(Pipe *p) {
     _list_cable_failures.push_back(std::make_pair(failureTime, recoveryTime));
     std::cout << "Failed a new Cable name: " << cable_name << " at " << std::to_string(failureTime) << " for "
               << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
+    return true;
+}
+
+bool failuregenerator::fail_new_periodic_cable(Pipe *p) {
+    if (pause_cable_periodic_loss) {
+        return false;
+    }
+
+    uint32_t cable_id = p->getID();
+    std::string cable_name = p->nodename();
+
+    if (cable_name.find("callbackpipe") != std::string::npos) {
+        return false;
+    }
+
+    int numberOfFailingCables = periodicFailingCables.size();
+    int numberOfAllCables = all_cables.size();
+
+    float percent = (float)numberOfFailingCables / numberOfAllCables;
+    if (percent > cable_periodic_loss_max_percent) {
+        std::cout << "Did not fail Cable, because of max-percent Cable-name: " << p->nodename() << std::endl;
+        pause_cable_periodic_loss = true;
+        return false;
+    }
+
+    if (neededCables.find(cable_id) != neededCables.end()) {
+        // std::cout << "Did not fail critical Cable name: " << cable_name << std::endl;
+        return false;
+    }
+
+    uint64_t failureTime = GLOBAL_TIME;
+    uint64_t recoveryTime = GLOBAL_TIME + generateTimeCable();
+
+    temp_periodicFailingCables = periodicFailingCables;
+    temp_periodicFailingCables[cable_id] = std::make_pair(failureTime, recoveryTime);
+
+    if (!check_connectivity()) {
+        neededCables.insert(cable_id);
+        std::cout << "Did not fail critical Cable name: " << cable_name << std::endl;
+        return false;
+    }
+
+    periodicFailingCables[cable_id] = std::make_pair(failureTime, recoveryTime);
+    CableToNrDrops[cable_id] = 1;
+    CableToNextDropTime[cable_id] = 0;
+
+    cable_periodic_loss_next_fail = GLOBAL_TIME + cable_periodic_loss_period;
+
+    std::cout << "Periodically failed a new Cable name: " << cable_name << " at " << std::to_string(failureTime)
+              << " for " << std::to_string((recoveryTime - failureTime) / 1e+12) << " seconds" << std::endl;
     return true;
 }
 
@@ -603,6 +744,61 @@ bool failuregenerator::cableWorstCase(Pipe *p, Packet &pkt) {
         return fail_new_cable(p);
     }
     return false;
+}
+
+bool failuregenerator::cablePeriodicDrop(Pipe *p, Packet &pkt) {
+
+    if (!cable_periodic_loss) {
+        return false;
+    }
+
+    if (only_us_cs) {
+        const Route *route = pkt.get_route();
+        PacketSink *sink = route->at(0);
+        string name = sink->nodename();
+        if (!checkUStoCS(name)) {
+            // std::cout << "Did not fail Cable, because of only_us_cs: " << name << std::endl;
+            return false;
+        }
+    }
+
+    uint32_t cable_id = p->getID();
+
+    if (periodicFailingCables.find(cable_id) != periodicFailingCables.end()) {
+        std::pair<uint64_t, uint64_t> curCable = periodicFailingCables[cable_id];
+        uint64_t recoveryTime = curCable.second;
+
+        if (GLOBAL_TIME > recoveryTime) {
+            std::cout << "Recovered from Fail" << std::endl;
+            neededCables.clear();
+            pause_cable_periodic_loss = false;
+            periodicFailingCables.erase(cable_id);
+            return false;
+        } else {
+            simtime_picosec nextDropTime = CableToNextDropTime[cable_id];
+            if (GLOBAL_TIME < nextDropTime) {
+                return false;
+            }
+            uint32_t nrDrops = CableToNrDrops[cable_id];
+            CableToNrDrops[cable_id] = nrDrops + 1;
+            if (nrDrops + 1 == cable_periodic_loss_pkt_amount) {
+                CableToNrDrops[cable_id] = 0;
+                CableToNextDropTime[cable_id] = GLOBAL_TIME + cable_periodic_loss_drop_period;
+                std::cout << "Packet dropped at periodicCableFail " << p->nodename() << std::endl;
+                return true;
+            }
+
+            std::cout << "Packet dropped at periodicCableFail " << p->nodename() << std::endl;
+            return true;
+        }
+    } else {
+
+        if (GLOBAL_TIME < cable_periodic_loss_next_fail) {
+            return false;
+        }
+
+        return fail_new_periodic_cable(p);
+    }
 }
 
 bool failuregenerator::simNICFailures(UecSrc *src, UecSink *sink, Packet &pkt) {
@@ -842,7 +1038,8 @@ bool failuregenerator::check_connectivity() {
 
             for (uint32_t sw : switches_on_path) {
                 if (temp_failingSwitches.find(sw) != temp_failingSwitches.end() ||
-                    temp_degraded_switches.find(sw) != temp_degraded_switches.end()) {
+                    temp_degraded_switches.find(sw) != temp_degraded_switches.end() ||
+                    temp_periodicfailingSwitches.find(sw) != temp_periodicfailingSwitches.end()) {
                     all_switches_active = false;
                     break;
                 }
@@ -851,7 +1048,8 @@ bool failuregenerator::check_connectivity() {
             for (uint32_t cable : cables_on_path) {
 
                 if (temp_failingCables.find(cable) != temp_failingCables.end() ||
-                    temp_degraded_cables.find(cable) != temp_degraded_cables.end()) {
+                    temp_degraded_cables.find(cable) != temp_degraded_cables.end() ||
+                    temp_periodicFailingCables.find(cable) != temp_periodicFailingCables.end()) {
                     all_cables_active = false;
                     break;
                 }
@@ -994,7 +1192,33 @@ void failuregenerator::parseinputfile() {
                 cable_fail_duration = (value == "ON");
             } else if (key == "Cable-Fail-Duration-Time:") {
                 cable_fail_duration_time = std::stof(value);
-            } else {
+            } else if (key == "Switch-Periodic-Packet-Loss:") {
+                switch_periodic_loss = (value == "ON");
+            } else if (key == "Switch-Periodic-Packet-Loss-Start-After:") {
+                switch_periodic_loss_start = std::stof(value);
+            } else if (key == "Switch-Periodic-Packet-Loss-Period:") {
+                switch_periodic_loss_period = std::stof(value);
+            } else if (key == "Switch-Periodic-Packet-Loss-PktNr:") {
+                switch_periodic_loss_pkt_amount = std::stof(value);
+            } else if (key == "Switch-Periodic-Packet-Loss-Drop-Period:") {
+                switch_periodic_loss_drop_period = std::stof(value);
+            } else if (key == "Switch-Periodic-Packet-Loss-Max-Percent:") {
+                switch_periodic_loss_max_percent = std::stof(value);
+            } else if (key == "Cable-Periodic-Packet-Loss:") {
+                cable_periodic_loss = (value == "ON");
+            } else if (key == "Cable-Periodic-Packet-Loss-Start-After:") {
+                cable_periodic_loss_start = std::stof(value);
+            } else if (key == "Cable-Periodic-Packet-Loss-Period:") {
+                cable_periodic_loss_period = std::stof(value);
+            } else if (key == "Cable-Periodic-Packet-Loss-PktNr:") {
+                cable_periodic_loss_pkt_amount = std::stof(value);
+            } else if (key == "Cable-Periodic-Packet-Loss-Drop-Period:") {
+                cable_periodic_loss_drop_period = std::stof(value);
+            } else if (key == "Cable-Periodic-Packet-Loss-Max-Percent:") {
+                cable_periodic_loss_max_percent = std::stof(value);
+            }
+
+            else {
                 std::cout << "Unknown key in failuregenerator input file: " << key << std::endl;
             }
         }
