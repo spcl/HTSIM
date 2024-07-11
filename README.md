@@ -167,12 +167,6 @@ An example of the file is below.
 - ```Switch-Fail-Duration```:  If turned on, the switch fails for the duration specified in "Switch-Fail-Duration-Time."
 - ```Switch-Fail-Duration-Time```: Defines how many picoseconds the switch fails if "Switch-Fail-Duration" is turned on.
 
-<br/><br/>
-- ```Switch-Worst-Case```: Simulates complete failure of a switch. If turned on, affected switches are failing with 50% probability uniformly between 0 and 6 minutes long, and with 50% probability geometrically (with parameter 0.1) between 6 and 300 minutes long.
-- ```Switch-Worst-Case-Start-After```: Defines after how many picoseconds the first switch fails.
-- ```Switch-Worst-Case-Period```: Defines after how many picoseconds since the last switch fail the next switch fails.
-- ```Switch-Fail-Max-Percent```: Between 0 and 1, defines the maximum percentage of failing switches.
-
 #### Switch Bit Error Rate
 - ```Switch-BER```: Simulates the bit error rate of a switch. It assumes the worst-case scenario that the corrupted packet is only recognized at the receiver and therefore corrupt packets are only dropped at the receiver.
 - ```Switch-BER-Start-After```: Defines after how many picoseconds the first packet gets corrupted.
@@ -195,11 +189,6 @@ An example of the file is below.
 - ```Only-US-CS-Cable::```: If turned on only US-CS cable will fail.
 - ```Cable-Fail-Duration```:  If turned on, the cable fails for the duration specified in "Switch-Fail-Duration-Time."
 - ```Cable-Fail-Duration-Time```: Defines how many picoseconds the cable fails if "Switch-Fail-Duration" is turned on.
-<br/><br/>
-- ```Cable-Worst-Case```: Simulates complete failure of a cable. If turned on, affected cables are failing with 80% probability uniformly between 0 and 5 minutes long, and with 20% probability geometrically (with parameter 0.1) between 5 and 60 minutes long.
-- ```Cable-Worst-Case-Start-After```: Defines after how many picoseconds the first cable fails.
-- ```Cable-Worst-Case-Period```: Defines after how many picoseconds since the last cable failed the next cable fails.
-- ```Cable-Fail-Max-Percent```: Between 0 and 1, defines the maximum percentage of failing cables.
 
 #### Cable Bit Error Rate
 - ```Cable-BER```: Simulates the bit error rate of a cable. It assumes the worst-case scenario that the corrupted packet is only recognized at the receiver and therefore corrupt packets are only dropped at the receiver.
@@ -218,11 +207,6 @@ An example of the file is below.
 - ```NIC-Fail```: Simulates complete failure of a NIC. If turned on, affected NICs are failing geometrically (with parameter 0.1) between 10 and 30 minutes long.
 - ```NIC-Fail-Start-After```: Defines after how many picoseconds the first NIC fails.
 - ```NIC-Fail-Period```: Defines after how many picoseconds since the last error the next NIC fails.
-- ```NIC-Fail-Max-Percent```: Between 0 and 1, defines the maximum percentage of failing NICs.
-<br/><br/>
-- ```NIC-Worst-Case```: Simulates complete failure of a NIC. If turned on, affected NICs are failing geometrically (with parameter 0.1) between 10 and 30 minutes long.
-- ```NIC-Worst-Case-Start-After```: Defines after how many picoseconds the first NIC fails.
-- ```NIC-Worst-Case-Period```: Defines after how many picoseconds since the last error the next NIC fails.
 - ```NIC-Fail-Max-Percent```: Between 0 and 1, defines the maximum percentage of failing NICs.
 
 #### NIC Degradation
@@ -249,9 +233,6 @@ Switch-Degradation: OFF
 Switch-Degradation-Start-After: 100000000
 Switch-Degradation-Period: 10000
 Switch-Degradation-Max-Percent: 0.1
-Switch-Worst-Case: OFF
-Switch-Worst-Case-Start-After: 100000000
-Switch-Worst-Case-Period: 10000
 Cable-Fail: OFF
 Cable-Fail-Start-After: 1000
 Cable-Fail-Period: 1000000000000000000
@@ -266,9 +247,6 @@ Cable-Degradation: OFF
 Cable-Degradation-Start-After: 100000000
 Cable-Degradation-Period: 10000
 Cable-Degradation-Max-Percent: 0.1
-Cable-Worst-Case: OFF
-Cable-Worst-Case-Start-After: 100000000
-Cable-Worst-Case-Period: 10000
 NIC-Fail: OFF
 NIC-Fail-Start-After: 100000000
 NIC-Fail-Period: 100000000
@@ -277,8 +255,4 @@ NIC-Degradation: OFF
 NIC-Degradation-Start-After: 100000000
 NIC-Degradation-Period: 100000000
 NIC-Degradation-Max-Percent: 0.1
-NIC-Worst-Case: OFF
-NIC-Worst-Case-Start-After: 100000000
-NIC-Worst-Case-Period: 100000000
-NIC-Worst-Case-Max-Percent: 0.1
 ```
