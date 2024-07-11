@@ -91,12 +91,6 @@ class failuregenerator {
     simtime_picosec switch_degradation_next_fail = 0;
     float switch_degradation_max_percent = 1;
 
-    bool switchWorstCase(Switch *sw);
-    bool switch_worst_case = false;
-    simtime_picosec switch_worst_case_start = 0;
-    simtime_picosec switch_worst_case_period = 0;
-    simtime_picosec switch_worst_case_next_fail = 0;
-
     bool switchPeriodicDrop(Switch *sw);
     bool fail_new_periodic_switch(Switch *sw);
     std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> periodicfailingSwitches;
@@ -155,12 +149,6 @@ class failuregenerator {
     simtime_picosec cable_degradation_next_fail = 0;
     float cable_degradation_max_percent = 1;
 
-    bool cableWorstCase(Pipe *p, Packet &pkt);
-    bool cable_worst_case = false;
-    simtime_picosec cable_worst_case_start = 0;
-    simtime_picosec cable_worst_case_period = 0;
-    simtime_picosec cable_worst_case_next_fail = 0;
-
     bool cablePeriodicDrop(Pipe *p, Packet &pkt);
     bool fail_new_periodic_cable(Pipe *p);
     unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> periodicFailingCables;
@@ -195,12 +183,6 @@ class failuregenerator {
     simtime_picosec nic_degradation_period = 0;
     simtime_picosec nic_degradation_next_fail = 0;
     float nic_degradation_max_percent = 1;
-
-    bool nic_worst_case = false;
-    bool nicWorstCase(UecSrc *src, UecSink *sink, Packet &pkt);
-    simtime_picosec nic_worst_case_start = 0;
-    simtime_picosec nic_worst_case_period = 0;
-    simtime_picosec nic_worst_case_next_fail = 0;
 
     // For logging
     void createLoggingData();
