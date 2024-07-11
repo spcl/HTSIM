@@ -1085,6 +1085,7 @@ void failuregenerator::parseinputfile() {
                 switch_periodic_loss = (value == "ON");
             } else if (key == "Switch-Periodic-Packet-Loss-Start-After:") {
                 switch_periodic_loss_start = std::stof(value);
+                switch_periodic_loss_next_fail = switch_periodic_loss_start;
             } else if (key == "Switch-Periodic-Packet-Loss-Period:") {
                 switch_periodic_loss_period = std::stof(value);
             } else if (key == "Switch-Periodic-Packet-Loss-PktNr:") {
@@ -1097,6 +1098,7 @@ void failuregenerator::parseinputfile() {
                 cable_periodic_loss = (value == "ON");
             } else if (key == "Cable-Periodic-Packet-Loss-Start-After:") {
                 cable_periodic_loss_start = std::stof(value);
+                cable_periodic_loss_next_fail = cable_periodic_loss_start;
             } else if (key == "Cable-Periodic-Packet-Loss-Period:") {
                 cable_periodic_loss_period = std::stof(value);
             } else if (key == "Cable-Periodic-Packet-Loss-PktNr:") {
