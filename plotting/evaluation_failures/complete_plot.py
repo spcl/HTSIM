@@ -41,11 +41,10 @@ def run(title,experiment):
     base_rtt = df["base"].max()
     target_rtt = df["target"].max()
 
-    if len(df) > 10001:
-        ratio = len(df) / 10000
-        # DownScale
+    if len(df) > 5000:
+        ratio = len(df) / 5000
+        print("RTT ratio: " + str(ratio))
         df = df.iloc[:: int(ratio)]
-        # Reset the index of the new dataframe
         df.reset_index(drop=True, inplace=True)
 
     # Cwd Data
@@ -65,11 +64,10 @@ def run(title,experiment):
         temp_df2 = temp_df2.assign(Node=name)
         temp_df2.drop_duplicates("Time", inplace=True)
         df2 = pd.concat([df2, temp_df2])
-    if len(df2) > 10000:
-        ratio = len(df2) / 10000
-        # DownScale
+    if len(df2) > 5000:
+        ratio = len(df2) / 5000
+        print("CWD ratio: " + str(ratio))
         df2 = df2.iloc[:: int(ratio)]
-        # Reset the index of the new dataframe
         df2.reset_index(drop=True, inplace=True)
 
     # Queue Data
@@ -94,11 +92,10 @@ def run(title,experiment):
         temp_df3.drop_duplicates("Time", inplace=True)
         df3 = pd.concat([df3, temp_df3])
 
-    if len(df3) > 10000:
-        ratio = len(df3) / 10000
-        # DownScale
+    if len(df3) > 5000:
+        ratio = len(df3) / 5000
+        print("Queue ratio: " + str(ratio))
         df3 = df3.iloc[:: int(ratio)]
-        # Reset the index of the new dataframe
         df3.reset_index(drop=True, inplace=True)
 
     # Switch Failures data
@@ -136,6 +133,11 @@ def run(title,experiment):
             path_in_str, names=colnames, header=None, index_col=False, sep=","
         )
         dfSwitchDrops = pd.concat([dfSwitchDrops, temp])
+    if len(dfSwitchDrops) > 5000:
+        ratio = len(dfSwitchDrops) / 5000
+        print("Switch drop ratio: " + str(ratio))
+        dfSwitchDrops = dfSwitchDrops.iloc[:: int(ratio)]
+        dfSwitchDrops.reset_index(drop=True, inplace=True)
 
     # Packet drops Cable data
     colnames = ["DropTime"]
@@ -148,6 +150,12 @@ def run(title,experiment):
             path_in_str, names=colnames, header=None, index_col=False, sep=","
         )
         dfCableDrops = pd.concat([dfCableDrops, temp])
+    if len(dfCableDrops) > 5000:
+        ratio = len(dfCableDrops) / 5000
+        print("Cable drop ratio: " + str(ratio))
+        dfCableDrops = dfCableDrops.iloc[:: int(ratio)]
+        dfCableDrops.reset_index(drop=True, inplace=True)
+
 
     # Switch Degradations
     colnames = ["Time"]
@@ -161,7 +169,7 @@ def run(title,experiment):
         )
         dfSwitchDegradations = pd.concat([dfSwitchDegradations, temp])
 
-    # Switch Degradations
+    # Cable Degradations
     colnames = ["Time"]
     dfCableDegradations = pd.DataFrame(columns=colnames)
 
@@ -184,6 +192,13 @@ def run(title,experiment):
             path_in_str, names=colnames, header=None, index_col=False, sep=","
         )
         dfRandomPacketDrops = pd.concat([dfRandomPacketDrops, temp])
+    
+    if len(dfRandomPacketDrops) > 5000:
+        ratio = len(dfRandomPacketDrops) / 5000
+        print("Random drop ratio: " + str(ratio))
+        dfRandomPacketDrops = dfRandomPacketDrops.iloc[:: int(ratio)]
+        dfRandomPacketDrops.reset_index(drop=True, inplace=True)
+
 
     # Create figure with secondary y-axis
     fig = make_subplots(specs=[[{"secondary_y": True}]])

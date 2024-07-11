@@ -145,6 +145,7 @@ def run(
     print("Running {}".format(title))
 
     os.system("mkdir experiments/{}".format(short_title))
+    os.system("mkdir to_upload/{}".format(short_title))
 
     
     # REPS
@@ -162,7 +163,8 @@ def run(
     list_out_of_order_ratio_reps = getOutofOrderRatio(short_title)
     list_out_of_order_distance_reps = getOutOfOrderDistance(short_title)
     complete_plot = run_complete(title,short_title)
-    complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
+    complete_plot.write_image("experiments/{}/complete_plot_{}.pdf".format(short_title,balancer))
+    complete_plot.write_image("to_upload/{}/complete_plot_{}.pdf".format(short_title,balancer))
     print(
         "REPS: Flow Diff {} - Total {}".format(
             max(list_reps) - min(list_reps), max(list_reps)
@@ -203,7 +205,8 @@ def run(
     list_out_of_order_ratio_repsC = getOutofOrderRatio(short_title)
     list_out_of_order_distance_repsC = getOutOfOrderDistance(short_title)
     complete_plot = run_complete(title,short_title)
-    complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
+    complete_plot.write_image("experiments/{}/complete_plot_{}.pdf".format(short_title,balancer))
+    complete_plot.write_image("to_upload/{}/complete_plot_{}.pdf".format(short_title,balancer))
     print(
         "REPS circular: Flow Diff {} - Total {}".format(
             max(list_repsC) - min(list_repsC), max(list_repsC)
@@ -243,7 +246,8 @@ def run(
     list_out_of_order_ratio_repsCF = getOutofOrderRatio(short_title)
     list_out_of_order_distance_repsCF = getOutOfOrderDistance(short_title)
     complete_plot = run_complete(title,short_title)
-    complete_plot.write_image("experiments/{}/complete_plot_{}NoFreezing.svg".format(short_title,balancer))
+    complete_plot.write_image("experiments/{}/complete_plot_{}NoFreezing.pdf".format(short_title,balancer))
+    complete_plot.write_image("to_upload/{}/complete_plot_{}NoFreezing.pdf".format(short_title,balancer))
     print(
         "repsCF: Flow Diff {} - Total {}".format(
             max(list_repsCF) - min(list_repsCF), max(list_repsCF)
@@ -284,7 +288,8 @@ def run(
     list_out_of_order_ratio_spraying = getOutofOrderRatio(short_title)
     list_out_of_order_distance_spraying = getOutOfOrderDistance(short_title)
     complete_plot = run_complete(title,short_title)
-    complete_plot.write_image("experiments/{}/complete_plot_{}.svg".format(short_title,balancer))
+    complete_plot.write_image("experiments/{}/complete_plot_{}.pdf".format(short_title,balancer))
+    complete_plot.write_image("to_upload/{}/complete_plot_{}.pdf".format(short_title,balancer))
     print(
         "Spraying: Flow Diff {} - Total {}".format(
             max(list_spraying) - min(list_spraying), max(list_spraying)
@@ -405,7 +410,8 @@ def run(
 
     plt.title(title, fontsize=16.5)
     plt.tight_layout()
-    plt.savefig("experiments/{}/cdf.svg".format(short_title), bbox_inches="tight")
+    plt.savefig("experiments/{}/cdf.pdf".format(short_title), bbox_inches="tight")
+    plt.savefig("to_upload/{}/cdf.pdf".format(short_title), bbox_inches="tight")
     plt.close()
 
     # PLOT 2 (NACK)
@@ -432,7 +438,7 @@ def run(
     plt.title(title, fontsize=16.5)
     plt.grid()  # just add this
 
-    plt.savefig("experiments/{}/nack.svg".format(short_title), bbox_inches="tight")
+    plt.savefig("experiments/{}/nack.pdf".format(short_title), bbox_inches="tight")
     plt.close()
 
     # PLOT 3 (COMPLETION TIME)
@@ -468,7 +474,10 @@ def run(
     plt.grid()
 
     plt.savefig(
-        "experiments/{}/completion.svg".format(short_title), bbox_inches="tight"
+        "experiments/{}/completion.pdf".format(short_title), bbox_inches="tight"
+    )
+    plt.savefig(
+        "to_upload/{}/completion.pdf".format(short_title), bbox_inches="tight"
     )
     plt.close()
 
@@ -490,7 +499,7 @@ def run(
     plt.title(title, fontsize=17)
     plt.grid()  # just add this
     plt.savefig(
-        "experiments/{}/violin_fct.svg".format(short_title), bbox_inches="tight"
+        "experiments/{}/violin_fct.pdf".format(short_title), bbox_inches="tight"
     )
     plt.close()
 
@@ -520,7 +529,10 @@ def run(
     plt.title(title, fontsize=17)
     plt.grid()
     plt.savefig(
-        "experiments/{}/lost_packets.svg".format(short_title), bbox_inches="tight"
+        "experiments/{}/lost_packets.pdf".format(short_title), bbox_inches="tight"
+    )
+    plt.savefig(
+        "to_upload/{}/lost_packets.pdf".format(short_title), bbox_inches="tight"
     )
     plt.close()
 
@@ -569,7 +581,8 @@ def run(
     plt.title(title, fontsize=15)
     plt.tight_layout()
     plt.grid(True)
-    plt.savefig("experiments/{}/total_out_of_order.svg".format(short_title), bbox_inches="tight")
+    plt.savefig("experiments/{}/total_out_of_order.pdf".format(short_title), bbox_inches="tight")
+    plt.savefig("to_upload/{}/total_out_of_order.pdf".format(short_title), bbox_inches="tight")
     plt.close()
 
 
@@ -616,7 +629,8 @@ def run(
     plt.title(title, fontsize=15)
     plt.tight_layout()
     plt.grid(True)
-    plt.savefig("experiments/{}/out_of_order_ratio.svg".format(short_title), bbox_inches="tight")
+    plt.savefig("experiments/{}/out_of_order_ratio.pdf".format(short_title), bbox_inches="tight")
+    plt.savefig("to_upload/{}/out_of_order_ratio.pdf".format(short_title), bbox_inches="tight")
     plt.close()
     
 
@@ -665,7 +679,8 @@ def run(
     plt.title(title, fontsize=15)
     plt.tight_layout()
     plt.grid(True)
-    plt.savefig("experiments/{}/out_of_order_distance.svg".format(short_title), bbox_inches="tight")
+    plt.savefig("experiments/{}/out_of_order_distance.pdf".format(short_title), bbox_inches="tight")
+    plt.savefig("to_upload/{}/out_of_order_distance.pdf".format(short_title), bbox_inches="tight")
     plt.close()
 
 
@@ -673,79 +688,81 @@ def main():
 
     os.system("rm -rf experiments/")
     os.system("mkdir -p experiments")
+    os.system("rm -rf to_upload/")
+    os.system("mkdir -p to_upload")
 
     titles = [
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch at 10µs for 100µs", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch at 10µs for 100µs",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch at 10µs for 100µs",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch at 10µs for 100µs",
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch",        
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable at 10µs for 100µs", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable at 10µs for 100µs",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable at 10µs for 100µs",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable at 10µs for 100µs",
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch at 10µs for 100µs", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch at 10µs for 100µs",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch at 10µs for 100µs",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch at 10µs for 100µs",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch",        
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable at 10µs for 100µs", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable at 10µs for 100µs",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable at 10µs for 100µs",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable at 10µs for 100µs",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable",
 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded switch", 
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded switch", 
         # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded switch",
         # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded switch",
         # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded switch",   
-         "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded cable", 
+        #  "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded cable", 
         # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded cable",
         # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded cable",
         # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded cable",
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed switches", 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed switches",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed switches",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed switches",
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed cables", 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed cables",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed cables",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed cables",
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed switches", 
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed switches",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed switches",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed switches",
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed cables", 
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed cables",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed cables",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed cables",
 
 
     ]
 
     failures_input = [
-        # "fail_one_switch_after_10us_for_100us",
-        # "fail_one_switch_after_10us_for_100us",
-        # "fail_one_switch_after_10us_for_100us",
-        # "fail_one_switch_after_10us_for_100us",
-        # "fail_one_switch",
-        # "fail_one_switch",
-        # "fail_one_switch",
-        # "fail_one_switch",
-        # "fail_one_cable_after_10us_for_100us",
-        # "fail_one_cable_after_10us_for_100us",
-        # "fail_one_cable_after_10us_for_100us",
-        # "fail_one_cable_after_10us_for_100us",
-        # "fail_one_cable",
-        # "fail_one_cable",
-        # "fail_one_cable",
-        # "fail_one_cable",
+        "fail_one_switch_after_10us_for_100us",
+        "fail_one_switch_after_10us_for_100us",
+        "fail_one_switch_after_10us_for_100us",
+        "fail_one_switch_after_10us_for_100us",
+        "fail_one_switch",
+        "fail_one_switch",
+        "fail_one_switch",
+        "fail_one_switch",
+        "fail_one_cable_after_10us_for_100us",
+        "fail_one_cable_after_10us_for_100us",
+        "fail_one_cable_after_10us_for_100us",
+        "fail_one_cable_after_10us_for_100us",
+        "fail_one_cable",
+        "fail_one_cable",
+        "fail_one_cable",
+        "fail_one_cable",
 
-        "degrade_one_switch",
         # "degrade_one_switch",
         # "degrade_one_switch",
         # "degrade_one_switch",
-         "degrade_one_cable",
+        # "degrade_one_switch",
         # "degrade_one_cable",
         # "degrade_one_cable",
         # "degrade_one_cable",
-        "10_percent_failed_switches",
-        "10_percent_failed_switches",
-        "10_percent_failed_switches",
-        "10_percent_failed_switches",
-        "10_percent_failed_cables",
-        "10_percent_failed_cables",
-        "10_percent_failed_cables",
-        "10_percent_failed_cables",
+        # "degrade_one_cable",
+        # "10_percent_failed_switches",
+        # "10_percent_failed_switches",
+        # "10_percent_failed_switches",
+        # "10_percent_failed_switches",
+        # "10_percent_failed_cables",
+        # "10_percent_failed_cables",
+        # "10_percent_failed_cables",
+        # "10_percent_failed_cables",
 
 
 
@@ -753,131 +770,131 @@ def main():
     ]
 
     short_title = [
-        # "fail_one_switch_after_10us_for_100us_1os",
-        # "fail_one_switch_after_10us_for_100us_8os",
-        # "fail_one_switch_after_10us_for_100us_1os_incast",
-        # "fail_one_switch_after_10us_for_100us_8os_incast",
-        # "fail_one_switch_1os",
-        # "fail_one_switch_8os",
-        # "fail_one_switch_1os_incast",
-        # "fail_one_switch_8os_incast",
-        # "fail_one_cable_after_10us_for_100us_1os",
-        # "fail_one_cable_after_10us_for_100us_8os",
-        # "fail_one_cable_after_10us_for_100us_1os_incast",
-        # "fail_one_cable_after_10us_for_100us_8os_incast",
-        # "fail_one_cable_1os",
-        # "fail_one_cable_8os",
-        # "fail_one_cable_1os_incast",
-        # "fail_one_cable_8os_incast",
+        "fail_one_switch_after_10us_for_100us_1os",
+        "fail_one_switch_after_10us_for_100us_8os",
+        "fail_one_switch_after_10us_for_100us_1os_incast",
+        "fail_one_switch_after_10us_for_100us_8os_incast",
+        "fail_one_switch_1os",
+        "fail_one_switch_8os",
+        "fail_one_switch_1os_incast",
+        "fail_one_switch_8os_incast",
+        "fail_one_cable_after_10us_for_100us_1os",
+        "fail_one_cable_after_10us_for_100us_8os",
+        "fail_one_cable_after_10us_for_100us_1os_incast",
+        "fail_one_cable_after_10us_for_100us_8os_incast",
+        "fail_one_cable_1os",
+        "fail_one_cable_8os",
+        "fail_one_cable_1os_incast",
+        "fail_one_cable_8os_incast",
 
-         "degrade_one_switch_1os",
+        #  "degrade_one_switch_1os",
         # "degrade_one_switch_8os",
         # "degrade_one_switch_1os_incast",
         # "degrade_one_switch_8os_incast",
         # "degrade_one_cable_1os",
-         "degrade_one_cable_8os",
+        # "degrade_one_cable_8os",
         # "degrade_one_cable_1os_incast",
         # "degrade_one_cable_8os_incast",
-        "10_percent_failed_switches_1os",
-        "10_percent_failed_switches_8os",
-        "10_percent_failed_switches_1os_incast",
-        "10_percent_failed_switches_8os_incast",
-        "10_percent_failed_cables_1os",
-        "10_percent_failed_cables_8os",
-        "10_percent_failed_cables_1os_incast",
-        "10_percent_failed_cables_8os_incast",
+        # "10_percent_failed_switches_1os",
+        # "10_percent_failed_switches_8os",
+        # "10_percent_failed_switches_1os_incast",
+        # "10_percent_failed_switches_8os_incast",
+        # "10_percent_failed_cables_1os",
+        # "10_percent_failed_cables_8os",
+        # "10_percent_failed_cables_1os_incast",
+        # "10_percent_failed_cables_8os_incast",
 
 
     ]
     nodes = [
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
 
-         128,
         # 128,
         # 128,
         # 128,
-         128,
         # 128,
         # 128,
         # 128,
-        128,
-        128,
-        128,
-        128,
-        128,
-        128,
-        128,
-        128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
+        # 128,
     ]
 
     topology = [
-        # "fat_tree_128_1os_800.topo",
-        # "fat_tree_128_8os_800.topo",
-        # "fat_tree_128_1os_800.topo",
-        # "fat_tree_128_8os_800.topo",
-        # "fat_tree_128_1os_800.topo",
-        # "fat_tree_128_8os_800.topo",
-        # "fat_tree_128_1os_800.topo",
-        # "fat_tree_128_8os_800.topo",
-        # "fat_tree_128_1os_800.topo",
-        # "fat_tree_128_8os_800.topo",
-        # "fat_tree_128_1os_800.topo",
-        # "fat_tree_128_8os_800.topo",
-        # "fat_tree_128_1os_800.topo",
-        # "fat_tree_128_8os_800.topo",
-        # "fat_tree_128_1os_800.topo",
-        # "fat_tree_128_8os_800.topo",
+        "fat_tree_128_1os_800.topo",
+        "fat_tree_128_8os_800.topo",
+        "fat_tree_128_1os_800.topo",
+        "fat_tree_128_8os_800.topo",
+        "fat_tree_128_1os_800.topo",
+        "fat_tree_128_8os_800.topo",
+        "fat_tree_128_1os_800.topo",
+        "fat_tree_128_8os_800.topo",
+        "fat_tree_128_1os_800.topo",
+        "fat_tree_128_8os_800.topo",
+        "fat_tree_128_1os_800.topo",
+        "fat_tree_128_8os_800.topo",
+        "fat_tree_128_1os_800.topo",
+        "fat_tree_128_8os_800.topo",
+        "fat_tree_128_1os_800.topo",
+        "fat_tree_128_8os_800.topo",
 
-         "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_1os_800.topo",
         # "fat_tree_128_8os_800.topo",
         # "fat_tree_128_1os_800.topo",
         # "fat_tree_128_8os_800.topo",
-         "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_1os_800.topo",
         # "fat_tree_128_8os_800.topo",
         # "fat_tree_128_1os_800.topo",
         # "fat_tree_128_8os_800.topo",
-        "fat_tree_128_1os_800.topo",
-        "fat_tree_128_8os_800.topo",
-        "fat_tree_128_1os_800.topo",
-        "fat_tree_128_8os_800.topo",
-        "fat_tree_128_1os_800.topo",
-        "fat_tree_128_8os_800.topo",
-        "fat_tree_128_1os_800.topo",
-        "fat_tree_128_8os_800.topo",
+        # "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_8os_800.topo",
+        # "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_8os_800.topo",
+        # "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_8os_800.topo",
+        # "fat_tree_128_1os_800.topo",
+        # "fat_tree_128_8os_800.topo",
         
     ]
     connection_matrix = [
-        # "perm_128_2MB",
-        # "perm_128_2MB",
-        # "incast_32_1_2MB",
-        # "incast_32_1_2MB",
-        # "perm_128_2MB",
-        # "perm_128_2MB",
-        # "incast_32_1_2MB",
-        # "incast_32_1_2MB",
-        # "perm_128_2MB",
-        # "perm_128_2MB",
-        # "incast_32_1_2MB",
-        # "incast_32_1_2MB",
-        # "perm_128_2MB",
-        # "perm_128_2MB",
-        # "incast_32_1_2MB",
-        # "incast_32_1_2MB",
+        "perm_128_2MB",
+        "perm_128_2MB",
+        "incast_32_1_2MB",
+        "incast_32_1_2MB",
+        "perm_128_2MB",
+        "perm_128_2MB",
+        "incast_32_1_2MB",
+        "incast_32_1_2MB",
+        "perm_128_2MB",
+        "perm_128_2MB",
+        "incast_32_1_2MB",
+        "incast_32_1_2MB",
+        "perm_128_2MB",
+        "perm_128_2MB",
+        "incast_32_1_2MB",
+        "incast_32_1_2MB",
 
         # "perm_128_2MB",
         # "perm_128_2MB",
@@ -887,14 +904,14 @@ def main():
         # "perm_128_2MB",
         # "incast_32_1_2MB",
         # "incast_32_1_2MB",
-        "perm_128_2MB",
-        "perm_128_2MB",
-        "incast_32_1_2MB",
-        "incast_32_1_2MB",
-        "perm_128_2MB",
-        "perm_128_2MB",
-        "incast_32_1_2MB",
-        "incast_32_1_2MB",
+        # "perm_128_2MB",
+        # "perm_128_2MB",
+        # "incast_32_1_2MB",
+        # "incast_32_1_2MB",
+        # "perm_128_2MB",
+        # "perm_128_2MB",
+        # "incast_32_1_2MB",
+        # "incast_32_1_2MB",
     ]
 
     for i, title in enumerate(titles):
