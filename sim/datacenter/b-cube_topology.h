@@ -54,8 +54,8 @@ class BCubeTopology : public Topology {
 
     void init_pipes_queues();
 
-    BCubeTopology(uint32_t n, uint32_t k, mem_b queuesize, EventList *ev, queue_type q);
-    BCubeTopology(uint32_t n, uint32_t k, mem_b queuesize, EventList *ev, queue_type q, uint32_t strat);
+    BCubeTopology(uint32_t n, uint32_t k, mem_b queuesize, EventList *ev, queue_type q, simtime_picosec hop_latency);
+    BCubeTopology(uint32_t n, uint32_t k, mem_b queuesize, EventList *ev, queue_type q, simtime_picosec hop_latency, uint32_t strat);
     void init_network();
     Queue *alloc_src_queue(QueueLogger *q);
     Queue *alloc_queue(QueueLogger *q, mem_b queuesize, bool tor);
@@ -80,6 +80,8 @@ class BCubeTopology : public Topology {
 
   private:
     void set_params();
+    
+    simtime_picosec _hop_latency;
 
     uint32_t _n, _k;
     uint32_t _no_of_nodes;

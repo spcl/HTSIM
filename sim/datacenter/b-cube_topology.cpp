@@ -33,7 +33,7 @@ string ntoa(double n);
 string itoa(uint64_t n);
 
 // Creates a new instance of a Dragonfly topology.
-BCubeTopology::BCubeTopology(uint32_t n, uint32_t k, mem_b queuesize, EventList *ev, queue_type q) {
+BCubeTopology::BCubeTopology(uint32_t n, uint32_t k, mem_b queuesize, EventList *ev, queue_type q, simtime_picosec hop_latency) {
     //  n = number of hosts per router.
     //  k = number of levels in the B-Cube.
     // qt = queue type.
@@ -54,6 +54,8 @@ BCubeTopology::BCubeTopology(uint32_t n, uint32_t k, mem_b queuesize, EventList 
     _no_of_nodes = (uint32_t)pow(_n, _k);
     _no_of_switches = _k * (uint32_t)pow(_n, _k-1) + _no_of_nodes;
 
+    _hop_latency = hop_latency;
+
     std::cout << "BCube topology with " << _n << " hosts per router, " << _k << " levels, "
          << _no_of_switches << " switches and " << _no_of_nodes << " nodes." << endl;
     std::cout << "Queue type " << _qt << endl;
@@ -62,7 +64,7 @@ BCubeTopology::BCubeTopology(uint32_t n, uint32_t k, mem_b queuesize, EventList 
     init_network();
 }
 
-BCubeTopology::BCubeTopology(uint32_t n, uint32_t k, mem_b queuesize, EventList *ev, queue_type q, uint32_t strat) {
+BCubeTopology::BCubeTopology(uint32_t n, uint32_t k, mem_b queuesize, EventList *ev, queue_type q, simtime_picosec hop_latency, uint32_t strat) {
     _bc_routing_strategy = strat;
     //  n = number of hosts per router.
     //  k = number of levels in the B-Cube.
@@ -83,6 +85,8 @@ BCubeTopology::BCubeTopology(uint32_t n, uint32_t k, mem_b queuesize, EventList 
 
     _no_of_nodes = (uint32_t)pow(_n, _k);
     _no_of_switches = _k * (uint32_t)pow(_n, _k-1) + _no_of_nodes;
+
+    _hop_latency = hop_latency;
 
     std::cout << "BCube topology with " << _n << " hosts per router, " << _k << " levels, "
          << _no_of_switches << " switches and " << _no_of_nodes << " nodes." << endl;
@@ -181,7 +185,7 @@ void BCubeTopology::init_network() {
         queues_switch_host[j][j]->setName("SW" + ntoa(j) + "->DST" + ntoa(j));
         //logfile->writeName(*(queues_switch_host[j][j]));
 
-        pipes_switch_host[j][j] = new Pipe(timeFromUs(RTT), *_eventlist);
+        pipes_switch_host[j][j] = new Pipe(_hop_latency, *_eventlist);
         pipes_switch_host[j][j]->setName("Pipe-SW" + ntoa(j) + "->DST" + ntoa(j));
         //logfile->writeName(*(pipes_switch_host[j][j]));
 
@@ -207,7 +211,7 @@ void BCubeTopology::init_network() {
             new LosslessInputQueue(*_eventlist, queues_host_switch[j][j]);
         }
 
-        pipes_host_switch[j][j] = new Pipe(timeFromUs(RTT), *_eventlist);
+        pipes_host_switch[j][j] = new Pipe(_hop_latency, *_eventlist);
         pipes_host_switch[j][j]->setName("Pipe-SRC" + ntoa(j) + "->SW" + ntoa(j));
         //logfile->writeName(*(pipes_host_switch[j][j]));
     }
@@ -232,7 +236,7 @@ void BCubeTopology::init_network() {
                 queues_switch_switch[b][a]->setName("SW" + ntoa(b) + "-I->SW" + ntoa(a));
                 //logfile->writeName(*(queues_switch_switch[b][a]));
 
-                pipes_switch_switch[b][a] = new Pipe(timeFromUs(RTT), *_eventlist);
+                pipes_switch_switch[b][a] = new Pipe(_hop_latency, *_eventlist);
                 pipes_switch_switch[b][a]->setName("Pipe-SW" + ntoa(b) + "-I->SW" + ntoa(a));
                 //logfile->writeName(*(pipes_switch_switch[b][a]));
 
@@ -259,7 +263,7 @@ void BCubeTopology::init_network() {
                     new LosslessInputQueue(*_eventlist, queues_switch_switch[b][a]);
                 }
 
-                pipes_switch_switch[a][b] = new Pipe(timeFromUs(RTT), *_eventlist);
+                pipes_switch_switch[a][b] = new Pipe(_hop_latency, *_eventlist);
                 pipes_switch_switch[a][b]->setName("Pipe-SW" + ntoa(a) + "-I->SW" + ntoa(b));
                 //logfile->writeName(*(pipes_switch_switch[a][b]));
             }
