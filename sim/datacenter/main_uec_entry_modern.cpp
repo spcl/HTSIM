@@ -8,7 +8,7 @@
 
 #include <sstream>
 #include <string.h>
-//#include "subflow_control.h"
+// #include "subflow_control.h"
 #include "clock.h"
 #include "compositequeue.h"
 #include "connection_matrix.h"
@@ -22,15 +22,31 @@
 #include "topology.h"
 #include "uec.h"
 #include <filesystem>
-//#include "vl2_topology.h"
+// #include "vl2_topology.h"
 
 // Fat Tree topology was modified to work with this script, others won't work
 // correctly
+#include "b-cube_switch.cpp"
+#include "b-cube_switch.h"
+#include "b-cube_topology.cpp"
+#include "b-cube_topology.h"
+#include "dragonfly_switch.cpp"
+#include "dragonfly_switch.h"
+#include "dragonfly_topology.cpp"
+#include "dragonfly_topology.h"
 #include "fat_tree_interdc_topology.h"
-//#include "oversubscribed_fat_tree_topology.h"
-//#include "multihomed_fat_tree_topology.h"
-//#include "star_topology.h"
-//#include "bcube_topology.h"
+#include "hammingmesh_switch.cpp"
+#include "hammingmesh_switch.h"
+#include "hammingmesh_topology.cpp"
+#include "hammingmesh_topology.h"
+#include "slimfly_switch.cpp"
+#include "slimfly_switch.h"
+#include "slimfly_topology.cpp"
+#include "slimfly_topology.h"
+// #include "oversubscribed_fat_tree_topology.h"
+// #include "multihomed_fat_tree_topology.h"
+// #include "star_topology.h"
+// #include "bcube_topology.h"
 #include <list>
 
 // Simulation params
@@ -40,12 +56,9 @@
 #define PERIODIC 0
 #include "main.h"
 
-// int RTT = 10; // this is per link delay; identical RTT microseconds = 0.02 ms
-uint32_t RTT = 400; // this is per link delay in ns; identical RTT microseconds
-                    // = 0.02 ms
+uint32_t RTT = 1000; // this is per link delay in ms
 int DEFAULT_NODES = 128;
-#define DEFAULT_QUEUE_SIZE                                                     \
-    100000000 // ~100MB, just a large value so we can ignore queues
+#define DEFAULT_QUEUE_SIZE 100000000 // ~100MB, just a large value so we can ignore queues
 // int N=128;
 
 FirstFit *ff = NULL;
@@ -54,7 +67,7 @@ unsigned int subflow_count = 1;
 string ntoa(double n);
 string itoa(uint64_t n);
 
-//#define SWITCH_BUFFER (SERVICE * RTT / 1000)
+// #define SWITCH_BUFFER (SERVICE * RTT / 1000)
 #define USE_FIRST_FIT 0
 #define FIRST_FIT_INTERVAL 100
 
@@ -85,7 +98,7 @@ void print_path(std::ofstream &paths, const Route *rt) {
 int main(int argc, char **argv) {
     Packet::set_packet_size(PKT_SIZE_MODERN);
     eventlist.setEndtime(timeFromSec(1));
-    Clock c(timeFromSec(5 / 100.), eventlist);
+    Clock c(timeFromSec(50 / 100.), eventlist);
     mem_b queuesize = INFINITE_BUFFER_SIZE;
     int no_of_conns = 0, cwnd = MAX_CWD_MODERN_UEC, no_of_nodes = DEFAULT_NODES;
     stringstream filename(ios_base::out);
@@ -138,25 +151,44 @@ int main(int argc, char **argv) {
     int pfc_marking = 0;
     double quickadapt_lossless_rtt = 2.0;
     int reaction_delay = 1;
-    bool stop_after_quick = false;
+    // bool stop_after_quick = false;
+    char *tm_file = NULL;
     bool use_pacing = false;
     int precision_ts = 1;
     int once_per_rtt = 0;
     bool use_mixed = false;
     int phantom_size;
     int phantom_slowdown = 10;
+    bool ecn = false;
+    mem_b ecn_low = 0, ecn_high = 0;
     bool use_phantom = false;
     double exp_avg_ecn_value = .3;
     double exp_avg_rtt_value = .3;
     double exp_avg_alpha = 0.125;
     bool use_exp_avg_ecn = false;
     bool use_exp_avg_rtt = false;
-    int jump_to = 0;
+    // int jump_to = 0;
     int stop_pacing_after_rtt = 0;
     int num_failed_links = 0;
-    bool topology_normal = true;
+    TopologyCase topology = FAT_TREE_CASE;
+    uint32_t p = 0;
+    uint32_t a = 0;
+    uint32_t h = 0;
+    DragonflySwitch::routing_strategy df_routing_strategy = DragonflySwitch::NIX;
+    uint32_t q_base = 0;
+    uint32_t q_exp = 0;
+    SlimflySwitch::routing_strategy sf_routing_strategy = SlimflySwitch::NIX;
+    uint32_t height = 0;
+    uint32_t width = 0;
+    uint32_t height_board = 0;
+    uint32_t width_board = 0;
+    HammingmeshSwitch::routing_strategy hm_routing_strategy = HammingmeshSwitch::NIX;
+    uint32_t n_bcube = 0;
+    uint32_t k_bcube = 0;
+    BCubeSwitch::routing_strategy bc_routing_strategy = BCubeSwitch::NIX;
     uint64_t interdc_delay = 0;
     uint64_t max_queue_size = 0;
+    char *topo_file = NULL;
 
     int i = 1;
     filename << "logout.dat";
@@ -172,8 +204,7 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-conns")) {
             no_of_conns = atoi(argv[i + 1]);
             cout << "no_of_conns " << no_of_conns << endl;
-            cout << "!!currently hardcoded to 8, value will be ignored!!"
-                 << endl;
+            cout << "!!currently hardcoded to 8, value will be ignored!!" << endl;
             i++;
         } else if (!strcmp(argv[i], "-nodes")) {
             no_of_nodes = atoi(argv[i + 1]);
@@ -241,8 +272,7 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-mtu")) {
             packet_size = atoi(argv[i + 1]);
-            PKT_SIZE_MODERN =
-                    packet_size; // Saving this for UEC reference, Bytes
+            PKT_SIZE_MODERN = packet_size; // Saving this for UEC reference, Bytes
             i++;
         } else if (!strcmp(argv[i], "-reuse_entropy")) {
             reuse_entropy = atoi(argv[i + 1]);
@@ -262,7 +292,6 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-precision_ts")) {
             precision_ts = atoi(argv[i + 1]);
-            FatTreeSwitch::set_precision_ts(precision_ts * 1000);
             UecSrc::set_precision_ts(precision_ts * 1000);
             printf("Precision: %d\n", precision_ts * 1000);
             i++;
@@ -272,10 +301,9 @@ int main(int argc, char **argv) {
             printf("DisableCase4: %d\n", disable_case_4);
             i++;
         } else if (!strcmp(argv[i], "-stop_after_quick")) {
-            stop_after_quick = atoi(argv[i + 1]);
-            UecSrc::set_stop_after_quick(stop_after_quick);
-            printf("StopAfterQuick: %d\n", stop_after_quick);
-            i++;
+            UecSrc::set_stop_after_quick(true);
+            printf("StopAfterQuick: %d\n", true);
+
         } else if (!strcmp(argv[i], "-number_entropies")) {
             number_entropies = atoi(argv[i + 1]);
             i++;
@@ -284,8 +312,7 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-hop_latency")) {
             hop_latency = timeFromNs(atof(argv[i + 1]));
-            LINK_DELAY_MODERN = hop_latency /
-                                1000; // Saving this for UEC reference, ps to ns
+            LINK_DELAY_MODERN = hop_latency / 1000; // Saving this for UEC reference, ps to ns
             i++;
         } else if (!strcmp(argv[i], "-ignore_ecn_ack")) {
             ignore_ecn_ack = atoi(argv[i + 1]);
@@ -366,21 +393,22 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-phantom_both_queues")) {
             CompositeQueue::set_use_both_queues();
             printf("PhantomUseBothForECNMarking: %d\n", 1);
-            i++;
         } else if (!strcmp(argv[i], "-delay_gain_value_med_inc")) {
             delay_gain_value_med_inc = std::stod(argv[i + 1]);
             // UecSrc::set_delay_gain_value_med_inc(delay_gain_value_med_inc);
             printf("DelayGainValue: %f\n", delay_gain_value_med_inc);
             i++;
+        } else if (!strcmp(argv[i], "-tm")) {
+            tm_file = argv[i + 1];
+            cout << "traffic matrix input file: " << tm_file << endl;
+            i++;
         } else if (!strcmp(argv[i], "-target_rtt_percentage_over_base")) {
             target_rtt_percentage_over_base = atoi(argv[i + 1]);
-            UecSrc::set_target_rtt_percentage_over_base(
-                    target_rtt_percentage_over_base);
+            UecSrc::set_target_rtt_percentage_over_base(target_rtt_percentage_over_base);
             printf("TargetRTT: %d\n", target_rtt_percentage_over_base);
             i++;
         } else if (!strcmp(argv[i], "-num_failed_links")) {
             num_failed_links = atoi(argv[i + 1]);
-            FatTreeTopology::set_failed_links(num_failed_links);
             i++;
         } else if (!strcmp(argv[i], "-fast_drop_rtt")) {
             UecSrc::set_fast_drop_rtt(atoi(argv[i + 1]));
@@ -411,16 +439,16 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-explicit_starting_cwnd")) {
             explicit_starting_cwnd = atoi(argv[i + 1]);
-            printf("StartingWindowForced: %d\n", explicit_starting_cwnd);
+            printf("StartingWindowForced: %lu\n", explicit_starting_cwnd);
             i++;
         } else if (!strcmp(argv[i], "-explicit_starting_buffer")) {
             explicit_starting_buffer = atoi(argv[i + 1]);
-            printf("StartingBufferForced: %d\n", explicit_starting_buffer);
+            printf("StartingBufferForced: %lu\n", explicit_starting_buffer);
             explicit_bdp = explicit_starting_buffer;
             i++;
         } else if (!strcmp(argv[i], "-explicit_base_rtt")) {
             explicit_base_rtt = ((uint64_t)atoi(argv[i + 1])) * 1000;
-            printf("BaseRTTForced: %d\n", explicit_base_rtt);
+            printf("BaseRTTForced: %lu\n", explicit_base_rtt);
             UecSrc::set_explicit_rtt(explicit_base_rtt);
             i++;
         } else if (!strcmp(argv[i], "-explicit_target_rtt")) {
@@ -462,23 +490,37 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-exp_avg_rtt_value")) {
             exp_avg_rtt_value = std::stod(argv[i + 1]);
-            printf("UseExpAvgRttValue: %d\n", exp_avg_rtt_value);
+            printf("UseExpAvgRttValue: %f\n", exp_avg_rtt_value);
             UecSrc::set_exp_avg_rtt_value(exp_avg_rtt_value);
             i++;
+        } else if (!strcmp(argv[i], "-topo")) {
+            topo_file = argv[i + 1];
+            cout << "FatTree topology input file: " << topo_file << endl;
+            i++;
+        } else if (!strcmp(argv[i], "-ecn")) {
+            // fraction of queuesize, between 0 and 1
+            ecn = true;
+            ecn_low = atoi(argv[i + 1]);
+            ecn_high = atoi(argv[i + 2]);
+            i += 2;
         } else if (!strcmp(argv[i], "-exp_avg_ecn_value")) {
             exp_avg_ecn_value = std::stod(argv[i + 1]);
-            printf("UseExpAvgecn_value: %d\n", exp_avg_ecn_value);
+            printf("UseExpAvgecn_value: %f\n", exp_avg_ecn_value);
             UecSrc::set_exp_avg_ecn_value(exp_avg_ecn_value);
             i++;
         } else if (!strcmp(argv[i], "-exp_avg_alpha")) {
             exp_avg_alpha = std::stod(argv[i + 1]);
-            printf("UseExpAvgalpha: %d\n", exp_avg_alpha);
+            printf("UseExpAvgalpha: %f\n", exp_avg_alpha);
             UecSrc::set_exp_avg_alpha(exp_avg_alpha);
             i++;
         } else if (!strcmp(argv[i], "-phantom_size")) {
             phantom_size = atoi(argv[i + 1]);
             printf("PhantomQueueSize: %d\n", phantom_size);
             CompositeQueue::set_phantom_queue_size(phantom_size);
+            i++;
+        } else if (!strcmp(argv[i], "-os_border")) {
+            int os_b = atoi(argv[i + 1]);
+            FatTreeInterDCTopology::set_os_ratio_border(os_b);
             i++;
         } else if (!strcmp(argv[i], "-phantom_slowdown")) {
             phantom_slowdown = atoi(argv[i + 1]);
@@ -509,10 +551,91 @@ int main(int argc, char **argv) {
             }
             i++;
         } else if (!strcmp(argv[i], "-topology")) {
-            if (!strcmp(argv[i + 1], "normal")) {
-                topology_normal = true;
-            } else if (!strcmp(argv[i + 1], "interdc")) {
-                topology_normal = false;
+            if (!strcmp(argv[i + 1], "fat_tree")) {
+                topology = FAT_TREE_CASE;
+            } else if (!strcmp(argv[i + 1], "fat_tree_dc")) {
+                topology = FAT_TREE_DC_CASE;
+            } else if (!strcmp(argv[i + 1], "dragonfly")) {
+                topology = DRAGONFLY_CASE;
+            } else if (!strcmp(argv[i + 1], "slimfly")) {
+                topology = SLIMFLY_CASE;
+            } else if (!strcmp(argv[i + 1], "hammingmesh")) {
+                topology = HAMMINGMESH_CASE;
+            } else if (!strcmp(argv[i + 1], "bcube")) {
+                topology = BCUBE_CASE;
+            }
+            i++;
+        } else if (!strcmp(argv[i], "-p")) {
+            p = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-a")) {
+            a = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-h")) {
+            h = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-df_strategy")) {
+            if (!strcmp(argv[i + 1], "nix")) {
+                df_routing_strategy = DragonflySwitch::NIX;
+            } else if (!strcmp(argv[i + 1], "minimal")) {
+                df_routing_strategy = DragonflySwitch::MINIMAL;
+            } else if (!strcmp(argv[i + 1], "valiants")) {
+                df_routing_strategy = DragonflySwitch::VALIANTS;
+            } else {
+                cerr << "Wrong strategy for dragonfly chosen.\n";
+            }
+            i++;
+        } else if (!strcmp(argv[i], "-q_base")) {
+            q_base = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-q_exp")) {
+            q_exp = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-sf_strategy")) {
+            if (!strcmp(argv[i + 1], "nix")) {
+                sf_routing_strategy = SlimflySwitch::NIX;
+            } else if (!strcmp(argv[i + 1], "minimal")) {
+                sf_routing_strategy = SlimflySwitch::MINIMAL;
+            } else if (!strcmp(argv[i + 1], "valiants")) {
+                sf_routing_strategy = SlimflySwitch::VALIANTS;
+            } else {
+                cerr << "Wrong strategy for slimfly chosen.\n";
+            }
+            i++;
+        } else if (!strcmp(argv[i], "-height")) {
+            height = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-width")) {
+            width = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-height_board")) {
+            height_board = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-width_board")) {
+            width_board = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-hm_strategy")) {
+            if (!strcmp(argv[i + 1], "nix")) {
+                hm_routing_strategy = HammingmeshSwitch::NIX;
+            } else if (!strcmp(argv[i + 1], "minimal")) {
+                hm_routing_strategy = HammingmeshSwitch::MINIMAL;
+            } else {
+                cerr << "Wrong strategy for hammingmesh chosen.\n";
+            }
+            i++;
+        } else if (!strcmp(argv[i], "-n_bcube")) {
+            n_bcube = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-k_bcube")) {
+            k_bcube = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-bc_strategy")) {
+            if (!strcmp(argv[i + 1], "nix")) {
+                bc_routing_strategy = BCubeSwitch::NIX;
+            } else if (!strcmp(argv[i + 1], "minimal")) {
+                bc_routing_strategy = BCubeSwitch::MINIMAL;
+            } else {
+                cerr << "Wrong strategy for bcube chosen.\n";
             }
             i++;
         } else if (!strcmp(argv[i], "-queue_type")) {
@@ -536,8 +659,8 @@ int main(int argc, char **argv) {
             } else if (!strcmp(argv[i + 1], "smartt")) {
                 UecSrc::set_alogirthm("smartt");
                 printf("Name Running: SMaRTT\n");
-            } else if (!strcmp(argv[i + 1], "delayB_rtt")) {
-                UecSrc::set_alogirthm("delayB_rtt");
+            } else if (!strcmp(argv[i + 1], "mprdma")) {
+                UecSrc::set_alogirthm("mprdma");
                 printf("Name Running: SMaRTT Per RTT\n");
             } else if (!strcmp(argv[i + 1], "delayC")) {
                 UecSrc::set_alogirthm("delayC");
@@ -621,13 +744,14 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
+    // eventlist.setEndtime(timeFromUs((uint32_t)1000 * 1000 * 7));
+
     // Calculate Network Info
     int hops = 6; // hardcoded for now
+    queuesize = memFromPkt(queuesize);
     uint64_t actual_starting_cwnd = 0;
-    uint64_t base_rtt_max_hops =
-            (hops * LINK_DELAY_MODERN) +
-            (PKT_SIZE_MODERN * 8 / LINK_SPEED_MODERN * hops) +
-            (hops * LINK_DELAY_MODERN) + (64 * 8 / LINK_SPEED_MODERN * hops);
+    uint64_t base_rtt_max_hops = (hops * LINK_DELAY_MODERN) + (PKT_SIZE_MODERN * 8 / LINK_SPEED_MODERN * hops) +
+                                 (hops * LINK_DELAY_MODERN) + (64 * 8 / LINK_SPEED_MODERN * hops);
     uint64_t bdp_local = base_rtt_max_hops * LINK_SPEED_MODERN / 8;
 
     if (starting_cwnd_ratio == 0) {
@@ -657,8 +781,7 @@ int main(int argc, char **argv) {
 
     printf("Using BDP of %lu - Queue is %lld - Starting Window is %lu - RTT "
            "%lu - Bandwidth %lu\n",
-           bdp_local, queuesize, actual_starting_cwnd, base_rtt_max_hops,
-           LINK_SPEED_MODERN);
+           bdp_local, queuesize, actual_starting_cwnd, base_rtt_max_hops, LINK_SPEED_MODERN);
 
     cout << "Using subflow count " << subflow_count << endl;
 
@@ -698,11 +821,6 @@ int main(int argc, char **argv) {
 
     int dest;
 
-    if (topology_normal) {
-
-    } else {
-    }
-
 #if USE_FIRST_FIT
     if (subflow_count == 1) {
         ff = new FirstFit(timeFromMs(FIRST_FIT_INTERVAL), eventlist);
@@ -717,22 +835,15 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef OV_FAT_TREE
-    OversubscribedFatTreeTopology *top =
-            new OversubscribedFatTreeTopology(&logfile, &eventlist, ff);
+    OversubscribedFatTreeTopology *top = new OversubscribedFatTreeTopology(&logfile, &eventlist, ff);
 #endif
 
 #ifdef MH_FAT_TREE
-    MultihomedFatTreeTopology *top =
-            new MultihomedFatTreeTopology(&logfile, &eventlist, ff);
+    MultihomedFatTreeTopology *top = new MultihomedFatTreeTopology(&logfile, &eventlist, ff);
 #endif
 
 #ifdef STAR
     StarTopology *top = new StarTopology(&logfile, &eventlist, ff);
-#endif
-
-#ifdef BCUBE
-    BCubeTopology *top = new BCubeTopology(&logfile, &eventlist, ff);
-    cout << "BCUBE " << K << endl;
 #endif
 
 #ifdef VL2
@@ -749,78 +860,454 @@ int main(int argc, char **argv) {
     // used just to print out stats data at the end
     list<const Route *> routes;
 
-    int connID = 0;
+    // int connID = 0;
     dest = 1;
     // int receiving_node = 127;
     vector<int> subflows_chosen;
 
-    printf("Starting LGS Interface");
-    LogSimInterface *lgs;
-    if (topology_normal) {
-        printf("Normal Topology\n");
-        FatTreeTopology::set_tiers(3);
-        FatTreeTopology::set_os_stage_2(fat_tree_k);
-        FatTreeTopology::set_os_stage_1(ratio_os_stage_1);
-        FatTreeTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
-        FatTreeTopology::set_bts_threshold(bts_threshold);
-        FatTreeTopology::set_ignore_data_ecn(ignore_ecn_data);
-        FatTreeTopology *top = new FatTreeTopology(
-                no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
-                queue_choice, hop_latency, switch_latency);
-        lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
-    } else {
-        if (interdc_delay != 0) {
-            FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
-            UecSrc::set_interdc_delay(interdc_delay);
-        } else {
-            FatTreeInterDCTopology::set_interdc_delay(hop_latency);
-            UecSrc::set_interdc_delay(hop_latency);
+    ConnectionMatrix *conns = NULL;
+    LogSimInterface *lgs = NULL;
+
+    if (tm_file != NULL) {
+
+        FatTreeTopology *top = NULL;
+        FatTreeInterDCTopology *top_dc = NULL;
+        DragonflyTopology *top_df = NULL;
+        SlimflyTopology *top_sf = NULL;
+        HammingmeshTopology *top_hm = NULL;
+        BCubeTopology *top_bc = NULL;
+
+        ecn_low = memFromPkt(ecn_low);
+        ecn_high = memFromPkt(ecn_high);
+
+        switch (topology) {
+        case (FAT_TREE_CASE): {
+            if (ecn) {
+                FatTreeTopology::set_ecn_parameters(true, true, ecn_low, ecn_high);
+            }
+            if (topo_file) {
+                top = FatTreeTopology::load(topo_file, NULL, eventlist, queuesize, COMPOSITE, FAIR_PRIO);
+                if (top->no_of_nodes() != no_of_nodes) {
+                    cerr << "Mismatch between connection matrix (" << no_of_nodes << " nodes) and topology ("
+                         << top->no_of_nodes() << " nodes)" << endl;
+                    exit(1);
+                }
+            } else {
+                printf("Normal Topology\n");
+                FatTreeTopology::set_tiers(3);
+                top = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, queue_choice,
+                                          hop_latency, switch_latency);
+            }
+            break;
         }
-        FatTreeInterDCTopology::set_tiers(3);
-        FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
-        FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
-        FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin,
-                                                                       kmax);
-        FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
-        FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
-        FatTreeInterDCTopology *top = new FatTreeInterDCTopology(
-                no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
-                queue_choice, hop_latency, switch_latency);
-        lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
-    }
+        case (FAT_TREE_DC_CASE): {
+            printf("Case Fat-Tree-DC.");
+            if (interdc_delay != 0) {
+                FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
+                UecSrc::set_interdc_delay(interdc_delay);
+            } else {
+                FatTreeInterDCTopology::set_interdc_delay(hop_latency);
+                UecSrc::set_interdc_delay(hop_latency);
+            }
+            FatTreeInterDCTopology::set_tiers(3);
+            FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
+            FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
+            FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
+            FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
+            FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
+            top_dc = new FatTreeInterDCTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, queue_choice,
+                                                hop_latency, switch_latency);
+            break;
+        }
+        case (DRAGONFLY_CASE): {
+            // Hier Code einfügen.
+            printf("Case Dragonfly.\tp = %u,\ta = %u,\th = %u\n", p, a, h);
+            DragonflyTopology::set_ecn_parameters(true, ecn_low, ecn_high);
+            top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice, hop_latency, df_routing_strategy);
+            no_of_nodes = a * p * (a * h + 1);
+            break;
+        }
+        case (SLIMFLY_CASE): {
+            // Hier Code einfügen.
+            printf("Case Slimfly.\tp = %u,\tq_base = %u,\tq_exp = %u\n", p, q_base, q_exp);
+            SlimflyTopology::set_ecn_parameters(true, ecn_low, ecn_high);
+            top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice, hop_latency, sf_routing_strategy);
+            int q = pow(q_base, q_exp);
+            no_of_nodes = 2 * pow(q, 2);
+            break;
+        }
+        case (HAMMINGMESH_CASE): {
+            printf("Case Hammingmesh.\theight = %u,\twidth = %u,\theight_board = %u,\twidth_board = %u,\tstrategy = "
+                   "%u.\n",
+                   height, width, height_board, width_board, hm_routing_strategy);
+            HammingmeshTopology::set_ecn_parameters(true, ecn_low, ecn_high);
+            top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize, &eventlist,
+                                             queue_choice, hop_latency, hm_routing_strategy);
+            no_of_nodes = top_hm->get_no_nodes();
+            break;
+        }
+        case (BCUBE_CASE): {
+            printf("Case BCube.\n = %u,\tk = %u,\tstrategy = %u.\n", n_bcube, k_bcube, hm_routing_strategy);
+            BCubeTopology::set_ecn_parameters(true, ecn_low, ecn_high);
+            top_bc = new BCubeTopology(n_bcube, k_bcube, queuesize, &eventlist, queue_choice, hop_latency, bc_routing_strategy);
+            no_of_nodes = top_bc->get_no_of_nodes();
+            break;
+        }
+        }
 
-    lgs->set_protocol(UEC_PROTOCOL);
-    lgs->set_cwd(cwnd);
-    lgs->set_queue_size(queuesize);
-    lgs->setReuse(reuse_entropy);
-    // lgs->setNumberEntropies(number_entropies);
-    lgs->setIgnoreEcnAck(ignore_ecn_ack);
-    lgs->setIgnoreEcnData(ignore_ecn_data);
-    lgs->setNumberPaths(number_entropies);
-    start_lgs(goal_filename, *lgs);
+        conns = new ConnectionMatrix(no_of_nodes);
 
-    /*for (int src = 0; src < dest; ++src) {
-        connID++;
-        if (!net_paths[src][dest]) {
-            vector<const Route *> *paths = top->get_paths(src, dest);
-            net_paths[src][dest] = paths;
-            for (unsigned int i = 0; i < paths->size(); i++) {
-                routes.push_back((*paths)[i]);
+        if (tm_file) {
+            cout << "Loading connection matrix from  " << tm_file << endl;
+
+            if (!conns->load(tm_file)) {
+                cout << "Failed to load connection matrix " << tm_file << endl;
+                exit(-1);
+            }
+        } else {
+            cout << "Loading connection matrix from  standard input" << endl;
+            conns->load(cin);
+        }
+
+        map<flowid_t, TriggerTarget *> flowmap;
+        vector<connection *> *all_conns = conns->getAllConnections();
+        vector<UecSrc *> uec_srcs;
+        UecSrc *uecSrc;
+        UecSink *uecSnk;
+
+        for (size_t c = 0; c < all_conns->size(); c++) {
+            connection *crt = all_conns->at(c);
+            int src = crt->src;
+            int dest = crt->dst;
+            uint64_t rtt = BASE_RTT_MODERN * 1000;
+            uint64_t bdp = BDP_MODERN_UEC;
+
+            /* Route *myin = new Route(*top->get_paths(src, dest)->at(0));
+            int hops = myin->hop_count(); // hardcoded for now */
+
+            uint64_t actual_starting_cwnd = 0;
+            uint64_t base_rtt_max_hops = (hops * LINK_DELAY_MODERN) + (PKT_SIZE_MODERN * 8 / LINK_SPEED_MODERN * hops) +
+                                         (hops * LINK_DELAY_MODERN) + (64 * 8 / LINK_SPEED_MODERN * hops);
+            uint64_t bdp_local = base_rtt_max_hops * LINK_SPEED_MODERN / 8;
+
+            if (starting_cwnd_ratio == 0) {
+                actual_starting_cwnd = bdp_local; // Equal to BDP if not other info
+            } else {
+                actual_starting_cwnd = bdp_local * starting_cwnd_ratio;
+            }
+
+            UecSrc::set_starting_cwnd(actual_starting_cwnd * 1);
+
+            /* printf("Using BDP of %lu - Queue is %lld - Starting Window is %lu\n", bdp_local, queuesize,
+                   actual_starting_cwnd); */
+
+            uecSrc = new UecSrc(NULL, NULL, eventlist, rtt, bdp, 100, 6);
+
+            uecSrc->setNumberEntropies(256);
+            uec_srcs.push_back(uecSrc);
+            uecSrc->set_dst(dest);
+
+            uecSrc->from = src;
+            uecSrc->to = dest;
+            // printf("Reaching here\n");
+            if (crt->flowid) {
+                uecSrc->set_flowid(crt->flowid);
+                assert(flowmap.find(crt->flowid) == flowmap.end()); // don't have dups
+                flowmap[crt->flowid] = uecSrc;
+            }
+
+            if (crt->size > 0) {
+                uecSrc->setFlowSize(crt->size);
+            }
+
+            if (crt->trigger) {
+                Trigger *trig = conns->getTrigger(crt->trigger, eventlist);
+                trig->add_target(*uecSrc);
+            }
+            if (crt->send_done_trigger) {
+                Trigger *trig = conns->getTrigger(crt->send_done_trigger, eventlist);
+                uecSrc->set_end_trigger(*trig);
+            }
+
+            uecSnk = new UecSink();
+
+            uecSrc->setName("uec_" + ntoa(src) + "_" + ntoa(dest));
+
+            cout << "uec_" + ntoa(src) + "_" + ntoa(dest) << endl;
+            logfile.writeName(*uecSrc);
+
+            uecSnk->set_src(src);
+
+            uecSnk->setName("uec_sink_" + ntoa(src) + "_" + ntoa(dest));
+            logfile.writeName(*uecSnk);
+            if (crt->recv_done_trigger) {
+                Trigger *trig = conns->getTrigger(crt->recv_done_trigger, eventlist);
+                uecSnk->set_end_trigger(*trig);
+            }
+
+            // uecRtxScanner->registerUec(*uecSrc);
+
+            switch (route_strategy) {
+            case ECMP_FIB:
+            case ECMP_FIB_ECN:
+            case ECMP_RANDOM2_ECN:
+            case REACTIVE_ECN: {
+                Route *srctotor = new Route();
+                Route *dsttotor = new Route();
+
+                switch (topology) {
+                case (FAT_TREE_CASE): {
+                    srctotor->push_back(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)][0]);
+                    srctotor->push_back(top->pipes_ns_nlp[src][top->HOST_POD_SWITCH(src)][0]);
+                    srctotor->push_back(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)][0]->getRemoteEndpoint());
+
+                    dsttotor->push_back(top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)][0]);
+                    dsttotor->push_back(top->pipes_ns_nlp[dest][top->HOST_POD_SWITCH(dest)][0]);
+                    dsttotor->push_back(top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)][0]->getRemoteEndpoint());
+
+                    uecSrc->from = src;
+                    uecSnk->to = dest;
+                    uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
+                    uecSrc->set_paths(number_entropies);
+                    uecSnk->set_paths(number_entropies);
+
+                    top->switches_lp[top->HOST_POD_SWITCH(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
+                    top->switches_lp[top->HOST_POD_SWITCH(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
+                    break;
+                }
+                case (FAT_TREE_DC_CASE): {
+                    int idx_dc = top_dc->get_dc_id(src);
+                    int idx_dc_to = top_dc->get_dc_id(dest);
+                    uecSrc->src_dc = top_dc->get_dc_id(src);
+                    uecSrc->dest_dc = top_dc->get_dc_id(dest);
+                    uecSrc->updateParams();
+
+                    printf("Source in Datacenter %d - Dest in Datacenter %d\n", idx_dc, idx_dc_to);
+
+                    srctotor->push_back(top_dc->queues_ns_nlp[idx_dc][src % top_dc->no_of_nodes()]
+                                                             [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]);
+                    srctotor->push_back(top_dc->pipes_ns_nlp[idx_dc][src % top_dc->no_of_nodes()]
+                                                            [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]);
+                    srctotor->push_back(top_dc->queues_ns_nlp[idx_dc][src % top_dc->no_of_nodes()]
+                                                             [top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]
+                                                                     ->getRemoteEndpoint());
+
+                    dsttotor->push_back(top_dc->queues_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
+                                                             [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]);
+                    dsttotor->push_back(top_dc->pipes_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
+                                                            [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]);
+                    dsttotor->push_back(top_dc->queues_ns_nlp[idx_dc_to][dest % top_dc->no_of_nodes()]
+                                                             [top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]
+                                                                     ->getRemoteEndpoint());
+
+                    uecSrc->from = src;
+                    uecSnk->to = dest;
+                    uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
+                    uecSrc->set_paths(number_entropies);
+                    uecSnk->set_paths(number_entropies);
+
+                    top_dc->switches_lp[idx_dc][top_dc->HOST_POD_SWITCH(src % top_dc->no_of_nodes())]->addHostPort(
+                            src % top_dc->no_of_nodes(), uecSrc->flow_id(), uecSrc);
+                    top_dc->switches_lp[idx_dc_to][top_dc->HOST_POD_SWITCH(dest % top_dc->no_of_nodes())]->addHostPort(
+                            dest % top_dc->no_of_nodes(), uecSrc->flow_id(), uecSnk);
+
+                    break;
+                }
+                case (DRAGONFLY_CASE): {
+                    // Hier Code einfügen.
+                    // srctotor und dsttotor müssen noch gefüllt werden damit in sendOn() _nexthop > 0
+                    // und _nexthop < _route->size().
+
+                    // Anpassen:
+                    srctotor->push_back(top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]);
+                    srctotor->push_back(top_df->pipes_host_switch[src][top_df->HOST_TOR_FKT(src)]);
+                    srctotor->push_back(
+                            top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint());
+                    // Anpassen: Evlt. zu queues/pipes _host_switch ändern.
+                    dsttotor->push_back(top_df->queues_host_switch[dest][top_df->HOST_TOR_FKT(dest)]);
+                    dsttotor->push_back(top_df->pipes_host_switch[dest][top_df->HOST_TOR_FKT(dest)]);
+                    dsttotor->push_back(
+                            top_df->queues_host_switch[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint());
+                    // printf("srctotor_size: %ld\tdsttotor_size: %ld\n", srctotor->size(), dsttotor->size());
+
+                    if (top_df->queues_host_switch[src][top_df->HOST_TOR_FKT(src)]->getRemoteEndpoint() == NULL) {
+                        printf("src-remoteEndpoit is NULL!\n");
+                    }
+                    if (top_df->queues_host_switch[dest][top_df->HOST_TOR_FKT(dest)]->getRemoteEndpoint() == NULL) {
+                        printf("dst-remoteEndpoint is NULL!\n");
+                    }
+
+                    uecSrc->from = src;
+                    uecSnk->to = dest;
+                    uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
+                    uecSrc->set_paths(number_entropies);
+                    uecSnk->set_paths(number_entropies);
+
+                    top_df->switches[top_df->HOST_TOR_FKT(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
+                    top_df->switches[top_df->HOST_TOR_FKT(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
+                    break;
+                }
+                case (SLIMFLY_CASE): {
+                    // Hier Code einfügen.
+                    // srctotor und dsttotor müssen noch gefüllt werden damit in sendOn() _nexthop > 0
+                    // und _nexthop < _route->size().
+
+                    srctotor->push_back(top_sf->queues_host_switch[src][top_sf->HOST_TOR_FKT(src)]);
+                    srctotor->push_back(top_sf->pipes_host_switch[src][top_sf->HOST_TOR_FKT(src)]);
+                    srctotor->push_back(
+                            top_sf->queues_host_switch[src][top_sf->HOST_TOR_FKT(src)]->getRemoteEndpoint());
+
+                    dsttotor->push_back(top_sf->queues_host_switch[dest][top_sf->HOST_TOR_FKT(dest)]);
+                    dsttotor->push_back(top_sf->pipes_host_switch[dest][top_sf->HOST_TOR_FKT(dest)]);
+                    dsttotor->push_back(
+                            top_sf->queues_host_switch[dest][top_sf->HOST_TOR_FKT(dest)]->getRemoteEndpoint());
+
+                    if (top_sf->queues_host_switch[src][top_sf->HOST_TOR_FKT(src)]->getRemoteEndpoint() == NULL) {
+                        printf("src-remoteEndpoit is NULL!\n");
+                    }
+                    if (top_sf->queues_host_switch[dest][top_sf->HOST_TOR_FKT(dest)]->getRemoteEndpoint() == NULL) {
+                        printf("dst-remoteEndpoint is NULL!\n");
+                    }
+
+                    uecSrc->from = src;
+                    uecSnk->to = dest;
+                    uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
+                    uecSrc->set_paths(number_entropies);
+                    uecSnk->set_paths(number_entropies);
+
+                    top_sf->switches[top_sf->HOST_TOR_FKT(src)]->addHostPort(src, uecSrc->flow_id(), uecSrc);
+                    top_sf->switches[top_sf->HOST_TOR_FKT(dest)]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
+                    break;
+                }
+                case (HAMMINGMESH_CASE): {
+                    srctotor->push_back(top_hm->queues_host_switch[src][src]);
+                    srctotor->push_back(top_hm->pipes_host_switch[src][src]);
+                    srctotor->push_back(top_hm->queues_host_switch[src][src]->getRemoteEndpoint());
+
+                    dsttotor->push_back(top_hm->queues_host_switch[dest][dest]);
+                    dsttotor->push_back(top_hm->pipes_host_switch[dest][dest]);
+                    dsttotor->push_back(top_hm->queues_host_switch[dest][dest]->getRemoteEndpoint());
+
+                    uecSrc->from = src;
+                    uecSnk->to = dest;
+                    uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
+                    uecSrc->set_paths(number_entropies);
+                    uecSnk->set_paths(number_entropies);
+
+                    top_hm->switches[src]->addHostPort(src, uecSrc->flow_id(), uecSrc);
+                    top_hm->switches[dest]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
+                    break;
+                }
+                case (BCUBE_CASE): {
+                    srctotor->push_back(top_bc->queues_host_switch[src][src]);
+                    srctotor->push_back(top_bc->pipes_host_switch[src][src]);
+                    srctotor->push_back(top_bc->queues_host_switch[src][src]->getRemoteEndpoint());
+
+                    dsttotor->push_back(top_bc->queues_host_switch[dest][dest]);
+                    dsttotor->push_back(top_bc->pipes_host_switch[dest][dest]);
+                    dsttotor->push_back(top_bc->queues_host_switch[dest][dest]->getRemoteEndpoint());
+
+                    uecSrc->from = src;
+                    uecSnk->to = dest;
+                    uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
+                    uecSrc->set_paths(number_entropies);
+                    uecSnk->set_paths(number_entropies);
+
+                    top_bc->switches[src]->addHostPort(src, uecSrc->flow_id(), uecSrc);
+                    top_bc->switches[dest]->addHostPort(dest, uecSrc->flow_id(), uecSnk);
+                    break;
+                }
+                }
+                break;
+            }
+            case NOT_SET: {
+                abort();
+                break;
+            }
+            default: {
+                abort();
+                break;
+            }
             }
         }
-        if (!net_paths[dest][src]) {
-            vector<const Route *> *paths = top->get_paths(dest, src);
-            net_paths[dest][src] = paths;
+
+        while (eventlist.doNextEvent()) {
         }
-    }*/
+
+        for (std::size_t i = 0; i < uec_srcs.size(); ++i) {
+            delete uec_srcs[i];
+        }
+
+    } else if (goal_filename.size() > 0) {
+        printf("Starting LGS Interface");
+
+        switch (topology) {
+        case (FAT_TREE_CASE): {
+            printf("Fat-Tree Topology\n");
+            FatTreeTopology::set_tiers(3);
+            FatTreeTopology *top = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
+                                                       queue_choice, hop_latency, switch_latency);
+            lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+            break;
+        }
+        case (FAT_TREE_DC_CASE): {
+            if (interdc_delay != 0) {
+                FatTreeInterDCTopology::set_interdc_delay(interdc_delay);
+                UecSrc::set_interdc_delay(interdc_delay);
+            } else {
+                FatTreeInterDCTopology::set_interdc_delay(hop_latency);
+                UecSrc::set_interdc_delay(hop_latency);
+            }
+            FatTreeInterDCTopology::set_tiers(3);
+            FatTreeInterDCTopology::set_os_stage_2(fat_tree_k);
+            FatTreeInterDCTopology::set_os_stage_1(ratio_os_stage_1);
+            FatTreeInterDCTopology::set_ecn_thresholds_as_queue_percentage(kmin, kmax);
+            FatTreeInterDCTopology::set_bts_threshold(bts_threshold);
+            FatTreeInterDCTopology::set_ignore_data_ecn(ignore_ecn_data);
+            FatTreeInterDCTopology *top = new FatTreeInterDCTopology(
+                    no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff, queue_choice, hop_latency, switch_latency);
+            lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+            break;
+        }
+        case (DRAGONFLY_CASE): {
+            // DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q);
+            DragonflyTopology *top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice, hop_latency);
+            break;
+        }
+        case (SLIMFLY_CASE): {
+            // SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type
+            // q);
+            SlimflyTopology *top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice, hop_latency);
+            break;
+        }
+        case (HAMMINGMESH_CASE): {
+            HammingmeshTopology *top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize,
+                                                                  &eventlist, queue_choice, hop_latency);
+            break;
+        }
+        case (BCUBE_CASE): {
+            BCubeTopology *top_bc = new BCubeTopology(n_bcube, k_bcube, queuesize, &eventlist, queue_choice, hop_latency);
+            break;
+        }
+        }
+
+        lgs->set_protocol(UEC_PROTOCOL);
+        lgs->set_cwd(cwnd);
+        lgs->set_queue_size(queuesize);
+        lgs->setReuse(reuse_entropy);
+        // lgs->setNumberEntropies(number_entropies);
+        lgs->setIgnoreEcnAck(ignore_ecn_ack);
+        lgs->setIgnoreEcnData(ignore_ecn_data);
+        lgs->setNumberPaths(number_entropies);
+        start_lgs(goal_filename, *lgs);
+    }
 
     // Record the setup
     int pktsize = Packet::data_packet_size();
     logfile.write("# pktsize=" + ntoa(pktsize) + " bytes");
     logfile.write("# subflows=" + ntoa(subflow_count));
     logfile.write("# hostnicrate = " + ntoa(HOST_NIC) + " pkt/sec");
-    logfile.write("# corelinkrate = " + ntoa(HOST_NIC * CORE_TO_HOST) +
-                  " pkt/sec");
+    logfile.write("# corelinkrate = " + ntoa(HOST_NIC * CORE_TO_HOST) + " pkt/sec");
     // logfile.write("# buffer = " + ntoa((double)
     // (queues_na_ni[0][1]->_maxsize) / ((double) pktsize)) + " pkt");
     double rtt = timeAsSec(timeFromUs(RTT));
@@ -843,14 +1330,12 @@ int main(int argc, char **argv) {
             if (q == 0) {
                 cout << ps->nodename() << endl;
             } else {
-                cout << q->nodename() << " id=" << 0 /*q->id*/ << " "
-                     << q->num_packets() << "pkts " << q->num_headers()
-                     << "hdrs " << q->num_acks() << "acks " << q->num_nacks()
-                     << "nacks " << q->num_stripped() << "stripped"
-                     << endl; // TODO(tommaso): compositequeues don't have id.
-                              // Need to add that or find an alternative way.
-                              // Verify also that compositequeue is the right
-                              // queue to use here.
+                cout << q->nodename() << " id=" << 0 /*q->id*/ << " " << q->num_packets() << "pkts " << q->num_headers()
+                     << "hdrs " << q->num_acks() << "acks " << q->num_nacks() << "nacks " << q->num_stripped()
+                     << "stripped" << endl; // TODO(tommaso): compositequeues don't have id.
+                                            // Need to add that or find an alternative way.
+                                            // Verify also that compositequeue is the right
+                                            // queue to use here.
                 counts[hop] += q->num_stripped();
                 hop++;
             }
