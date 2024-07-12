@@ -66,8 +66,8 @@ class SlimflyTopology : public Topology {
 
     void init_pipes_queues();
 
-    SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type qt);
-    SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type qt, uint32_t strat);
+    SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type qt, simtime_picosec hop_latency);
+    SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type qt, simtime_picosec hop_latency, uint32_t strat);
     
     void init_network();
     Queue *alloc_src_queue(QueueLogger *qL);
@@ -99,6 +99,8 @@ class SlimflyTopology : public Topology {
     uint32_t get_generator(uint32_t q);
     bool is_prime(uint32_t q_base);
     uint32_t modulo(int x, int y);
+
+    simtime_picosec _hop_latency;
 
     uint32_t _q_base, _q_exp;
     uint32_t _p, _q, _xi;

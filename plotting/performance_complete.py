@@ -127,7 +127,7 @@ def main(args):
 
     # Queue Data
     colnames=['Time', 'Queue', 'KMin', 'KMax'] 
-    df3= pd.DataFrame(columns =colnames)
+    df3 = pd.DataFrame(columns = colnames)
     name = ['0'] * df3.shape[0]
     df3 = df3.assign(Node=name)
     df3.drop_duplicates('Time', inplace = True)
@@ -609,7 +609,7 @@ def main(args):
         )
         count += 1
 
-    # Phantom Queue
+    """ # Phantom Queue
     print("Queue Plot")
     count = 0
     df30['Queue'] = pd.to_numeric(df30['Queue'])
@@ -624,7 +624,7 @@ def main(args):
             go.Scatter(x=sub_df["Time"], y=sub_df['Queue'], name="Queue " + str(i),   mode="markers",  marker=dict(size=1.4), line=dict(dash='dash', color="pink", width=3),  showlegend=True),
             secondary_y=False,
         )
-        count += 1
+        count += 1 """
 
     print("ECN Plot")
     # ECN

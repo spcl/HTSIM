@@ -50,8 +50,8 @@ class HammingmeshTopology : public Topology {
 
     void init_pipes_queues();
 
-    HammingmeshTopology(uint32_t height, uint32_t width, uint32_t height_board, uint32_t width_board, mem_b queuesize, EventList *ev, queue_type qt);
-    HammingmeshTopology(uint32_t height, uint32_t width, uint32_t height_board, uint32_t width_board, mem_b queuesize, EventList *ev, queue_type qt, uint32_t strat);
+    HammingmeshTopology(uint32_t height, uint32_t width, uint32_t height_board, uint32_t width_board, mem_b queuesize, EventList *ev, queue_type qt, simtime_picosec hop_latency);
+    HammingmeshTopology(uint32_t height, uint32_t width, uint32_t height_board, uint32_t width_board, mem_b queuesize, EventList *ev, queue_type qt, simtime_picosec hop_latency, uint32_t strat);
     
     void init_network();
     Queue *alloc_src_queue(QueueLogger *qL);
@@ -89,6 +89,8 @@ class HammingmeshTopology : public Topology {
     void set_params();
     int modulo(int x, int y);
     void create_switch_switch_link(uint32_t k, uint32_t j, QueueLoggerSampling *queueLogger);
+    
+    simtime_picosec _hop_latency;
 
     uint32_t _height, _width, _height_board, _width_board;
     uint32_t _no_of_switches, _no_of_nodes, _no_of_groups;

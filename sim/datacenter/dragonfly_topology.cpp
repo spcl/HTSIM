@@ -33,7 +33,7 @@ string ntoa(double n);
 string itoa(uint64_t n);
 
 // Creates a new instance of a Dragonfly topology.
-DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q) {
+DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q, simtime_picosec hop_latency) {
     //  p = number of hosts per router.
     //  a = number of routers per group.
     //  h = number of links used to connect to other groups per router.
@@ -57,6 +57,8 @@ DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b q
     _no_of_switches = _no_of_groups * _a;
     _no_of_nodes = _no_of_switches * _p;
 
+    _hop_latency = hop_latency;
+
     std::cout << "DragonFly topology with " << _p << " hosts per router, " << _a << " routers per group and "
          << _no_of_groups << " groups, total nodes " << _no_of_nodes << endl;
     std::cout << "Queue type " << _qt << endl;
@@ -65,7 +67,7 @@ DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b q
     init_network();
 }
 
-DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q, uint32_t strat) {
+DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q, simtime_picosec hop_latency, uint32_t strat) {
     _df_routing_strategy = strat;
     //  p = number of hosts per router.
     //  a = number of routers per group.
@@ -89,6 +91,8 @@ DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b q
     _no_of_groups = _a *_h + 1;
     _no_of_switches = _no_of_groups * _a;
     _no_of_nodes = _no_of_switches * _p;
+
+    _hop_latency = hop_latency;
 
     std::cout << "DragonFly topology with " << _p << " hosts per router, " << _a << " routers per group and "
          << _no_of_groups << " groups, total nodes " << _no_of_nodes << endl;
@@ -190,7 +194,7 @@ void DragonflyTopology::init_network() {
             queues_switch_host[j][k]->setName("SW" + ntoa(j) + "->DST" + ntoa(k));
             //logfile->writeName(*(queues_switch_host[j][k]));
 
-            pipes_switch_host[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
+            pipes_switch_host[j][k] = new Pipe(_hop_latency, *_eventlist);
             pipes_switch_host[j][k]->setName("Pipe-SW" + ntoa(j) + "->DST" + ntoa(k));
             //logfile->writeName(*(pipes_switch_host[j][k]));
 
@@ -216,7 +220,7 @@ void DragonflyTopology::init_network() {
                 new LosslessInputQueue(*_eventlist, queues_host_switch[k][j]);
             }
 
-            pipes_host_switch[k][j] = new Pipe(timeFromUs(RTT), *_eventlist);
+            pipes_host_switch[k][j] = new Pipe(_hop_latency, *_eventlist);
             pipes_host_switch[k][j]->setName("Pipe-SRC" + ntoa(k) + "->SW" + ntoa(j));
             //logfile->writeName(*(pipes_host_switch[k][j]));
         }
@@ -237,7 +241,7 @@ void DragonflyTopology::init_network() {
             queues_switch_switch[k][j]->setName("SW" + ntoa(k) + "-I->SW" + ntoa(j));
             //logfile->writeName(*(queues_switch_switch[k][j]));
 
-            pipes_switch_switch[k][j] = new Pipe(timeFromUs(RTT), *_eventlist);
+            pipes_switch_switch[k][j] = new Pipe(_hop_latency, *_eventlist);
             pipes_switch_switch[k][j]->setName("Pipe-SW" + ntoa(k) + "-I->SW" + ntoa(j));
             //logfile->writeName(*(pipes_switch_switch[k][j]));
 
@@ -264,7 +268,7 @@ void DragonflyTopology::init_network() {
                 new LosslessInputQueue(*_eventlist, queues_switch_switch[k][j]);
             }
 
-            pipes_switch_switch[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
+            pipes_switch_switch[j][k] = new Pipe(_hop_latency, *_eventlist);
             pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-I->SW" + ntoa(k));
             //logfile->writeName(*(pipes_switch_switch[j][k]));
         }
@@ -290,7 +294,7 @@ void DragonflyTopology::init_network() {
             queues_switch_switch[k][j]->setName("SW" + ntoa(k) + "-G->SW" + ntoa(j));
             //logfile->writeName(*(queues_switch_switch[k][j]));
 
-            pipes_switch_switch[k][j] = new Pipe(timeFromUs(RTT), *_eventlist);
+            pipes_switch_switch[k][j] = new Pipe(_hop_latency, *_eventlist);
             pipes_switch_switch[k][j]->setName("Pipe-SW" + ntoa(k) + "-G->SW" + ntoa(j));
             //logfile->writeName(*(pipes_switch_switch[k][j]));
 
@@ -317,7 +321,7 @@ void DragonflyTopology::init_network() {
                 new LosslessInputQueue(*_eventlist, queues_switch_switch[k][j]);
             }
 
-            pipes_switch_switch[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
+            pipes_switch_switch[j][k] = new Pipe(_hop_latency, *_eventlist);
             pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-G->SW" + ntoa(k));
             //logfile->writeName(*(pipes_switch_switch[j][k]));
         }

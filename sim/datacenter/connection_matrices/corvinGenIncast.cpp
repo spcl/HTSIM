@@ -9,16 +9,19 @@ int main(int argc, char *argv[])
     
     int no_nodes = 98;
     int incast_node = 0;
+    int cnt = 1;
 
     if (incast_node < 0 || incast_node >= no_nodes){
         std::cerr << "incast_node has to be in the range of [0, no_nodes-1]." << std::endl;
     }
     
     fprintf(f, "Nodes %d\n", no_nodes);
-    fprintf(f, "Connections %d\n", no_nodes);
+    fprintf(f, "Connections %d\n", (no_nodes-1)/8);
     
     for (int i = 0; i < no_nodes; i++){
-        fprintf(f, "%d->%d id %d start 4 size 40960\n", i, incast_node, i + 1);
+        if (i != incast_node && i % 8 == 0){
+            fprintf(f, "%d->%d id %d start 0 size 1048576\n", i, incast_node, cnt++);
+        }
     }
     
     fclose(f);

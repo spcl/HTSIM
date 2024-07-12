@@ -56,9 +56,7 @@
 #define PERIODIC 0
 #include "main.h"
 
-// int RTT = 10; // this is per link delay; identical RTT microseconds = 0.02 ms
-uint32_t RTT = 400; // this is per link delay in ns; identical RTT microseconds
-                    // = 0.02 ms
+uint32_t RTT = 1000; // this is per link delay in ms
 int DEFAULT_NODES = 128;
 #define DEFAULT_QUEUE_SIZE 100000000 // ~100MB, just a large value so we can ignore queues
 // int N=128;
@@ -925,7 +923,7 @@ int main(int argc, char **argv) {
             // Hier Code einfügen.
             printf("Case Dragonfly.\tp = %u,\ta = %u,\th = %u\n", p, a, h);
             DragonflyTopology::set_ecn_parameters(true, ecn_low, ecn_high);
-            top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice, df_routing_strategy);
+            top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice, hop_latency, df_routing_strategy);
             no_of_nodes = a * p * (a * h + 1);
             break;
         }
@@ -933,7 +931,7 @@ int main(int argc, char **argv) {
             // Hier Code einfügen.
             printf("Case Slimfly.\tp = %u,\tq_base = %u,\tq_exp = %u\n", p, q_base, q_exp);
             SlimflyTopology::set_ecn_parameters(true, ecn_low, ecn_high);
-            top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice, sf_routing_strategy);
+            top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice, hop_latency, sf_routing_strategy);
             int q = pow(q_base, q_exp);
             no_of_nodes = 2 * pow(q, 2);
             break;
@@ -944,14 +942,14 @@ int main(int argc, char **argv) {
                    height, width, height_board, width_board, hm_routing_strategy);
             HammingmeshTopology::set_ecn_parameters(true, ecn_low, ecn_high);
             top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize, &eventlist,
-                                             queue_choice, hm_routing_strategy);
+                                             queue_choice, hop_latency, hm_routing_strategy);
             no_of_nodes = top_hm->get_no_nodes();
             break;
         }
         case (BCUBE_CASE): {
             printf("Case BCube.\n = %u,\tk = %u,\tstrategy = %u.\n", n_bcube, k_bcube, hm_routing_strategy);
             BCubeTopology::set_ecn_parameters(true, ecn_low, ecn_high);
-            top_bc = new BCubeTopology(n_bcube, k_bcube, queuesize, &eventlist, queue_choice, bc_routing_strategy);
+            top_bc = new BCubeTopology(n_bcube, k_bcube, queuesize, &eventlist, queue_choice, hop_latency, bc_routing_strategy);
             no_of_nodes = top_bc->get_no_of_nodes();
             break;
         }
@@ -1273,22 +1271,22 @@ int main(int argc, char **argv) {
         }
         case (DRAGONFLY_CASE): {
             // DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q);
-            DragonflyTopology *top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice);
+            DragonflyTopology *top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice, hop_latency);
             break;
         }
         case (SLIMFLY_CASE): {
             // SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type
             // q);
-            SlimflyTopology *top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice);
+            SlimflyTopology *top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice, hop_latency);
             break;
         }
         case (HAMMINGMESH_CASE): {
             HammingmeshTopology *top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize,
-                                                                  &eventlist, queue_choice);
+                                                                  &eventlist, queue_choice, hop_latency);
             break;
         }
         case (BCUBE_CASE): {
-            BCubeTopology *top_bc = new BCubeTopology(n_bcube, k_bcube, queuesize, &eventlist, queue_choice);
+            BCubeTopology *top_bc = new BCubeTopology(n_bcube, k_bcube, queuesize, &eventlist, queue_choice, hop_latency);
             break;
         }
         }

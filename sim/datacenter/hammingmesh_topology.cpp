@@ -30,7 +30,7 @@ string ntoa(double n);
 string itoa(uint64_t n);
 
 // Creates a new instance of a Hammingmesh topology.
-HammingmeshTopology::HammingmeshTopology(uint32_t height, uint32_t width, uint32_t height_board, uint32_t width_board, mem_b queuesize, EventList *ev, queue_type qt) {
+HammingmeshTopology::HammingmeshTopology(uint32_t height, uint32_t width, uint32_t height_board, uint32_t width_board, mem_b queuesize, EventList *ev, queue_type qt, simtime_picosec hop_latency) {
 
     if (height < 1 || width < 1 || height_board < 1 || width_board < 1) {
         cerr << "height, width, height_board and width_board all have to be positive." << endl;
@@ -60,6 +60,8 @@ HammingmeshTopology::HammingmeshTopology(uint32_t height, uint32_t width, uint32
     else if(2 * _width <= 64*63){ _no_of_switches += total_height * (((2 * _width)/63) + 1 + 1); }
     else{ abort(); }
 
+    _hop_latency = hop_latency;
+
     std::cout << "Hammingmesh topology with " << _no_of_switches << " switches, total nodes " << _no_of_nodes << "." << endl;
     std::cout << "Queue type " << _qt << endl;
 
@@ -67,7 +69,7 @@ HammingmeshTopology::HammingmeshTopology(uint32_t height, uint32_t width, uint32
     init_network();
 }
 
-HammingmeshTopology::HammingmeshTopology(uint32_t height, uint32_t width, uint32_t height_board, uint32_t width_board, mem_b queuesize, EventList *ev, queue_type qt, uint32_t strat) {
+HammingmeshTopology::HammingmeshTopology(uint32_t height, uint32_t width, uint32_t height_board, uint32_t width_board, mem_b queuesize, EventList *ev, queue_type qt, simtime_picosec hop_latency, uint32_t strat) {
     _hm_routing_strategy = strat;
 
     if (height < 1 || width < 1 || height_board < 1 || width_board < 1) {
@@ -97,6 +99,8 @@ HammingmeshTopology::HammingmeshTopology(uint32_t height, uint32_t width, uint32
     if(2 * _width <= 64){ _no_of_switches += total_height; }
     else if(2 * _width <= 64*63){ _no_of_switches += total_height * (((2 * _width)/63) + 1 + 1); }
     else{ abort(); }
+
+    _hop_latency = hop_latency;
 
     std::cout << "Hammingmesh topology with " << _no_of_switches << " switches, total nodes " << _no_of_nodes << "." << endl;
     std::cout << "Queue type " << _qt << endl;
@@ -177,7 +181,7 @@ void HammingmeshTopology::create_switch_switch_link(uint32_t k, uint32_t j, Queu
     queues_switch_switch[k][j]->setName("SW" + ntoa(k) + "-I->SW" + ntoa(j));
     //logfile->writeName(*(queues_switch_switch[k][j]));
 
-    pipes_switch_switch[k][j] = new Pipe(timeFromUs(RTT), *_eventlist);
+    pipes_switch_switch[k][j] = new Pipe(_hop_latency, *_eventlist);
     pipes_switch_switch[k][j]->setName("Pipe-SW" + ntoa(k) + "-I->SW" + ntoa(j));
     //logfile->writeName(*(pipes_switch_switch[k][j]));
 
@@ -204,7 +208,7 @@ void HammingmeshTopology::create_switch_switch_link(uint32_t k, uint32_t j, Queu
         new LosslessInputQueue(*_eventlist, queues_switch_switch[k][j]);
     }
 
-    pipes_switch_switch[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
+    pipes_switch_switch[j][k] = new Pipe(_hop_latency, *_eventlist);
     pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-I->SW" + ntoa(k));
     //logfile->writeName(*(pipes_switch_switch[j][k]));
 }
@@ -244,7 +248,7 @@ void HammingmeshTopology::init_network() {
         queues_switch_host[j][k]->setName("SW" + ntoa(j) + "->DST" + ntoa(k));
         //logfile->writeName(*(queues_switch_host[j][k]));
 
-        pipes_switch_host[j][k] = new Pipe(timeFromUs(RTT), *_eventlist);
+        pipes_switch_host[j][k] = new Pipe(_hop_latency, *_eventlist);
         pipes_switch_host[j][k]->setName("Pipe-SW" + ntoa(j) + "->DST" + ntoa(k));
         //logfile->writeName(*(pipes_switch_host[j][k]));
 
@@ -270,7 +274,7 @@ void HammingmeshTopology::init_network() {
             new LosslessInputQueue(*_eventlist, queues_host_switch[k][j]);
         }
 
-        pipes_host_switch[k][j] = new Pipe(timeFromUs(RTT), *_eventlist);
+        pipes_host_switch[k][j] = new Pipe(_hop_latency, *_eventlist);
         pipes_host_switch[k][j]->setName("Pipe-SRC" + ntoa(k) + "->SW" + ntoa(j));
         //logfile->writeName(*(pipes_host_switch[k][j]));
     }
