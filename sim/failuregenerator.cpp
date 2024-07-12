@@ -678,7 +678,7 @@ bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
             std::cout << "Did not degrade critical Cable name: " << p->nodename() << std::endl;
             return false;
         }
-
+        p->_delay = SINGLE_PKT_TRASMISSION_TIME_MODERN * 10;
         cable_degradation_next_fail = GLOBAL_TIME + cable_degradation_period;
         degraded_cables[cable_id] = decided_type;
         _list_cable_degradations.push_back(GLOBAL_TIME);

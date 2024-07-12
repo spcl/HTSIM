@@ -104,7 +104,7 @@ class failuregenerator {
     simtime_picosec switch_periodic_loss_period = 0;
     simtime_picosec switch_periodic_loss_next_fail = 0;
     float switch_periodic_loss_max_percent = 1;
-    int switch_periodic_loss_pkt_amount = 0;
+    uint32_t switch_periodic_loss_pkt_amount = 0;
     simtime_picosec switch_periodic_loss_drop_period = 0;
 
     // Cable
@@ -161,7 +161,7 @@ class failuregenerator {
     simtime_picosec cable_periodic_loss_period = 0;
     simtime_picosec cable_periodic_loss_next_fail = 0;
     float cable_periodic_loss_max_percent = 1;
-    int cable_periodic_loss_pkt_amount = 0;
+    uint32_t cable_periodic_loss_pkt_amount = 0;
     simtime_picosec cable_periodic_loss_drop_period = 0;
 
     // NIC
