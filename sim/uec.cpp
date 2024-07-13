@@ -1030,7 +1030,7 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
         now_time = (((eventlist().now() + precision_ts - 1) / precision_ts) * precision_ts);
     }
     uint64_t newRtt = now_time - ts;
-    printf("RTT:\t%lu\n", newRtt);
+    //printf("RTT:\t%lu\n", newRtt);
     mark_received(pkt);
 
     if (use_pacing && generic_pacer != NULL /*&& did_qa*/ && ((eventlist().now() - last_pac_change) > _base_rtt / 20)) {

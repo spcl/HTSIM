@@ -1,3 +1,22 @@
-Nodes 98
-Connections 1
-7->0 id 1 start 0 size 1000000
+Nodes 21
+Connections 20
+1->0 id 1 start 0 size 1048576
+2->0 id 2 start 0 size 1048576
+3->0 id 3 start 0 size 1048576
+4->0 id 4 start 0 size 1048576
+5->0 id 5 start 0 size 1048576
+6->0 id 6 start 0 size 1048576
+7->0 id 7 start 0 size 1048576
+8->0 id 8 start 0 size 1048576
+9->0 id 9 start 0 size 1048576
+10->0 id 10 start 0 size 1048576
+11->0 id 11 start 0 size 1048576
+12->0 id 12 start 0 size 1048576
+13->0 id 13 start 0 size 1048576
+14->0 id 14 start 0 size 1048576
+15->0 id 15 start 0 size 1048576
+16->0 id 16 start 0 size 1048576
+17->0 id 17 start 0 size 1048576
+18->0 id 18 start 0 size 1048576
+19->0 id 19 start 0 size 1048576
+20->0 id 20 start 0 size 1048576

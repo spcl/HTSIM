@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
     FILE *f;
     f = fopen("corvinIncast", "w+");
     
-    int no_nodes = 98;
+    int no_nodes = 21;
     int incast_node = 0;
     int cnt = 1;
 
@@ -16,10 +16,10 @@ int main(int argc, char *argv[])
     }
     
     fprintf(f, "Nodes %d\n", no_nodes);
-    fprintf(f, "Connections %d\n", (no_nodes-1)/8);
+    fprintf(f, "Connections %d\n", (no_nodes-1));
     
     for (int i = 0; i < no_nodes; i++){
-        if (i != incast_node && i % 8 == 0){
+        if (i != incast_node){
             fprintf(f, "%d->%d id %d start 0 size 1048576\n", i, incast_node, cnt++);
         }
     }

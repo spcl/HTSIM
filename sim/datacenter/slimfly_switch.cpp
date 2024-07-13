@@ -605,12 +605,14 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                                                 r->push_back(_st->queues_switch_switch[_id][next_i]);
                                                 r->push_back(_st->pipes_switch_switch[_id][next_i]);
                                                 r->push_back(_st->queues_switch_switch[_id][next_i]->getRemoteEndpoint());
-                                                _fib->addRoute(pkt.dst(), r, 1, DOWN);
+                                                e = new FibEntry(r, 1, DOWN);
+                                                temp_fib->push_back(e);
                                                 r = new Route();
                                                 r->push_back(_st->queues_switch_switch[_id][next_j]);
                                                 r->push_back(_st->pipes_switch_switch[_id][next_j]);
                                                 r->push_back(_st->queues_switch_switch[_id][next_j]->getRemoteEndpoint());
-                                                _fib->addRoute(pkt.dst(), r, 1, DOWN);
+                                                e = new FibEntry(r, 1, DOWN);
+                                                temp_fib->push_back(e);
                                                 r = new Route();
                                                 exists_hop += 2;
                                             }
@@ -877,12 +879,14 @@ Route *SlimflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                                             r->push_back(_st->queues_switch_switch[_id][next_i]);
                                             r->push_back(_st->pipes_switch_switch[_id][next_i]);
                                             r->push_back(_st->queues_switch_switch[_id][next_i]->getRemoteEndpoint());
-                                            _fib->addRoute(pkt.dst(), r, 1, DOWN);
+                                            e = new FibEntry(r, 1, DOWN);
+                                            temp_fib->push_back(e);
                                             r = new Route();
                                             r->push_back(_st->queues_switch_switch[_id][next_j]);
                                             r->push_back(_st->pipes_switch_switch[_id][next_j]);
                                             r->push_back(_st->queues_switch_switch[_id][next_j]->getRemoteEndpoint());
-                                            _fib->addRoute(pkt.dst(), r, 1, DOWN);
+                                            e = new FibEntry(r, 1, DOWN);
+                                            temp_fib->push_back(e);
                                             r = new Route();
                                             exists_hop += 2;
                                         }
