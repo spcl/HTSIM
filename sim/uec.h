@@ -516,6 +516,8 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     void reduce_unacked(uint64_t amount);
     void check_limits_cwnd();
     void apply_timeout_penalty();
+    void update_based_on_base(simtime_picosec);
+    bool first_packet = true;
 };
 
 class UecSink : public PacketSink, public DataReceiver {

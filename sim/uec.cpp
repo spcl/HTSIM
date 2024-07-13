@@ -153,6 +153,26 @@ UecSrc::UecSrc(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList
     }
 }
 
+void UecSrc::update_based_on_base(simtime_picosec rtt_raw) {
+
+    if (first_packet) {
+        _base_rtt = rtt_raw;
+        first_packet = false;
+    }
+
+    if (rtt_raw < _base_rtt) {
+        _base_rtt = rtt_raw;
+    }
+
+    _target_rtt = _base_rtt * ((target_rtt_percentage_over_base + 1) / 100.0 + 1);
+    _bdp = (_base_rtt * LINK_SPEED_MODERN / 8) / 1000;
+    _maxcwnd = _bdp;
+
+    printf("Base RTT is %lu - Target RTT is %lu - BDP is %lu - CWND is %u\n", _base_rtt, _target_rtt, _bdp, _cwnd);
+
+    return;
+}
+
 // Add deconstructor and save data once we are done.
 UecSrc::~UecSrc() {
     // If we are collecting specific logs
@@ -1031,6 +1051,7 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
     }
     uint64_t newRtt = now_time - ts;
     //printf("RTT:\t%lu\n", newRtt);
+    update_based_on_base(newRtt);
     mark_received(pkt);
 
     if (use_pacing && generic_pacer != NULL /*&& did_qa*/ && ((eventlist().now() - last_pac_change) > _base_rtt / 20)) {
