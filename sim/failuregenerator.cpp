@@ -377,15 +377,16 @@ bool failuregenerator::switchPeriodicDrop(Switch *sw) {
             periodicfailingSwitches.erase(switch_id);
             return false;
         } else {
-            simtime_picosec nextDropTime = SwitchToNextDropTime[switch_id];
-            if (GLOBAL_TIME < nextDropTime) {
+            uint32_t nextDropTime = SwitchToNextDropTime[switch_id];
+            if (nextDropTime < switch_periodic_loss_drop_period) {
+                SwitchToNextDropTime[switch_id] = nextDropTime + 1;
                 return false;
             }
             uint32_t nrDrops = SwitchToNrDrops[switch_id];
             SwitchToNrDrops[switch_id] = nrDrops + 1;
-            if (nrDrops + 1 == switch_periodic_loss_pkt_amount) {
+            if (nrDrops + 1 >= switch_periodic_loss_pkt_amount) {
                 SwitchToNrDrops[switch_id] = 0;
-                SwitchToNextDropTime[switch_id] = GLOBAL_TIME + switch_periodic_loss_drop_period;
+                SwitchToNextDropTime[switch_id] = 0;
                 std::cout << "Packet dropped at switchPeriodicDrop " << switch_name << std::endl;
                 return true;
             }
@@ -716,15 +717,16 @@ bool failuregenerator::cablePeriodicDrop(Pipe *p, Packet &pkt) {
             periodicFailingCables.erase(cable_id);
             return false;
         } else {
-            simtime_picosec nextDropTime = CableToNextDropTime[cable_id];
-            if (GLOBAL_TIME < nextDropTime) {
+            uint32_t nextDropTime = CableToNextDropTime[cable_id];
+            if (nextDropTime < cable_periodic_loss_drop_period) {
+                CableToNextDropTime[cable_id] = nextDropTime + 1;
                 return false;
             }
             uint32_t nrDrops = CableToNrDrops[cable_id];
             CableToNrDrops[cable_id] = nrDrops + 1;
             if (nrDrops + 1 == cable_periodic_loss_pkt_amount) {
                 CableToNrDrops[cable_id] = 0;
-                CableToNextDropTime[cable_id] = GLOBAL_TIME + cable_periodic_loss_drop_period;
+                CableToNextDropTime[cable_id] = 0;
                 std::cout << "Packet dropped at periodicCableFail " << p->nodename() << std::endl;
                 return true;
             }

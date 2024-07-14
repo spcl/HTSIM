@@ -179,6 +179,14 @@ An example of the file is below.
 - ```Switch-Degradation-Period```: Defines after how many picoseconds since the last switch got degraded the next switch gets degraded.
 - ```Switch-Degradation-Max-Percent```: Between 0 and 1, defines the maximum percentage of degraded switches.
 
+#### Switch Periodic Fail
+- ```Switch-Periodic-Packet-Loss```: Simulates the periodic loss of packets at a switch. If turned on, affected switches drop y packets every x packets as specified at "Switch-Periodic-Packet-Loss-PktNr" and "Switch-Periodic-Packet-Loss-Drop-Period".
+- ```Switch-Periodic-Packet-Loss-Start-After```: Defines after how many picoseconds the first switch starts dropping packets.
+- ```Switch-Periodic-Packet-Loss-Period```: Defines after how many picoseconds since the last switch started dropping packets the next switch starts dropping packets.
+- ```Switch-Periodic-Packet-Loss-Max-Percent```: Between 0 and 1, defines the maximum percentage of switches that drop packets.
+- ```Switch-Periodic-Packet-Loss-PktNr:```: Specifies how many packets get dropped every period.
+- ```Switch-Periodic-Packet-Loss-Drop-Period```: Specifies after how many packets the next packets get dropped.
+
 ### Cable Failures
 #### Complete Cable Failure
 - ```Cable-Fail```: Simulates complete failure of a cable. If turned on, affected cables are failing with 80% probability uniformly between 0 and 5 minutes long, and with 20% probability geometrically (with parameter 0.1) between 5 and 60 minutes long.
@@ -202,6 +210,14 @@ An example of the file is below.
 - ```Cable-Degradation-Period```: Defines after how many picoseconds since the last cable got degraded the next cable gets degraded.
 - ```Cable-Degradation-Max-Percent```: Between 0 and 1, defines the maximum percentage of degraded cables.
 
+#### Cable Periodic Fail
+- ```Cable-Periodic-Packet-Loss```: Simulates the periodic loss of packets at a Cable. If turned on, affected cables drop y packets every x packets as specified at "Cable-Periodic-Packet-Loss-PktNr" and "Cable-Periodic-Packet-Loss-Drop-Period".
+- ```Cable-Periodic-Packet-Loss-Start-After```: Defines after how many picoseconds the first cable starts dropping packets.
+- ```Cable-Periodic-Packet-Loss-Period```: Defines after how many picoseconds since the last cable started dropping packets the next cable starts dropping packets.
+- ```Cable-Periodic-Packet-Loss-Max-Percent```: Between 0 and 1, defines the maximum percentage of cables that drop packets.
+- ```Cable-Periodic-Packet-Loss-PktNr:```: Specifies how many packets get dropped every period.
+- ```Cable-Periodic-Packet-Loss-Drop-Period```: Specifies after how many packets the next packets get dropped.
+
 ### NIC Failures
 #### Complete NIC Failure
 - ```NIC-Fail```: Simulates complete failure of a NIC. If turned on, affected NICs are failing geometrically (with parameter 0.1) between 10 and 30 minutes long.
@@ -224,7 +240,7 @@ Switch-Fail-Start-After: 100000000
 Switch-Fail-Period: 1000000000000000000
 Switch-Fail-Max-Percent: 0.1
 Switch-Fail-Duration: OFF
-Switch-Fail-Duration-Time: 200000000
+Switch-Fail-Duration-Time: 100000000
 Switch-BER: OFF
 Switch-BER-Start-After: 100000000
 Switch-BER-Period: 10000
@@ -233,12 +249,20 @@ Switch-Degradation: OFF
 Switch-Degradation-Start-After: 100000000
 Switch-Degradation-Period: 10000
 Switch-Degradation-Max-Percent: 0.1
+Switch-Periodic-Packet-Loss: OFF
+Switch-Periodic-Packet-Loss-Start-After: 0
+Switch-Periodic-Packet-Loss-Period: 1000000000000000000
+Switch-Periodic-Packet-Loss-PktNr: 1
+Switch-Periodic-Packet-Loss-Drop-Period: 10
+Switch-Periodic-Packet-Loss-Max-Percent: 1
 Cable-Fail: OFF
 Cable-Fail-Start-After: 1000
 Cable-Fail-Period: 1000000000000000000
 Cable-Fail-Max-Percent: 0.1
-Cable-Fail-Duration: ON
-Cable-Fail-Duration-Time: 200000000
+Only-US-CS-Cable: OFF
+Cable-Fail-Percent-Per-Switch: OFF
+Cable-Fail-Duration: OFF
+Cable-Fail-Duration-Time: 100000000
 Cable-BER: OFF
 Cable-BER-Start-After: 100000000
 Cable-BER-Period: 10000
@@ -247,6 +271,12 @@ Cable-Degradation: OFF
 Cable-Degradation-Start-After: 100000000
 Cable-Degradation-Period: 10000
 Cable-Degradation-Max-Percent: 0.1
+Cable-Periodic-Packet-Loss: OFF
+Cable-Periodic-Packet-Loss-Start-After: 0
+Cable-Periodic-Packet-Loss-Period: 1000000000000000000
+Cable-Periodic-Packet-Loss-PktNr: 1
+Cable-Periodic-Packet-Loss-Drop-Period: 10
+Cable-Periodic-Packet-Loss-Max-Percent: 1
 NIC-Fail: OFF
 NIC-Fail-Start-After: 100000000
 NIC-Fail-Period: 100000000

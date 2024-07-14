@@ -95,7 +95,7 @@ class failuregenerator {
     bool fail_new_periodic_switch(Switch *sw);
     std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> periodicfailingSwitches;
     std::unordered_map<uint32_t, uint32_t> SwitchToNrDrops;
-    std::unordered_map<uint32_t, simtime_picosec> SwitchToNextDropTime;
+    std::unordered_map<uint32_t, uint32_t> SwitchToNextDropTime;
 
     std::unordered_map<uint32_t, std::pair<uint64_t, uint64_t>> temp_periodicfailingSwitches;
     bool switch_periodic_loss = false;
@@ -105,7 +105,7 @@ class failuregenerator {
     simtime_picosec switch_periodic_loss_next_fail = 0;
     float switch_periodic_loss_max_percent = 1;
     uint32_t switch_periodic_loss_pkt_amount = 0;
-    simtime_picosec switch_periodic_loss_drop_period = 0;
+    uint32_t switch_periodic_loss_drop_period = 0;
 
     // Cable
     bool fail_new_cable(Pipe *p);
@@ -162,7 +162,7 @@ class failuregenerator {
     simtime_picosec cable_periodic_loss_next_fail = 0;
     float cable_periodic_loss_max_percent = 1;
     uint32_t cable_periodic_loss_pkt_amount = 0;
-    simtime_picosec cable_periodic_loss_drop_period = 0;
+    uint32_t cable_periodic_loss_drop_period = 0;
 
     // NIC
     bool nic_fail = false;
