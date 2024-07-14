@@ -274,13 +274,15 @@ bool failuregenerator::switchBER(Packet &pkt, Switch *sw, Queue q) {
                 (float)FAILURE_GENERATOR->num_corrupted_packets_switchBER / FAILURE_GENERATOR->all_packets_switchBER;
 
         if (percent > switch_ber_max_percent) {
-            std::cout << "Did not corrupt packet at SwitchBER, because of max-percent" << std::endl;
+            // std::cout << "Did not corrupt packet at SwitchBER, because of max-percent" << std::endl;
             return false;
         }
-        std::cout << "Added new corrupted packet at SwitchBER" << std::endl;
-        FAILURE_GENERATOR->num_corrupted_packets_switchBER++;
-        corrupted_packets.insert(pkt_id);
-        switch_ber_next_fail = GLOBAL_TIME + switch_ber_period;
+        if (corrupted_packets.find(pkt_id) == corrupted_packets.end()) {
+            std::cout << "Added new corrupted packet at SwitchBER" << std::endl;
+            FAILURE_GENERATOR->num_corrupted_packets_switchBER++;
+            corrupted_packets.insert(pkt_id);
+            switch_ber_next_fail = GLOBAL_TIME + switch_ber_period;
+        }
         return false;
     }
 }
@@ -290,6 +292,8 @@ bool failuregenerator::dropPacketsSwitchBER(Packet &pkt) {
     if (corrupted_packets.find(pkt_id) != corrupted_packets.end()) {
         corrupted_packets.erase(pkt_id);
         std::cout << "Packet dropped at SwitchBER" << std::endl;
+        FAILURE_GENERATOR->nr_dropped_packets++;
+        FAILURE_GENERATOR->_list_switch_packet_drops.push_back(GLOBAL_TIME);
         return true;
     }
     return false;
@@ -585,14 +589,6 @@ bool failuregenerator::cableBER(Packet &pkt) {
     uint32_t pkt_id = pkt.id();
     std::string from_queue = pkt.route()->at(0)->nodename();
 
-    if (from_queue.find("DST") != std::string::npos) {
-        if (corrupted_packets.find(pkt_id) != corrupted_packets.end()) {
-            corrupted_packets.erase(pkt_id);
-            std::cout << "Packet dropped at cableBER" << std::endl;
-            return true;
-        }
-    }
-
     if (GLOBAL_TIME < cable_ber_next_fail) {
         return false;
     } else {
@@ -607,6 +603,16 @@ bool failuregenerator::cableBER(Packet &pkt) {
         corrupted_packets.insert(pkt_id);
         cable_ber_next_fail = GLOBAL_TIME + cable_ber_period;
         return false;
+    }
+
+    if (from_queue.find("DST") != std::string::npos) {
+        if (corrupted_packets.find(pkt_id) != corrupted_packets.end()) {
+            FAILURE_GENERATOR->nr_dropped_packets++;
+            FAILURE_GENERATOR->_list_cable_packet_drops.push_back(GLOBAL_TIME);
+            corrupted_packets.erase(pkt_id);
+            std::cout << "Packet dropped at cableBER" << std::endl;
+            return true;
+        }
     }
 }
 
