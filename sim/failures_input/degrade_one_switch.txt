@@ -1,4 +1,4 @@
 Switch-Degradation: ON
-Switch-Degradation-Start-After: 100000
+Switch-Degradation-Start-After: 0
 Switch-Degradation-Period: 1000000000000000000
 Switch-Degradation-Max-Percent: 1

@@ -1,0 +1,6 @@
+Switch-Periodic-Packet-Loss: ON
+Switch-Periodic-Packet-Loss-Start-After: 0
+Switch-Periodic-Packet-Loss-Period: 1000000000000000000
+Switch-Periodic-Packet-Loss-PktNr: 1
+Switch-Periodic-Packet-Loss-Drop-Period: 10
+Switch-Periodic-Packet-Loss-Max-Percent: 1

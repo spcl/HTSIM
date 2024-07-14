@@ -1,0 +1,4 @@
+Switch-Degradation: ON
+Switch-Degradation-Start-After: 0
+Switch-Degradation-Period: 0
+Switch-Degradation-Max-Percent: 0.1

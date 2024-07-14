@@ -1,0 +1,7 @@
+Cable-Periodic-Packet-Loss: ON
+Cable-Periodic-Packet-Loss-Start-After: 0
+Cable-Periodic-Packet-Loss-Period: 1000000000000000000
+Cable-Periodic-Packet-Loss-PktNr: 1
+Cable-Periodic-Packet-Loss-Drop-Period: 10
+Cable-Periodic-Packet-Loss-Max-Percent: 1
+Only-US-CS-Cable: ON

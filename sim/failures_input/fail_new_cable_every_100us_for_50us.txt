@@ -1,0 +1,6 @@
+Cable-Fail: ON
+Cable-Fail-Start-After: 0
+Cable-Fail-Period: 100000000
+Cable-Fail-Duration: ON
+Cable-Fail-Duration-Time: 50000000
+Cable-Fail-Max-Percent: 1

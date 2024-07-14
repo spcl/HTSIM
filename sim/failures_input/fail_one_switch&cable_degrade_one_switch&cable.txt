@@ -1,0 +1,16 @@
+Switch-Fail: ON
+Switch-Fail-Start-After: 0
+Switch-Fail-Period: 1000000000000000000
+Switch-Fail-Max-Percent: 1
+Cable-Fail: ON
+Cable-Fail-Start-After: 0
+Cable-Fail-Period: 1000000000000000000
+Cable-Fail-Max-Percent: 1
+Cable-Degradation: ON
+Cable-Degradation-Start-After: 0
+Cable-Degradation-Period: 1000000000000000000
+Cable-Degradation-Max-Percent: 1
+Switch-Degradation: ON
+Switch-Degradation-Start-After: 0
+Switch-Degradation-Period: 1000000000000000000
+Switch-Degradation-Max-Percent: 1

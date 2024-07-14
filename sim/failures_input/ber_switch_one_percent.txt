@@ -1,0 +1,4 @@
+Switch-BER: ON
+Switch-BER-Start-After: 0
+Switch-BER-Period: 0
+Switch-BER-Max-Percent: 0.01

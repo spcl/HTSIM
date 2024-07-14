@@ -682,6 +682,50 @@ def run(
     plt.savefig("experiments/{}/out_of_order_distance.pdf".format(short_title), bbox_inches="tight")
     plt.savefig("to_upload/{}/out_of_order_distance.pdf".format(short_title), bbox_inches="tight")
     plt.close()
+    return list_max
+
+
+def plot_comparison(df):
+
+    experiments = df["ExperimentName"].tolist()
+    time_REPS = df["REPS"].tolist()
+    time_REPSC = df["REPS Circular"].tolist()
+    time_REPSCNF = df["REPS Circular\n without freezing"].tolist()
+    time_SPRAYING = df["Spraying"].tolist()
+
+    speedup_REPS_percent = (np.array(time_SPRAYING) / np.array(time_REPS) - 1) * 100
+    speedup_REPSC_percent = (np.array(time_SPRAYING) / np.array(time_REPSC) - 1) * 100
+    speedup_REPSCNF_percent = (np.array(time_SPRAYING) / np.array(time_REPSCNF) - 1) * 100
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    y_pos = np.arange(len(experiments))
+
+    ax.scatter(speedup_REPS_percent, y_pos, label='Speedup REPS', color='blue', marker='o')
+    ax.scatter(speedup_REPSC_percent, y_pos, label='Speedup REPS Circular', color='green', marker='o')
+    ax.scatter(speedup_REPSCNF_percent, y_pos, label='Speedup REPS Circular\n without freezing', color='red', marker='o')
+
+    for i, txt in enumerate(speedup_REPS_percent):
+        ax.annotate(f'{txt:.1f}%', (speedup_REPS_percent[i], y_pos[i]), textcoords="offset points", xytext=(5, 5), ha='center', color='blue')
+    for i, txt in enumerate(speedup_REPSC_percent):
+        ax.annotate(f'{txt:.1f}%', (speedup_REPSC_percent[i], y_pos[i]), textcoords="offset points", xytext=(5, 5), ha='center', color='green')
+    for i, txt in enumerate(speedup_REPSCNF_percent):
+        ax.annotate(f'{txt:.1f}%', (speedup_REPSCNF_percent[i], y_pos[i]), textcoords="offset points", xytext=(5, 5), ha='center', color='green')
+
+    ax.set_xlabel('Speedup (%)')
+    ax.set_ylabel('Experiments')
+    ax.set_title('Speedup Comparison \n Baseline: Spraying')
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(experiments)
+    ax.axvline(x=0, color='grey', linestyle='--')
+    ax.legend()
+
+    ax.grid(True)
+
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f'{x:.0f}%'))
+
+    plt.tight_layout()
+    plt.savefig("Speedup-Comparison", bbox_inches="tight")
 
 
 def main():
@@ -692,238 +736,208 @@ def main():
     os.system("mkdir -p to_upload")
 
     titles = [
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch at 10µs for 100µs", 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch at 10µs for 100µs",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch at 10µs for 100µs",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch at 10µs for 100µs",
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch", 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed switch",        
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable at 10µs for 100µs", 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable at 10µs for 100µs",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable at 10µs for 100µs",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable at 10µs for 100µs",
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable", 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One failed cable",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch at 10µs for 100µs",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch at 10µs for 100µs",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch at 10µs for 100µs",
 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded switch", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded switch",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded switch",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded switch",   
-        #  "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded cable", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded cable",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded cable",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: One degraded cable",
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed switches", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed switches",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed switches",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed switches",
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed cables", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed cables",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed cables",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MiB Flows \n Failure mode: 10% failed cables",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch",
 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One switch drops every 10th packet", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One switch drops every 10th packet",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One switch drops every 10th packet",
 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable at 10µs for 100µs", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable at 10µs for 100µs",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable at 10µs for 100µs", 
+
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable",
+
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One cable drops every 10th packet", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One cable drops every 10th packet",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One cable drops every 10th packet",
+
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded switch", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One degraded switch",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded switch",
+ 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded cable", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One degraded cable",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded cable",
+
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Switch BER: 1% of packets get corrupted", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: Switch BER: 1% of packets get corrupted",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Switch BER: 1% of packets get corrupted",
+
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Cable BER: 1% of packets get corrupted", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: Cable BER: 1% of packets get corrupted",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Cable BER: 1% of packets get corrupted",
+
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches",
+
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed cables", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed cables",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed cables",
+
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% cables per Switch between UpperSwitch-CoreSwitch", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% cables per Switch between UpperSwitch-CoreSwitch",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% cables per Switch between UpperSwitch-CoreSwitch",
+
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded switches", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded switches",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded switches",
+
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded cables", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded cables",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded cables",
+    
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new switch evey 100 µs for 50µs", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new switch evey 100 µs for 50µs",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new switch evey 100 µs for 50µs",
+
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new cable evey 100 µs for 50µs", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new cable evey 100 µs for 50µs",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new cable evey 100 µs for 50µs",
+
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable at 10µs for 100µs",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable at 10µs for 100µs",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable at 10µs for 100µs",
+
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable",
+
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable, One degraded switch&cable",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable, One degraded switch&cable",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable, One degraded switch&cable",
+
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches&cables", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches&cables",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches&cables",
     ]
 
     failures_input = [
         "fail_one_switch_after_10us_for_100us",
         "fail_one_switch_after_10us_for_100us",
         "fail_one_switch_after_10us_for_100us",
-        "fail_one_switch_after_10us_for_100us",
+
         "fail_one_switch",
         "fail_one_switch",
         "fail_one_switch",
-        "fail_one_switch",
+
+        "one_switch_drops_every_10th_packet",
+        "one_switch_drops_every_10th_packet",
+        "one_switch_drops_every_10th_packet",
+
         "fail_one_cable_after_10us_for_100us",
         "fail_one_cable_after_10us_for_100us",
         "fail_one_cable_after_10us_for_100us",
-        "fail_one_cable_after_10us_for_100us",
+
         "fail_one_cable",
         "fail_one_cable",
         "fail_one_cable",
-        "fail_one_cable",
 
-        # "degrade_one_switch",
-        # "degrade_one_switch",
-        # "degrade_one_switch",
-        # "degrade_one_switch",
-        # "degrade_one_cable",
-        # "degrade_one_cable",
-        # "degrade_one_cable",
-        # "degrade_one_cable",
-        # "10_percent_failed_switches",
-        # "10_percent_failed_switches",
-        # "10_percent_failed_switches",
-        # "10_percent_failed_switches",
-        # "10_percent_failed_cables",
-        # "10_percent_failed_cables",
-        # "10_percent_failed_cables",
-        # "10_percent_failed_cables",
+        "one_cable_drops_every_10th_packet",
+        "one_cable_drops_every_10th_packet",
+        "one_cable_drops_every_10th_packet",
 
+        "degrade_one_switch",
+        "degrade_one_switch",
+        "degrade_one_switch",
 
+        "degrade_one_cable",
+        "degrade_one_cable",
+        "degrade_one_cable",
 
+        "ber_switch_one_percent",
+        "ber_switch_one_percent",
+        "ber_switch_one_percent",
 
+        "ber_cable_one_percent",
+        "ber_cable_one_percent",
+        "ber_cable_one_percent",
+
+        "10_percent_failed_switches",
+        "10_percent_failed_switches",
+        "10_percent_failed_switches",
+
+        "10_percent_failed_cables",
+        "10_percent_failed_cables",
+        "10_percent_failed_cables",
+
+        "10_percent_us-cs-cables-per-switch",
+        "10_percent_us-cs-cables-per-switch",
+        "10_percent_us-cs-cables-per-switch",
+
+        "10_percent_degraded_switches",
+        "10_percent_degraded_switches",
+        "10_percent_degraded_switches",
+
+        "10_percent_degraded_cables",
+        "10_percent_degraded_cables",
+        "10_percent_degraded_cables",
+
+        "fail_new_switch_every_100us_for_50us",
+        "fail_new_switch_every_100us_for_50us",
+        "fail_new_switch_every_100us_for_50us",
+
+        "fail_new_cable_every_100us_for_50us",
+        "fail_new_cable_every_100us_for_50us",
+        "fail_new_cable_every_100us_for_50us",
+
+        "fail_one_switch&cable_after_10us_for_100us",
+        "fail_one_switch&cable_after_10us_for_100us",
+        "fail_one_switch&cable_after_10us_for_100us",
+
+        "fail_one_switch_one_cable",
+        "fail_one_switch_one_cable",
+        "fail_one_switch_one_cable",
+
+        "fail_one_switch&cable_degrade_one_switch&cable",
+        "fail_one_switch&cable_degrade_one_switch&cable",
+        "fail_one_switch&cable_degrade_one_switch&cable",
+
+        "10_percent_failed_switches&cables",
+        "10_percent_failed_switches&cables",
+        "10_percent_failed_switches&cables",
     ]
 
-    short_title = [
-        "fail_one_switch_after_10us_for_100us_1os",
-        "fail_one_switch_after_10us_for_100us_8os",
-        "fail_one_switch_after_10us_for_100us_1os_incast",
-        "fail_one_switch_after_10us_for_100us_8os_incast",
-        "fail_one_switch_1os",
-        "fail_one_switch_8os",
-        "fail_one_switch_1os_incast",
-        "fail_one_switch_8os_incast",
-        "fail_one_cable_after_10us_for_100us_1os",
-        "fail_one_cable_after_10us_for_100us_8os",
-        "fail_one_cable_after_10us_for_100us_1os_incast",
-        "fail_one_cable_after_10us_for_100us_8os_incast",
-        "fail_one_cable_1os",
-        "fail_one_cable_8os",
-        "fail_one_cable_1os_incast",
-        "fail_one_cable_8os_incast",
-
-        #  "degrade_one_switch_1os",
-        # "degrade_one_switch_8os",
-        # "degrade_one_switch_1os_incast",
-        # "degrade_one_switch_8os_incast",
-        # "degrade_one_cable_1os",
-        # "degrade_one_cable_8os",
-        # "degrade_one_cable_1os_incast",
-        # "degrade_one_cable_8os_incast",
-        # "10_percent_failed_switches_1os",
-        # "10_percent_failed_switches_8os",
-        # "10_percent_failed_switches_1os_incast",
-        # "10_percent_failed_switches_8os_incast",
-        # "10_percent_failed_cables_1os",
-        # "10_percent_failed_cables_8os",
-        # "10_percent_failed_cables_1os_incast",
-        # "10_percent_failed_cables_8os_incast",
-
-
-    ]
-    nodes = [
-        128,
-        128,
-        128,
-        128,
-        128,
-        128,
-        128,
-        128,
-        128,
-        128,
-        128,
-        128,
-        128,
-        128,
-        128,
-        128,
-
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-        # 128,
-    ]
-
-    topology = [
-        "fat_tree_128_1os_800.topo",
-        "fat_tree_128_8os_800.topo",
-        "fat_tree_128_1os_800.topo",
-        "fat_tree_128_8os_800.topo",
-        "fat_tree_128_1os_800.topo",
-        "fat_tree_128_8os_800.topo",
-        "fat_tree_128_1os_800.topo",
-        "fat_tree_128_8os_800.topo",
-        "fat_tree_128_1os_800.topo",
-        "fat_tree_128_8os_800.topo",
-        "fat_tree_128_1os_800.topo",
-        "fat_tree_128_8os_800.topo",
-        "fat_tree_128_1os_800.topo",
-        "fat_tree_128_8os_800.topo",
-        "fat_tree_128_1os_800.topo",
-        "fat_tree_128_8os_800.topo",
-
-        # "fat_tree_128_1os_800.topo",
-        # "fat_tree_128_8os_800.topo",
-        # "fat_tree_128_1os_800.topo",
-        # "fat_tree_128_8os_800.topo",
-        # "fat_tree_128_1os_800.topo",
-        # "fat_tree_128_8os_800.topo",
-        # "fat_tree_128_1os_800.topo",
-        # "fat_tree_128_8os_800.topo",
-        # "fat_tree_128_1os_800.topo",
-        # "fat_tree_128_8os_800.topo",
-        # "fat_tree_128_1os_800.topo",
-        # "fat_tree_128_8os_800.topo",
-        # "fat_tree_128_1os_800.topo",
-        # "fat_tree_128_8os_800.topo",
-        # "fat_tree_128_1os_800.topo",
-        # "fat_tree_128_8os_800.topo",
-        
-    ]
     connection_matrix = [
-        "perm_128_2MB",
-        "perm_128_2MB",
         "incast_32_1_2MB",
         "incast_32_1_2MB",
         "perm_128_2MB",
-        "perm_128_2MB",
-        "incast_32_1_2MB",
-        "incast_32_1_2MB",
-        "perm_128_2MB",
-        "perm_128_2MB",
-        "incast_32_1_2MB",
-        "incast_32_1_2MB",
-        "perm_128_2MB",
-        "perm_128_2MB",
-        "incast_32_1_2MB",
-        "incast_32_1_2MB",
+    ]   
 
-        # "perm_128_2MB",
-        # "perm_128_2MB",
-        # "incast_32_1_2MB",
-        # "incast_32_1_2MB",
-        # "perm_128_2MB",
-        # "perm_128_2MB",
-        # "incast_32_1_2MB",
-        # "incast_32_1_2MB",
-        # "perm_128_2MB",
-        # "perm_128_2MB",
-        # "incast_32_1_2MB",
-        # "incast_32_1_2MB",
-        # "perm_128_2MB",
-        # "perm_128_2MB",
-        # "incast_32_1_2MB",
-        # "incast_32_1_2MB",
-    ]
+    short_title = ["_1os_perm", "_8os_perm", "_1os_incast"]
+
+    data = []
+    df = pd.DataFrame(data)
 
     for i, title in enumerate(titles):
-        run(
-            short_title[i],
+        list_fct =run(
+            failures_input[i]+short_title[i%3],
             title,
             failures_input[i],
             2**22,
-            nodes[i],
-            topology[i],
-            connection_matrix[i],
+            128,
+            "fat_tree_128_8os_800.topo",
+            connection_matrix[i%3],
         )
+        data.append({
+        'ExperimentName': title,
+        'REPS': list_fct[0],
+        'REPS Circular': list_fct[1],
+        'REPS Circular\n without freezing': list_fct[2],
+        'Spraying': list_fct[3],
+        "Mode": failures_input[i]    })
+        df.to_csv('experiment_data.csv', index=False)
+    
+    plot_comparison(df)
 
 
 if __name__ == "__main__":

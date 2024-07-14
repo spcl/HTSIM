@@ -1,0 +1,4 @@
+Cable-Degradation: ON
+Cable-Degradation-Start-After: 0
+Cable-Degradation-Period: 0
+Cable-Degradation-Max-Percent: 0.1

@@ -1,0 +1,4 @@
+Cable-BER: ON
+Cable-BER-Start-After: 0
+Cable-BER-Period: 10000
+Cable-BER-Max-Percent: 0.01
