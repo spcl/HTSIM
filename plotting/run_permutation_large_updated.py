@@ -176,7 +176,7 @@ def run_experiment(experiment_name, experiment_cm, topology, routing_name, param
     # Set labels and title
     plt.xlabel('Flow Completion Time ({})'.format(unit),fontsize=19.5)
     plt.ylabel('CDF (%)',fontsize=19.5)
-    plt.title('{}\n1024 Nodes - 800Gbps - 4KiB MTU'.format(experiment_name), fontsize=20)
+    plt.title('{}\n800Gbps - 4KiB MTU'.format(experiment_name), fontsize=20)
     plt.gca().xaxis.set_major_formatter(FuncFormatter(lambda x, _: (int(x) / 1000)))
     plt.grid()  #just add this
     plt.legend(frameon=True)
@@ -204,7 +204,7 @@ def run_experiment(experiment_name, experiment_cm, topology, routing_name, param
     # Format y-axis tick labels without scientific notation
     
     ax3.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))# Show the plot
-    plt.title('{}\n1024 Nodes - Link Speed 800Gbps - 4KiB MTU'.format(experiment_name), fontsize=16.5)
+    plt.title('{}\nLink Speed 800Gbps - 4KiB MTU'.format(experiment_name), fontsize=16.5)
     plt.grid()  #just add this
     
     plt.savefig("experiments/{}/nack.svg".format(experiment_cm), bbox_inches='tight')
@@ -324,7 +324,7 @@ def main():
                             # else:
                                 # traffic_pattern == "All-reduce"
 
-                            run_experiment(name, tm_name, topology, routing_name, parameters)
+                            # run_experiment(name, tm_name, topology, routing_name, parameters)
                             os.system("rm ../sim/datacenter/connection_matrices/{}".format(tm_name))
                             cnt += 1
     print("\nDone.\nSimulations: {}".format(cnt))
