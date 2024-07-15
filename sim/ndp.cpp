@@ -731,6 +731,7 @@ void NdpSrc::processAck(const NdpAck &ack) {
     _flight_size -= _mss;
     assert(_flight_size >= 0);
 
+
     if (cum_ackno >= _flow_size) {
 
         if (f_flow_over_hook) {
@@ -764,6 +765,7 @@ void NdpSrc::processAck(const NdpAck &ack) {
 }
 
 void NdpSrc::receivePacket(Packet &pkt) {
+    
     pkt.flow().logTraffic(pkt, *this, TrafficLogger::PKT_RCVDESTROY);
     if (_stop_time && eventlist().now() >= _stop_time) {
         // stop sending new data, but allow us to finish any retransmissions
@@ -1615,6 +1617,9 @@ void NdpSink::receiver_increase(NdpPacket *p) {
 // Note: _cumulative_ack is the last byte we've ACKed.
 // seqno is the first byte of the new packet.
 void NdpSink::receivePacket(Packet &pkt) {
+
+    printf("Received a Packet\n");  
+
     switch (pkt.type()) {
     case NDP:
         /*

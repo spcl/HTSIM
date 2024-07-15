@@ -500,6 +500,7 @@ int main(int argc, char **argv) {
 
     // used just to print out stats data at the end
     list<const Route *> routes;
+    queuesize = memFromPkt(queuesize);
     // int connID = 0;
 
     printf("Starting LGS Interface");
