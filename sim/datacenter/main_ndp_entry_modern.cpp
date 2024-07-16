@@ -662,7 +662,7 @@ int main(int argc, char **argv) {
 
             // uecSrc->setName("uec_" + ntoa(src) + "_" + ntoa(dest));
 
-            // cout << "uec_" + ntoa(src) + "_" + ntoa(dest) << endl;
+            cout << "uec_" + ntoa(src) + "_" + ntoa(dest) << endl;
             logfile.writeName(*uecSrc);
 
             uecSnk->set_src(src);

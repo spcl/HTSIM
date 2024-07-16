@@ -88,7 +88,7 @@ void DragonflySwitch::receivePacket(Packet &pkt) {
         
         _packets[&pkt] = true;
 
-        /* if(pkt.is_ack){
+        /* if(pkt.is_ack || pkt.type() == NDPACK){
             printf("receivePacket: ACK_Packet with pkt_src %d dst %d arrived at %d.\n", pkt.to, pkt.dst(), _id);
         }else{
             printf("receivePacket: Packet with pkt_src %d dst %d arrived at %d.\n", pkt.from, pkt.dst(), _id);
@@ -294,9 +294,8 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
 
                 uint32_t dst_switch = _dt->HOST_TOR_FKT(pkt.dst());
                 uint32_t pkt_src_switch;
-                if(pkt.is_ack){ pkt_src_switch = _dt->HOST_TOR_FKT(pkt.to); }
+                if(pkt.is_ack || pkt.type() == NDPACK){ pkt_src_switch = _dt->HOST_TOR_FKT(pkt.to); }
                 else{ pkt_src_switch = _dt->HOST_TOR_FKT(pkt.from); }
-                printf("Is ACK: %d,\tpkt_src_switch = %u\tdst_switch = %u\n", pkt.is_ack, pkt_src_switch, dst_switch);
 
                 uint32_t src_group = _id / _a;
                 uint32_t dst_group = dst_switch / _a;

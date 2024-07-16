@@ -110,6 +110,7 @@ def run_experiment(experiment_name, experiment_cm, topology, routing_name, param
         k = parameters[1]
         string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology bcube -bc_strategy {} -n_bcube {} -k_bcube {} > {}".format(experiment_cm, routing_name, n, k, out_name) 
     
+    print(string_to_run)
     # .format(link_speed, experiment_cm, queue_size, initial_cwnd, experiment_topo, ecn_min, ecn_max, paths, mi_gain, fi_gain, md_gain, fd_gain, out_name)
     os.system(string_to_run)
     list_smartt = getListFCT(out_name)
@@ -157,6 +158,7 @@ def run_experiment(experiment_name, experiment_cm, topology, routing_name, param
         k = parameters[1]
         string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology dragonfly -df_strategy {} -n_bcube {} -k_bcube {} > {}".format(experiment_cm, routing_name, n, k, out_name) 
     
+    print(string_to_run)
     os.system(string_to_run)
     list_ndp = getListFCT(out_name)
     num_nack_ndp = getNumTrimmed(out_name)
@@ -336,7 +338,7 @@ def main():
                                 routing_name = "valiants"
                                 routing_name_cap = "Valiants"
 
-                            name = "{}, {}, {}, {}, {} Nodes, {} MiB".format(algorithm, topology, routing, traffic_pattern, topo_size, message_size)
+                            name = "{}, {}, {}, {} Nodes, {} MiB".format(topology, routing, traffic_pattern, topo_size, message_size)
                             tm_name = "corvin{}{}{}{}N{}MiB".format(topology, routing_name_cap, traffic_pattern, topo_size, message_size)
                             print("Running Experiment Named {}".format(name))
                             print("-tm {}".format(tm_name))

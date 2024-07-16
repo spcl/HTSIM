@@ -220,15 +220,15 @@ SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, me
     }
 
     printf("_X = [");
-    for (uint32_t i = 0; i < q_half; i++) {
+    for (uint32_t i = 0; i < q_half-1; i++) {
         printf("%u, ", _X[i]);
     }
-    printf("]\n");
+    printf("%u]\n", _X[q_half-1]);
     printf("_Xp = [");
-    for (uint32_t i = 0; i < q_half; i++) {
+    for (uint32_t i = 0; i < q_half-1; i++) {
         printf("%u, ", _Xp[i]);
     }
-    printf("]\n");
+    printf("%u]\n", _Xp[q_half-1]);
 
     _queuesize = queuesize;
     _eventlist = ev;
