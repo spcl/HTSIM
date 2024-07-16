@@ -88,7 +88,7 @@ void DragonflySwitch::receivePacket(Packet &pkt) {
         
         _packets[&pkt] = true;
 
-        /* if(pkt.is_ack || pkt.type() == NDPACK){
+        /* if(pkt.is_ack || pkt.type() == NDPACK || pkt.type() == BBRACK){
             printf("receivePacket: ACK_Packet with pkt_src %d dst %d arrived at %d.\n", pkt.to, pkt.dst(), _id);
         }else{
             printf("receivePacket: Packet with pkt_src %d dst %d arrived at %d.\n", pkt.from, pkt.dst(), _id);
@@ -294,7 +294,10 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
 
                 uint32_t dst_switch = _dt->HOST_TOR_FKT(pkt.dst());
                 uint32_t pkt_src_switch;
-                if(pkt.is_ack || pkt.type() == NDPACK){ pkt_src_switch = _dt->HOST_TOR_FKT(pkt.to); }
+                if(pkt.type() == BBRNACK){
+                    printf("BBRNACK!\tpkt_from = %u\tpkt_to = %u\n", pkt.from, pkt.to);
+                }
+                if(pkt.is_ack || pkt.type() == NDPACK || pkt.type() == NDPNACK || pkt.type() == BBRACK || pkt.type() == BBRNACK){ pkt_src_switch = _dt->HOST_TOR_FKT(pkt.to); }
                 else{ pkt_src_switch = _dt->HOST_TOR_FKT(pkt.from); }
 
                 uint32_t src_group = _id / _a;
@@ -377,6 +380,7 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                     if(pkt_src_group == dst_group){ // src_group != pkt_src_group && pkt_src_group == dst_group
                         // We don't reroute to a other group if the packet could travel only within the same group.
                         printf("src_group = %u\tpkt_src_group = %u\tdst_group = %u\n", src_group, pkt_src_group, dst_group);
+                        printf("%d\n", pkt.type());
                         abort();
                     }
                     else{ // src_group != pkt_src_group && pkt_src_group != dst_group 
