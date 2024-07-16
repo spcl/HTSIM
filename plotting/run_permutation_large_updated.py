@@ -82,14 +82,14 @@ def run_experiment(experiment_name, experiment_cm, topology, routing_name, param
     os.system("mkdir experiments/{}".format(experiment_cm))
 
     # SMaRTT
-    out_name = "experiments/{}/out.txt".format(experiment_cm)
+    out_name = "experiments/{}/outSMaRTT.txt".format(experiment_cm)
     string_to_run = ""
 
     if (topology == "Dragonfly"):
         p = parameters[0]
         a = parameters[1]
         h = parameters[2]
-        string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology dragonfly -df_strategy {} -p {} -a {} -h {} > {}".format(experiment_cm, routing_name, p, a, h, out_name) 
+        string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology dragonfly -df_strategy {} -p {} -a {} -h {} > {}".format(experiment_cm, routing_name, p, a, h, out_name)
     
     elif (topology == "Slimfly"):
         p = parameters[0]
@@ -128,19 +128,45 @@ def run_experiment(experiment_name, experiment_cm, topology, routing_name, param
     num_nack_bbr = getNumTrimmed(out_name)
     print("BBR: Flow Diff {} - Total {}".format(max(list_bbr) - min(list_bbr), max(list_bbr))) """
 
-    """ SMaRTT EQDS
-    out_name = "experiments/{}/out.txt".format(experiment_cm)
-    string_to_run = "../sim/datacenter/htsim_eqds -linkspeed {} -tm ../sim/datacenter/connection_matrices/{} -q {} -cwnd {} -topo ../sim/datacenter/topologies/{} -sender_cc -end 4400 -seed 2 -use_exp_avg_ecn 1 -ecn {} {} -paths {} > {}".format(link_speed, experiment_cm, queue_size, initial_cwnd, experiment_topo, ecn_min, ecn_max, paths, out_name)
+    # NDP
+    out_name = "experiments/{}/outNDP.txt".format(experiment_cm)
+    string_to_run = ""
+
+    if (topology == "Dragonfly"):
+        p = parameters[0]
+        a = parameters[1]
+        h = parameters[2]
+        string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology dragonfly -df_strategy {} -p {} -a {} -h {} > {}".format(experiment_cm, routing_name, p, a, h, out_name)
+    
+    elif (topology == "Slimfly"):
+        p = parameters[0]
+        q_base = parameters[1]
+        q_exp = parameters[2]
+        string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology slimfly -sf_strategy {} -p {} -q_base {} -q_exp {} > {}".format(experiment_cm, routing_name, p, q_base, q_exp, out_name) 
+    
+    elif (topology == "Hammingmesh"):
+        height = parameters[0]
+        width = parameters[1]
+        height_board = parameters[2]
+        width_board = parameters[3]
+        string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology hammingmesh -hm_strategy {} -height {} -width {} -height_board {} -width_board {} > {}".format(experiment_cm, routing_name, height, width, height_board, width_board, out_name) 
+    
+    else:
+        # topology == "BCube"
+        n = parameters[0]
+        k = parameters[1]
+        string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology dragonfly -df_strategy {} -n_bcube {} -k_bcube {} > {}".format(experiment_cm, routing_name, n, k, out_name) 
+    
     os.system(string_to_run)
-    list_smartt_eqds = getListFCT(out_name)
-    num_nack_smartt_eqds = getNumTrimmed(out_name)
-    print("SMARTT+EQDS: Flow Diff {} - Total {}".format(max(list_smartt_eqds) - min(list_smartt_eqds), max(list_smartt_eqds)))
-    """
+    list_ndp = getListFCT(out_name)
+    num_nack_ndp = getNumTrimmed(out_name)
+    print("NDP: Flow Diff {} - Total {}".format(max(list_ndp) - min(list_ndp), max(list_ndp)))
+   
     # Combine all data into a list of lists
     
-    all_data = [ list_smartt ]
+    all_data = [ list_smartt, list_ndp ]
     # Create a list of labels for each dataset
-    labels = ['SMaRTT']
+    labels = ['SMaRTT', 'NDP']
     # Initialize an empty list to store cumulative probabilities
 
     unit = "ms"
@@ -192,8 +218,8 @@ def run_experiment(experiment_name, experiment_cm, topology, routing_name, param
     # PLOT 2 (NACK)
     # Your list of 5 numbers and corresponding labels
     plt.figure(figsize=(7, 5))
-    numbers = [num_nack_smartt]
-    labels = ['SMaRTT']
+    numbers = [num_nack_smartt, num_nack_ndp]
+    labels = ['SMaRTT', 'NDP']
 
     # Create a DataFrame from the lists
     data = pd.DataFrame({'Packets Trimmed': numbers, 'Algorithm': labels})
@@ -261,8 +287,8 @@ def run_experiment(experiment_name, experiment_cm, topology, routing_name, param
 def main():
     # General Exp Settings
 
-    list_algorithm = ["SMaRTT"]
-    # later on also "NDP" and "BBR"
+    list_algorithm = ["SMaRTT", "NDP"]
+    # later on also "BBR"
     list_topology_routing_size = [
         {"topology": "Dragonfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 2]], [[3, 3, 2]]]},
         # , [2, 3, 2], [6, 6, 4]
@@ -311,7 +337,7 @@ def main():
                                 routing_name_cap = "Valiants"
 
                             name = "{}, {}, {}, {}, {} Nodes, {} MiB".format(algorithm, topology, routing, traffic_pattern, topo_size, message_size)
-                            tm_name = "corvin{}{}{}{}{}N{}MiB".format(algorithm, topology, routing_name_cap, traffic_pattern, topo_size, message_size)
+                            tm_name = "corvin{}{}{}{}N{}MiB".format(topology, routing_name_cap, traffic_pattern, topo_size, message_size)
                             print("Running Experiment Named {}".format(name))
                             print("-tm {}".format(tm_name))
 
@@ -324,8 +350,8 @@ def main():
                             # else:
                                 # traffic_pattern == "All-reduce"
 
-                            # run_experiment(name, tm_name, topology, routing_name, parameters)
-                            os.system("rm ../sim/datacenter/connection_matrices/{}".format(tm_name))
+                            run_experiment(name, tm_name, topology, routing_name, parameters)
+                            # os.system("rm ../sim/datacenter/connection_matrices/{}".format(tm_name))
                             cnt += 1
     print("\nDone.\nSimulations: {}".format(cnt))
 

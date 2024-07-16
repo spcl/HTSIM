@@ -296,6 +296,7 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 uint32_t pkt_src_switch;
                 if(pkt.is_ack){ pkt_src_switch = _dt->HOST_TOR_FKT(pkt.to); }
                 else{ pkt_src_switch = _dt->HOST_TOR_FKT(pkt.from); }
+                printf("Is ACK: %d,\tpkt_src_switch = %u\tdst_switch = %u\n", pkt.is_ack, pkt_src_switch, dst_switch);
 
                 uint32_t src_group = _id / _a;
                 uint32_t dst_group = dst_switch / _a;
@@ -376,6 +377,7 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 else{ // src_group != pkt_src_group
                     if(pkt_src_group == dst_group){ // src_group != pkt_src_group && pkt_src_group == dst_group
                         // We don't reroute to a other group if the packet could travel only within the same group.
+                        printf("src_group = %u\tpkt_src_group = %u\tdst_group = %u\n", src_group, pkt_src_group, dst_group);
                         abort();
                     }
                     else{ // src_group != pkt_src_group && pkt_src_group != dst_group 

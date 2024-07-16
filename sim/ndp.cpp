@@ -316,8 +316,8 @@ void NdpSrc::set_paths(vector<const Route *> *rt_list) {
 }
 
 void NdpSrc::startflow() {
-    cout << "startflow " << _flow._name << " CWND " << _cwnd << " rts " << _rts
-         << " at " << timeAsUs(eventlist().now()) << endl;
+    /* cout << "startflow " << _flow._name << " CWND " << _cwnd << " rts " << _rts
+         << " at " << timeAsUs(eventlist().now()) << endl; */
     _highest_sent = 0;
     _last_acked = 0;
 
@@ -744,6 +744,8 @@ void NdpSrc::processAck(const NdpAck &ack) {
 
         printf("Completion Time Flow is %lu - Overall Time %lu\n",
                eventlist().now() - _flow_start_time, GLOBAL_TIME);
+        
+        printf("Flow Completion time is %f\n", timeAsUs(eventlist().now() - _flow_start_time));
 
         printf("Total NACK Flow is %d\n", count_nack_num);
 
@@ -824,7 +826,7 @@ void NdpSrc::receivePacket(Packet &pkt) {
         if (from == 0) {
             count_received++;
             if (count_received % 10 == 0) {
-                printf("Currently2 at %d\n", count_received);
+                //printf("Currently2 at %d\n", count_received);
                 fflush(stdout);
             }
         }
@@ -1618,7 +1620,7 @@ void NdpSink::receiver_increase(NdpPacket *p) {
 // seqno is the first byte of the new packet.
 void NdpSink::receivePacket(Packet &pkt) {
 
-    printf("Received a Packet\n");  
+    // printf("Received a Packet\n");  
 
     switch (pkt.type()) {
     case NDP:
@@ -2051,8 +2053,8 @@ NdpPullPacer::NdpPullPacer(EventList &event, linkspeed_bps linkspeed,
             (simtime_picosec)((Packet::data_packet_size() + ACKSIZE) *
                               (pow(10.0, 12.0) * 8) / linkspeed) /
             pull_rate_modifier;
-    cout << "Packet drain time " << timeAsUs(_packet_drain_time) << "us"
-         << endl;
+    /* cout << "Packet drain time " << timeAsUs(_packet_drain_time) << "us"
+         << endl; */
     _log_me = false;
     _pacer_no = 0;
 }
