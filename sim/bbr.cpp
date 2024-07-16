@@ -832,9 +832,7 @@ void BBRSrc::CheckCyclePhase() {
         m_cycleIndex++;
         m_cycleIndex = (m_cycleIndex) % 8;
         if (COLLECT_DATA) {
-            std::string file_name =
-                    PROJECT_ROOT_PATH /
-                    ("sim/output/status/status" + _name + ".txt");
+            std::string file_name = PROJECT_ROOT_PATH / ("sim/output/status/status" + _name + ".txt");
             std::ofstream MyFile(file_name, std::ios_base::app);
             MyFile << eventlist().now() / 1000 << "," << 2 << std::endl;
             MyFile.close();
@@ -846,21 +844,19 @@ double BBRSrc::GetBestBw() {
     // storing the largest number to arr[0]
     double max_bw = 0;
     for (int i = 0; i < 10; ++i) {
-        // printf("Best BW %d --> %f\n", i, best_bdw_window[i]);
+        /* printf("Best BW %d --> %f\n", i, best_bdw_window[i]); */
         if (best_bdw_window[i] > max_bw) {
             max_bw = best_bdw_window[i];
         }
     }
-    // printf("Returning %f\n", max_bw);
+    /* printf("Returning %f\n", max_bw); */
     return max_bw;
 }
 
 void BBRSrc::CheckDrain() {
     if (bbr_status == STARTUP && m_isPipeFilled) {
         if (COLLECT_DATA) {
-            std::string file_name =
-                    PROJECT_ROOT_PATH /
-                    ("sim/output/status/status" + _name + ".txt");
+            std::string file_name = PROJECT_ROOT_PATH / ("sim/output/status/status" + _name + ".txt");
             std::ofstream MyFile(file_name, std::ios_base::app);
             MyFile << eventlist().now() / 1000 << "," << 0 << std::endl;
             MyFile.close();
@@ -886,9 +882,7 @@ void BBRSrc::CheckDrain() {
         latest_phase_window_end = eventlist().now() + _base_rtt;
 
         if (COLLECT_DATA) {
-            std::string file_name =
-                    PROJECT_ROOT_PATH /
-                    ("sim/output/status/status" + _name + ".txt");
+            std::string file_name = PROJECT_ROOT_PATH / ("sim/output/status/status" + _name + ".txt");
             std::ofstream MyFile(file_name, std::ios_base::app);
             MyFile << eventlist().now() / 1000 << "," << 1 << std::endl;
             MyFile.close();
@@ -952,24 +946,21 @@ bool BBRSrc::IsNextCyclePhase() {
 void BBRSrc::update_bw_model(double bw) {
 
     if (COLLECT_DATA) {
-        std::string file_name = PROJECT_ROOT_PATH /
-                                ("sim/output/out_bw/out_bw" + _name + ".txt");
+        std::string file_name = PROJECT_ROOT_PATH / ("sim/output/out_bw/out_bw" + _name + ".txt");
         std::ofstream MyFile(file_name, std::ios_base::app);
-        MyFile << eventlist().now() / 1000 << "," << bw << "," << 1 / 1000
-               << std::endl;
+        MyFile << eventlist().now() / 1000 << "," << bw << "," << 1 / 1000 << std::endl;
         MyFile.close();
     }
 
     best_bdw_current_window.push_back(bw);
-    double max = *max_element(best_bdw_current_window.begin(),
-                              best_bdw_current_window.end());
+    double max = *max_element(best_bdw_current_window.begin(), best_bdw_current_window.end());
     best_bdw_window[m_cycleIndex_bdw] = max;
     if (eventlist().now() > latest_rtt_window_end + _base_rtt) {
         m_cycleIndex_bdw++;
         m_cycleIndex_bdw %= 10;
         best_bdw_current_window.clear();
         latest_rtt_window_end += _base_rtt;
-        if (generic_pacer != NULL && eventlist().now() > _base_rtt * 1.5) {
+        if (generic_pacer != NULL && eventlist().now() > _base_rtt * 0) {
             pacing_delay = pacer_d;
             pacing_delay *= 1000;
             generic_pacer->cancel();
@@ -979,23 +970,32 @@ void BBRSrc::update_bw_model(double bw) {
 }
 
 void BBRSrc::UpdatePacingRate(double bw) {
-    double max = GetBestBw();
-    bw = max;
+    double max_b = GetBestBw();
+    bw = max_b;
     if (m_isPipeFilled || bw > current_bw) {
         current_bw = bw;
     }
 
+    int old_pacer_d = pacer_d;
+
+    current_bw = max(current_bw, 3.0);
     pacer_d = ((_mss + 64) * 8.0) / (current_bw * pacing_gain);
 
-    // printf("Choosing new BW of %f (%f and %f) at %lu\n",
-    //        current_bw * pacing_gain, bw, pacing_gain, GLOBAL_TIME / 1000);
+    if ((pacer_d - old_pacer_d < 4300 * 8 / LINK_SPEED_MODERN) && pacing_gain > 1) {
+
+        pacer_d = old_pacer_d - (4300 * 8 * 2 / LINK_SPEED_MODERN);
+        if (pacer_d < 0) {
+            pacer_d = (4300 * 8 / LINK_SPEED_MODERN);
+        }
+        /* printf("Pacer D %d - old %d - adapted %d\n", pacer_d, old_pacer_d, pacer_d); */
+    }
+
+    /* printf("Choosing new BW of %f (%f and %f) at %lu\n", current_bw * pacing_gain, bw, pacing_gain, GLOBAL_TIME /
+     * 1000); */
     if (COLLECT_DATA) {
-        std::string file_name =
-                PROJECT_ROOT_PATH /
-                ("sim/output/out_bw_paced/out_bw_paced" + _name + ".txt");
+        std::string file_name = PROJECT_ROOT_PATH / ("sim/output/out_bw_paced/out_bw_paced" + _name + ".txt");
         std::ofstream MyFile(file_name, std::ios_base::app);
-        MyFile << eventlist().now() / 1000 << "," << (bw * pacing_gain) << ","
-               << 1 / 1000 << std::endl;
+        MyFile << eventlist().now() / 1000 << "," << (bw * pacing_gain) << "," << 1 / 1000 << std::endl;
         MyFile.close();
     }
 }

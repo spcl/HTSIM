@@ -6,7 +6,7 @@ CRT=`pwd`
 INCLUDE= -I/$(CRT)/.. -I$(CRT) 
 LIB=-L.. 
 
-all:	htsim_ndp_entry_modern htsim_uec_entry_modern
+all:	htsim_ndp_entry_modern htsim_uec_entry_modern htsim_bbr
 
 
 htsim_tcp: main_tcp.o firstfit.o ../libhtsim.a vl2_topology.o fat_tree_topology.o fat_tree_interdc_topology.o fat_tree_switch.o dragonfly_topology.o dragonfly_switch.o slimfly_topology.o slimfly_switch.o hammingmesh_topology.o hammingmesh_switch.o b-cube_topology.o b-cube_switch.o fat_tree_interdc_switch.o dragon_fly_topology.o bcube_topology.o connection_matrix.o oversubscribed_fat_tree_topology.o shortflows.o multihomed_fat_tree_topology.o star_topology.o
