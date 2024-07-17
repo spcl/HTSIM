@@ -490,6 +490,8 @@ class BBRSink : public PacketSink, public DataReceiver {
                   int path_id, int);
     void send_nack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno,
                    BBRAck::seq_t ackno, const Route *rt, int);
+    void send_nack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno,
+                    BBRAck::seq_t ackno, const Route *rt, int, uint32_t to_in);
     bool already_received(BBRPacket &pkt);
 };
 

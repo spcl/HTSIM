@@ -122,6 +122,7 @@ class BBRAck : public Packet {
         p->_is_header = true;
         p->_flags = 0;
         p->hop_count = 0;
+        p->is_ack = true;
         // printf("Ack Destination %d\n", destination);
         p->set_dst(destination);
         p->_direction = NONE;
@@ -178,13 +179,22 @@ class BBRNack : public Packet {
         p->_direction = NONE;
         p->_flags = 0;
         p->hop_count = 0;
+        p->is_nack = true;
         p->set_dst(destination);
         return p;
     }
 
-    inline static BBRNack *newpkt(PacketFlow &flow, const Route &route,
+    /* inline static BBRNack *newpkt(PacketFlow &flow, const Route &route,
                                   seq_t seqno, seq_t ackno) {
         return newpkt(flow, route, seqno, ackno, 0);
+    } */
+
+    inline static BBRNack *newpkt(PacketFlow &flow, const Route &route,
+                                  seq_t seqno, seq_t ackno, seq_t dackno,
+                                  uint32_t destination, uint32_t to_in) {
+        BBRNack *p = newpkt(flow, route, seqno, ackno, dackno, destination);
+        p->to = to_in;
+        return p;
     }
 
     void free() {
@@ -197,6 +207,7 @@ class BBRNack : public Packet {
     inline seq_t data_ackno() const { return _data_ackno; }
     inline simtime_picosec ts() const { return _ts; }
     inline void set_ts(simtime_picosec ts) { _ts = ts; }
+    inline void set_to (uint32_t to_in){ to = to_in; }
     // inline simtime_picosec ts() const {return _ts;}
     // inline void set_ts(simtime_picosec ts) {_ts = ts;}
 

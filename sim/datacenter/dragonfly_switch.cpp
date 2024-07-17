@@ -294,10 +294,13 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
 
                 uint32_t dst_switch = _dt->HOST_TOR_FKT(pkt.dst());
                 uint32_t pkt_src_switch;
-                if(pkt.type() == BBRNACK){
-                    printf("BBRNACK!\tpkt_from = %u\tpkt_to = %u\n", pkt.from, pkt.to);
+                if(pkt.type() == BBRACK){
+                    printf("BBRACK!\tsrc_switch = %u\tpkt.from = %u\tpkt.to = %u\tpkt.dst = %u\n", pkt_src_switch, pkt.from, pkt.to, pkt.dst());
                 }
-                if(pkt.is_ack || pkt.type() == NDPACK || pkt.type() == NDPNACK || pkt.type() == BBRACK || pkt.type() == BBRNACK){ pkt_src_switch = _dt->HOST_TOR_FKT(pkt.to); }
+                if(pkt.type() == BBRNACK){
+                    printf("BBRNACK!\tsrc_switch = %u\tpkt.from = %u\tpkt.to = %u\tpkt.dst = %u\n", pkt_src_switch, pkt.from, pkt.to, pkt.dst());
+                }
+                if(pkt.is_ack || pkt.is_nack || pkt.type() == NDPACK || pkt.type() == NDPNACK){ pkt_src_switch = _dt->HOST_TOR_FKT(pkt.to); }
                 else{ pkt_src_switch = _dt->HOST_TOR_FKT(pkt.from); }
 
                 uint32_t src_group = _id / _a;
@@ -379,7 +382,9 @@ Route *DragonflySwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                 else{ // src_group != pkt_src_group
                     if(pkt_src_group == dst_group){ // src_group != pkt_src_group && pkt_src_group == dst_group
                         // We don't reroute to a other group if the packet could travel only within the same group.
-                        printf("src_group = %u\tpkt_src_group = %u\tdst_group = %u\n", src_group, pkt_src_group, dst_group);
+                        printf("src_group = %u\tpkt_src_group = %u\tdst_group = %u\tpkt_is_ack = %d\tpkt_is_nack = %d\n", src_group, pkt_src_group, dst_group, pkt.is_ack, pkt.is_nack);
+                        printf("src_switch = %u\tpkt_src_switch = %u\tdst_switch = %u\n", _id, pkt_src_switch, dst_switch);
+                        printf("pkt.from = %u\tpkt.to = %u\n", pkt.from, pkt.to);
                         printf("%d\n", pkt.type());
                         abort();
                     }

@@ -1877,6 +1877,32 @@ void BBRSink::send_nack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno,
     nack->sendOn();
 }
 
+void BBRSink::send_nack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno,
+                        BBRAck::seq_t ackno, const Route *rt, int path_id, uint32_t to_in) {
+
+    BBRNack *nack =
+            BBRNack::newpkt(_src->_flow, *_route, seqno, ackno, 0, _srcaddr, to_in);
+
+    // printf("Sending NACK at %lu\n", GLOBAL_TIME);
+    nack->set_pathid(_path_ids[_crt_path]);
+    _crt_path++;
+    if (_crt_path == _paths.size()) {
+        _crt_path = 0;
+    }
+
+    nack->pathid_echo = path_id;
+    nack->is_ack = false;
+    nack->flow().logTraffic(*nack, *this, TrafficLogger::PKT_CREATESEND);
+    nack->set_ts(ts);
+    if (marked) {
+        nack->set_flags(ECN_ECHO);
+    } else {
+        nack->set_flags(0);
+    }
+
+    nack->sendOn();
+}
+
 bool BBRSink::already_received(BBRPacket &pkt) {
     BBRPacket::seq_t seqno = pkt.seqno();
 
@@ -1951,7 +1977,7 @@ void BBRSink::receivePacket(Packet &pkt) {
 
     // packet was trimmed
     if (pkt.header_only()) {
-        send_nack(ts, marked, seqno, ackno, _paths.at(crt_path), pkt.pathid());
+        send_nack(ts, marked, seqno, ackno, _paths.at(crt_path), pkt.pathid(), pkt.to);
         pkt.flow().logTraffic(pkt, *this, TrafficLogger::PKT_RCVDESTROY);
         p->free();
         // printf("Free6\n");

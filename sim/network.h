@@ -279,6 +279,7 @@ class Packet {
 
     // logsim extensions
     bool is_ack = false;
+    bool is_nack = false;
     int pathid_echo = 0;
     int pathid_sender = 0;
     uint32_t from = -1;
