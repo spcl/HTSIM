@@ -994,7 +994,7 @@ bool failuregenerator::check_connectivity() {
                 }
             }
             if (all_switches_active && all_cables_active) {
-                // std::cout << "Path " << src->nodename() << " is connected by" << found_path << ::endl;
+                std::cout << "Path " << src->nodename() << " is connected by" << found_path << ::endl;
                 src_dst_connected = true;
                 break;
             }

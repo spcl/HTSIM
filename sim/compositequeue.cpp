@@ -337,8 +337,6 @@ void CompositeQueue::receivePacket(Packet &pkt) {
 
         // Return if using a timeout, otherwise transform it in a trim and mark it as failed
         if (_use_timeouts) {
-            std::cout << "Dropping a PKT from " << pkt.from << " to " << pkt.to << " At switch: " << _switch->nodename()
-                      << std::endl;
             pkt.free();
             return;
         } else {
