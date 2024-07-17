@@ -1,3 +1,4 @@
+Stop-Failures-After: 1000000000
 Random-Packet-Drop: OFF
 Random-Packet-Drop-Rate: 4
 Switch-Fail: ON
