@@ -2014,6 +2014,10 @@ void NdpSink::send_nack(simtime_picosec ts, NdpPacket::seq_t ackno,
         break;
     }
     assert(nack);
+    nack->is_nack = true;
+    nack->from = this->from;
+    nack->to = this->to;
+    nack->tag = this->tag;
     nack->pathid_echo = path_id;
     nack->flow().logTraffic(*nack, *this, TrafficLogger::PKT_CREATE);
     nack->set_ts(ts);

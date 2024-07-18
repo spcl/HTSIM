@@ -1792,6 +1792,8 @@ bool BBRSrc::resend_packet(std::size_t idx) {
                                      0, _mss, true, _dstaddr);
     p->set_ts(eventlist().now());
     p->delivered_so_far = delivered_so_far;
+    p->from = this->from;
+    p->to = this->to;
 
     p->set_route(*_route);
     count_sent++;
@@ -1864,6 +1866,10 @@ void BBRSink::send_nack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno,
         _crt_path = 0;
     }
 
+    nack->is_nack = true;
+    nack->from = this->from;
+    nack->to = this->to;
+    nack->tag = this->tag;
     nack->pathid_echo = path_id;
     nack->is_ack = false;
     nack->flow().logTraffic(*nack, *this, TrafficLogger::PKT_CREATESEND);
@@ -1892,6 +1898,10 @@ void BBRSink::send_nack(simtime_picosec ts, bool marked, BBRAck::seq_t seqno,
 
     nack->pathid_echo = path_id;
     nack->is_ack = false;
+    nack->is_nack = true;
+    nack->from = this->from;
+    nack->to = this->to;
+    nack->tag = this->tag;
     nack->flow().logTraffic(*nack, *this, TrafficLogger::PKT_CREATESEND);
     nack->set_ts(ts);
     if (marked) {

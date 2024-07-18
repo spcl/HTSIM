@@ -695,6 +695,9 @@ int main(int argc, char **argv) {
                     dsttotor->push_back(top->queues_ns_nlp[dest][top->HOST_POD_SWITCH(dest)][0]->getRemoteEndpoint());
 
                     uecSrc->from = src;
+                    uecSrc->to = dest;
+
+                    uecSnk->from = src;
                     uecSnk->to = dest;
                     uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
                     uecSrc->set_paths(number_entropies);
@@ -727,6 +730,9 @@ int main(int argc, char **argv) {
                                                                      ->getRemoteEndpoint());
 
                     uecSrc->from = src;
+                    uecSrc->to = dest;
+
+                    uecSnk->from = src;
                     uecSnk->to = dest;
                     uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
                     uecSrc->set_paths(number_entropies);
@@ -764,6 +770,9 @@ int main(int argc, char **argv) {
                     }
 
                     uecSrc->from = src;
+                    uecSrc->to = dest;
+
+                    uecSnk->from = src;
                     uecSnk->to = dest;
                     uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
                     uecSrc->set_paths(number_entropies);
@@ -796,6 +805,9 @@ int main(int argc, char **argv) {
                     }
 
                     uecSrc->from = src;
+                    uecSrc->to = dest;
+
+                    uecSnk->from = src;
                     uecSnk->to = dest;
                     uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
                     uecSrc->set_paths(number_entropies);
@@ -815,6 +827,9 @@ int main(int argc, char **argv) {
                     dsttotor->push_back(top_hm->queues_host_switch[dest][dest]->getRemoteEndpoint());
 
                     uecSrc->from = src;
+                    uecSrc->to = dest;
+
+                    uecSnk->from = src;
                     uecSnk->to = dest;
                     uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
                     uecSrc->set_paths(number_entropies);
@@ -834,6 +849,9 @@ int main(int argc, char **argv) {
                     dsttotor->push_back(top_bc->queues_host_switch[dest][dest]->getRemoteEndpoint());
 
                     uecSrc->from = src;
+                    uecSrc->to = dest;
+
+                    uecSnk->from = src;
                     uecSnk->to = dest;
                     uecSrc->connect(srctotor, dsttotor, *uecSnk, crt->start);
                     uecSrc->set_paths(number_entropies);

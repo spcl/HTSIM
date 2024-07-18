@@ -212,6 +212,7 @@ class NdpNack : public Packet {
         // packet was trimmed on
         p->_path_len = 0;
         p->_ecn_echo = false;
+        p->is_nack = true;
         p->set_dst(destination);
         return p;
     }

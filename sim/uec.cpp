@@ -1196,7 +1196,7 @@ void UecSrc::receivePacket(Packet &pkt) {
         pkt.free();
         return;
     case UECNACK:
-        printf("\nNACK at %lu %d@%d@%d - %d\n", GLOBAL_TIME / 1000, from, to, tag, pkt.is_failed);
+        printf("\nNACK at %lu %d@%d@%d (%d@%d@%d) - %d\n", GLOBAL_TIME / 1000, from, to, tag, pkt.from, pkt.to, pkt.tag, pkt.is_failed);
         // fflush(stdout);
         total_nack++;
         if (_trimming_enabled) {
@@ -1927,6 +1927,7 @@ bool UecSrc::resend_packet(std::size_t idx) {
     p->set_route(*_route);
     int crt = choose_route();
     p->from = this->from;
+    p->to = this->to;
 
     // printf("Resending to %d\n", this->from);
 
@@ -1995,6 +1996,10 @@ void UecSink::send_nack(simtime_picosec ts, bool marked, UecAck::seq_t seqno, Ue
 
     nack->pathid_echo = path_id;
     nack->is_ack = false;
+    nack->is_nack = true;
+    nack->from = this->from;
+    nack->to = this->to;
+    nack->tag = this->tag;
     nack->flow().logTraffic(*nack, *this, TrafficLogger::PKT_CREATESEND);
     nack->set_ts(ts);
     if (marked) {
