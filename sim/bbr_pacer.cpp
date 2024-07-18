@@ -29,6 +29,10 @@ void BBRPacer::just_sent() { _last_send = eventlist().now(); }
 
 void BBRPacer::doNextEvent() {
     assert(eventlist().now() == _next_send);
+    if (flow->_flow_finished) {
+        cancel();
+        return;
+    }
     // printf("Pacer DoNextEvent\n");
     flow->pacedSend();
 
