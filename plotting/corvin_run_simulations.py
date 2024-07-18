@@ -165,7 +165,7 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
             # topology == "BCube"
             n = parameters[0]
             k = parameters[1]
-            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology dragonfly -df_strategy {} -n_bcube {} -k_bcube {} > {}".format(experiment_cm, routing_name, n, k, out_name) 
+            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology bcube -bc_strategy {} -n_bcube {} -k_bcube {} > {}".format(experiment_cm, routing_name, n, k, out_name) 
         
         print(string_to_run)
         os.system(string_to_run)
@@ -337,7 +337,7 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
 def main():
     # General Exp Settings
 
-    list_algorithm = ["BBR"]
+    list_algorithm = ["SMaRTT", "NDP", "BBR"]
     # "SMaRTT", "NDP", "BBR"
     list_topology_routing_size = [
         {"topology": "Dragonfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 2]], [[3, 3, 2]]]},

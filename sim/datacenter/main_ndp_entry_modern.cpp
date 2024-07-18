@@ -567,7 +567,7 @@ int main(int argc, char **argv) {
             printf("Case Slimfly.\tp = %u,\tq_base = %u,\tq_exp = %u\n", p, q_base, q_exp);
             top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice, hop_latency, sf_routing_strategy);
             int q = pow(q_base, q_exp);
-            no_of_nodes = 2 * pow(q, 2);
+            no_of_nodes = 2 * p * pow(q, 2);
             break;
         }
         case (HAMMINGMESH_CASE): {
