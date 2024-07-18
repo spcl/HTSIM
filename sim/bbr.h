@@ -286,6 +286,7 @@ class BBRSrc : public PacketSink, public EventSource, public TriggerTarget {
     simtime_picosec last_rtt_startup = 0;
     simtime_picosec last_seen_startup = 0;
     bool rtt_passed = true;
+    bool _flow_finished = false;
 
   private:
     uint32_t _unacked;
@@ -300,7 +301,7 @@ class BBRSrc : public PacketSink, public EventSource, public TriggerTarget {
     uint16_t _crt_path = 0;
     uint32_t target_window;
     // LogSimInterface *_lgs;
-    bool _flow_finished = false;
+    
     int count_sent = 0;
 
     bool _rtx_timeout_pending;
