@@ -26,7 +26,7 @@ template <typename T> void CircularBufferREPS<T>::add(T element) {
         /* printf("elment is %d, max size is %d\n", element, max_size);
         fflush(stdout); */
         if (containsEntropy(element)) {
-            // return;
+            return;
         }
     }
 
@@ -223,7 +223,7 @@ template <typename T> int CircularBufferREPS<T>::numValid() const {
 
 // Prints the elements of the buffer
 template <typename T> void CircularBufferREPS<T>::print() {
-    std::cout << "Buffer elements forzen " << isFrozenMode() << " (value, isValid): ";
+    std::cout << "Buffer elements frozen " << isFrozenMode() << " (value, isValid): ";
     for (int i = 0; i < max_size; i++) {
         std::cout << "(" << buffer[i].value << ", " << buffer[i].isValid << ") ";
     }

@@ -1964,6 +1964,9 @@ void UecSrc::send_packets() {
 
         p->set_route(*_route);
         int crt = choose_route();
+        printf("Sending packet1 from %d to %d at %lu - Entropy %d\n", from, to, GLOBAL_TIME / 1000, crt);
+        circular_buffer_reps->print();
+        
         p->is_bts_pkt = false;
 
         p->set_pathid(_path_ids[crt]);
@@ -2201,6 +2204,8 @@ bool UecSrc::resend_packet(std::size_t idx) {
 
     p->set_route(*_route);
     int crt = choose_route();
+    printf("Sending packet2 from %d to %d at %lu - Entropy %d\n", from, to, GLOBAL_TIME / 1000, crt);
+    circular_buffer_reps->print();
     p->from = this->from;
     p->to = this->to;
     p->tag = this->tag;
