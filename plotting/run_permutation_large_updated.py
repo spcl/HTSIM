@@ -117,7 +117,7 @@ def run_experiment(experiment_name, experiment_cm, topology, routing_name, param
     num_nack_smartt = getNumTrimmed(out_name)
     print("SMARTT: Flow Diff {} - Total {}".format(max(list_smartt) - min(list_smartt), max(list_smartt)))
 
-    # BBR
+    """ # BBR
     out_name = "experiments/{}/outBBR.txt".format(experiment_cm)
     string_to_run = ""
     
@@ -151,10 +151,10 @@ def run_experiment(experiment_name, experiment_cm, topology, routing_name, param
     os.system(string_to_run)
     list_bbr = getListFCT(out_name)
     num_nack_bbr = getNumTrimmed(out_name)
-    print("BBR: Flow Diff {} - Total {}".format(max(list_bbr) - min(list_bbr), max(list_bbr)))
+    print("BBR: Flow Diff {} - Total {}".format(max(list_bbr) - min(list_bbr), max(list_bbr))) """
 
     # NDP
-    """ out_name = "experiments/{}/outNDP.txt".format(experiment_cm)
+    out_name = "experiments/{}/outNDP.txt".format(experiment_cm)
     string_to_run = ""
 
     if (topology == "Dragonfly"):
@@ -186,13 +186,13 @@ def run_experiment(experiment_name, experiment_cm, topology, routing_name, param
     os.system(string_to_run)
     list_ndp = getListFCT(out_name)
     num_nack_ndp = getNumTrimmed(out_name)
-    print("NDP: Flow Diff {} - Total {}".format(max(list_ndp) - min(list_ndp), max(list_ndp))) """
+    print("NDP: Flow Diff {} - Total {}".format(max(list_ndp) - min(list_ndp), max(list_ndp)))
    
     # Combine all data into a list of lists
     
-    all_data = [ list_smartt, list_bbr ]
+    all_data = [ list_smartt, list_ndp ]
     # Create a list of labels for each dataset
-    labels = ['SMaRTT', 'BBR']
+    labels = ['SMaRTT', 'NDP']
     # Initialize an empty list to store cumulative probabilities
 
     unit = "ms"
@@ -244,8 +244,8 @@ def run_experiment(experiment_name, experiment_cm, topology, routing_name, param
     # PLOT 2 (NACK)
     # Your list of 5 numbers and corresponding labels
     plt.figure(figsize=(7, 5))
-    numbers = [num_nack_smartt, num_nack_bbr]
-    labels = ['SMaRTT', 'BBR']
+    numbers = [num_nack_smartt, num_nack_ndp]
+    labels = ['SMaRTT', 'NDP']
 
     # Create a DataFrame from the lists
     data = pd.DataFrame({'Packets Trimmed': numbers, 'Algorithm': labels})
@@ -313,7 +313,7 @@ def run_experiment(experiment_name, experiment_cm, topology, routing_name, param
 def main():
     # General Exp Settings
 
-    list_algorithm = ["SMaRTT", "BBR"]
+    list_algorithm = ["SMaRTT", "NDP"]
     # later on also "NDP" and "BBR"
     list_topology_routing_size = [
         {"topology": "Dragonfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 2]], [[3, 3, 2]]]},
