@@ -686,7 +686,7 @@ int main(int argc, char **argv) {
 
                 switch (topology) {
                 case (FAT_TREE_CASE): {
-                    srctotor->push_back(top->queues_ns_nlp[src][HOST_POD_SWITCH(src)][0]);
+                    srctotor->push_back(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)][0]);
                     srctotor->push_back(top->pipes_ns_nlp[src][top->HOST_POD_SWITCH(src)][0]);
                     srctotor->push_back(top->queues_ns_nlp[src][top->HOST_POD_SWITCH(src)][0]->getRemoteEndpoint());
 
