@@ -747,7 +747,7 @@ void NdpSrc::processAck(const NdpAck &ack) {
         
         printf("Flow Completion time is %f\n", timeAsUs(eventlist().now() - _flow_start_time));
 
-        printf("Total NACK Flow is %d\n", count_nack_num);
+        printf("Total NACKs: %d\n", count_nack_num);
 
         printf("Overall Completion at %lu\n", GLOBAL_TIME);
 

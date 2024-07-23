@@ -69,7 +69,7 @@ for group in range(groups):
     for n in range(groupsize):
         groupsrcs.append(srcs[group * groupsize + n])
 
-    print(groupsrcs)
+    # print(groupsrcs)
 
     half = (groupsize-1) // parallel
     left = (groupsize-1) % parallel

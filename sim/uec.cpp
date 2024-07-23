@@ -1113,6 +1113,8 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
                timeAsUs(eventlist().now()) - timeAsUs(_flow_start_time),
                eventlist().now(), _flow_start_time);
 
+        printf("Total NACKs: %d\n", total_nack);
+
         printf("Overall Completion at %lu\n", GLOBAL_TIME);
         if (_end_trigger) {
             _end_trigger->activate();

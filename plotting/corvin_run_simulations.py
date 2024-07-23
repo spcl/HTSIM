@@ -67,11 +67,14 @@ def getTopoSize(topology, parameters):
         height_board = parameters[2]
         width_board = parameters[3]
         topo_size = height * width * height_board * width_board
-    else:
+    elif(topology == "BCube"):
         # topology == "BCube"
         n = parameters[0]
         k = parameters[1]
         topo_size = pow(n, k)
+    else:
+        # topology == "Fat_Tree"
+        topo_size = parameters[0]
     return topo_size
 
 def is_element(element, list):
@@ -121,11 +124,17 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
             width_board = parameters[3]
             string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology hammingmesh -hm_strategy {} -height {} -width {} -height_board {} -width_board {} > {}".format(experiment_cm, routing_name, height, width, height_board, width_board, out_name) 
         
-        else:
+        elif (topology == "BCube"):
             # topology == "BCube"
             n = parameters[0]
             k = parameters[1]
             string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology bcube -bc_strategy {} -n_bcube {} -k_bcube {} > {}".format(experiment_cm, routing_name, n, k, out_name) 
+
+        else:
+            # topology == "Fat_Tree"
+            topo_file = parameters[0]
+            string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology fat_tree -nodes {} -topo topo/fat_tree_{}N.topo > {}".format(experiment_cm, topo_file, topo_file, out_name)
+
         
         print(string_to_run)
         # .format(link_speed, experiment_cm, queue_size, initial_cwnd, experiment_topo, ecn_min, ecn_max, paths, mi_gain, fi_gain, md_gain, fd_gain, out_name)
@@ -161,12 +170,16 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
             width_board = parameters[3]
             string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology hammingmesh -hm_strategy {} -height {} -width {} -height_board {} -width_board {} > {}".format(experiment_cm, routing_name, height, width, height_board, width_board, out_name) 
         
-        else:
+        elif(topology == "BCube"):
             # topology == "BCube"
             n = parameters[0]
             k = parameters[1]
             string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology bcube -bc_strategy {} -n_bcube {} -k_bcube {} > {}".format(experiment_cm, routing_name, n, k, out_name) 
-        
+        else:
+            # topology == "Fat_Tree"
+            topo_file = parameters[0]
+            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology fat_tree -nodes {} -topo topo/fat_tree_{}N.topo > {}".format(experiment_cm, topo_file, topo_file, out_name)
+
         print(string_to_run)
         os.system(string_to_run)
         list_ndp = getListFCT(out_name)
@@ -200,12 +213,16 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
             width_board = parameters[3]
             string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology hammingmesh -hm_strategy {} -height {} -width {} -height_board {} -width_board {} > {}".format(experiment_cm, routing_name, height, width, height_board, width_board, out_name) 
         
-        else:
+        elif(topology == "BCube"):
             # topology == "BCube"
             n = parameters[0]
             k = parameters[1]
             string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology bcube -bc_strategy {} -n_bcube {} -k_bcube {} > {}".format(experiment_cm, routing_name, n, k, out_name) 
         
+        else:
+            # topology == "Fat_Tree"
+            topo_file = parameters[0]
+            string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology fat_tree -nodes {} -topo topo/fat_tree_{}N.topo > {}".format(experiment_cm, topo_file, topo_file, out_name)
         
         print(string_to_run)
         os.system(string_to_run)
@@ -253,7 +270,7 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
     # Set labels and title
     plt.xlabel('Flow Completion Time ({})'.format(unit),fontsize=19.5)
     plt.ylabel('CDF (%)',fontsize=19.5)
-    plt.title('{}\n800Gbps - 4KiB MTU'.format(experiment_name), fontsize=20)
+    plt.title('{}\n100Gbps - 4KiB MTU'.format(experiment_name), fontsize=20)
     plt.gca().xaxis.set_major_formatter(FuncFormatter(lambda x, _: (int(x) / 1000)))
     plt.grid()  #just add this
     plt.legend(frameon=True)
@@ -263,11 +280,13 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
     plt.savefig("experiments/{}/cdf.svg".format(experiment_cm), bbox_inches='tight')
     plt.savefig("experiments/{}/cdf.png".format(experiment_cm), bbox_inches='tight')
     plt.savefig("experiments/{}/cdf.pdf".format(experiment_cm), bbox_inches='tight')
+
+    plt.savefig("../../Plots/CDF/cdf_{}.png".format(experiment_cm), bbox_inches='tight')
     plt.close()
 
 
     # PLOT 2 (NACK)
-    # Your list of 5 numbers and corresponding labels
+    
     plt.figure(figsize=(7, 5))
     # num_nack_smartt, num_nack_ndp, 
     labels = list_algorithm
@@ -276,21 +295,23 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
     data = pd.DataFrame({'Packets Trimmed': numbers, 'Algorithm': labels})
 
     # Create a bar chart using Seaborn
-    ax3 = sns.barplot(x='Algorithm', y='Packets Trimmed', data=data)
+    ax3 = sns.barplot(x='Algorithm', y='Packets Trimmed', hue="Algorithm", data=data)
     ax3.tick_params(labelsize=9.5)
     # Format y-axis tick labels without scientific notation
     
     ax3.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))# Show the plot
-    plt.title('{}\nLink Speed 800Gbps - 4KiB MTU'.format(experiment_name), fontsize=16.5)
+    plt.title('{}\nLink Speed 100Gbps - 4KiB MTU'.format(experiment_name), fontsize=16.5)
     plt.grid()  #just add this
     
     plt.savefig("experiments/{}/nack.svg".format(experiment_cm), bbox_inches='tight')
     plt.savefig("experiments/{}/nack.png".format(experiment_cm), bbox_inches='tight')
     plt.savefig("experiments/{}/nack.pdf".format(experiment_cm), bbox_inches='tight')
+
+    plt.savefig("../../Plots/NACK/nack_{}.png".format(experiment_cm), bbox_inches='tight')
     plt.close()
 
     # PLOT 3 (COMPLETION TIME)
-    # Your list of 5 numbers and corresponding labels
+    
     plt.figure(figsize=(7, 5))
 
     labels = list_algorithm
@@ -298,20 +319,22 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
     data2 = pd.DataFrame({'Completion Time': numbers_max, 'Algorithm': labels})
 
     # Create a bar chart using Seaborn
-    ax2 = sns.barplot(x='Algorithm', y='Completion Time', data=data2)
+    ax2 = sns.barplot(x='Algorithm', y='Completion Time', hue="Algorithm", data=data2)
     ax2.tick_params(labelsize=9.5)
     # Format y-axis tick labels without scientific notation
     ax2.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))# Show the plot
-    plt.title('{}\n800Gbps - 4KiB MTU'.format(experiment_name), fontsize=17)
+    plt.title('{}\n100Gbps - 4KiB MTU'.format(experiment_name), fontsize=17)
     plt.grid()  #just add this
 
     plt.savefig("experiments/{}/completion.svg".format(experiment_cm), bbox_inches='tight')
     plt.savefig("experiments/{}/completion.png".format(experiment_cm), bbox_inches='tight')
     plt.savefig("experiments/{}/completion.pdf".format(experiment_cm), bbox_inches='tight')
+
+    plt.savefig("../../Plots/Completion/completion_{}.png".format(experiment_cm), bbox_inches='tight')
     plt.close()
 
     # PLOT 4 (FLOW DISTR)
-    # Your list of 5 numbers and corresponding labels
+    
     plt.figure(figsize=(7, 5))
 
     combined_data = []
@@ -321,16 +344,19 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
         hue_list += [labels[idx]] * len(all_data[idx])
 
     # Create the violin plot
-    my = sns.violinplot(x=hue_list, y=combined_data, cut=0)
+    my = sns.violinplot(x=hue_list, y=combined_data, hue=hue_list)
+    # cut=0 ?
     my.set_axisbelow(True)
     my.tick_params(labelsize=9.5)
 
-    plt.title('{}\nLink Speed 800Gbps - 4KiB MTU'.format(experiment_name), fontsize=17)
+    plt.title('{}\nLink Speed 100Gbps - 4KiB MTU'.format(experiment_name), fontsize=17)
     plt.grid()  #just add this
 
     plt.savefig("experiments/{}/violin_fct.svg".format(experiment_cm), bbox_inches='tight')
     plt.savefig("experiments/{}/violin_fct.png".format(experiment_cm), bbox_inches='tight')
     plt.savefig("experiments/{}/violin_fct.pdf".format(experiment_cm), bbox_inches='tight')
+
+    plt.savefig("../../Plots/Violin_FCT/violin_fct_{}.png".format(experiment_cm), bbox_inches='tight')
     plt.close()
     
 
@@ -346,10 +372,12 @@ def main():
         # , [2, 3, 1], [4, 11, 1]
         {"topology": "Hammingmesh", "list_routing": ["Minimal"], "list_parameters_set": [[[2, 2, 2, 2]], [[3, 3, 3, 3]]]},
         # , [2, 2, 3, 3], [4, 5, 7, 7]
-        {"topology": "BCube", "list_routing": ["Minimal"], "list_parameters_set": [[[4, 2]], [[3, 4]]]}
+        {"topology": "BCube", "list_routing": ["Minimal"], "list_parameters_set": [[[4, 2]], [[3, 4]]]},
+        # , [6, 2], [4, 5]
+        {"topology": "Fat_Tree", "list_routing": ["Minimal"], "list_parameters_set": [[[16]], [[128]]]}
         # , [6, 2], [4, 5]
     ]
-    # maybe also "Fat Tree"
+    # maybe also "Fat_Tree"
     list_traffic_pattern = ["Incast", "All-to-all", "Permutation"]
     # later on also "All-reduce"
     list_message_size = [1]
@@ -401,7 +429,7 @@ def main():
                             # traffic_pattern == "All-reduce"
 
                         run_experiment(name, tm_name, list_algorithm, topology, routing_name, parameters)
-                        # os.system("rm ../sim/datacenter/connection_matrices/{}".format(tm_name))
+                        os.system("rm ../sim/datacenter/connection_matrices/{}".format(tm_name))
                         cnt += 1
     print("\nDone.\nSimulations: {}".format(cnt))
 
