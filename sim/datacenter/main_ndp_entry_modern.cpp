@@ -521,7 +521,6 @@ int main(int argc, char **argv) {
 
         switch (topology) {
         case (FAT_TREE_CASE): {
-            FatTreeTopology *top = NULL;
             if (ecn) {
                 ecn_low = memFromPkt(ecn_low);
                 ecn_high = memFromPkt(ecn_high);
