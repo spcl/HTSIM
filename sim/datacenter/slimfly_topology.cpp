@@ -30,7 +30,7 @@ string ntoa(double n);
 string itoa(uint64_t n);
 
 // Creates a new instance of a Dragonfly topology.
-SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type qt, simtime_picosec hop_latency) {
+SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type qt, simtime_picosec hop_latency, simtime_picosec short_hop_latency) {
     //  p       = number of hosts per router.
     //  q_base  = base of q (must be a prime).
     //  q_exp   = exponent of q (> 0; and for q_base = 2: > 1).
@@ -125,6 +125,12 @@ SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, me
     _no_of_nodes = _no_of_switches * _p;
 
     _hop_latency = hop_latency;
+    if(short_hop_latency == 0){
+        _short_hop_latency = hop_latency;
+    }
+    else{
+        _short_hop_latency = short_hop_latency;
+    }
 
     std::cout << "SlimFly topology with " << _p << " hosts per switch and " << _no_of_switches << " switches, total nodes " << _no_of_nodes << "." << endl;
     std::cout << "Queue type " << _qt << endl;
@@ -133,7 +139,7 @@ SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, me
     init_network();
 }
 
-SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type qt, simtime_picosec hop_latency, uint32_t strat) {
+SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type qt, simtime_picosec hop_latency, simtime_picosec short_hop_latency, uint32_t strat) {
     _sf_routing_strategy = strat;
     printf("_sf_routing_strategy = %u\n", _sf_routing_strategy);
     //  p       = number of hosts per router.
@@ -238,6 +244,12 @@ SlimflyTopology::SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, me
     _no_of_nodes = _no_of_switches * _p;
 
     _hop_latency = hop_latency;
+    if(short_hop_latency == 0){
+        _short_hop_latency = hop_latency;
+    }
+    else{
+        _short_hop_latency = short_hop_latency;
+    }
 
     std::cout << "SlimFly topology with " << _p << " hosts per switch and " << _no_of_switches << " switches, total nodes " << _no_of_nodes << "." << endl;
     std::cout << "Queue type " << _qt << endl;
@@ -470,7 +482,7 @@ void SlimflyTopology::init_network() {
                     uint32_t k = _q * x + (uint32_t) y;
                     uint32_t j = _q * x + (uint32_t) yp;
 
-                    create_switch_switch_link(k, j, queueLogger, _hop_latency / 10);
+                    create_switch_switch_link(k, j, queueLogger, _short_hop_latency);
                 }
             }
             if (is_element(_Xp, diff)){
@@ -478,7 +490,7 @@ void SlimflyTopology::init_network() {
                     uint32_t k = q2 + _q * x + y;
                     uint32_t j = q2 + _q * x + yp;
 
-                    create_switch_switch_link(k, j, queueLogger, _hop_latency / 10);
+                    create_switch_switch_link(k, j, queueLogger, _short_hop_latency);
                 }
             }
         }

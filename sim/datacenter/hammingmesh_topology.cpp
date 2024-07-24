@@ -30,7 +30,7 @@ string ntoa(double n);
 string itoa(uint64_t n);
 
 // Creates a new instance of a Hammingmesh topology.
-HammingmeshTopology::HammingmeshTopology(uint32_t height, uint32_t width, uint32_t height_board, uint32_t width_board, mem_b queuesize, EventList *ev, queue_type qt, simtime_picosec hop_latency) {
+HammingmeshTopology::HammingmeshTopology(uint32_t height, uint32_t width, uint32_t height_board, uint32_t width_board, mem_b queuesize, EventList *ev, queue_type qt, simtime_picosec hop_latency, simtime_picosec short_hop_latency) {
 
     if (height < 1 || width < 1 || height_board < 1 || width_board < 1) {
         cerr << "height, width, height_board and width_board all have to be positive." << endl;
@@ -61,6 +61,12 @@ HammingmeshTopology::HammingmeshTopology(uint32_t height, uint32_t width, uint32
     else{ abort(); }
 
     _hop_latency = hop_latency;
+    if(short_hop_latency == 0){
+        _short_hop_latency = hop_latency;
+    }
+    else{
+        _short_hop_latency = short_hop_latency;
+    }
 
     std::cout << "Hammingmesh topology with " << _no_of_switches << " switches, total nodes " << _no_of_nodes << "." << endl;
     std::cout << "Queue type " << _qt << endl;
@@ -69,7 +75,7 @@ HammingmeshTopology::HammingmeshTopology(uint32_t height, uint32_t width, uint32
     init_network();
 }
 
-HammingmeshTopology::HammingmeshTopology(uint32_t height, uint32_t width, uint32_t height_board, uint32_t width_board, mem_b queuesize, EventList *ev, queue_type qt, simtime_picosec hop_latency, uint32_t strat) {
+HammingmeshTopology::HammingmeshTopology(uint32_t height, uint32_t width, uint32_t height_board, uint32_t width_board, mem_b queuesize, EventList *ev, queue_type qt, simtime_picosec hop_latency, simtime_picosec short_hop_latency, uint32_t strat) {
     _hm_routing_strategy = strat;
 
     if (height < 1 || width < 1 || height_board < 1 || width_board < 1) {
@@ -101,6 +107,12 @@ HammingmeshTopology::HammingmeshTopology(uint32_t height, uint32_t width, uint32
     else{ abort(); }
 
     _hop_latency = hop_latency;
+    if(short_hop_latency == 0){
+        _short_hop_latency = hop_latency;
+    }
+    else{
+        _short_hop_latency = short_hop_latency;
+    }
 
     std::cout << "Hammingmesh topology with " << _no_of_switches << " switches, total nodes " << _no_of_nodes << "." << endl;
     std::cout << "Queue type " << _qt << endl;
@@ -287,28 +299,28 @@ void HammingmeshTopology::init_network() {
             for (uint32_t j = 0; j < _no_of_groups; j++){
                 uint32_t k = j * board_size + i;
                 uint32_t l = k - 1;
-                create_switch_switch_link(k, l, queueLogger, _hop_latency / 10);
+                create_switch_switch_link(k, l, queueLogger, _short_hop_latency);
             }
         }
         if (i % _width_board != _width_board - 1){
             for (uint32_t j = 0; j < _no_of_groups; j++){
                 uint32_t k = j * board_size + i;
                 uint32_t l = k + 1;
-                create_switch_switch_link(k, l, queueLogger, _hop_latency / 10);
+                create_switch_switch_link(k, l, queueLogger, _short_hop_latency);
             }
         }
         if (i / _width_board != 0){
             for (uint32_t j = 0; j < _no_of_groups; j++){
                 uint32_t k = j * board_size + i;
                 uint32_t l = k - _width_board;
-                create_switch_switch_link(k, l, queueLogger, _hop_latency / 10);
+                create_switch_switch_link(k, l, queueLogger, _short_hop_latency);
             }
         }
         if (i / _width_board != _height_board - 1){
             for (uint32_t j = 0; j < _no_of_groups; j++){
                 uint32_t k = j * board_size + i;
                 uint32_t l = k + _width_board;
-                create_switch_switch_link(k, l, queueLogger, _hop_latency / 10);
+                create_switch_switch_link(k, l, queueLogger, _short_hop_latency);
             }
         }
     }

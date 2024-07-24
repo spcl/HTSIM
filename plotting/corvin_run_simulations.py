@@ -109,20 +109,20 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
             p = parameters[0]
             a = parameters[1]
             h = parameters[2]
-            string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology dragonfly -df_strategy {} -p {} -a {} -h {} > {}".format(experiment_cm, routing_name, p, a, h, out_name)
+            string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology dragonfly -df_strategy {} -p {} -a {} -h {} > {}".format(experiment_cm, routing_name, p, a, h, out_name)
         
         elif (topology == "Slimfly"):
             p = parameters[0]
             q_base = parameters[1]
             q_exp = parameters[2]
-            string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology slimfly -sf_strategy {} -p {} -q_base {} -q_exp {} > {}".format(experiment_cm, routing_name, p, q_base, q_exp, out_name) 
+            string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology slimfly -sf_strategy {} -p {} -q_base {} -q_exp {} > {}".format(experiment_cm, routing_name, p, q_base, q_exp, out_name) 
         
         elif (topology == "Hammingmesh"):
             height = parameters[0]
             width = parameters[1]
             height_board = parameters[2]
             width_board = parameters[3]
-            string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology hammingmesh -hm_strategy {} -height {} -width {} -height_board {} -width_board {} > {}".format(experiment_cm, routing_name, height, width, height_board, width_board, out_name) 
+            string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology hammingmesh -hm_strategy {} -height {} -width {} -height_board {} -width_board {} > {}".format(experiment_cm, routing_name, height, width, height_board, width_board, out_name) 
         
         elif (topology == "BCube"):
             # topology == "BCube"
@@ -155,20 +155,20 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
             p = parameters[0]
             a = parameters[1]
             h = parameters[2]
-            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology dragonfly -df_strategy {} -p {} -a {} -h {} > {}".format(experiment_cm, routing_name, p, a, h, out_name)
+            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology dragonfly -df_strategy {} -p {} -a {} -h {} > {}".format(experiment_cm, routing_name, p, a, h, out_name)
         
         elif (topology == "Slimfly"):
             p = parameters[0]
             q_base = parameters[1]
             q_exp = parameters[2]
-            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology slimfly -sf_strategy {} -p {} -q_base {} -q_exp {} > {}".format(experiment_cm, routing_name, p, q_base, q_exp, out_name) 
+            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology slimfly -sf_strategy {} -p {} -q_base {} -q_exp {} > {}".format(experiment_cm, routing_name, p, q_base, q_exp, out_name) 
         
         elif (topology == "Hammingmesh"):
             height = parameters[0]
             width = parameters[1]
             height_board = parameters[2]
             width_board = parameters[3]
-            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology hammingmesh -hm_strategy {} -height {} -width {} -height_board {} -width_board {} > {}".format(experiment_cm, routing_name, height, width, height_board, width_board, out_name) 
+            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology hammingmesh -hm_strategy {} -height {} -width {} -height_board {} -width_board {} > {}".format(experiment_cm, routing_name, height, width, height_board, width_board, out_name) 
         
         elif(topology == "BCube"):
             # topology == "BCube"
@@ -198,20 +198,20 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
             p = parameters[0]
             a = parameters[1]
             h = parameters[2]
-            string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology dragonfly -df_strategy {} -p {} -a {} -h {} > {}".format(experiment_cm, routing_name, p, a, h, out_name)
+            string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology dragonfly -df_strategy {} -p {} -a {} -h {} > {}".format(experiment_cm, routing_name, p, a, h, out_name)
         
         elif (topology == "Slimfly"):
             p = parameters[0]
             q_base = parameters[1]
             q_exp = parameters[2]
-            string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology slimfly -sf_strategy {} -p {} -q_base {} -q_exp {} > {}".format(experiment_cm, routing_name, p, q_base, q_exp, out_name) 
+            string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology slimfly -sf_strategy {} -p {} -q_base {} -q_exp {} > {}".format(experiment_cm, routing_name, p, q_base, q_exp, out_name) 
         
         elif (topology == "Hammingmesh"):
             height = parameters[0]
             width = parameters[1]
             height_board = parameters[2]
             width_board = parameters[3]
-            string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology hammingmesh -hm_strategy {} -height {} -width {} -height_board {} -width_board {} > {}".format(experiment_cm, routing_name, height, width, height_board, width_board, out_name) 
+            string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology hammingmesh -hm_strategy {} -height {} -width {} -height_board {} -width_board {} > {}".format(experiment_cm, routing_name, height, width, height_board, width_board, out_name) 
         
         elif(topology == "BCube"):
             # topology == "BCube"

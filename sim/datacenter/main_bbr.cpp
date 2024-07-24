@@ -107,6 +107,7 @@ int main(int argc, char **argv) {
     std::string goal_filename;
     linkspeed_bps linkspeed = speedFromMbps((double)HOST_NIC);
     simtime_picosec hop_latency = timeFromNs((uint32_t)RTT);
+    simtime_picosec short_hop_latency = timeFromNs((uint32_t)0);
     simtime_picosec switch_latency = timeFromNs((uint32_t)0);
     int packet_size = 4096;
     int kmin = -1;
@@ -280,6 +281,9 @@ int main(int argc, char **argv) {
             hop_latency = timeFromNs(atof(argv[i + 1]));
             LINK_DELAY_MODERN = hop_latency /
                                 1000; // Saving this for UEC reference, ps to ns
+            i++;
+        } else if (!strcmp(argv[i], "-short_hop_latency")) {
+            short_hop_latency = timeFromNs(atof(argv[i + 1])) / 1000; // Saving this for UEC reference, ps to ns
             i++;
         } else if (!strcmp(argv[i], "-ignore_ecn_data")) {
             ignore_ecn_data = atoi(argv[i + 1]);
@@ -750,7 +754,7 @@ int main(int argc, char **argv) {
             // Hier Code einfügen.
             printf("Case Dragonfly.\tp = %u,\ta = %u,\th = %u\n", p, a, h);
             DragonflyTopology::set_ecn_parameters(true, ecn_low, ecn_high);
-            top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice, hop_latency, df_routing_strategy);
+            top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice, hop_latency, short_hop_latency, df_routing_strategy);
             no_of_nodes = a * p * (a * h + 1);
             break;
         }
@@ -758,7 +762,7 @@ int main(int argc, char **argv) {
             // Hier Code einfügen.
             printf("Case Slimfly.\tp = %u,\tq_base = %u,\tq_exp = %u\n", p, q_base, q_exp);
             SlimflyTopology::set_ecn_parameters(true, ecn_low, ecn_high);
-            top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice, hop_latency, sf_routing_strategy);
+            top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice, hop_latency, short_hop_latency, sf_routing_strategy);
             int q = pow(q_base, q_exp);
             no_of_nodes = 2 * p * pow(q, 2);
             break;
@@ -769,7 +773,7 @@ int main(int argc, char **argv) {
                    height, width, height_board, width_board, hm_routing_strategy);
             HammingmeshTopology::set_ecn_parameters(true, ecn_low, ecn_high);
             top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize, &eventlist,
-                                             queue_choice, hop_latency, hm_routing_strategy);
+                                             queue_choice, hop_latency, short_hop_latency, hm_routing_strategy);
             no_of_nodes = top_hm->get_no_nodes();
             break;
         }

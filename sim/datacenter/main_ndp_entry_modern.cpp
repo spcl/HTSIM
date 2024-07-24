@@ -105,6 +105,7 @@ int main(int argc, char **argv) {
     std::string goal_filename;
     linkspeed_bps linkspeed = speedFromMbps((double)HOST_NIC);
     simtime_picosec hop_latency = timeFromNs((uint32_t)RTT);
+    simtime_picosec short_hop_latency = timeFromNs((uint32_t)0);
     simtime_picosec switch_latency = timeFromNs((uint32_t)0);
     int packet_size = 2048;
     int seed = -1;
@@ -236,6 +237,9 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-hop_latency")) {
             hop_latency = timeFromNs(atof(argv[i + 1]));
             LINK_DELAY_MODERN = hop_latency / 1000; // Saving this for UEC reference, ps to ns
+            i++;
+        } else if (!strcmp(argv[i], "-short_hop_latency")) {
+            short_hop_latency = timeFromNs(atof(argv[i + 1])) / 1000; // Saving this for UEC reference, ps to ns
             i++;
         } else if (!strcmp(argv[i], "-seed")) {
             seed = atoi(argv[i + 1]);
@@ -558,14 +562,14 @@ int main(int argc, char **argv) {
         case (DRAGONFLY_CASE): {
             // Hier Code einfügen.
             printf("Case Dragonfly.\tp = %u,\ta = %u,\th = %u\n", p, a, h);
-            top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice, hop_latency, df_routing_strategy);
+            top_df = new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice, hop_latency, short_hop_latency, df_routing_strategy);
             no_of_nodes = a * p * (a * h + 1);
             break;
         }
         case (SLIMFLY_CASE): {
             // Hier Code einfügen.
             printf("Case Slimfly.\tp = %u,\tq_base = %u,\tq_exp = %u\n", p, q_base, q_exp);
-            top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice, hop_latency, sf_routing_strategy);
+            top_sf = new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice, hop_latency, short_hop_latency, sf_routing_strategy);
             int q = pow(q_base, q_exp);
             no_of_nodes = 2 * p * pow(q, 2);
             break;
@@ -575,7 +579,7 @@ int main(int argc, char **argv) {
                    "%u.\n",
                    height, width, height_board, width_board, hm_routing_strategy);
             top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize, &eventlist,
-                                             queue_choice, hop_latency, hm_routing_strategy);
+                                             queue_choice, hop_latency, short_hop_latency, hm_routing_strategy);
             no_of_nodes = top_hm->get_no_nodes();
             break;
         }
@@ -921,7 +925,7 @@ int main(int argc, char **argv) {
             // Hier Code einfügen.
             // DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q);
             DragonflyTopology *top_df =
-                    new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice, hop_latency, df_routing_strategy);
+                    new DragonflyTopology(p, a, h, queuesize, &eventlist, queue_choice, hop_latency, short_hop_latency, df_routing_strategy);
             // lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top_df, NULL);
             break;
         }
@@ -930,13 +934,13 @@ int main(int argc, char **argv) {
             // SlimflyTopology(uint32_t p, uint32_t q_base, uint32_t q_exp, mem_b queuesize, EventList *ev, queue_type
             // q);
             SlimflyTopology *top_sf =
-                    new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice, hop_latency, sf_routing_strategy);
+                    new SlimflyTopology(p, q_base, q_exp, queuesize, &eventlist, queue_choice, hop_latency, short_hop_latency, sf_routing_strategy);
             // lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top_sf, NULL);
             break;
         }
         case (HAMMINGMESH_CASE): {
             HammingmeshTopology *top_hm = new HammingmeshTopology(height, width, height_board, width_board, queuesize,
-                                                                  &eventlist, queue_choice, hop_latency, hm_routing_strategy);
+                                                                  &eventlist, queue_choice, hop_latency, short_hop_latency, hm_routing_strategy);
             // lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top_hm, NULL);
             break;
         }

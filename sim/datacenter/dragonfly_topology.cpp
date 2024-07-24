@@ -33,7 +33,7 @@ string ntoa(double n);
 string itoa(uint64_t n);
 
 // Creates a new instance of a Dragonfly topology.
-DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q, simtime_picosec hop_latency) {
+DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q, simtime_picosec hop_latency, simtime_picosec short_hop_latency) {
     //  p = number of hosts per router.
     //  a = number of routers per group.
     //  h = number of links used to connect to other groups per router.
@@ -58,6 +58,12 @@ DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b q
     _no_of_nodes = _no_of_switches * _p;
 
     _hop_latency = hop_latency;
+    if (short_hop_latency == 0){
+        _short_hop_latency = hop_latency;
+    }
+    else{
+        _short_hop_latency = short_hop_latency;
+    }
 
     std::cout << "DragonFly topology with " << _p << " hosts per router, " << _a << " routers per group and "
          << _no_of_groups << " groups, total nodes " << _no_of_nodes << endl;
@@ -67,7 +73,7 @@ DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b q
     init_network();
 }
 
-DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q, simtime_picosec hop_latency, uint32_t strat) {
+DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b queuesize, EventList *ev, queue_type q, simtime_picosec hop_latency, simtime_picosec short_hop_latency, uint32_t strat) {
     _df_routing_strategy = strat;
     //  p = number of hosts per router.
     //  a = number of routers per group.
@@ -93,6 +99,12 @@ DragonflyTopology::DragonflyTopology(uint32_t p, uint32_t a, uint32_t h, mem_b q
     _no_of_nodes = _no_of_switches * _p;
 
     _hop_latency = hop_latency;
+    if (short_hop_latency == 0){
+        _short_hop_latency = hop_latency;
+    }
+    else{
+        _short_hop_latency = short_hop_latency;
+    }
 
     std::cout << "DragonFly topology with " << _p << " hosts per router, " << _a << " routers per group and "
          << _no_of_groups << " groups, total nodes " << _no_of_nodes << endl;
@@ -274,7 +286,7 @@ void DragonflyTopology::init_network() {
         // Connect the switch to other switches in the same group (local links), with higher
         // IDs (full mesh within group).
         for (uint32_t k = j + 1; k < (groupid + 1) * _a; k++) {
-            create_switch_switch_link(k, j, queueLogger, _hop_latency / 10);
+            create_switch_switch_link(k, j, queueLogger, _short_hop_latency);
         }
 
         // Connect the switch to switches from other groups. Global links.
