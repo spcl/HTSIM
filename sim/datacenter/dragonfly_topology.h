@@ -96,6 +96,7 @@ class DragonflyTopology : public Topology {
 
   private:
     void set_params();
+    void create_switch_switch_link(uint32_t k, uint32_t j, QueueLoggerSampling *queueLogger, simtime_picosec hop_latency);
 
     simtime_picosec _hop_latency;
 

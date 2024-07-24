@@ -346,6 +346,47 @@ Queue *SlimflyTopology::alloc_queue(QueueLogger *queueLogger, uint64_t speed, me
     assert(0);
 }
 
+void SlimflyTopology::create_switch_switch_link(uint32_t k, uint32_t j, QueueLoggerSampling *queueLogger, simtime_picosec hop_latency){
+    // Downlink
+    queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
+    //logfile->addLogger(*queueLogger);
+
+    queues_switch_switch[k][j] = alloc_queue(queueLogger, _queuesize);
+    queues_switch_switch[k][j]->setName("SW" + ntoa(k) + "-I->SW" + ntoa(j));
+    //logfile->writeName(*(queues_switch_switch[k][j]));
+
+    pipes_switch_switch[k][j] = new Pipe(_hop_latency, *_eventlist);
+    pipes_switch_switch[k][j]->setName("Pipe-SW" + ntoa(k) + "-I->SW" + ntoa(j));
+    //logfile->writeName(*(pipes_switch_switch[k][j]));
+
+    // Uplink
+    queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
+    //logfile->addLogger(*queueLogger);
+
+    queues_switch_switch[j][k] = alloc_queue(queueLogger, _queuesize, true);
+    queues_switch_switch[j][k]->setName("SW" + ntoa(j) + "-I->SW" + ntoa(k));
+    //logfile->writeName(*(queues_switch_switch[j][k]));
+
+    switches[j]->addPort(queues_switch_switch[j][k]);
+    switches[k]->addPort(queues_switch_switch[k][j]);
+    queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
+    queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
+
+    if (_qt == LOSSLESS) {
+        switches[j]->addPort(queues_switch_switch[j][k]);
+        ((LosslessQueue *)queues_switch_switch[j][k])->setRemoteEndpoint(queues_switch_switch[k][j]);
+        switches[k]->addPort(queues_switch_switch[k][j]);
+        ((LosslessQueue *)queues_switch_switch[k][j])->setRemoteEndpoint(queues_switch_switch[j][k]);
+    } else if (_qt == LOSSLESS_INPUT || _qt == LOSSLESS_INPUT_ECN) {
+        new LosslessInputQueue(*_eventlist, queues_switch_switch[j][k]);
+        new LosslessInputQueue(*_eventlist, queues_switch_switch[k][j]);
+    }
+
+    pipes_switch_switch[j][k] = new Pipe(_hop_latency, *_eventlist);
+    pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-I->SW" + ntoa(k));
+    //logfile->writeName(*(pipes_switch_switch[j][k]));
+}
+
 // Connects all nodes to a slimfly network.
 void SlimflyTopology::init_network() {
     QueueLoggerSampling *queueLogger;
@@ -418,6 +459,7 @@ void SlimflyTopology::init_network() {
     uint32_t q2 = pow(_q, 2);
 
     // Creates all links between Switches and Switches.
+    // Create all local links.
     for (int y = 0; y < ((int) _q - 1); y++) {
         for (int yp = (y + 1); yp < (int) _q; yp++) {
             int diff = yp - y;
@@ -428,44 +470,7 @@ void SlimflyTopology::init_network() {
                     uint32_t k = _q * x + (uint32_t) y;
                     uint32_t j = _q * x + (uint32_t) yp;
 
-                    // Downlink
-                    queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
-                    //logfile->addLogger(*queueLogger);
-
-                    queues_switch_switch[k][j] = alloc_queue(queueLogger, _queuesize);
-                    queues_switch_switch[k][j]->setName("SW" + ntoa(k) + "-I->SW" + ntoa(j));
-                    //logfile->writeName(*(queues_switch_switch[k][j]));
-
-                    pipes_switch_switch[k][j] = new Pipe(_hop_latency, *_eventlist);
-                    pipes_switch_switch[k][j]->setName("Pipe-SW" + ntoa(k) + "-I->SW" + ntoa(j));
-                    //logfile->writeName(*(pipes_switch_switch[k][j]));
-
-                    // Uplink
-                    queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
-                    //logfile->addLogger(*queueLogger);
-
-                    queues_switch_switch[j][k] = alloc_queue(queueLogger, _queuesize, true);
-                    queues_switch_switch[j][k]->setName("SW" + ntoa(j) + "-I->SW" + ntoa(k));
-                    //logfile->writeName(*(queues_switch_switch[j][k]));
-
-                    switches[j]->addPort(queues_switch_switch[j][k]);
-                    switches[k]->addPort(queues_switch_switch[k][j]);
-                    queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
-                    queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
-
-                    if (_qt == LOSSLESS) {
-                        switches[j]->addPort(queues_switch_switch[j][k]);
-                        ((LosslessQueue *)queues_switch_switch[j][k])->setRemoteEndpoint(queues_switch_switch[k][j]);
-                        switches[k]->addPort(queues_switch_switch[k][j]);
-                        ((LosslessQueue *)queues_switch_switch[k][j])->setRemoteEndpoint(queues_switch_switch[j][k]);
-                    } else if (_qt == LOSSLESS_INPUT || _qt == LOSSLESS_INPUT_ECN) {
-                        new LosslessInputQueue(*_eventlist, queues_switch_switch[j][k]);
-                        new LosslessInputQueue(*_eventlist, queues_switch_switch[k][j]);
-                    }
-
-                    pipes_switch_switch[j][k] = new Pipe(_hop_latency, *_eventlist);
-                    pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-I->SW" + ntoa(k));
-                    //logfile->writeName(*(pipes_switch_switch[j][k]));
+                    create_switch_switch_link(k, j, queueLogger, _hop_latency / 10);
                 }
             }
             if (is_element(_Xp, diff)){
@@ -473,49 +478,13 @@ void SlimflyTopology::init_network() {
                     uint32_t k = q2 + _q * x + y;
                     uint32_t j = q2 + _q * x + yp;
 
-                    // Downlink
-                    queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
-                    //logfile->addLogger(*queueLogger);
-
-                    queues_switch_switch[k][j] = alloc_queue(queueLogger, _queuesize);
-                    queues_switch_switch[k][j]->setName("SW" + ntoa(k) + "-I->SW" + ntoa(j));
-                    //logfile->writeName(*(queues_switch_switch[k][j]));
-
-                    pipes_switch_switch[k][j] = new Pipe(_hop_latency, *_eventlist);
-                    pipes_switch_switch[k][j]->setName("Pipe-SW" + ntoa(k) + "-I->SW" + ntoa(j));
-                    //logfile->writeName(*(pipes_switch_switch[k][j]));
-
-                    // Uplink
-                    queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
-                    //logfile->addLogger(*queueLogger);
-
-                    queues_switch_switch[j][k] = alloc_queue(queueLogger, _queuesize, true);
-                    queues_switch_switch[j][k]->setName("SW" + ntoa(j) + "-I->SW" + ntoa(k));
-                    //logfile->writeName(*(queues_switch_switch[j][k]));
-
-                    switches[j]->addPort(queues_switch_switch[j][k]);
-                    switches[k]->addPort(queues_switch_switch[k][j]);
-                    queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
-                    queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
-
-                    if (_qt == LOSSLESS) {
-                        switches[j]->addPort(queues_switch_switch[j][k]);
-                        ((LosslessQueue *)queues_switch_switch[j][k])->setRemoteEndpoint(queues_switch_switch[k][j]);
-                        switches[k]->addPort(queues_switch_switch[k][j]);
-                        ((LosslessQueue *)queues_switch_switch[k][j])->setRemoteEndpoint(queues_switch_switch[j][k]);
-                    } else if (_qt == LOSSLESS_INPUT || _qt == LOSSLESS_INPUT_ECN) {
-                        new LosslessInputQueue(*_eventlist, queues_switch_switch[j][k]);
-                        new LosslessInputQueue(*_eventlist, queues_switch_switch[k][j]);
-                    }
-
-                    pipes_switch_switch[j][k] = new Pipe(_hop_latency, *_eventlist);
-                    pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-I->SW" + ntoa(k));
-                    //logfile->writeName(*(pipes_switch_switch[j][k]));
+                    create_switch_switch_link(k, j, queueLogger, _hop_latency / 10);
                 }
             }
         }
     }
 
+    // Create all global links.
     for (uint32_t x = 0; x < _q; x++) {
         for (uint32_t y = 0; y < _q; y++) {
             for (uint32_t m = 0; m < _q; m++) {
@@ -524,44 +493,7 @@ void SlimflyTopology::init_network() {
                         uint32_t k = _q * x + y;
                         uint32_t j = q2 + _q * m + c;
 
-                        // Downlink
-                        queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
-                        //logfile->addLogger(*queueLogger);
-
-                        queues_switch_switch[k][j] = alloc_queue(queueLogger, _queuesize);
-                        queues_switch_switch[k][j]->setName("SW" + ntoa(k) + "-I->SW" + ntoa(j));
-                        //logfile->writeName(*(queues_switch_switch[k][j]));
-
-                        pipes_switch_switch[k][j] = new Pipe(_hop_latency, *_eventlist);
-                        pipes_switch_switch[k][j]->setName("Pipe-SW" + ntoa(k) + "-I->SW" + ntoa(j));
-                        //logfile->writeName(*(pipes_switch_switch[k][j]));
-
-                        // Uplink
-                        queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
-                        //logfile->addLogger(*queueLogger);
-
-                        queues_switch_switch[j][k] = alloc_queue(queueLogger, _queuesize, true);
-                        queues_switch_switch[j][k]->setName("SW" + ntoa(j) + "-I->SW" + ntoa(k));
-                        //logfile->writeName(*(queues_switch_switch[j][k]));
-
-                        switches[j]->addPort(queues_switch_switch[j][k]);
-                        switches[k]->addPort(queues_switch_switch[k][j]);
-                        queues_switch_switch[j][k]->setRemoteEndpoint(switches[k]);
-                        queues_switch_switch[k][j]->setRemoteEndpoint(switches[j]);
-
-                        if (_qt == LOSSLESS) {
-                            switches[j]->addPort(queues_switch_switch[j][k]);
-                            ((LosslessQueue *)queues_switch_switch[j][k])->setRemoteEndpoint(queues_switch_switch[k][j]);
-                            switches[k]->addPort(queues_switch_switch[k][j]);
-                            ((LosslessQueue *)queues_switch_switch[k][j])->setRemoteEndpoint(queues_switch_switch[j][k]);
-                        } else if (_qt == LOSSLESS_INPUT || _qt == LOSSLESS_INPUT_ECN) {
-                            new LosslessInputQueue(*_eventlist, queues_switch_switch[j][k]);
-                            new LosslessInputQueue(*_eventlist, queues_switch_switch[k][j]);
-                        }
-
-                        pipes_switch_switch[j][k] = new Pipe(_hop_latency, *_eventlist);
-                        pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-I->SW" + ntoa(k));
-                        //logfile->writeName(*(pipes_switch_switch[j][k]));
+                        create_switch_switch_link(k, j, queueLogger, _hop_latency);
                     }
                 }
             }

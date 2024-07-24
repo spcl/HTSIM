@@ -99,6 +99,7 @@ class SlimflyTopology : public Topology {
     uint32_t get_generator(uint32_t q);
     bool is_prime(uint32_t q_base);
     uint32_t modulo(int x, int y);
+    void create_switch_switch_link(uint32_t k, uint32_t j, QueueLoggerSampling *queueLogger, simtime_picosec hop_latency);
 
     simtime_picosec _hop_latency;
 

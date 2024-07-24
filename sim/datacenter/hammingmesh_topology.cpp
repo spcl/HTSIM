@@ -172,7 +172,7 @@ Queue *HammingmeshTopology::alloc_queue(QueueLogger *queueLogger, uint64_t speed
 }
 
 // Creates the links between switches.
-void HammingmeshTopology::create_switch_switch_link(uint32_t k, uint32_t j, QueueLoggerSampling *queueLogger){
+void HammingmeshTopology::create_switch_switch_link(uint32_t k, uint32_t j, QueueLoggerSampling *queueLogger, simtime_picosec hop_latency){
     // Downlink
     queueLogger = new QueueLoggerSampling(timeFromMs(1000), *_eventlist);
     //logfile->addLogger(*queueLogger);
@@ -181,7 +181,7 @@ void HammingmeshTopology::create_switch_switch_link(uint32_t k, uint32_t j, Queu
     queues_switch_switch[k][j]->setName("SW" + ntoa(k) + "-I->SW" + ntoa(j));
     //logfile->writeName(*(queues_switch_switch[k][j]));
 
-    pipes_switch_switch[k][j] = new Pipe(_hop_latency, *_eventlist);
+    pipes_switch_switch[k][j] = new Pipe(hop_latency, *_eventlist);
     pipes_switch_switch[k][j]->setName("Pipe-SW" + ntoa(k) + "-I->SW" + ntoa(j));
     //logfile->writeName(*(pipes_switch_switch[k][j]));
 
@@ -208,7 +208,7 @@ void HammingmeshTopology::create_switch_switch_link(uint32_t k, uint32_t j, Queu
         new LosslessInputQueue(*_eventlist, queues_switch_switch[k][j]);
     }
 
-    pipes_switch_switch[j][k] = new Pipe(_hop_latency, *_eventlist);
+    pipes_switch_switch[j][k] = new Pipe(hop_latency, *_eventlist);
     pipes_switch_switch[j][k]->setName("Pipe-SW" + ntoa(j) + "-I->SW" + ntoa(k));
     //logfile->writeName(*(pipes_switch_switch[j][k]));
 }
@@ -287,28 +287,28 @@ void HammingmeshTopology::init_network() {
             for (uint32_t j = 0; j < _no_of_groups; j++){
                 uint32_t k = j * board_size + i;
                 uint32_t l = k - 1;
-                create_switch_switch_link(k, l, queueLogger);
+                create_switch_switch_link(k, l, queueLogger, _hop_latency / 10);
             }
         }
         if (i % _width_board != _width_board - 1){
             for (uint32_t j = 0; j < _no_of_groups; j++){
                 uint32_t k = j * board_size + i;
                 uint32_t l = k + 1;
-                create_switch_switch_link(k, l, queueLogger);
+                create_switch_switch_link(k, l, queueLogger, _hop_latency / 10);
             }
         }
         if (i / _width_board != 0){
             for (uint32_t j = 0; j < _no_of_groups; j++){
                 uint32_t k = j * board_size + i;
                 uint32_t l = k - _width_board;
-                create_switch_switch_link(k, l, queueLogger);
+                create_switch_switch_link(k, l, queueLogger, _hop_latency / 10);
             }
         }
         if (i / _width_board != _height_board - 1){
             for (uint32_t j = 0; j < _no_of_groups; j++){
                 uint32_t k = j * board_size + i;
                 uint32_t l = k + _width_board;
-                create_switch_switch_link(k, l, queueLogger);
+                create_switch_switch_link(k, l, queueLogger, _hop_latency / 10);
             }
         }
     }
@@ -330,8 +330,8 @@ void HammingmeshTopology::init_network() {
                     uint32_t north = group_base + j;
                     uint32_t south = group_base + (_height_board - 1) * _width_board + j;
                     uint32_t tree = _no_of_nodes + i * _width_board + j;
-                    create_switch_switch_link(north, tree, queueLogger);
-                    create_switch_switch_link(south, tree, queueLogger);
+                    create_switch_switch_link(north, tree, queueLogger, _hop_latency);
+                    create_switch_switch_link(south, tree, queueLogger, _hop_latency);
                 }
             }
         }
@@ -352,15 +352,15 @@ void HammingmeshTopology::init_network() {
                     uint32_t south = group_base + (_height_board - 1) * _width_board + j;
                     uint32_t tree_north = _no_of_nodes + (i * _width_board + j) * (height_fat_tree_l1 + height_fat_tree_l2) + (2 * k) / 63;
                     uint32_t tree_south = _no_of_nodes + (i * _width_board + j) * (height_fat_tree_l1 + height_fat_tree_l2) + ((2 * k) + 1) / 63;
-                    create_switch_switch_link(north, tree_north, queueLogger);
-                    create_switch_switch_link(south, tree_south, queueLogger);
+                    create_switch_switch_link(north, tree_north, queueLogger, _hop_latency);
+                    create_switch_switch_link(south, tree_south, queueLogger, _hop_latency);
                 }
                 
                 uint32_t tree_base = _no_of_nodes + (i * _width_board + j) * (height_fat_tree_l1 + height_fat_tree_l2);
                 uint32_t l2_node = tree_base + height_fat_tree_l1;
                 for(int k = 0; k < height_fat_tree_l1; k++){
                     uint32_t l1_node = tree_base + k;
-                    create_switch_switch_link(l1_node, l2_node, queueLogger);
+                    create_switch_switch_link(l1_node, l2_node, queueLogger, _hop_latency);
                 }
             }
         }
@@ -382,8 +382,8 @@ void HammingmeshTopology::init_network() {
                     uint32_t west = group_base + _width_board * j;
                     uint32_t east = group_base + _width_board * j + (_width_board - 1);
                     uint32_t tree = width_tree_base + i * _height_board + j;
-                    create_switch_switch_link(west, tree, queueLogger);
-                    create_switch_switch_link(east, tree, queueLogger);
+                    create_switch_switch_link(west, tree, queueLogger, _hop_latency);
+                    create_switch_switch_link(east, tree, queueLogger, _hop_latency);
                 }
             }
         }
@@ -404,15 +404,15 @@ void HammingmeshTopology::init_network() {
                     uint32_t east = group_base + _width_board * j + (_width_board - 1);
                     uint32_t tree_west = width_tree_base + (i * _height_board + j) * (width_fat_tree_l1 + width_fat_tree_l2) + (2 * k) / 63;
                     uint32_t tree_east = width_tree_base + (i * _height_board + j) * (width_fat_tree_l1 + width_fat_tree_l2) + ((2 * k) + 1) / 63;
-                    create_switch_switch_link(west, tree_west, queueLogger);
-                    create_switch_switch_link(east, tree_east, queueLogger);
+                    create_switch_switch_link(west, tree_west, queueLogger, _hop_latency);
+                    create_switch_switch_link(east, tree_east, queueLogger, _hop_latency);
                 }
                 
                 uint32_t tree_base = width_tree_base + (i * _height_board + j) * (width_fat_tree_l1 + width_fat_tree_l2);
                 uint32_t l2_node = tree_base + width_fat_tree_l1;
                 for(int k = 0; k < width_fat_tree_l1; k++){
                     uint32_t l1_node = tree_base + k;
-                    create_switch_switch_link(l1_node, l2_node, queueLogger);
+                    create_switch_switch_link(l1_node, l2_node, queueLogger, _hop_latency);
                 }
             }
         }

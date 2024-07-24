@@ -88,7 +88,7 @@ class HammingmeshTopology : public Topology {
   private:
     void set_params();
     int modulo(int x, int y);
-    void create_switch_switch_link(uint32_t k, uint32_t j, QueueLoggerSampling *queueLogger);
+    void create_switch_switch_link(uint32_t k, uint32_t j, QueueLoggerSampling *queueLogger, simtime_picosec hop_latency);
     
     simtime_picosec _hop_latency;
 
