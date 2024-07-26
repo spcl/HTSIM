@@ -8,6 +8,7 @@ from  matplotlib.ticker import FuncFormatter
 import seaborn as sns
 import pandas as pd
 from matplotlib.ticker import ScalarFormatter
+import math
 
 # Constants
 link_speed = 100000 * 8
@@ -84,7 +85,7 @@ def is_element(element, list):
     return False
 
 
-def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, routing_name, parameters):
+def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, routing_name, parameters, traffic_pattern, message_size):
     
     os.system("mkdir -p experiments")
     os.system("rm -rf experiments/{}".format(experiment_cm))
@@ -100,6 +101,23 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
     num_nack_ndp = 0
     list_bbr = []
     num_nack_bbr = 0
+
+    p, a, h, q_base, q_exp, height, height_board, width, width_board, n, k = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    q = pow(q_base, q_exp)
+    delta = 0
+    if(q % 4 == 3):
+        delta = -1
+    else:
+        delta = q % 4
+    height_tree_h, height_tree_w = 0, 0
+    if(height < 32):
+        height_tree_h = 1
+    else:
+        height_tree_h = 2
+    if(width < 32):
+        height_tree_w = 1
+    else:
+        height_tree_w = 2
 
     if(is_element("SMaRTT", list_algorithm)):
         # SMaRTT
@@ -262,10 +280,72 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
     ax.set_xticklabels([str(i) for i in ax.get_xticks()], fontsize = smaller_font)
     ax.set_yticklabels([str(round(i,1)) for i in ax.get_yticks()], fontsize = 16)
 
-    """ # Add a vertical dashed line at x=1000 with lower opacity
-    best_time = (msg_size * 8 / 100 / 1000) + 12
-    print("Best Time {}".format(best_time))
-    plt.axvline(x=best_time, linestyle='--', color='#3b3b3b', alpha=0.55, linewidth = 3) """
+    # Add a vertical dashed line at x=1000 with lower opacity
+    best_time = 0
+
+    if (topology == "Dragonfly"):
+        if(routing_name == "minimal"):
+            if(traffic_pattern == "Incast"):
+                best_time = (1 + h * a) * p * (message_size * 10) + 1
+            elif(traffic_pattern == "All-to-all"):
+                best_time = max(1 + 2 * h * a, a^2) * p * (message_size * 10) + 1
+            else:
+                # traffic_pattern == "Permutation"
+                best_time = 3 * (message_size * 10) + 2 * 0.1 + 1
+        else:
+            # routing_name == "valiants"
+            if(traffic_pattern == "Incast"):
+                best_time = ((1 + h * a) * p + 2) * (message_size * 10) + 2 * 0.1 + 1
+            elif(traffic_pattern == "All-to-all"):
+                best_time = max((1 + 2 * h * a) * p + p / a, 2 * a^2) * (message_size * 10) + 0.1
+            else:
+                # traffic_pattern == "Permutation"
+                best_time = 5 * (message_size * 10) + 3 * 0.1 + 2 * 1
+        
+    elif (topology == "Slimfly"):
+        if(routing_name == "minimal"):
+            if(traffic_pattern == "Incast"):
+                best_time = (3 * q - 1 - ((3 * q - delta) / 2)) * p * (message_size * 10) + 1
+            elif(traffic_pattern == "All-to-all"):
+                best_time = (3 * q - 2) * p * (message_size * 10) + 1
+            else:
+                # traffic_pattern == "Permutation"
+                best_time = 2 * (2 * p / (3 * q - delta)) * (message_size * 10) + 2 * 1
+        else:
+            # routing_name == "valiants"
+            if(traffic_pattern == "Incast"):
+                best_time = (2 * (2 * p / (3 * q - delta)) + (3 * q - 1 - ((3 * q - delta) / 2)) * p) * (message_size * 10) + 3 * 1
+            elif(traffic_pattern == "All-to-all"):
+                best_time = ((4 / (3 * q - delta)) + (3 * q - 2)) * p * (message_size * 10) + 3 * 1
+            else:
+                # traffic_pattern == "Permutation"
+                best_time = 4 * (2 * p / (3 * q - delta)) * (message_size * 10) + 4 * 1
+        
+    elif (topology == "Hammingmesh"):
+        if(traffic_pattern == "Incast"):
+            best_time = (height - 1) * (width - 1) * height_board * width_board / 2 * (message_size * 10) + 1
+        elif(traffic_pattern == "All-to-all"):
+            best_time = height_board * width_board / 4 * (height - 1) * (width - 1) * height_board * width_board / 2 + 1
+        else:
+            # traffic_pattern == "Permutation"
+            best_time = (((height_board * width_board * (width - 1) * (height - 1)) / (8 * width * height)) * (message_size * 10) + ((height_board / 2) + (width_board / 2) + 2 * (height_tree_h + height_tree_w))) * (message_size * 10 + 1)
+
+    
+    elif(topology == "BCube"):
+        if(traffic_pattern == "Incast"):
+            best_time = n^(k-1) / k * (message_size * 10) + 2 * 1
+        elif(traffic_pattern == "All-to-all"):
+            best_time = ((n-1) * n^(k-1)) * (message_size * 10) + 2 * 1
+        else:
+            # traffic_pattern == "Permutation"
+            for i in range(k):
+                best_time += i * math.comb(k, i) / (n^k - 1)
+            
+            best_time *= (message_size * 10 + 2 * 1)
+
+    if(best_time != 0):
+        print("Best Time {}".format(best_time))
+        plt.axvline(x=best_time, linestyle='--', color='#3b3b3b', alpha=0.55, linewidth = 3)
 
     # Set labels and title
     plt.xlabel('Flow Completion Time ({})'.format(unit),fontsize=19.5)
@@ -366,22 +446,20 @@ def main():
     list_algorithm = ["SMaRTT", "NDP", "BBR"]
     # "SMaRTT", "NDP", "BBR"
     list_topology_routing_size = [
-        {"topology": "Dragonfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 2]], [[3, 3, 2]]]},
-        # , [2, 3, 2], [6, 6, 4]
-        {"topology": "Slimfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 1]], [[2, 5, 1]]]},
-        # , [2, 3, 1], [4, 11, 1]
-        {"topology": "Hammingmesh", "list_routing": ["Minimal"], "list_parameters_set": [[[2, 2, 2, 2]], [[3, 3, 3, 3]]]},
-        # , [2, 2, 3, 3], [4, 5, 7, 7]
-        {"topology": "BCube", "list_routing": ["Minimal"], "list_parameters_set": [[[4, 2]], [[3, 4]]]},
-        # , [6, 2], [4, 5]
-        {"topology": "Fat_Tree", "list_routing": ["Minimal"], "list_parameters_set": [[[16]], [[128]]]}
-        # , [6, 2], [4, 5]
+        {"topology": "Dragonfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 2], [2, 3, 2]], [[3, 3, 2], [6, 6, 4]]]},
+        # 
+        {"topology": "Slimfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 1], [2, 3, 1]], [[2, 5, 1], [4, 11, 1]]]},
+        # 
+        {"topology": "Hammingmesh", "list_routing": ["Minimal"], "list_parameters_set": [[[2, 2, 2, 2], [2, 2, 3, 3]], [[3, 3, 3, 3], [4, 5, 7, 7]]]},
+        # 
+        {"topology": "BCube", "list_routing": ["Minimal"], "list_parameters_set": [[[4, 2], [6, 2]], [[3, 4], [4, 5]]]},
+        # 
+        {"topology": "Fat_Tree", "list_routing": ["Minimal"], "list_parameters_set": [[[16, 32]], [[128, 1024]]]}
     ]
     # maybe also "Fat_Tree"
     list_traffic_pattern = ["Incast", "All-to-all", "Permutation"]
     # later on also "All-reduce"
-    list_message_size = [1]
-    # 8
+    list_message_size = [1, 8]
 
     # list_topologies = ["fat_tree_1024_8os_800.topo", "fat_tree_1024_8os_800.topo"]   
     # msg_sizes = [2**21]   msg_sizes[idx]
@@ -428,7 +506,7 @@ def main():
                         # else:
                             # traffic_pattern == "All-reduce"
 
-                        run_experiment(name, tm_name, list_algorithm, topology, routing_name, parameters)
+                        run_experiment(name, tm_name, list_algorithm, topology, routing_name, parameters, traffic_pattern, message_size)
                         os.system("rm ../sim/datacenter/connection_matrices/{}".format(tm_name))
                         cnt += 1
     print("\nDone.\nSimulations: {}".format(cnt))
