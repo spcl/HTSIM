@@ -17,20 +17,20 @@ def execute_string(string_to_run, experiment, out_name):
     os.system(string_to_run)
     os.chdir("../../plotting/evaluation_failures/")
 
-    os.system("cp -a ../../sim/output/cwd/. experiments/{}/cwd/".format(experiment))
-    os.system("cp -a ../../sim/output/rtt/. experiments/{}/rtt/".format(experiment))
-    os.system("cp -a ../../sim/output/queue/. experiments/{}/queue_size_normalized/".format(experiment))
-    os.system("cp -a ../../sim/output/switch_drops/. experiments/{}/switch_drops/".format(experiment))
-    os.system("cp -a ../../sim/output/cable_drops/. experiments/{}/cable_drops/".format(experiment))
-    os.system("cp -a ../../sim/output/switch_failures/. experiments/{}/switch_failures/".format(experiment))
-    os.system("cp -a ../../sim/output/cable_failures/. experiments/{}/cable_failures/".format(experiment))
-    os.system("cp -a ../../sim/output/routing_failed_switch/. experiments/{}/routing_failed_switch/".format(experiment))
-    os.system("cp -a ../../sim/output/routing_failed_cable/. experiments/{}/routing_failed_cable/".format(experiment))
-    os.system("cp -a ../../sim/output/switch_degradations/. experiments/{}/switch_degradations/".format(experiment))
-    os.system("cp -a ../../sim/output/cable_degradations/. experiments/{}/cable_degradations/".format(experiment))
-    os.system("cp -a ../../sim/output/random_packet_drops/. experiments/{}/random_packet_drops/".format(experiment))
-    os.system("cp -a ../../sim/output/packet_seq/. experiments/{}/packet_seq/".format(experiment))
-    os.system("cp -a ../../sim/datacenter/{}.txt experiments/{}/{}.txt".format(out_name, experiment,out_name))
+    os.system("cp -a ../../sim/output/cwd/. experiments8MB/{}/cwd/".format(experiment))
+    os.system("cp -a ../../sim/output/rtt/. experiments8MB/{}/rtt/".format(experiment))
+    os.system("cp -a ../../sim/output/queue/. experiments8MB/{}/queue_size_normalized/".format(experiment))
+    os.system("cp -a ../../sim/output/switch_drops/. experiments8MB/{}/switch_drops/".format(experiment))
+    os.system("cp -a ../../sim/output/cable_drops/. experiments8MB/{}/cable_drops/".format(experiment))
+    os.system("cp -a ../../sim/output/switch_failures/. experiments8MB/{}/switch_failures/".format(experiment))
+    os.system("cp -a ../../sim/output/cable_failures/. experiments8MB/{}/cable_failures/".format(experiment))
+    os.system("cp -a ../../sim/output/routing_failed_switch/. experiments8MB/{}/routing_failed_switch/".format(experiment))
+    os.system("cp -a ../../sim/output/routing_failed_cable/. experiments8MB/{}/routing_failed_cable/".format(experiment))
+    os.system("cp -a ../../sim/output/switch_degradations/. experiments8MB/{}/switch_degradations/".format(experiment))
+    os.system("cp -a ../../sim/output/cable_degradations/. experiments8MB/{}/cable_degradations/".format(experiment))
+    os.system("cp -a ../../sim/output/random_packet_drops/. experiments8MB/{}/random_packet_drops/".format(experiment))
+    os.system("cp -a ../../sim/output/packet_seq/. experiments8MB/{}/packet_seq/".format(experiment))
+    os.system("cp -a ../../sim/datacenter/{}.txt experiments8MB/{}/{}.txt".format(out_name, experiment,out_name))
 
 
 def getListFCT(name_file_to_use):
@@ -48,9 +48,7 @@ def getListFCT(name_file_to_use):
             if result2:
                 number_of_flows = int(result2.group(1))
     if len(temp_list) != number_of_flows:
-        raise Exception(
-            "Number of flows does not match, one flow probably did not finish"
-        )
+        return [0]
     else:
         return temp_list
 
@@ -72,7 +70,7 @@ def getNrDroppedPackets(name_file_to_use):
             result = re.search(r"Total number of dropped packets: (\d+)", line)
             if result:
                 return int(result.group(1))
-    raise Exception("Number of dropped Packets not found")
+    return -1
 
 
 def getTotalOutofOrderPackets(sequence):
@@ -87,7 +85,7 @@ def getTotalOutofOrderPackets(sequence):
     return res
 
 def getMaxTotalOutOfOrderPackets(experiment):
-    os.chdir("experiments/" + experiment+"/")
+    os.chdir("experiments8MB/" + experiment+"/")
     pathlist = Path("packet_seq").glob("**/*.txt")
     list = []
     for files in sorted(pathlist):
@@ -99,7 +97,7 @@ def getMaxTotalOutOfOrderPackets(experiment):
     return list
 
 def getOutofOrderRatio(experiment):
-    os.chdir("experiments/" + experiment+"/")
+    os.chdir("experiments8MB/" + experiment+"/")
     pathlist = Path("packet_seq").glob("**/*.txt")
     list = []
     for files in sorted(pathlist):
@@ -126,7 +124,7 @@ def getDistance(sequence):
 
 
 def getOutOfOrderDistance(experiment):
-    os.chdir("experiments/" + experiment+"/")
+    os.chdir("experiments8MB/" + experiment+"/")
     pathlist = Path("packet_seq").glob("**/*.txt")
     list = []
     for files in sorted(pathlist):
@@ -142,177 +140,201 @@ def run(
     short_title, title, failures_input, msg_size, nodes, topology, connection_matrix
 ):
 
-    print("Running {}".format(title))
+    print("Running 8MB{}".format(title))
 
-    os.system("mkdir experiments/{}".format(short_title))
-    os.system("mkdir to_upload/{}".format(short_title))
+    os.system("mkdir experiments8MB/{}".format(short_title))
+    os.system("mkdir to_upload8MB/{}".format(short_title))
 
     
     # REPS
     balancer = "reps"
-    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}.txt".format(
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 0.005 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}.txt".format(
             balancer, nodes, topology, connection_matrix, failures_input, balancer
         )
-    print(string_to_run)
+    # print(string_to_run)
     execute_string(string_to_run, short_title, balancer)
-    filename = "experiments/{}/{}.txt".format(short_title,balancer)
+    filename = "experiments8MB/{}/{}.txt".format(short_title,balancer)
     list_reps = getListFCT(filename)
+    if(list_reps == [0]):
+        print("Failed-Flows: {}".format(string_to_run))
     num_nack_reps = getNumTrimmed(filename)
     num_lost_packets_reps = getNrDroppedPackets(filename)
+    if(num_lost_packets_reps == -1):
+        print("Failed-Packets: {}".format(string_to_run))
     list_total_out_of_order_reps = getMaxTotalOutOfOrderPackets(short_title)
     list_out_of_order_ratio_reps = getOutofOrderRatio(short_title)
     list_out_of_order_distance_reps = getOutOfOrderDistance(short_title)
-    complete_plot = run_complete(title,short_title)
-    complete_plot.write_image("experiments/{}/complete_plot_{}.pdf".format(short_title,balancer))
-    complete_plot.write_image("to_upload/{}/complete_plot_{}.pdf".format(short_title,balancer))
-    print(
-        "REPS: Flow Diff {} - Total {}".format(
-            max(list_reps) - min(list_reps), max(list_reps)
-        )
-    )
+    complete_plot = run_complete(title,short_title,"8MB")
+    complete_plot.write_image("experiments8MB/{}/complete_plot_{}.pdf".format(short_title,balancer))
+    complete_plot.write_image("to_upload8MB/{}/complete_plot_{}.pdf".format(short_title,balancer))
+    # print(
+    #     "REPS: Flow Diff {} - Total {}".format(
+    #         max(list_reps) - min(list_reps), max(list_reps)
+    #     )
+    # )
         ## REPS without failures
     balancer = "reps"
-    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 > {}NoFailures.txt".format(
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 0.005 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 > {}NoFailures.txt".format(
             balancer, nodes, topology, connection_matrix, balancer
         )
-    print(string_to_run)
+    # print(string_to_run)
     execute_string(string_to_run, short_title, balancer+"NoFailures")
-    filename = "experiments/{}/{}NoFailures.txt".format(short_title,balancer)
+    filename = "experiments8MB/{}/{}NoFailures.txt".format(short_title,balancer)
     list_repsNoFailures = getListFCT(filename)
+    if(list_repsNoFailures == [0]):
+        print("Failed-Flows: {}".format(string_to_run))
     num_nack_repsNoFailures = getNumTrimmed(filename)
     list_total_out_of_order_repsNoFailures = getMaxTotalOutOfOrderPackets(short_title)
     list_out_of_order_ratio_repsNoFailures = getOutofOrderRatio(short_title)
     list_out_of_order_distance_repsNoFailures = getOutOfOrderDistance(short_title)
-    print(
-        "REPS NoFailures : Flow Diff {} - Total {}".format(
-            max(list_repsNoFailures) - min(list_repsNoFailures), max(list_repsNoFailures)
-        )
-    )
+    # print(
+    #     "REPS NoFailures : Flow Diff {} - Total {}".format(
+    #         max(list_repsNoFailures) - min(list_repsNoFailures), max(list_repsNoFailures)
+    #     )
+    # )
     
 
     #REPS Circular
     balancer = "reps_circular"
-    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}.txt".format(
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 0.005 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}.txt".format(
             balancer, nodes, topology, connection_matrix, failures_input, balancer
         )
-    print(string_to_run)
+    # print(string_to_run)
     execute_string(string_to_run, short_title, balancer)
-    filename = "experiments/{}/{}.txt".format(short_title,balancer)
+    filename = "experiments8MB/{}/{}.txt".format(short_title,balancer)
     list_repsC = getListFCT(filename)
+    if(list_repsC == [0]):
+        print("Failed-Flows: {}".format(string_to_run))
     num_nack_repsC = getNumTrimmed(filename)
     num_lost_packets_repsC = getNrDroppedPackets(filename)
+    if(num_lost_packets_repsC == -1):
+        print("Failed-Packets: {}".format(string_to_run))
     list_total_out_of_order_repsC = getMaxTotalOutOfOrderPackets(short_title)
     list_out_of_order_ratio_repsC = getOutofOrderRatio(short_title)
     list_out_of_order_distance_repsC = getOutOfOrderDistance(short_title)
-    complete_plot = run_complete(title,short_title)
-    complete_plot.write_image("experiments/{}/complete_plot_{}.pdf".format(short_title,balancer))
-    complete_plot.write_image("to_upload/{}/complete_plot_{}.pdf".format(short_title,balancer))
-    print(
-        "REPS circular: Flow Diff {} - Total {}".format(
-            max(list_repsC) - min(list_repsC), max(list_repsC)
-        )
-    )
+    complete_plot = run_complete(title,short_title,"8MB")
+    complete_plot.write_image("experiments8MB/{}/complete_plot_{}.pdf".format(short_title,balancer))
+    complete_plot.write_image("to_upload8MB/{}/complete_plot_{}.pdf".format(short_title,balancer))
+    # print(
+    #     "REPS circular: Flow Diff {} - Total {}".format(
+    #         max(list_repsC) - min(list_repsC), max(list_repsC)
+    #     )
+    # )
         ## REPS Circular without failures
     balancer = "reps_circular"
-    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 > {}NoFailures.txt".format(
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 0.005 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 > {}NoFailures.txt".format(
             balancer, nodes, topology, connection_matrix, balancer
         )
-    print(string_to_run)
+    # print(string_to_run)
     execute_string(string_to_run, short_title, balancer+"NoFailures")
-    filename = "experiments/{}/{}NoFailures.txt".format(short_title,balancer)
+    filename = "experiments8MB/{}/{}NoFailures.txt".format(short_title,balancer)
     list_repsCNoFailures = getListFCT(filename)
+    if(list_repsCNoFailures == [0]):
+        print("Failed-Flows: {}".format(string_to_run))
     num_nack_repsCNoFailures = getNumTrimmed(filename)
     list_total_out_of_order_repsCNoFailures = getMaxTotalOutOfOrderPackets(short_title)
     list_out_of_order_ratio_repsCNoFailures = getOutofOrderRatio(short_title)
     list_out_of_order_distance_repsCNoFailures = getOutOfOrderDistance(short_title)
-    print(
-        "REPS circular NoFailures: Flow Diff {} - Total {}".format(
-            max(list_repsCNoFailures) - min(list_repsCNoFailures), max(list_repsCNoFailures)
-        )
-    )
+    # print(
+    #     "REPS circular NoFailures: Flow Diff {} - Total {}".format(
+    #         max(list_repsCNoFailures) - min(list_repsCNoFailures), max(list_repsCNoFailures)
+    #     )
+    # )
 
     #REPS Circular without freezing
     balancer = "reps_circular"
-    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}NoFreezing.txt".format(
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -end_time 0.005 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}NoFreezing.txt".format(
             balancer, nodes, topology, connection_matrix, failures_input, balancer
         )
-    print(string_to_run)
+    # print(string_to_run)
     execute_string(string_to_run, short_title, balancer+"NoFreezing")
-    filename = "experiments/{}/{}NoFreezing.txt".format(short_title,balancer)
+    filename = "experiments8MB/{}/{}NoFreezing.txt".format(short_title,balancer)
     list_repsCF = getListFCT(filename)
+    if(list_repsCF == [0]):
+        print("Failed-Flows: {}".format(string_to_run))
     num_nack_repsCF = getNumTrimmed(filename)
     num_lost_packets_repsCF = getNrDroppedPackets(filename)
+    if(num_lost_packets_repsCF == -1):
+        print("Failed-Packets: {}".format(string_to_run))
     list_total_out_of_order_repsCF = getMaxTotalOutOfOrderPackets(short_title)
     list_out_of_order_ratio_repsCF = getOutofOrderRatio(short_title)
     list_out_of_order_distance_repsCF = getOutOfOrderDistance(short_title)
-    complete_plot = run_complete(title,short_title)
-    complete_plot.write_image("experiments/{}/complete_plot_{}NoFreezing.pdf".format(short_title,balancer))
-    complete_plot.write_image("to_upload/{}/complete_plot_{}NoFreezing.pdf".format(short_title,balancer))
-    print(
-        "repsCF: Flow Diff {} - Total {}".format(
-            max(list_repsCF) - min(list_repsCF), max(list_repsCF)
-        )
-    )
+    complete_plot = run_complete(title,short_title,"8MB")
+    complete_plot.write_image("experiments8MB/{}/complete_plot_{}NoFreezing.pdf".format(short_title,balancer))
+    complete_plot.write_image("to_upload8MB/{}/complete_plot_{}NoFreezing.pdf".format(short_title,balancer))
+    # print(
+    #     "repsCF: Flow Diff {} - Total {}".format(
+    #         max(list_repsCF) - min(list_repsCF), max(list_repsCF)
+    #     )
+    # )
         ## REPS Circular without freezing without failures
     balancer = "reps_circular"
-    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 > {}NoFreezingNoFailures.txt".format(
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -end_time 0.005 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 > {}NoFreezingNoFailures.txt".format(
             balancer, nodes, topology, connection_matrix, balancer
         )
-    print(string_to_run)
+    # print(string_to_run)
     execute_string(string_to_run, short_title, balancer+"NoFreezing"+"NoFailures")
-    filename = "experiments/{}/{}NoFreezingNoFailures.txt".format(short_title,balancer)
+    filename = "experiments8MB/{}/{}NoFreezingNoFailures.txt".format(short_title,balancer)
     list_repsCFNoFailures = getListFCT(filename)
+    if(list_repsCFNoFailures == [0]):
+        print("Failed-Flows: {}".format(string_to_run))
     num_nack_repsCFNoFailures = getNumTrimmed(filename)
     list_total_out_of_order_repsCFNoFailures = getMaxTotalOutOfOrderPackets(short_title)
     list_out_of_order_ratio_repsCFNoFailures = getOutofOrderRatio(short_title)
     list_out_of_order_distance_repsCFNoFailures = getOutOfOrderDistance(short_title)
-    print(
-        "repsCF NoFailures: Flow Diff {} - Total {}".format(
-            max(list_repsCFNoFailures) - min(list_repsCFNoFailures), max(list_repsCFNoFailures)
-        )
-    )
+    # print(
+    #     "repsCF NoFailures: Flow Diff {} - Total {}".format(
+    #         max(list_repsCFNoFailures) - min(list_repsCFNoFailures), max(list_repsCFNoFailures)
+    #     )
+    # )
         
 
     #Spraying
     balancer = "spraying"
-    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}.txt".format(
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 0.005 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}.txt".format(
             balancer, nodes, topology, connection_matrix, failures_input, balancer
         )
-    print(string_to_run)
+    # print(string_to_run)
     execute_string(string_to_run, short_title, balancer)
-    filename = "experiments/{}/{}.txt".format(short_title,balancer)
+    filename = "experiments8MB/{}/{}.txt".format(short_title,balancer)
     list_spraying = getListFCT(filename)
+    if(list_spraying == [0]):
+        print("Failed-Flows: {}".format(string_to_run))
     num_nack_spraying = getNumTrimmed(filename)
     num_lost_packets_spraying = getNrDroppedPackets(filename)
+    if(num_lost_packets_spraying == -1):
+        print("Failed-Packets: {}".format(string_to_run))
     list_total_out_of_order_spraying = getMaxTotalOutOfOrderPackets(short_title)
     list_out_of_order_ratio_spraying = getOutofOrderRatio(short_title)
     list_out_of_order_distance_spraying = getOutOfOrderDistance(short_title)
-    complete_plot = run_complete(title,short_title)
-    complete_plot.write_image("experiments/{}/complete_plot_{}.pdf".format(short_title,balancer))
-    complete_plot.write_image("to_upload/{}/complete_plot_{}.pdf".format(short_title,balancer))
-    print(
-        "Spraying: Flow Diff {} - Total {}".format(
-            max(list_spraying) - min(list_spraying), max(list_spraying)
-        )
-    )
+    complete_plot = run_complete(title,short_title,"8MB")
+    complete_plot.write_image("experiments8MB/{}/complete_plot_{}.pdf".format(short_title,balancer))
+    complete_plot.write_image("to_upload8MB/{}/complete_plot_{}.pdf".format(short_title,balancer))
+    # print(
+    #     "Spraying: Flow Diff {} - Total {}".format(
+    #         max(list_spraying) - min(list_spraying), max(list_spraying)
+    #     )
+    # )
         ## Spraying without failures
     balancer = "spraying"
-    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 10 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 > {}NoFailures.txt".format(
+    string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 0.005 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 > {}NoFailures.txt".format(
             balancer, nodes, topology, connection_matrix, balancer
         )
-    print(string_to_run)
+    # print(string_to_run)
     execute_string(string_to_run, short_title, balancer+"NoFailures")
-    filename = "experiments/{}/{}NoFailures.txt".format(short_title,balancer)
+    filename = "experiments8MB/{}/{}NoFailures.txt".format(short_title,balancer)
     list_sprayingNoFailures = getListFCT(filename)
+    if(list_sprayingNoFailures == [0]):
+        print("Failed-Flows: {}".format(string_to_run))
     num_nack_sprayingNoFailures = getNumTrimmed(filename)
     list_total_out_of_order_sprayingNoFailures = getMaxTotalOutOfOrderPackets(short_title)
     list_out_of_order_ratio_sprayingNoFailures = getOutofOrderRatio(short_title)
     list_out_of_order_distance_sprayingNoFailures = getOutOfOrderDistance(short_title)
-    print(
-        "Spraying: Flow Diff {} - Total {}".format(
-            max(list_spraying) - min(list_spraying), max(list_spraying)
-        )
-    )
+    # print(
+    #     "Spraying: Flow Diff {} - Total {}".format(
+    #         max(list_spraying) - min(list_spraying), max(list_spraying)
+    #     )
+    # )
 
     list_lost_packets = [
         num_lost_packets_reps,
@@ -410,8 +432,8 @@ def run(
 
     plt.title(title, fontsize=16.5)
     plt.tight_layout()
-    plt.savefig("experiments/{}/cdf.pdf".format(short_title), bbox_inches="tight")
-    plt.savefig("to_upload/{}/cdf.pdf".format(short_title), bbox_inches="tight")
+    plt.savefig("experiments8MB/{}/cdf.pdf".format(short_title), bbox_inches="tight")
+    plt.savefig("to_upload8MB/{}/cdf.pdf".format(short_title), bbox_inches="tight")
     plt.close()
 
     # PLOT 2 (NACK)
@@ -438,7 +460,7 @@ def run(
     plt.title(title, fontsize=16.5)
     plt.grid()  # just add this
 
-    plt.savefig("experiments/{}/nack.pdf".format(short_title), bbox_inches="tight")
+    plt.savefig("experiments8MB/{}/nack.pdf".format(short_title), bbox_inches="tight")
     plt.close()
 
     # PLOT 3 (COMPLETION TIME)
@@ -474,10 +496,10 @@ def run(
     plt.grid()
 
     plt.savefig(
-        "experiments/{}/completion.pdf".format(short_title), bbox_inches="tight"
+        "experiments8MB/{}/completion.pdf".format(short_title), bbox_inches="tight"
     )
     plt.savefig(
-        "to_upload/{}/completion.pdf".format(short_title), bbox_inches="tight"
+        "to_upload8MB/{}/completion.pdf".format(short_title), bbox_inches="tight"
     )
     plt.close()
 
@@ -499,7 +521,7 @@ def run(
     plt.title(title, fontsize=17)
     plt.grid()  # just add this
     plt.savefig(
-        "experiments/{}/violin_fct.pdf".format(short_title), bbox_inches="tight"
+        "experiments8MB/{}/violin_fct.pdf".format(short_title), bbox_inches="tight"
     )
     plt.close()
 
@@ -529,10 +551,10 @@ def run(
     plt.title(title, fontsize=17)
     plt.grid()
     plt.savefig(
-        "experiments/{}/lost_packets.pdf".format(short_title), bbox_inches="tight"
+        "experiments8MB/{}/lost_packets.pdf".format(short_title), bbox_inches="tight"
     )
     plt.savefig(
-        "to_upload/{}/lost_packets.pdf".format(short_title), bbox_inches="tight"
+        "to_upload8MB/{}/lost_packets.pdf".format(short_title), bbox_inches="tight"
     )
     plt.close()
 
@@ -581,8 +603,8 @@ def run(
     plt.title(title, fontsize=15)
     plt.tight_layout()
     plt.grid(True)
-    plt.savefig("experiments/{}/total_out_of_order.pdf".format(short_title), bbox_inches="tight")
-    plt.savefig("to_upload/{}/total_out_of_order.pdf".format(short_title), bbox_inches="tight")
+    plt.savefig("experiments8MB/{}/total_out_of_order.pdf".format(short_title), bbox_inches="tight")
+    plt.savefig("to_upload8MB/{}/total_out_of_order.pdf".format(short_title), bbox_inches="tight")
     plt.close()
 
 
@@ -629,8 +651,8 @@ def run(
     plt.title(title, fontsize=15)
     plt.tight_layout()
     plt.grid(True)
-    plt.savefig("experiments/{}/out_of_order_ratio.pdf".format(short_title), bbox_inches="tight")
-    plt.savefig("to_upload/{}/out_of_order_ratio.pdf".format(short_title), bbox_inches="tight")
+    plt.savefig("experiments8MB/{}/out_of_order_ratio.pdf".format(short_title), bbox_inches="tight")
+    plt.savefig("to_upload8MB/{}/out_of_order_ratio.pdf".format(short_title), bbox_inches="tight")
     plt.close()
     
 
@@ -679,8 +701,8 @@ def run(
     plt.title(title, fontsize=15)
     plt.tight_layout()
     plt.grid(True)
-    plt.savefig("experiments/{}/out_of_order_distance.pdf".format(short_title), bbox_inches="tight")
-    plt.savefig("to_upload/{}/out_of_order_distance.pdf".format(short_title), bbox_inches="tight")
+    plt.savefig("experiments8MB/{}/out_of_order_distance.pdf".format(short_title), bbox_inches="tight")
+    plt.savefig("to_upload8MB/{}/out_of_order_distance.pdf".format(short_title), bbox_inches="tight")
     plt.close()
     return list_max
 
@@ -730,187 +752,187 @@ def plot_comparison(df):
 
 def main():
 
-    os.system("rm -rf experiments/")
-    os.system("mkdir -p experiments")
-    os.system("rm -rf to_upload/")
-    os.system("mkdir -p to_upload")
+    os.system("rm -rf experiments8MB/")
+    os.system("mkdir -p experiments8MB")
+    os.system("rm -rf to_upload8MB/")
+    os.system("mkdir -p to_upload8MB")
 
     titles = [
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch at 10µs for 100µs",
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch at 10µs for 100µs",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch at 10µs for 100µs",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One failed switch at 10µs for 100µs",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: One failed switch at 10µs for 100µs",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One failed switch at 10µs for 100µs",
 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One failed switch", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: One failed switch",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One failed switch",
 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One switch drops every 10th packet", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One switch drops every 10th packet",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One switch drops every 10th packet",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One switch drops every 10th packet", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: One switch drops every 10th packet",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One switch drops every 10th packet",
 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable at 10µs for 100µs", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable at 10µs for 100µs",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable at 10µs for 100µs", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One failed cable at 10µs for 100µs", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: One failed cable at 10µs for 100µs",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One failed cable at 10µs for 100µs", 
 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One failed cable", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: One failed cable",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One failed cable",
 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One cable drops every 10th packet", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One cable drops every 10th packet",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One cable drops every 10th packet",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One cable drops every 10th packet", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: One cable drops every 10th packet",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One cable drops every 10th packet",
 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded switch", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One degraded switch",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded switch",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One degraded switch", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: One degraded switch",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One degraded switch",
  
-        # # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded cable", 
-        # # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One degraded cable",
-        # # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded cable",
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One degraded cable", 
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: One degraded cable",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One degraded cable",
 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Switch BER: 1% of packets get corrupted", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: Switch BER: 1% of packets get corrupted",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Switch BER: 1% of packets get corrupted",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: Switch BER: 1% of packets get corrupted", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: Switch BER: 1% of packets get corrupted",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: Switch BER: 1% of packets get corrupted",
 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Cable BER: 1% of packets get corrupted", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: Cable BER: 1% of packets get corrupted",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Cable BER: 1% of packets get corrupted",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: Cable BER: 1% of packets get corrupted", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: Cable BER: 1% of packets get corrupted",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: Cable BER: 1% of packets get corrupted",
 
-        # # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches", 
-        # # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches",
-        # # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: 10% failed switches", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: 10% failed switches",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: 10% failed switches",
 
-        # # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed cables", 
-        # # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed cables",
-        # # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed cables",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: 10% failed cables", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: 10% failed cables",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: 10% failed cables",
 
-        # # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% cables per Switch between UpperSwitch-CoreSwitch", 
-        # # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% cables per Switch between UpperSwitch-CoreSwitch",
-        # # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% cables per Switch between UpperSwitch-CoreSwitch",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: 10% cables per Switch between UpperSwitch-CoreSwitch", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: 10% cables per Switch between UpperSwitch-CoreSwitch",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: 10% cables per Switch between UpperSwitch-CoreSwitch",
 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded switches", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded switches",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded switches",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: 10% degraded switches", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: 10% degraded switches",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: 10% degraded switches",
 
-        # # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded cables", 
-        # # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded cables",
-        # # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded cables",
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: 10% degraded cables", 
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: 10% degraded cables",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: 10% degraded cables",
     
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new switch evey 100 µs for 50µs", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new switch evey 100 µs for 50µs",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new switch evey 100 µs for 50µs",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: Fail a new switch evey 100 µs for 50µs", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: Fail a new switch evey 100 µs for 50µs",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: Fail a new switch evey 100 µs for 50µs",
 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new cable evey 100 µs for 50µs", 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new cable evey 100 µs for 50µs",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new cable evey 100 µs for 50µs",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: Fail a new cable evey 100 µs for 50µs", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: Fail a new cable evey 100 µs for 50µs",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: Fail a new cable evey 100 µs for 50µs",
 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable at 10µs for 100µs",
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable at 10µs for 100µs",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable at 10µs for 100µs",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One failed switch&cable at 10µs for 100µs",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: One failed switch&cable at 10µs for 100µs",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One failed switch&cable at 10µs for 100µs",
 
-        # # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable",
-        # # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable",
-        # # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One failed switch&cable",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: One failed switch&cable",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One failed switch&cable",
 
-        # # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable, One degraded switch&cable",
-        # # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable, One degraded switch&cable",
-        # # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable, One degraded switch&cable",
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One failed switch&cable, One degraded switch&cable",
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: One failed switch&cable, One degraded switch&cable",
+        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: One failed switch&cable, One degraded switch&cable",
 
-        # # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches&cables", 
-        # # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches&cables",
-        # # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches&cables",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: 10% failed switches&cables", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 8MB Flows \n Failure mode: 10% failed switches&cables",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 8MB Flows \n Failure mode: 10% failed switches&cables",
     ]
 
     failures_input = [
-        # "fail_one_switch_after_10us_for_100us",
-        # "fail_one_switch_after_10us_for_100us",
-        # "fail_one_switch_after_10us_for_100us",
+        "fail_one_switch_after_10us_for_100us",
+        "fail_one_switch_after_10us_for_100us",
+        "fail_one_switch_after_10us_for_100us",
 
-        # "fail_one_switch",
-        # "fail_one_switch",
-        # "fail_one_switch",
+        "fail_one_switch",
+        "fail_one_switch",
+        "fail_one_switch",
 
-        # "one_switch_drops_every_10th_packet",
-        # "one_switch_drops_every_10th_packet",
-        # "one_switch_drops_every_10th_packet",
+        "one_switch_drops_every_10th_packet",
+        "one_switch_drops_every_10th_packet",
+        "one_switch_drops_every_10th_packet",
 
-        # "fail_one_cable_after_10us_for_100us",
-        # "fail_one_cable_after_10us_for_100us",
-        # "fail_one_cable_after_10us_for_100us",
+        "fail_one_cable_after_10us_for_100us",
+        "fail_one_cable_after_10us_for_100us",
+        "fail_one_cable_after_10us_for_100us",
 
-        # "fail_one_cable",
-        # "fail_one_cable",
-        # "fail_one_cable",
+        "fail_one_cable",
+        "fail_one_cable",
+        "fail_one_cable",
 
-        # "one_cable_drops_every_10th_packet",
-        # "one_cable_drops_every_10th_packet",
-        # "one_cable_drops_every_10th_packet",
+        "one_cable_drops_every_10th_packet",
+        "one_cable_drops_every_10th_packet",
+        "one_cable_drops_every_10th_packet",
 
-        # "degrade_one_switch",
-        # "degrade_one_switch",
-        # "degrade_one_switch",
+        "degrade_one_switch",
+        "degrade_one_switch",
+        "degrade_one_switch",
 
-        # # "degrade_one_cable",
-        # # "degrade_one_cable",
-        # # "degrade_one_cable",
+        # "degrade_one_cable",
+        # "degrade_one_cable",
+        # "degrade_one_cable",
 
-        # "ber_switch_one_percent",
-        # "ber_switch_one_percent",
-        # "ber_switch_one_percent",
+        "ber_switch_one_percent",
+        "ber_switch_one_percent",
+        "ber_switch_one_percent",
 
-        # "ber_cable_one_percent",
-        # "ber_cable_one_percent",
-        # "ber_cable_one_percent",
+        "ber_cable_one_percent",
+        "ber_cable_one_percent",
+        "ber_cable_one_percent",
 
-        # # "10_percent_failed_switches",
-        # # "10_percent_failed_switches",
-        # # "10_percent_failed_switches",
+        "10_percent_failed_switches",
+        "10_percent_failed_switches",
+        "10_percent_failed_switches",
 
-        # # "10_percent_failed_cables",
-        # # "10_percent_failed_cables",
-        # # "10_percent_failed_cables",
+        "10_percent_failed_cables",
+        "10_percent_failed_cables",
+        "10_percent_failed_cables",
 
-        # # "10_percent_us-cs-cables-per-switch",
-        # # "10_percent_us-cs-cables-per-switch",
-        # # "10_percent_us-cs-cables-per-switch",
+        "10_percent_us-cs-cables-per-switch",
+        "10_percent_us-cs-cables-per-switch",
+        "10_percent_us-cs-cables-per-switch",
 
-        # "10_percent_degraded_switches",
-        # "10_percent_degraded_switches",
-        # "10_percent_degraded_switches",
+        "10_percent_degraded_switches",
+        "10_percent_degraded_switches",
+        "10_percent_degraded_switches",
 
-        # # "10_percent_degraded_cables",
-        # # "10_percent_degraded_cables",
-        # # "10_percent_degraded_cables",
+        # "10_percent_degraded_cables",
+        # "10_percent_degraded_cables",
+        # "10_percent_degraded_cables",
 
-        # "fail_new_switch_every_100us_for_50us",
-        # "fail_new_switch_every_100us_for_50us",
-        # "fail_new_switch_every_100us_for_50us",
+        "fail_new_switch_every_100us_for_50us",
+        "fail_new_switch_every_100us_for_50us",
+        "fail_new_switch_every_100us_for_50us",
 
-        # "fail_new_cable_every_100us_for_50us",
-        # "fail_new_cable_every_100us_for_50us",
-        # "fail_new_cable_every_100us_for_50us",
+        "fail_new_cable_every_100us_for_50us",
+        "fail_new_cable_every_100us_for_50us",
+        "fail_new_cable_every_100us_for_50us",
 
-        # "fail_one_switch_and_cable_after_10us_for_100us",
-        # "fail_one_switch_and_cable_after_10us_for_100us",
-        # "fail_one_switch_and_cable_after_10us_for_100us",
+        "fail_one_switch_and_cable_after_10us_for_100us",
+        "fail_one_switch_and_cable_after_10us_for_100us",
+        "fail_one_switch_and_cable_after_10us_for_100us",
 
-        # # "fail_one_switch_one_cable",
-        # # "fail_one_switch_one_cable",
-        # # "fail_one_switch_one_cable",
+        "fail_one_switch_one_cable",
+        "fail_one_switch_one_cable",
+        "fail_one_switch_one_cable",
 
-        # # "fail_one_switch_and_cable_degrade_one_switch_and_cable",
-        # # "fail_one_switch_and_cable_degrade_one_switch_and_cable",
-        # # "fail_one_switch_and_cable_degrade_one_switch_and_cable",
+        # "fail_one_switch_and_cable_degrade_one_switch_and_cable",
+        # "fail_one_switch_and_cable_degrade_one_switch_and_cable",
+        # "fail_one_switch_and_cable_degrade_one_switch_and_cable",
 
-        # # "10_percent_failed_switches_and_cables",
-        # # "10_percent_failed_switches_and_cables",
-        # # "10_percent_failed_switches_and_cables",
+        "10_percent_failed_switches_and_cables",
+        "10_percent_failed_switches_and_cables",
+        "10_percent_failed_switches_and_cables",
     ]
 
     connection_matrix = [
-        "incast_32_1_2MB",
-        "incast_32_1_2MB",
-        "perm_128_2MB",
+        "elias_incast_32_1_8MB",
+        "elias_incast_32_1_8MB",
+        "elias_perm_128_8MB",
     ]   
 
     short_title = ["_1os_perm", "_8os_perm", "_1os_incast"]
@@ -937,7 +959,7 @@ def main():
         'Spraying': list_fct[3],
         "Mode": failures_input[i]    })
         df = pd.DataFrame(data)
-        df.to_csv('experiment_data.csv', index=False)
+        df.to_csv('experiment_data8MB.csv', index=False)
     
     plot_comparison(df)
 
