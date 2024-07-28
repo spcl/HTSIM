@@ -38,7 +38,7 @@ print("Triggers", conns*(2*groupsize-2), file=f)
 
 srcs = []
 dsts = []
-groups = conns // groupsize;
+groups = conns // groupsize
 
 print("Groups ", groups)
 

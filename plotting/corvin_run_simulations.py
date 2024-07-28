@@ -102,22 +102,8 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
     list_bbr = []
     num_nack_bbr = 0
 
-    p, a, h, q_base, q_exp, height, height_board, width, width_board, n, k = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-    q = pow(q_base, q_exp)
-    delta = 0
-    if(q % 4 == 3):
-        delta = -1
-    else:
-        delta = q % 4
-    height_tree_h, height_tree_w = 0, 0
-    if(height < 32):
-        height_tree_h = 1
-    else:
-        height_tree_h = 2
-    if(width < 32):
-        height_tree_w = 1
-    else:
-        height_tree_w = 2
+    incast_ratio = 0
+    number_of_nodes = 0
 
     if(is_element("SMaRTT", list_algorithm)):
         # SMaRTT
@@ -127,12 +113,14 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
             p = parameters[0]
             a = parameters[1]
             h = parameters[2]
+            number_of_nodes = (1 + a * h) * a * p
             string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology dragonfly -df_strategy {} -p {} -a {} -h {} > {}".format(experiment_cm, routing_name, p, a, h, out_name)
         
         elif (topology == "Slimfly"):
             p = parameters[0]
             q_base = parameters[1]
             q_exp = parameters[2]
+            number_of_nodes = 2 * pow(q_base, q_exp) * p
             string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology slimfly -sf_strategy {} -p {} -q_base {} -q_exp {} > {}".format(experiment_cm, routing_name, p, q_base, q_exp, out_name) 
         
         elif (topology == "Hammingmesh"):
@@ -140,17 +128,20 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
             width = parameters[1]
             height_board = parameters[2]
             width_board = parameters[3]
+            number_of_nodes = height * height_board * width * width_board
             string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology hammingmesh -hm_strategy {} -height {} -width {} -height_board {} -width_board {} > {}".format(experiment_cm, routing_name, height, width, height_board, width_board, out_name) 
         
         elif (topology == "BCube"):
             # topology == "BCube"
             n = parameters[0]
             k = parameters[1]
+            number_of_nodes = pow(n, k)
             string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology bcube -bc_strategy {} -n_bcube {} -k_bcube {} > {}".format(experiment_cm, routing_name, n, k, out_name) 
 
         else:
             # topology == "Fat_Tree"
             topo_file = parameters[0]
+            number_of_nodes = topo_file
             string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology fat_tree -nodes {} -topo topo/fat_tree_{}N.topo > {}".format(experiment_cm, topo_file, topo_file, out_name)
 
         
@@ -283,65 +274,15 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
     # Add a vertical dashed line at x=1000 with lower opacity
     best_time = 0
 
-    if (topology == "Dragonfly"):
-        if(routing_name == "minimal"):
-            if(traffic_pattern == "Incast"):
-                best_time = (1 + h * a) * p * (message_size * 10) + 1
-            elif(traffic_pattern == "All-to-all"):
-                best_time = max(1 + 2 * h * a, a^2) * p * (message_size * 10) + 1
-            else:
-                # traffic_pattern == "Permutation"
-                best_time = 3 * (message_size * 10) + 2 * 0.1 + 1
-        else:
-            # routing_name == "valiants"
-            if(traffic_pattern == "Incast"):
-                best_time = ((1 + h * a) * p + 2) * (message_size * 10) + 2 * 0.1 + 1
-            elif(traffic_pattern == "All-to-all"):
-                best_time = max((1 + 2 * h * a) * p + p / a, 2 * a^2) * (message_size * 10) + 0.1
-            else:
-                # traffic_pattern == "Permutation"
-                best_time = 5 * (message_size * 10) + 3 * 0.1 + 2 * 1
-        
-    elif (topology == "Slimfly"):
-        if(routing_name == "minimal"):
-            if(traffic_pattern == "Incast"):
-                best_time = (3 * q - 1 - ((3 * q - delta) / 2)) * p * (message_size * 10) + 1
-            elif(traffic_pattern == "All-to-all"):
-                best_time = (3 * q - 2) * p * (message_size * 10) + 1
-            else:
-                # traffic_pattern == "Permutation"
-                best_time = 2 * (2 * p / (3 * q - delta)) * (message_size * 10) + 2 * 1
-        else:
-            # routing_name == "valiants"
-            if(traffic_pattern == "Incast"):
-                best_time = (2 * (2 * p / (3 * q - delta)) + (3 * q - 1 - ((3 * q - delta) / 2)) * p) * (message_size * 10) + 3 * 1
-            elif(traffic_pattern == "All-to-all"):
-                best_time = ((4 / (3 * q - delta)) + (3 * q - 2)) * p * (message_size * 10) + 3 * 1
-            else:
-                # traffic_pattern == "Permutation"
-                best_time = 4 * (2 * p / (3 * q - delta)) * (message_size * 10) + 4 * 1
-        
-    elif (topology == "Hammingmesh"):
-        if(traffic_pattern == "Incast"):
-            best_time = (height - 1) * (width - 1) * height_board * width_board / 2 * (message_size * 10) + 1
-        elif(traffic_pattern == "All-to-all"):
-            best_time = height_board * width_board / 4 * (height - 1) * (width - 1) * height_board * width_board / 2 + 1
-        else:
-            # traffic_pattern == "Permutation"
-            best_time = (((height_board * width_board * (width - 1) * (height - 1)) / (8 * width * height)) * (message_size * 10) + ((height_board / 2) + (width_board / 2) + 2 * (height_tree_h + height_tree_w))) * (message_size * 10 + 1)
-
-    
-    elif(topology == "BCube"):
-        if(traffic_pattern == "Incast"):
-            best_time = n^(k-1) / k * (message_size * 10) + 2 * 1
-        elif(traffic_pattern == "All-to-all"):
-            best_time = ((n-1) * n^(k-1)) * (message_size * 10) + 2 * 1
-        else:
-            # traffic_pattern == "Permutation"
-            for i in range(k):
-                best_time += i * math.comb(k, i) / (n^k - 1)
-            
-            best_time *= (message_size * 10 + 2 * 1)
+    # 1MiB / 100Gb/s ~= 84us
+    if(traffic_pattern == "Incast"):
+        incast_ratio = parameters[-1]
+        best_time = incast_ratio * message_size * 84
+    elif(traffic_pattern == "All-to-all"):
+        best_time = (number_of_nodes - 1) * message_size * 84
+    else:
+        # traffic_pattern == "Permutation"
+        best_time = message_size * 84
 
     if(best_time != 0):
         print("Best Time {}".format(best_time))
@@ -401,6 +342,10 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
     # Create a bar chart using Seaborn
     ax2 = sns.barplot(x='Algorithm', y='Completion Time', hue="Algorithm", data=data2)
     ax2.tick_params(labelsize=9.5)
+
+    if(best_time != 0):
+        plt.axhline(y=best_time, linestyle='--', color='#3b3b3b', alpha=0.55, linewidth = 3)
+
     # Format y-axis tick labels without scientific notation
     ax2.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))# Show the plot
     plt.title('{}\n100Gbps - 4KiB MTU'.format(experiment_name), fontsize=17)
@@ -429,6 +374,9 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
     my.set_axisbelow(True)
     my.tick_params(labelsize=9.5)
 
+    if(best_time != 0):
+        plt.axhline(y=best_time, linestyle='--', color='#3b3b3b', alpha=0.55, linewidth = 3)
+
     plt.title('{}\nLink Speed 100Gbps - 4KiB MTU'.format(experiment_name), fontsize=17)
     plt.grid()  #just add this
 
@@ -446,15 +394,15 @@ def main():
     list_algorithm = ["SMaRTT", "NDP", "BBR"]
     # "SMaRTT", "NDP", "BBR"
     list_topology_routing_size = [
-        {"topology": "Dragonfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 2], [2, 3, 2]], [[3, 3, 2], [6, 6, 4]]]},
+        {"topology": "Dragonfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 2], [2, 3, 2]], [[3, 3, 3, 64], [6, 6, 4, 128]]]},
         # 
-        {"topology": "Slimfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 1], [2, 3, 1]], [[2, 5, 1], [4, 11, 1]]]},
+        {"topology": "Slimfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 1], [2, 3, 1]], [[2, 5, 1, 64], [4, 11, 1, 128]]]},
         # 
-        {"topology": "Hammingmesh", "list_routing": ["Minimal"], "list_parameters_set": [[[2, 2, 2, 2], [2, 2, 3, 3]], [[3, 3, 3, 3], [4, 5, 7, 7]]]},
+        {"topology": "Hammingmesh", "list_routing": ["Minimal"], "list_parameters_set": [[[2, 2, 2, 2], [2, 2, 3, 3]], [[3, 3, 3, 3, 64], [4, 5, 7, 7, 128]]]},
         # 
-        {"topology": "BCube", "list_routing": ["Minimal"], "list_parameters_set": [[[4, 2], [6, 2]], [[3, 4], [4, 5]]]},
+        {"topology": "BCube", "list_routing": ["Minimal"], "list_parameters_set": [[[4, 2], [6, 2]], [[3, 4, 64], [4, 5, 128]]]},
         # 
-        {"topology": "Fat_Tree", "list_routing": ["Minimal"], "list_parameters_set": [[[16, 32]], [[128, 1024]]]}
+        {"topology": "Fat_Tree", "list_routing": ["Minimal"], "list_parameters_set": [[[16], [32]], [[128, 64], [1024, 128]]]}
     ]
     # maybe also "Fat_Tree"
     list_traffic_pattern = ["Incast", "All-to-all", "Permutation"]
@@ -465,6 +413,7 @@ def main():
     # msg_sizes = [2**21]   msg_sizes[idx]
 
     cnt = 0
+    ratio = 0
 
     for item in list_topology_routing_size:
         topology = item["topology"]
@@ -480,6 +429,7 @@ def main():
                     list_parameters_tmp = list_parameters
                 for parameters in list_parameters_tmp:
                     topo_size = getTopoSize(topology, parameters)
+                    ratio = parameters[-1]
                     for message_size in list_message_size:
                         print("--------------------------------------------------------------------")
                         routing_name = ""
@@ -492,13 +442,19 @@ def main():
                             routing_name = "valiants"
                             routing_name_cap = "Valiants"
 
-                        name = "{}, {}, {}, {} Nodes, {} MiB".format(topology, routing, traffic_pattern, topo_size, message_size)
-                        tm_name = "corvin{}{}{}{}N{}MiB".format(topology, routing_name_cap, traffic_pattern, topo_size, message_size)
-                        print("Running Experiment Named {}".format(name))
-                        print("-tm {}".format(tm_name))
+                        if (traffic_pattern == "Incast"):
+                            name = "{}, {}, {} {}:1, {} Nodes, {} MiB".format(topology, routing, traffic_pattern, ratio, topo_size, message_size)
+                            tm_name = "corvin{}{}{}{}_{}N{}MiB".format(topology, routing_name_cap, traffic_pattern, ratio, topo_size, message_size)
+                            print("Running Experiment Named {}".format(name))
+                            print("-tm {}".format(tm_name))
+                        else:
+                            name = "{}, {}, {}, {} Nodes, {} MiB".format(topology, routing, traffic_pattern, topo_size, message_size)
+                            tm_name = "corvin{}{}{}{}N{}MiB".format(topology, routing_name_cap, traffic_pattern, topo_size, message_size)
+                            print("Running Experiment Named {}".format(name))
+                            print("-tm {}".format(tm_name))
 
                         if (traffic_pattern == "Incast"):
-                            os.system("python3 ../sim/datacenter/connection_matrices/corvinGenIncast.py {} {} {} {} 0 15 && mv {} ../sim/datacenter/connection_matrices/".format(tm_name, topo_size, topo_size - 1, 1048576 * message_size, tm_name))
+                            os.system("python3 ../sim/datacenter/connection_matrices/corvinGenIncast.py {} {} {} {} 0 15 && mv {} ../sim/datacenter/connection_matrices/".format(tm_name, topo_size, ratio, 1048576 * message_size, tm_name))
                         elif (traffic_pattern == "All-to-all"):
                             os.system("python3 ../sim/datacenter/connection_matrices/gen_serialn_alltoall.py {} {} {} {} 8 {} 0 15 && mv {} ../sim/datacenter/connection_matrices/".format(tm_name, topo_size, topo_size, topo_size, 1048576 * message_size, tm_name))
                         elif (traffic_pattern == "Permutation"):

@@ -14,7 +14,7 @@ import sys
 from random import seed, shuffle
 #print(sys.argv)
 if len(sys.argv) != 7:
-    print("Usage: python gen_pemutation.py <filename> <nodes> <conns> <flowsize> <extrastarttime> <randseed>")
+    print("Usage: python gen_pemutation.py <filename> <nodes> <conns> <flowsize> <extrastarttime> <randseed> <ratio>")
     sys.exit()
 filename = sys.argv[1]
 nodes = int(sys.argv[2])
@@ -27,7 +27,7 @@ print("Nodes: ", nodes)
 print("Connections: ", conns)
 print("Flowsize: ", flowsize, "bytes")
 print("ExtraStartTime: ", extrastarttime, "us")
-print("Random Seed ", randseed)
+print("Random Seed: ", randseed)
 
 f = open(filename, "w")
 print("Nodes", nodes, file=f)
