@@ -279,7 +279,7 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
         incast_ratio = parameters[-1]
         best_time = incast_ratio * message_size * 84
     elif(traffic_pattern == "All-to-all"):
-        best_time = (number_of_nodes - 1) * message_size * 84
+        best_time = 8 * message_size * 84
     else:
         # traffic_pattern == "Permutation"
         best_time = message_size * 84
@@ -394,7 +394,7 @@ def main():
     list_algorithm = ["SMaRTT", "NDP", "BBR"]
     # "SMaRTT", "NDP", "BBR"
     list_topology_routing_size = [
-        {"topology": "Dragonfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 2], [2, 3, 2]], [[3, 3, 3, 64], [6, 6, 4, 128]]]},
+        # {"topology": "Dragonfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 2], [2, 3, 2]], [[3, 3, 3, 64], [6, 6, 4, 128]]]},
         # 
         {"topology": "Slimfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 1], [2, 3, 1]], [[2, 5, 1, 64], [4, 11, 1, 128]]]},
         # 
@@ -405,9 +405,10 @@ def main():
         {"topology": "Fat_Tree", "list_routing": ["Minimal"], "list_parameters_set": [[[16], [32]], [[128, 64], [1024, 128]]]}
     ]
     # maybe also "Fat_Tree"
-    list_traffic_pattern = ["Incast", "All-to-all", "Permutation"]
+    list_traffic_pattern = ["All-to-all"]
     # later on also "All-reduce"
-    list_message_size = [1, 8]
+    list_message_size = [1]
+    # 1, 8
 
     # list_topologies = ["fat_tree_1024_8os_800.topo", "fat_tree_1024_8os_800.topo"]   
     # msg_sizes = [2**21]   msg_sizes[idx]
@@ -453,17 +454,17 @@ def main():
                             print("Running Experiment Named {}".format(name))
                             print("-tm {}".format(tm_name))
 
-                        if (traffic_pattern == "Incast"):
+                        """ if (traffic_pattern == "Incast"):
                             os.system("python3 ../sim/datacenter/connection_matrices/corvinGenIncast.py {} {} {} {} 0 15 && mv {} ../sim/datacenter/connection_matrices/".format(tm_name, topo_size, ratio, 1048576 * message_size, tm_name))
                         elif (traffic_pattern == "All-to-all"):
                             os.system("python3 ../sim/datacenter/connection_matrices/gen_serialn_alltoall.py {} {} {} {} 8 {} 0 15 && mv {} ../sim/datacenter/connection_matrices/".format(tm_name, topo_size, topo_size, topo_size, 1048576 * message_size, tm_name))
                         elif (traffic_pattern == "Permutation"):
-                            os.system("python3 ../sim/datacenter/connection_matrices/gen_permutation.py {} {} {} {} 0 15 && mv {} ../sim/datacenter/connection_matrices/".format(tm_name, topo_size, topo_size, 1048576 * message_size, tm_name))
+                            os.system("python3 ../sim/datacenter/connection_matrices/gen_permutation.py {} {} {} {} 0 15 && mv {} ../sim/datacenter/connection_matrices/".format(tm_name, topo_size, topo_size, 1048576 * message_size, tm_name)) """
                         # else:
                             # traffic_pattern == "All-reduce"
 
                         run_experiment(name, tm_name, list_algorithm, topology, routing_name, parameters, traffic_pattern, message_size)
-                        os.system("rm ../sim/datacenter/connection_matrices/{}".format(tm_name))
+                        # os.system("rm ../sim/datacenter/connection_matrices/{}".format(tm_name))
                         cnt += 1
     print("\nDone.\nSimulations: {}".format(cnt))
 
