@@ -394,7 +394,7 @@ def main():
     list_algorithm = ["SMaRTT", "NDP", "BBR"]
     # "SMaRTT", "NDP", "BBR"
     list_topology_routing_size = [
-        # {"topology": "Dragonfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 2], [2, 3, 2]], [[3, 3, 3, 64], [6, 6, 4, 128]]]},
+        {"topology": "Dragonfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 2], [2, 3, 2]], [[3, 3, 3, 64], [6, 6, 4, 128]]]},
         # 
         {"topology": "Slimfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 1], [2, 3, 1]], [[2, 5, 1, 64], [4, 11, 1, 128]]]},
         # 
@@ -407,7 +407,7 @@ def main():
     # maybe also "Fat_Tree"
     list_traffic_pattern = ["All-to-all"]
     # later on also "All-reduce"
-    list_message_size = [1]
+    list_message_size = [8]
     # 1, 8
 
     # list_topologies = ["fat_tree_1024_8os_800.topo", "fat_tree_1024_8os_800.topo"]   
