@@ -355,7 +355,7 @@ bool failuregenerator::switchDegradation(Switch *sw) {
             for (int i = 0; i < port_nrs; i++) {
                 BaseQueue *q = sw->getPort(i);
                 linkspeed_bps speed = q->_bitrate;
-                q->update_bit_rate(speed / 10);
+                q->update_bit_rate(speed / (switch_degradation_percent * 100));
             }
             switch_degradation_next_fail = GLOBAL_TIME + switch_degradation_period;
             _list_switch_degradations.push_back(GLOBAL_TIME);
@@ -637,6 +637,12 @@ bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
     }
     uint32_t cable_id = p->getID();
 
+    std::string cable_name = p->nodename();
+
+    if (cable_name.find("callbackpipe") != std::string::npos) {
+        return false;
+    }
+
     if (degraded_cables.find(cable_id) != degraded_cables.end()) {
         uint32_t degradation_type = degraded_cables[cable_id];
         bool decision = false;
@@ -700,7 +706,7 @@ bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
             std::cout << "Did not degrade critical Cable name: " << p->nodename() << std::endl;
             return false;
         }
-        p->_delay = SINGLE_PKT_TRASMISSION_TIME_MODERN * 10;
+        p->_delay = SINGLE_PKT_TRASMISSION_TIME_MODERN * (cable_degradation_percent * 100);
         cable_degradation_next_fail = GLOBAL_TIME + cable_degradation_period;
         degraded_cables[cable_id] = decided_type;
         _list_cable_degradations.push_back(GLOBAL_TIME);
@@ -857,8 +863,9 @@ bool failuregenerator::nicDegradation(UecSrc *src, UecSink *sink, Packet &pkt) {
             }
             // int port_nrs = q.getSwitch()->portCount();
             // for (int i = 0; i < port_nrs; i++) {
-            //     BaseQueue *curq = q.getSwitch()->getPort(i);
-            //     curq->_bitrate = 1000;
+            //     BaseQueue *q = sw->getPort(i);
+            //     linkspeed_bps speed = q->_bitrate;
+            //     q->update_bit_rate(speed / (nic_degradation_percent * 100));
             // }
             degraded_NICs.insert(nic_id);
             nic_degradation_next_fail = GLOBAL_TIME + nic_degradation_period;
@@ -1138,6 +1145,12 @@ void failuregenerator::parseinputfile() {
                 cable_periodic_loss_max_percent = std::stof(value);
             } else if (key == "Stop-Failures-After:") {
                 stop_failures_after = std::stof(value);
+            } else if (key == "Switch-Degradation-Percent:") {
+                switch_degradation_percent = std::stof(value);
+            } else if (key == "Cable-Degradation-Percent:") {
+                cable_degradation_percent = std::stof(value);
+            } else if (key == "NIC-Degradation-Percent:") {
+                nic_degradation_percent = std::stof(value);
             }
 
             else {
