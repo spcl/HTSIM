@@ -97,6 +97,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     PacketFlow get_flow() { return _flow; }
     const Route *get_route() { return _route; }
     std::vector<int> get_path_ids() { return _path_ids; }
+    UecSink *get_sink() { return _sink; }
 
     int choose_route();
     inline simtime_picosec pacing_delay_f() const { return pacing_delay; }
@@ -536,6 +537,11 @@ class UecSink : public PacketSink, public DataReceiver {
     int pfc_just_seen = -10;
     static bool _use_timeouts;
     static void setUseTimeouts(bool use_timeouts) { _use_timeouts = use_timeouts; }
+
+    const Route *get_route() { return _route; }
+    UecSrc *get_src() { return _src; }
+    vector<int> get_path_ids() { return _path_ids; }
+    vector<const Route *> get_paths() { return _paths; }
 
   private:
     UecAck::seq_t _cumulative_ack;
