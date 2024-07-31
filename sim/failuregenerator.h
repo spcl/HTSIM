@@ -13,6 +13,7 @@
 class failuregenerator {
 
   public:
+    simtime_picosec stop_failures_after = UINT64_MAX;
     uint64_t nr_total_packets = 0;
     uint64_t nr_dropped_packets = 0;
     uint32_t path_nr = 0;
@@ -90,6 +91,7 @@ class failuregenerator {
     simtime_picosec switch_degradation_period = 0;
     simtime_picosec switch_degradation_next_fail = 0;
     float switch_degradation_max_percent = 1;
+    float switch_degradation_percent = 0.1;
 
     bool switchPeriodicDrop(Switch *sw);
     bool fail_new_periodic_switch(Switch *sw);
@@ -148,6 +150,7 @@ class failuregenerator {
     simtime_picosec cable_degradation_period = 0;
     simtime_picosec cable_degradation_next_fail = 0;
     float cable_degradation_max_percent = 1;
+    float cable_degradation_percent = 0.1;
 
     bool cablePeriodicDrop(Pipe *p, Packet &pkt);
     bool fail_new_periodic_cable(Pipe *p);
@@ -183,6 +186,7 @@ class failuregenerator {
     simtime_picosec nic_degradation_period = 0;
     simtime_picosec nic_degradation_next_fail = 0;
     float nic_degradation_max_percent = 1;
+    float nic_degradation_percent = 0.1;
 
     // For logging
     void createLoggingData();

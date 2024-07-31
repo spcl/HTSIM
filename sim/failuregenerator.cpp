@@ -65,7 +65,7 @@ int64_t generateTimeNIC() {
 
 void failuregenerator::addRandomPacketDrop(Packet &pkt, UecSrc *src) {
 
-    if (!randomPacketDrop) {
+    if (!randomPacketDrop || GLOBAL_TIME > stop_failures_after) {
         return;
     }
     // return true with probability 10^-rate
@@ -77,6 +77,9 @@ void failuregenerator::addRandomPacketDrop(Packet &pkt, UecSrc *src) {
 }
 
 void failuregenerator::dropRandomPacketSink(Packet &pkt) {
+    if (GLOBAL_TIME > stop_failures_after) {
+        return;
+    }
     uint32_t pkt_id = pkt.id();
     if (FAILURE_GENERATOR->randomDroppedPackets.find(pkt_id) != FAILURE_GENERATOR->randomDroppedPackets.end()) {
         FAILURE_GENERATOR->randomDroppedPackets.erase(pkt_id);
@@ -97,6 +100,9 @@ void failuregenerator::dropRandomPacketSink(Packet &pkt) {
 }
 
 void failuregenerator::dropRandomPacket(Packet &pkt) {
+    if (GLOBAL_TIME > stop_failures_after) {
+        return;
+    }
     uint32_t pkt_id = pkt.id();
     if (FAILURE_GENERATOR->randomDroppedPackets.find(pkt_id) != FAILURE_GENERATOR->randomDroppedPackets.end()) {
         UecSrc *src = FAILURE_GENERATOR->randomDroppedPackets[pkt_id];
@@ -133,11 +139,14 @@ void failuregenerator::dropRandomPacket(Packet &pkt) {
 }
 
 bool failuregenerator::simSwitchFailures(Packet &pkt, Switch *sw, Queue q) {
+    if (GLOBAL_TIME > stop_failures_after) {
+        return false;
+    }
     return (switchFail(sw) || switchBER(pkt, sw, q) || switchDegradation(sw) || switchPeriodicDrop(sw));
 }
 
 bool failuregenerator::fail_new_switch(Switch *sw) {
-    if (pause_fail_switch) {
+    if (pause_fail_switch || GLOBAL_TIME > stop_failures_after) {
         return false;
     }
 
@@ -181,7 +190,7 @@ bool failuregenerator::fail_new_switch(Switch *sw) {
 }
 
 bool failuregenerator::fail_new_periodic_switch(Switch *sw) {
-    if (pause_switch_periodic_loss) {
+    if (pause_switch_periodic_loss || GLOBAL_TIME > stop_failures_after) {
         return false;
     }
 
@@ -225,7 +234,7 @@ bool failuregenerator::fail_new_periodic_switch(Switch *sw) {
 }
 
 bool failuregenerator::switchFail(Switch *sw) {
-    if (!switch_fail) {
+    if (!switch_fail || GLOBAL_TIME > stop_failures_after) {
         return false;
     }
     uint32_t switch_id = sw->getUniqueID();
@@ -259,7 +268,7 @@ bool failuregenerator::switchFail(Switch *sw) {
 
 bool failuregenerator::switchBER(Packet &pkt, Switch *sw, Queue q) {
 
-    if (!switch_ber) {
+    if (!switch_ber || GLOBAL_TIME > stop_failures_after) {
         return false;
     }
 
@@ -288,6 +297,9 @@ bool failuregenerator::switchBER(Packet &pkt, Switch *sw, Queue q) {
 }
 
 bool failuregenerator::dropPacketsSwitchBER(Packet &pkt) {
+    if (GLOBAL_TIME > stop_failures_after) {
+        return false;
+    }
     uint32_t pkt_id = pkt.id();
     if (corrupted_packets.find(pkt_id) != corrupted_packets.end()) {
         corrupted_packets.erase(pkt_id);
@@ -301,7 +313,7 @@ bool failuregenerator::dropPacketsSwitchBER(Packet &pkt) {
 
 bool failuregenerator::switchDegradation(Switch *sw) {
 
-    if (!switch_degradation) {
+    if (!switch_degradation || GLOBAL_TIME > stop_failures_after) {
         return false;
     }
     uint32_t switch_id = sw->getUniqueID();
@@ -343,7 +355,7 @@ bool failuregenerator::switchDegradation(Switch *sw) {
             for (int i = 0; i < port_nrs; i++) {
                 BaseQueue *q = sw->getPort(i);
                 linkspeed_bps speed = q->_bitrate;
-                q->update_bit_rate(speed / 10);
+                q->update_bit_rate(speed / (switch_degradation_percent * 100));
             }
             switch_degradation_next_fail = GLOBAL_TIME + switch_degradation_period;
             _list_switch_degradations.push_back(GLOBAL_TIME);
@@ -363,7 +375,7 @@ bool failuregenerator::switchDegradation(Switch *sw) {
 
 bool failuregenerator::switchPeriodicDrop(Switch *sw) {
 
-    if (!switch_periodic_loss) {
+    if (!switch_periodic_loss || GLOBAL_TIME > stop_failures_after) {
         return false;
     }
 
@@ -408,11 +420,14 @@ bool failuregenerator::switchPeriodicDrop(Switch *sw) {
 }
 
 bool failuregenerator::simCableFailures(Pipe *p, Packet &pkt) {
+    if (GLOBAL_TIME > stop_failures_after) {
+        return false;
+    }
     return (cableFail(p, pkt) || cableBER(pkt) || cableDegradation(p, pkt) || cablePeriodicDrop(p, pkt));
 }
 
 bool failuregenerator::fail_new_cable(Pipe *p) {
-    if (pause_fail_cable) {
+    if (pause_fail_cable || GLOBAL_TIME > stop_failures_after) {
         return false;
     }
 
@@ -484,7 +499,7 @@ bool failuregenerator::fail_new_cable(Pipe *p) {
 }
 
 bool failuregenerator::fail_new_periodic_cable(Pipe *p) {
-    if (pause_cable_periodic_loss) {
+    if (pause_cable_periodic_loss || GLOBAL_TIME > stop_failures_after) {
         return false;
     }
 
@@ -540,7 +555,7 @@ bool checkUStoCS(const std::string &str) {
 }
 
 bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
-    if (!cable_fail) {
+    if (!cable_fail || GLOBAL_TIME > stop_failures_after) {
         return false;
     }
 
@@ -580,7 +595,7 @@ bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
 }
 
 bool failuregenerator::cableBER(Packet &pkt) {
-    if (!cable_ber) {
+    if (!cable_ber || GLOBAL_TIME > stop_failures_after) {
         return false;
     }
 
@@ -617,10 +632,16 @@ bool failuregenerator::cableBER(Packet &pkt) {
 }
 
 bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
-    if (!cable_degradation) {
+    if (!cable_degradation || GLOBAL_TIME > stop_failures_after) {
         return false;
     }
     uint32_t cable_id = p->getID();
+
+    std::string cable_name = p->nodename();
+
+    if (cable_name.find("callbackpipe") != std::string::npos) {
+        return false;
+    }
 
     if (degraded_cables.find(cable_id) != degraded_cables.end()) {
         uint32_t degradation_type = degraded_cables[cable_id];
@@ -685,7 +706,7 @@ bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
             std::cout << "Did not degrade critical Cable name: " << p->nodename() << std::endl;
             return false;
         }
-        p->_delay = SINGLE_PKT_TRASMISSION_TIME_MODERN * 10;
+        p->_delay = SINGLE_PKT_TRASMISSION_TIME_MODERN * (cable_degradation_percent * 100);
         cable_degradation_next_fail = GLOBAL_TIME + cable_degradation_period;
         degraded_cables[cable_id] = decided_type;
         _list_cable_degradations.push_back(GLOBAL_TIME);
@@ -696,7 +717,7 @@ bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
 
 bool failuregenerator::cablePeriodicDrop(Pipe *p, Packet &pkt) {
 
-    if (!cable_periodic_loss) {
+    if (!cable_periodic_loss || GLOBAL_TIME > stop_failures_after) {
         return false;
     }
 
@@ -751,10 +772,16 @@ bool failuregenerator::cablePeriodicDrop(Pipe *p, Packet &pkt) {
 }
 
 bool failuregenerator::simNICFailures(UecSrc *src, UecSink *sink, Packet &pkt) {
+    if (GLOBAL_TIME > stop_failures_after) {
+        return false;
+    }
     return (nicFail(src, sink, pkt) || nicDegradation(src, sink, pkt));
 }
 
 bool failuregenerator::fail_new_nic(u_int32_t nic_id) {
+    if (GLOBAL_TIME > stop_failures_after) {
+        return false;
+    }
 
     int numberOfFailingNICs = failingNICs.size();
     int numberOfAllNICs = all_srcs.size() + all_sinks.size();
@@ -775,7 +802,7 @@ bool failuregenerator::fail_new_nic(u_int32_t nic_id) {
 
 bool failuregenerator::nicFail(UecSrc *src, UecSink *sink, Packet &pkt) {
 
-    if (!nic_fail) {
+    if (!nic_fail || GLOBAL_TIME > stop_failures_after) {
         return false;
     }
 
@@ -805,7 +832,7 @@ bool failuregenerator::nicFail(UecSrc *src, UecSink *sink, Packet &pkt) {
     }
 }
 bool failuregenerator::nicDegradation(UecSrc *src, UecSink *sink, Packet &pkt) {
-    if (!nic_degradation) {
+    if (!nic_degradation || GLOBAL_TIME > stop_failures_after) {
         return false;
     }
 
@@ -836,8 +863,9 @@ bool failuregenerator::nicDegradation(UecSrc *src, UecSink *sink, Packet &pkt) {
             }
             // int port_nrs = q.getSwitch()->portCount();
             // for (int i = 0; i < port_nrs; i++) {
-            //     BaseQueue *curq = q.getSwitch()->getPort(i);
-            //     curq->_bitrate = 1000;
+            //     BaseQueue *q = sw->getPort(i);
+            //     linkspeed_bps speed = q->_bitrate;
+            //     q->update_bit_rate(speed / (nic_degradation_percent * 100));
             // }
             degraded_NICs.insert(nic_id);
             nic_degradation_next_fail = GLOBAL_TIME + nic_degradation_period;
@@ -973,7 +1001,7 @@ bool failuregenerator::check_connectivity() {
                 }
             }
             if (all_switches_active && all_cables_active) {
-                // std::cout << "Path " << src->nodename() << " is connected by" << found_path << ::endl;
+                std::cout << "Path " << src->nodename() << " is connected by" << found_path << ::endl;
                 src_dst_connected = true;
                 break;
             }
@@ -1115,6 +1143,14 @@ void failuregenerator::parseinputfile() {
                 cable_periodic_loss_drop_period = std::stof(value);
             } else if (key == "Cable-Periodic-Packet-Loss-Max-Percent:") {
                 cable_periodic_loss_max_percent = std::stof(value);
+            } else if (key == "Stop-Failures-After:") {
+                stop_failures_after = std::stof(value);
+            } else if (key == "Switch-Degradation-Percent:") {
+                switch_degradation_percent = std::stof(value);
+            } else if (key == "Cable-Degradation-Percent:") {
+                cable_degradation_percent = std::stof(value);
+            } else if (key == "NIC-Degradation-Percent:") {
+                nic_degradation_percent = std::stof(value);
             }
 
             else {

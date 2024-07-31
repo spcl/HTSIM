@@ -18,11 +18,11 @@ skip_small_value = True
 ECN = True
 
 
-def run(title,experiment):
+def run(title,experiment,mb):
     # Clean Data and Copy Data
     # RTT Data
     title = title.replace("\n", "<br>")
-    os.chdir("experiments/" + experiment+"/")
+    os.chdir("experiments{}/".format(mb) + experiment+"/")
     colnames = ["Time", "RTT", "seqno", "ackno", "base", "target"]
     df = pd.DataFrame(columns=["Time", "RTT", "seqno", "ackno", "base", "target"])
     name = ["0"] * df.shape[0]
@@ -43,7 +43,7 @@ def run(title,experiment):
 
     if len(df) > 5000:
         ratio = len(df) / 5000
-        print("RTT ratio: " + str(ratio))
+        # print("RTT ratio: " + str(ratio))
         df = df.iloc[:: int(ratio)]
         df.reset_index(drop=True, inplace=True)
 
@@ -66,7 +66,7 @@ def run(title,experiment):
         df2 = pd.concat([df2, temp_df2])
     if len(df2) > 5000:
         ratio = len(df2) / 5000
-        print("CWD ratio: " + str(ratio))
+        # print("CWD ratio: " + str(ratio))
         df2 = df2.iloc[:: int(ratio)]
         df2.reset_index(drop=True, inplace=True)
 
@@ -94,7 +94,7 @@ def run(title,experiment):
 
     if len(df3) > 5000:
         ratio = len(df3) / 5000
-        print("Queue ratio: " + str(ratio))
+        # print("Queue ratio: " + str(ratio))
         df3 = df3.iloc[:: int(ratio)]
         df3.reset_index(drop=True, inplace=True)
 
@@ -135,7 +135,7 @@ def run(title,experiment):
         dfSwitchDrops = pd.concat([dfSwitchDrops, temp])
     if len(dfSwitchDrops) > 5000:
         ratio = len(dfSwitchDrops) / 5000
-        print("Switch drop ratio: " + str(ratio))
+        # print("Switch drop ratio: " + str(ratio))
         dfSwitchDrops = dfSwitchDrops.iloc[:: int(ratio)]
         dfSwitchDrops.reset_index(drop=True, inplace=True)
 
@@ -152,7 +152,7 @@ def run(title,experiment):
         dfCableDrops = pd.concat([dfCableDrops, temp])
     if len(dfCableDrops) > 5000:
         ratio = len(dfCableDrops) / 5000
-        print("Cable drop ratio: " + str(ratio))
+        # print("Cable drop ratio: " + str(ratio))
         dfCableDrops = dfCableDrops.iloc[:: int(ratio)]
         dfCableDrops.reset_index(drop=True, inplace=True)
 
@@ -195,7 +195,7 @@ def run(title,experiment):
     
     if len(dfRandomPacketDrops) > 5000:
         ratio = len(dfRandomPacketDrops) / 5000
-        print("Random drop ratio: " + str(ratio))
+        # print("Random drop ratio: " + str(ratio))
         dfRandomPacketDrops = dfRandomPacketDrops.iloc[:: int(ratio)]
         dfRandomPacketDrops.reset_index(drop=True, inplace=True)
 
@@ -528,7 +528,7 @@ def run(title,experiment):
     fig.update_yaxes(title_text="RTT || Queuing Latency (ns)", secondary_y=False)
     fig.update_yaxes(title_text="Congestion Window (B)", secondary_y=True)
 
-    fig.update_layout(title_text=title, title_x=0.5, title_xanchor='center')
+    # fig.update_layout(title_text=title, title_x=0.5, title_xanchor='center')
     fig.update_layout(    
         legend=dict(
         orientation="h",
@@ -537,7 +537,7 @@ def run(title,experiment):
         borderwidth=1,
         x=0.47,
         xanchor='center',
-        y=-0.21,
+        y=-0.18,
         yanchor='bottom'
     ))
 
@@ -547,5 +547,7 @@ def run(title,experiment):
     # plotly.offline.plot(fig, filename='out/fid_simple_{}.html'.format(date_time))
     # save plot as pdf file without legend
     fig.update_layout(width=1300, height=550)
+    fig.update_layout(margin=dict(l=80, r=0, t=40, b=40)  # Adjust as needed
+)
     os.chdir("../..")    
     return fig

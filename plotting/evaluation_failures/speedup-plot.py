@@ -58,16 +58,16 @@ def speedUpPlot(df, title):
     ax.scatter(speedup_REPSC_percent, y_pos, label='Speedup REPS Circular', color='green', marker='o', s=marker_size, alpha=marker_alpha)
     ax.scatter(speedup_REPSCNF_percent, y_pos, label='Speedup REPS Circular\n without freezing', color='orange', marker='o', s=marker_size, alpha=marker_alpha)
 
-    for i, txt in enumerate(speedup_REPS_percent):
-        ax.annotate(f'{txt:.1f}%', (speedup_REPS_percent[i], y_pos[i]), textcoords="offset points", xytext=(5, 5), ha='center', color='blue', clip_on=True, alpha=1)
-    for i, txt in enumerate(speedup_REPSC_percent):
-        ax.annotate(f'{txt:.1f}%', (speedup_REPSC_percent[i], y_pos[i]), textcoords="offset points", xytext=(5, 15), ha='center', color='green', clip_on=True, alpha=1)
-    for i, txt in enumerate(speedup_REPSCNF_percent):
-        ax.annotate(f'{txt:.1f}%', (speedup_REPSCNF_percent[i], y_pos[i]), textcoords="offset points", xytext=(5, -15), ha='center', color='orange', clip_on=True, alpha=1)
+    # for i, txt in enumerate(speedup_REPS_percent):
+    #     ax.annotate(f'{txt:.1f}%', (speedup_REPS_percent[i], y_pos[i]), textcoords="offset points", xytext=(5, 5), ha='center', color='blue', clip_on=True, alpha=1)
+    # for i, txt in enumerate(speedup_REPSC_percent):
+    #     ax.annotate(f'{txt:.1f}%', (speedup_REPSC_percent[i], y_pos[i]), textcoords="offset points", xytext=(5, 15), ha='center', color='green', clip_on=True, alpha=1)
+    # for i, txt in enumerate(speedup_REPSCNF_percent):
+    #     ax.annotate(f'{txt:.1f}%', (speedup_REPSCNF_percent[i], y_pos[i]), textcoords="offset points", xytext=(5, -15), ha='center', color='orange', clip_on=True, alpha=1)
 
     ax.set_xlabel("Speedup (%)")
     ax.set_ylabel("Experiments")
-    ax.set_title("Speedup Comparison \n" + title + "\n" + "Baseline: Spraying")
+    # ax.set_title("Speedup Comparison \n" + title + "\n" + "Baseline: Spraying")
     ax.set_yticks(y_pos)
     ax.set_yticklabels(experiments)
     ax.axvline(x=0, color='grey', linestyle='--')
@@ -95,7 +95,7 @@ def getSumRow(df):
 
 
 def main():
-    df = pd.read_csv('experiment_data_save.csv')
+    df = pd.read_csv('experiment_data2MB.csv')
     df_Per128os1 = df[df['ExperimentName'].str.startswith('Permutation 128 - 800Gpbs - 4KiB MTU - 1:1', na=False)].reset_index(drop=True)
     df_Per128os8 = df[df['ExperimentName'].str.startswith('Permutation 128 - 800Gpbs - 4KiB MTU - 8:1', na=False)].reset_index(drop=True)
     df_Incast =    df[df['ExperimentName'].str.startswith('Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1', na=False)].reset_index(drop=True)
