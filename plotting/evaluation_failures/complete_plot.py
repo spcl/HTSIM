@@ -537,7 +537,7 @@ def run(title,experiment,mb):
         borderwidth=1,
         x=0.47,
         xanchor='center',
-        y=-0.21,
+        y=-0.18,
         yanchor='bottom'
     ))
 
@@ -547,5 +547,7 @@ def run(title,experiment,mb):
     # plotly.offline.plot(fig, filename='out/fid_simple_{}.html'.format(date_time))
     # save plot as pdf file without legend
     fig.update_layout(width=1300, height=550)
+    fig.update_layout(margin=dict(l=80, r=0, t=40, b=40)  # Adjust as needed
+)
     os.chdir("../..")    
     return fig

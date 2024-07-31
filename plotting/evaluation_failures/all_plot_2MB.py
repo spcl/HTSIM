@@ -630,7 +630,7 @@ def run(
 
     ax.set_xlabel('Algorithm')
     ax.set_ylabel('Out of order ratio')
-    ax.set_title(title)
+    # ax.set_title(title)
     ax.set_xticks(index)
     ax.set_xticklabels(labels, rotation=0, ha='center')
 
@@ -680,7 +680,7 @@ def run(
 
     ax.set_xlabel('Algorithm')
     ax.set_ylabel('Out of order distance')
-    ax.set_title(title)
+    # ax.set_title(title)
     ax.set_xticks(index)
     ax.set_xticklabels(labels, rotation=0, ha='center')
 
@@ -705,50 +705,6 @@ def run(
     plt.savefig("to_upload2MB/{}/out_of_order_distance.pdf".format(short_title), bbox_inches="tight")
     plt.close()
     return list_max
-
-
-def plot_comparison(df):
-
-    experiments = df["ExperimentName"].tolist()
-    time_REPS = df["REPS"].tolist()
-    time_REPSC = df["REPS Circular"].tolist()
-    time_REPSCNF = df["REPS Circular\n without freezing"].tolist()
-    time_SPRAYING = df["Spraying"].tolist()
-
-    speedup_REPS_percent = (np.array(time_SPRAYING) / np.array(time_REPS) - 1) * 100
-    speedup_REPSC_percent = (np.array(time_SPRAYING) / np.array(time_REPSC) - 1) * 100
-    speedup_REPSCNF_percent = (np.array(time_SPRAYING) / np.array(time_REPSCNF) - 1) * 100
-
-    fig, ax = plt.subplots(figsize=(10, 6))
-
-    y_pos = np.arange(len(experiments))
-
-    ax.scatter(speedup_REPS_percent, y_pos, label='Speedup REPS', color='blue', marker='o')
-    ax.scatter(speedup_REPSC_percent, y_pos, label='Speedup REPS Circular', color='green', marker='o')
-    ax.scatter(speedup_REPSCNF_percent, y_pos, label='Speedup REPS Circular\n without freezing', color='red', marker='o')
-
-    for i, txt in enumerate(speedup_REPS_percent):
-        ax.annotate(f'{txt:.1f}%', (speedup_REPS_percent[i], y_pos[i]), textcoords="offset points", xytext=(5, 5), ha='center', color='blue')
-    for i, txt in enumerate(speedup_REPSC_percent):
-        ax.annotate(f'{txt:.1f}%', (speedup_REPSC_percent[i], y_pos[i]), textcoords="offset points", xytext=(5, 5), ha='center', color='green')
-    for i, txt in enumerate(speedup_REPSCNF_percent):
-        ax.annotate(f'{txt:.1f}%', (speedup_REPSCNF_percent[i], y_pos[i]), textcoords="offset points", xytext=(5, 5), ha='center', color='green')
-
-    ax.set_xlabel('Speedup (%)')
-    ax.set_ylabel('Experiments')
-    ax.set_title('Speedup Comparison \n Baseline: Spraying')
-    ax.set_yticks(y_pos)
-    ax.set_yticklabels(experiments)
-    ax.axvline(x=0, color='grey', linestyle='--')
-    ax.legend()
-
-    ax.grid(True)
-
-    ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f'{x:.0f}%'))
-
-    plt.tight_layout()
-    plt.savefig("Speedup-Comparison", bbox_inches="tight")
-
 
 def main():
 
@@ -786,9 +742,9 @@ def main():
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One degraded switch",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded switch",
 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded cable",
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One degraded cable",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded cable",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded cable",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One degraded cable",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded cable",
 
         "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Switch BER: 1% of packets get corrupted",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: Switch BER: 1% of packets get corrupted",
@@ -814,9 +770,9 @@ def main():
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded switches",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded switches",
 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded cables",
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded cables",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded cables",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded cables",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded cables",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded cables",
 
         "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new switch evey 100 µs for 50µs",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new switch evey 100 µs for 50µs",
@@ -834,9 +790,9 @@ def main():
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable",
 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable, One degraded switch&cable",
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable, One degraded switch&cable",
-        # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable, One degraded switch&cable",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable, One degraded switch&cable",
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable, One degraded switch&cable",
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable, One degraded switch&cable",
 
         "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches&cables",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches&cables",
@@ -872,9 +828,9 @@ def main():
         "degrade_one_switch",
         "degrade_one_switch",
 
-        # "degrade_one_cable",
-        # "degrade_one_cable",
-        # "degrade_one_cable",
+        "degrade_one_cable",
+        "degrade_one_cable",
+        "degrade_one_cable",
 
         "ber_switch_one_percent",
         "ber_switch_one_percent",
@@ -900,9 +856,9 @@ def main():
         "10_percent_degraded_switches",
         "10_percent_degraded_switches",
 
-        # "10_percent_degraded_cables",
-        # "10_percent_degraded_cables",
-        # "10_percent_degraded_cables",
+        "10_percent_degraded_cables",
+        "10_percent_degraded_cables",
+        "10_percent_degraded_cables",
 
         "fail_new_switch_every_100us_for_50us",
         "fail_new_switch_every_100us_for_50us",
@@ -920,9 +876,9 @@ def main():
         "fail_one_switch_one_cable",
         "fail_one_switch_one_cable",
 
-        # "fail_one_switch_and_cable_degrade_one_switch_and_cable",
-        # "fail_one_switch_and_cable_degrade_one_switch_and_cable",
-        # "fail_one_switch_and_cable_degrade_one_switch_and_cable",
+        "fail_one_switch_and_cable_degrade_one_switch_and_cable",
+        "fail_one_switch_and_cable_degrade_one_switch_and_cable",
+        "fail_one_switch_and_cable_degrade_one_switch_and_cable",
 
         "10_percent_failed_switches_and_cables",
         "10_percent_failed_switches_and_cables",
@@ -960,8 +916,6 @@ def main():
         "Mode": failures_input[i]    })
         df = pd.DataFrame(data)
         df.to_csv('experiment_data2MB.csv', index=False)
-
-    plot_comparison(df)
 
 
 if __name__ == "__main__":
