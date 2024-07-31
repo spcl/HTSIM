@@ -145,7 +145,7 @@ def run(
     os.system("mkdir experiments2MB/{}".format(short_title))
     os.system("mkdir to_upload2MB/{}".format(short_title))
 
-    
+
     # REPS
     balancer = "reps"
     string_to_run = "./htsim_uec_entry_modern -o uec_entry -algorithm smartt -use_timeouts -strat {} -use_freezing_reps -end_time 0.005 -bonus_drop 1.5 -nodes {} -number_entropies 256 -q 294 -cwnd 353 -ecn 58 235 -target_rtt_percentage_over_base 50 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 800000 -mtu 4096 -seed 919 -queue_type composite -hop_latency 1000 -reuse_entropy 1 -topo topologies/{} -tm connection_matrices/{} -x_gain 1.6 -y_gain 8 -topology normal -w_gain 2 -z_gain 0.8  -collect_data 1 -failures_input ../failures_input/{}.txt > {}.txt".format(
@@ -192,7 +192,7 @@ def run(
     #         max(list_repsNoFailures) - min(list_repsNoFailures), max(list_repsNoFailures)
     #     )
     # )
-    
+
 
     #REPS Circular
     balancer = "reps_circular"
@@ -287,7 +287,7 @@ def run(
     #         max(list_repsCFNoFailures) - min(list_repsCFNoFailures), max(list_repsCFNoFailures)
     #     )
     # )
-        
+
 
     #Spraying
     balancer = "spraying"
@@ -359,7 +359,7 @@ def run(
 
     list_max_total_out_of_order = [max(list_total_out_of_order_reps), max(list_total_out_of_order_repsC),max(list_total_out_of_order_repsCF), max(list_total_out_of_order_spraying)]
     list_baseline_max_total_out_of_order = [max(list_total_out_of_order_repsNoFailures), max(list_total_out_of_order_repsCNoFailures),max(list_total_out_of_order_repsCFNoFailures), max(list_total_out_of_order_sprayingNoFailures)]
-    
+
 
     list_mean_total_out_of_order_ratio = [np.mean(list_out_of_order_ratio_reps), np.mean(list_out_of_order_ratio_repsC),np.mean(list_out_of_order_ratio_repsCF), np.mean(list_out_of_order_ratio_spraying)]
     list_baseline_mean_total_out_of_order_ratio = [np.mean(list_out_of_order_ratio_repsNoFailures), np.mean(list_out_of_order_ratio_repsCNoFailures),np.mean(list_out_of_order_ratio_repsCFNoFailures), np.mean(list_out_of_order_ratio_sprayingNoFailures)]
@@ -369,7 +369,7 @@ def run(
 
     list_max_total_out_of_order_ratio = [max(list_out_of_order_ratio_reps), max(list_out_of_order_ratio_repsC), max(list_out_of_order_ratio_repsCF), max(list_out_of_order_ratio_spraying)]
     list_baseline_max_total_out_of_order_ratio = [max(list_out_of_order_ratio_repsNoFailures), max(list_out_of_order_ratio_repsCNoFailures), max(list_out_of_order_ratio_repsCFNoFailures), max(list_out_of_order_ratio_sprayingNoFailures)]
-    
+
 
     list_mean_total_out_of_order_distance = [np.mean(list_out_of_order_distance_reps), np.mean(list_out_of_order_distance_repsC),np.mean(list_out_of_order_distance_repsCF), np.mean(list_out_of_order_distance_spraying)]
     list_baseline_mean_total_out_of_order_distance = [np.mean(list_out_of_order_distance_repsNoFailures), np.mean(list_out_of_order_distance_repsCNoFailures),np.mean(list_out_of_order_distance_repsCFNoFailures), np.mean(list_out_of_order_distance_sprayingNoFailures)]
@@ -379,7 +379,7 @@ def run(
 
     list_max_total_out_of_order_distance = [max(list_out_of_order_distance_reps), max(list_out_of_order_distance_repsC),max(list_out_of_order_distance_repsCF), max(list_out_of_order_distance_spraying)]
     list_baseline_max_total_out_of_order_distance = [max(list_out_of_order_distance_repsNoFailures), max(list_out_of_order_distance_repsCNoFailures),max(list_out_of_order_distance_repsCFNoFailures), max(list_out_of_order_distance_sprayingNoFailures)]
-    
+
 
     list_labels = ["REPS", "REPS Circular", "REPS Circular\n without freezing", "Spraying"]
 
@@ -430,7 +430,7 @@ def run(
     plt.grid()  # just add this
     plt.legend(frameon=False)
 
-    plt.title(title, fontsize=16.5)
+    # plt.title(title, fontsize=16.5)
     plt.tight_layout()
     plt.savefig("experiments2MB/{}/cdf.pdf".format(short_title), bbox_inches="tight")
     plt.savefig("to_upload2MB/{}/cdf.pdf".format(short_title), bbox_inches="tight")
@@ -450,14 +450,14 @@ def run(
     ax3.tick_params(labelsize=9.5)
     # Format y-axis tick labels without scientific notation
 
-    ax3.yaxis.set_major_formatter(ScalarFormatter(useMathText=False)) 
+    ax3.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
 
     for idx, baseline in enumerate(list_baseline_nacks):
         bar_center = ax3.patches[idx].get_x() + ax3.patches[idx].get_width() / 2.0
         ax3.plot([bar_center - 0.4, bar_center + 0.4], [baseline, baseline], color='black', linestyle='dashed', linewidth=1)
 
 
-    plt.title(title, fontsize=16.5)
+    # plt.title(title, fontsize=16.5)
     plt.grid()  # just add this
 
     plt.savefig("experiments2MB/{}/nack.pdf".format(short_title), bbox_inches="tight")
@@ -476,7 +476,7 @@ def run(
     ax2 = sns.barplot(x="Algorithm", y="Runtime (us)", data=data2)
     ax2.tick_params(labelsize=9.5)
     # Format y-axis tick labels without scientific notation
-    ax2.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))   
+    ax2.yaxis.set_major_formatter(ScalarFormatter(useMathText=False))
 
     for p in ax2.patches:
         ax2.annotate(
@@ -492,7 +492,7 @@ def run(
         bar_center = ax2.patches[idx].get_x() + ax2.patches[idx].get_width() / 2.0
         ax2.plot([bar_center - 0.4, bar_center + 0.4], [baseline, baseline], color='black', linestyle='dashed', linewidth=1)
 
-    plt.title(title, fontsize=17)
+    # plt.title(title, fontsize=17)
     plt.grid()
 
     plt.savefig(
@@ -518,7 +518,7 @@ def run(
     my.set_axisbelow(True)
     my.tick_params(labelsize=9.5)
 
-    plt.title(title, fontsize=17)
+    # plt.title(title, fontsize=17)
     plt.grid()  # just add this
     plt.savefig(
         "experiments2MB/{}/violin_fct.pdf".format(short_title), bbox_inches="tight"
@@ -548,7 +548,7 @@ def run(
             textcoords="offset points",
         )
 
-    plt.title(title, fontsize=17)
+    # plt.title(title, fontsize=17)
     plt.grid()
     plt.savefig(
         "experiments2MB/{}/lost_packets.pdf".format(short_title), bbox_inches="tight"
@@ -564,7 +564,7 @@ def run(
     means = list_mean_total_out_of_order
     maxs = list_max_total_out_of_order
     errors = list_std_total_out_of_order
-    
+
     means_baseline = list_baseline_mean_total_out_of_order
     maxs_baseline = list_baseline_max_total_out_of_order
     errors_baseline = list_baseline_std_total_out_of_order
@@ -585,13 +585,13 @@ def run(
     ax.set_title(title)
     ax.set_xticks(index)
     ax.set_xticklabels(labels, rotation=0, ha='center')
-    
+
     def autolabel(bars, max_values, errors):
         for bar, max_val, error in zip(bars, max_values, errors):
             height = bar.get_height()
             ax.annotate(f'Max: {max_val:.2f}\nMean: {height:.2f}\nStd Dev: {error:.2f}',
                         xy=(bar.get_x() + bar.get_width() / 2, 0),
-                        xytext=(0, 7), 
+                        xytext=(0, 7),
                         textcoords="offset points",
                         ha='center', va='bottom', fontsize=6)
 
@@ -599,8 +599,8 @@ def run(
     autolabel(bars2, maxs_baseline, errors_baseline)
     plt.legend(title='Type', loc='upper right', fancybox=True, bbox_to_anchor=(1.25, 1))
 
-    
-    plt.title(title, fontsize=15)
+
+    # plt.title(title, fontsize=15)
     plt.tight_layout()
     plt.grid(True)
     plt.savefig("experiments2MB/{}/total_out_of_order.pdf".format(short_title), bbox_inches="tight")
@@ -633,13 +633,13 @@ def run(
     ax.set_title(title)
     ax.set_xticks(index)
     ax.set_xticklabels(labels, rotation=0, ha='center')
-    
+
     def autolabel(bars, max_values, errors):
         for bar, max_val, error in zip(bars, max_values, errors):
             height = bar.get_height()
             ax.annotate(f'Max: {max_val:.2f}\nMean: {height:.2f}\nStd Dev: {error:.2f}',
                         xy=(bar.get_x() + bar.get_width() / 2, 0),
-                        xytext=(0, 7), 
+                        xytext=(0, 7),
                         textcoords="offset points",
                         ha='center', va='bottom', fontsize=6)
 
@@ -647,14 +647,14 @@ def run(
     autolabel(bars2, maxs_baseline, errors_baseline)
     plt.legend(title='Type', loc='upper right', fancybox=True, bbox_to_anchor=(1.25, 1))
 
-    
-    plt.title(title, fontsize=15)
+
+    # plt.title(title, fontsize=15)
     plt.tight_layout()
     plt.grid(True)
     plt.savefig("experiments2MB/{}/out_of_order_ratio.pdf".format(short_title), bbox_inches="tight")
     plt.savefig("to_upload2MB/{}/out_of_order_ratio.pdf".format(short_title), bbox_inches="tight")
     plt.close()
-    
+
 
     # PLOT 7 (Out of order Distance)
     plt.figure(figsize=(7, 5))
@@ -683,13 +683,13 @@ def run(
     ax.set_title(title)
     ax.set_xticks(index)
     ax.set_xticklabels(labels, rotation=0, ha='center')
-    
+
     def autolabel(bars, max_values, errors):
         for bar, max_val, error in zip(bars, max_values, errors):
             height = bar.get_height()
             ax.annotate(f'Max: {max_val:.2f}\nMean: {height:.2f}\nStd Dev: {error:.2f}',
                         xy=(bar.get_x() + bar.get_width() / 2, 0),
-                        xytext=(0, 7), 
+                        xytext=(0, 7),
                         textcoords="offset points",
                         ha='center', va='bottom', fontsize=6)
 
@@ -697,8 +697,8 @@ def run(
     autolabel(bars2, maxs_baseline, errors_baseline)
     plt.legend(title='Type', loc='upper right', fancybox=True, bbox_to_anchor=(1.25, 1))
 
-    
-    plt.title(title, fontsize=15)
+
+    # plt.title(title, fontsize=15)
     plt.tight_layout()
     plt.grid(True)
     plt.savefig("experiments2MB/{}/out_of_order_distance.pdf".format(short_title), bbox_inches="tight")
@@ -762,67 +762,67 @@ def main():
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch at 10µs for 100µs",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch at 10µs for 100µs",
 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch",
 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One switch drops every 10th packet", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One switch drops every 10th packet",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One switch drops every 10th packet",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One switch drops every 10th packet",
 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable at 10µs for 100µs", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable at 10µs for 100µs",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable at 10µs for 100µs",
-        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable at 10µs for 100µs", 
+        "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable at 10µs for 100µs",
 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed cable",
 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One cable drops every 10th packet", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One cable drops every 10th packet",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One cable drops every 10th packet",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One cable drops every 10th packet",
 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded switch", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded switch",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One degraded switch",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded switch",
- 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded cable", 
+
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded cable",
         # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One degraded cable",
         # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One degraded cable",
 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Switch BER: 1% of packets get corrupted", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Switch BER: 1% of packets get corrupted",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: Switch BER: 1% of packets get corrupted",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Switch BER: 1% of packets get corrupted",
 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Cable BER: 1% of packets get corrupted", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Cable BER: 1% of packets get corrupted",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: Cable BER: 1% of packets get corrupted",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Cable BER: 1% of packets get corrupted",
 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches",
 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed cables", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed cables",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed cables",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed cables",
 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% cables per Switch between UpperSwitch-CoreSwitch", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% cables per Switch between UpperSwitch-CoreSwitch",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% cables per Switch between UpperSwitch-CoreSwitch",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% cables per Switch between UpperSwitch-CoreSwitch",
 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded switches", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded switches",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded switches",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded switches",
 
-        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded cables", 
+        # "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded cables",
         # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded cables",
         # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% degraded cables",
-    
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new switch evey 100 µs for 50µs", 
+
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new switch evey 100 µs for 50µs",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new switch evey 100 µs for 50µs",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new switch evey 100 µs for 50µs",
 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new cable evey 100 µs for 50µs", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new cable evey 100 µs for 50µs",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new cable evey 100 µs for 50µs",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: Fail a new cable evey 100 µs for 50µs",
 
@@ -838,7 +838,7 @@ def main():
         # "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable, One degraded switch&cable",
         # "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: One failed switch&cable, One degraded switch&cable",
 
-        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches&cables", 
+        "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches&cables",
         "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches&cables",
         "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows \n Failure mode: 10% failed switches&cables",
     ]
@@ -933,7 +933,7 @@ def main():
         "elias_incast_32_1_2MB",
         "elias_incast_32_1_2MB",
         "elias_perm_128_2MB",
-    ]   
+    ]
 
     short_title = ["_1os_perm", "_8os_perm", "_1os_incast"]
     topo =        [ "fat_tree_128_1os_800.topo", "fat_tree_128_8os_800.topo", "fat_tree_128_1os_800.topo",]
@@ -960,7 +960,7 @@ def main():
         "Mode": failures_input[i]    })
         df = pd.DataFrame(data)
         df.to_csv('experiment_data2MB.csv', index=False)
-    
+
     plot_comparison(df)
 
 

@@ -430,7 +430,7 @@ def run(
     plt.grid()  # just add this
     plt.legend(frameon=False)
 
-    plt.title(title, fontsize=16.5)
+    # plt.title(title, fontsize=16.5)
     plt.tight_layout()
     plt.savefig("experiments4MB/{}/cdf.pdf".format(short_title), bbox_inches="tight")
     plt.savefig("to_upload4MB/{}/cdf.pdf".format(short_title), bbox_inches="tight")
@@ -457,7 +457,7 @@ def run(
         ax3.plot([bar_center - 0.4, bar_center + 0.4], [baseline, baseline], color='black', linestyle='dashed', linewidth=1)
 
 
-    plt.title(title, fontsize=16.5)
+    # plt.title(title, fontsize=16.5)
     plt.grid()  # just add this
 
     plt.savefig("experiments4MB/{}/nack.pdf".format(short_title), bbox_inches="tight")
@@ -492,7 +492,7 @@ def run(
         bar_center = ax2.patches[idx].get_x() + ax2.patches[idx].get_width() / 2.0
         ax2.plot([bar_center - 0.4, bar_center + 0.4], [baseline, baseline], color='black', linestyle='dashed', linewidth=1)
 
-    plt.title(title, fontsize=17)
+    # plt.title(title, fontsize=17)
     plt.grid()
 
     plt.savefig(
@@ -518,7 +518,7 @@ def run(
     my.set_axisbelow(True)
     my.tick_params(labelsize=9.5)
 
-    plt.title(title, fontsize=17)
+    # plt.title(title, fontsize=17)
     plt.grid()  # just add this
     plt.savefig(
         "experiments4MB/{}/violin_fct.pdf".format(short_title), bbox_inches="tight"
@@ -548,7 +548,7 @@ def run(
             textcoords="offset points",
         )
 
-    plt.title(title, fontsize=17)
+    # plt.title(title, fontsize=17)
     plt.grid()
     plt.savefig(
         "experiments4MB/{}/lost_packets.pdf".format(short_title), bbox_inches="tight"
@@ -600,7 +600,7 @@ def run(
     plt.legend(title='Type', loc='upper right', fancybox=True, bbox_to_anchor=(1.25, 1))
 
     
-    plt.title(title, fontsize=15)
+    # plt.title(title, fontsize=15)
     plt.tight_layout()
     plt.grid(True)
     plt.savefig("experiments4MB/{}/total_out_of_order.pdf".format(short_title), bbox_inches="tight")
@@ -648,7 +648,7 @@ def run(
     plt.legend(title='Type', loc='upper right', fancybox=True, bbox_to_anchor=(1.25, 1))
 
     
-    plt.title(title, fontsize=15)
+    # plt.title(title, fontsize=15)
     plt.tight_layout()
     plt.grid(True)
     plt.savefig("experiments4MB/{}/out_of_order_ratio.pdf".format(short_title), bbox_inches="tight")
@@ -698,7 +698,7 @@ def run(
     plt.legend(title='Type', loc='upper right', fancybox=True, bbox_to_anchor=(1.25, 1))
 
     
-    plt.title(title, fontsize=15)
+    # plt.title(title, fontsize=15)
     plt.tight_layout()
     plt.grid(True)
     plt.savefig("experiments4MB/{}/out_of_order_distance.pdf".format(short_title), bbox_inches="tight")

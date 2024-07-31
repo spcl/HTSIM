@@ -528,7 +528,7 @@ def run(title,experiment,mb):
     fig.update_yaxes(title_text="RTT || Queuing Latency (ns)", secondary_y=False)
     fig.update_yaxes(title_text="Congestion Window (B)", secondary_y=True)
 
-    fig.update_layout(title_text=title, title_x=0.5, title_xanchor='center')
+    # fig.update_layout(title_text=title, title_x=0.5, title_xanchor='center')
     fig.update_layout(    
         legend=dict(
         orientation="h",
