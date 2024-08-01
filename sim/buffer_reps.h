@@ -65,6 +65,9 @@ public:
     static int repsBufferSize;
     static int repsMaxLifetimeEntropy;
     static bool compressed_acks;
+
+    uint64_t can_exit_frozen_mode = 0;
+    uint64_t can_enter_frozen_mode = 0;
 };
 
 #endif  // CIRCULARBUFFERREPS_H
