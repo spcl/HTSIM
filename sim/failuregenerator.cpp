@@ -901,11 +901,13 @@ failuregenerator::get_path_switches_cables(uint32_t path_id, UecSrc *src, UecSin
     std::set<uint32_t> switches;
     std::set<uint32_t> cables;
 
+    PacketFlow flow = src->get_flow();
+
     for (int i = 0; i < 2; i++) {
 
         if (i == 0) {
             std::vector<int> path_ids = src->get_path_ids();
-            PacketFlow flow = src->get_flow();
+
             r = *src->get_route();
 
             packet = UecPacket::newpkt(flow, r, uint64_t(0), uint64_t(0), uint16_t(0), false, src->to);
@@ -921,7 +923,6 @@ failuregenerator::get_path_switches_cables(uint32_t path_id, UecSrc *src, UecSin
                 continue;
             }
             std::vector<int> path_ids = sink->get_path_ids();
-            PacketFlow flow = sink->get_src()->get_flow();
             r = *sink->get_route();
 
             packet = UecPacket::newpkt(flow, r, uint64_t(0), uint64_t(0), uint16_t(0), false, sink->from);
