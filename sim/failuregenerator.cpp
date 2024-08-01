@@ -108,7 +108,7 @@ void failuregenerator::dropRandomPacket(Packet &pkt) {
         UecSrc *src = FAILURE_GENERATOR->randomDroppedPackets[pkt_id];
 
         std::pair<std::pair<std::set<uint32_t>, std::set<uint32_t>>, std::string> switches_cables_on_path_string =
-                get_path_switches_cables(pkt.pathid(), src);
+                get_path_switches_cables(pkt.pathid(), src, NULL);
         std::pair<std::set<uint32_t>, std::set<uint32_t>> switches_cables_on_path =
                 switches_cables_on_path_string.first;
         std::string found_path = switches_cables_on_path_string.second;
@@ -892,71 +892,94 @@ void failuregenerator::addCablePerSwitch(uint32_t switch_id, uint32_t cable_id) 
 }
 
 std::pair<std::pair<std::set<uint32_t>, std::set<uint32_t>>, std::string>
-failuregenerator::get_path_switches_cables(uint32_t path_id, UecSrc *src) {
+failuregenerator::get_path_switches_cables(uint32_t path_id, UecSrc *src, UecSink *sink) {
 
-    std::vector<int> path_ids = src->get_path_ids();
-    PacketFlow flow = src->get_flow();
-    Route r = *src->get_route();
+    UecPacket *packet = NULL;
+    Route r;
 
     std::string path;
-
     std::set<uint32_t> switches;
     std::set<uint32_t> cables;
 
-    UecPacket *packet = UecPacket::newpkt(flow, r, uint64_t(0), uint64_t(0), uint16_t(0), false, src->to);
-    packet->set_route(*src->get_route());
-    packet->set_pathid(path_ids[path_id]);
-    packet->from = src->from;
-    packet->to = src->to;
-    packet->tag = src->tag;
+    for (int i = 0; i < 2; i++) {
 
-    while (true) {
-        Queue *next_queue = dynamic_cast<Queue *>(packet->getNextHopOfPacket());
-        Pipe *next_pipe = dynamic_cast<Pipe *>(packet->getNextHopOfPacket());
-        Switch *next_switch = dynamic_cast<Switch *>(packet->getNextHopOfPacket());
+        if (i == 0) {
+            std::vector<int> path_ids = src->get_path_ids();
+            PacketFlow flow = src->get_flow();
+            r = *src->get_route();
 
-        if (next_queue->getSwitch() != nullptr) {
-            addCablePerSwitch(next_queue->getSwitch()->getUniqueID(), next_pipe->getID());
+            packet = UecPacket::newpkt(flow, r, uint64_t(0), uint64_t(0), uint16_t(0), false, src->to);
+            packet->set_route(*src->get_route());
+            packet->set_pathid(path_ids[path_id]);
+            packet->from = src->from;
+            packet->to = src->to;
+            packet->tag = src->tag;
         }
 
-        if (next_switch == nullptr) {
+        if (i == 1) {
+            if (sink == NULL) {
+                continue;
+            }
+            std::vector<int> path_ids = sink->get_path_ids();
+            PacketFlow flow = sink->get_src()->get_flow();
+            r = *sink->get_route();
+
+            packet = UecPacket::newpkt(flow, r, uint64_t(0), uint64_t(0), uint16_t(0), false, sink->from);
+            packet->set_route(*sink->get_route());
+            packet->set_pathid(path_ids[path_id]);
+            packet->from = sink->from;
+            packet->to = sink->to;
+            packet->tag = sink->tag;
+        }
+
+        while (true) {
+            Queue *next_queue = dynamic_cast<Queue *>(packet->getNextHopOfPacket());
+            Pipe *next_pipe = dynamic_cast<Pipe *>(packet->getNextHopOfPacket());
+            Switch *next_switch = dynamic_cast<Switch *>(packet->getNextHopOfPacket());
+
+            if (next_queue->getSwitch() != nullptr) {
+                addCablePerSwitch(next_queue->getSwitch()->getUniqueID(), next_pipe->getID());
+            }
+
+            if (next_switch == nullptr) {
+                if (next_queue) {
+                    path += " -> " + next_queue->nodename();
+                } else {
+                    std::cout << "Error: last next_queue is nullptr" << std::endl;
+                }
+                if (next_pipe) {
+                    path += " -> " + next_pipe->nodename();
+                    cables.insert(next_pipe->getID());
+                    FAILURE_GENERATOR->all_cables.insert(next_pipe->getID());
+                } else {
+                    std::cout << "Error: last next_pipe is nullptr" << std::endl;
+                }
+                break;
+            }
             if (next_queue) {
                 path += " -> " + next_queue->nodename();
             } else {
-                std::cout << "Error: last next_queue is nullptr" << std::endl;
+                std::cout << "Error: next_queue is nullptr" << std::endl;
             }
             if (next_pipe) {
                 path += " -> " + next_pipe->nodename();
                 cables.insert(next_pipe->getID());
                 FAILURE_GENERATOR->all_cables.insert(next_pipe->getID());
             } else {
-                std::cout << "Error: last next_pipe is nullptr" << std::endl;
+                std::cout << "Error: next_pipe is nullptr" << std::endl;
             }
-            break;
-        }
-        if (next_queue) {
-            path += " -> " + next_queue->nodename();
-        } else {
-            std::cout << "Error: next_queue is nullptr" << std::endl;
-        }
-        if (next_pipe) {
-            path += " -> " + next_pipe->nodename();
-            cables.insert(next_pipe->getID());
-            FAILURE_GENERATOR->all_cables.insert(next_pipe->getID());
-        } else {
-            std::cout << "Error: next_pipe is nullptr" << std::endl;
-        }
-        if (next_switch) {
-            path += " -> " + next_switch->nodename();
-            switches.insert(next_switch->getUniqueID());
-            FAILURE_GENERATOR->all_switches.insert(next_switch->getUniqueID());
+            if (next_switch) {
+                path += " -> " + next_switch->nodename();
+                switches.insert(next_switch->getUniqueID());
+                FAILURE_GENERATOR->all_switches.insert(next_switch->getUniqueID());
 
-            r = *next_switch->getNextHop(*packet, NULL);
-            packet->set_route(r);
-            r = *next_switch->getNextHop(*packet, NULL);
-            packet->set_route(r);
-        } else {
-            std::cout << "Error: next_switch is nullptr" << std::endl;
+                r = *next_switch->getNextHop(*packet, NULL);
+                packet->set_route(r);
+                r = *next_switch->getNextHop(*packet, NULL);
+                packet->set_route(r);
+            } else {
+                std::cout << "Error: next_switch is nullptr" << std::endl;
+            }
         }
     }
 
@@ -972,7 +995,7 @@ bool failuregenerator::check_connectivity() {
 
         for (int i = 0; i < route_len; i++) {
             std::pair<std::pair<std::set<uint32_t>, std::set<uint32_t>>, std::string> switches_cables_on_path_string =
-                    get_path_switches_cables(i, src);
+                    get_path_switches_cables(i, src, src->get_sink());
             std::pair<std::set<uint32_t>, std::set<uint32_t>> switches_cables_on_path =
                     switches_cables_on_path_string.first;
             std::string found_path = switches_cables_on_path_string.second;
@@ -1010,7 +1033,6 @@ bool failuregenerator::check_connectivity() {
             return false;
         }
     }
-
     return true;
 }
 

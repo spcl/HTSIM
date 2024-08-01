@@ -30,8 +30,8 @@ class failuregenerator {
     void addSrc(UecSrc *src) { all_srcs.insert(src); }
     void addDst(UecSink *sink) { all_sinks.insert(sink); }
 
-    std::pair<std::pair<std::set<uint32_t>, std::set<uint32_t>>, std::string> get_path_switches_cables(uint32_t path_id,
-                                                                                                       UecSrc *src);
+    std::pair<std::pair<std::set<uint32_t>, std::set<uint32_t>>, std::string>
+    get_path_switches_cables(uint32_t path_id, UecSrc *src, UecSink *sink);
 
     bool check_connectivity();
     void parseinputfile();
