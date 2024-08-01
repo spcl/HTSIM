@@ -179,6 +179,20 @@ template <typename T> bool CircularBufferREPS<T>::is_valid_frozen() {
     return buffer[head_forzen_mode].isValid;
 }
 
+
+template <typename T> void CircularBufferREPS<T>::resetBuffer() {
+    for (int i = 0; i < max_size; i++) {
+        buffer[i].isValid = false;
+        buffer[i].usable_lifetime = 0;
+    }
+    head = 0;
+    tail = 0;
+    count = 0;
+    head_forzen_mode = 0;
+    head_round = 0;
+    number_fresh_entropies = 0;
+}
+
 // Returns the number of elements in the buffer
 template <typename T> int CircularBufferREPS<T>::getSize() const { return count; }
 

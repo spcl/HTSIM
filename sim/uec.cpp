@@ -689,7 +689,7 @@ void UecSrc::processNack(UecNack &pkt) {
     if (pkt.is_failed) {
         if ((_route_strategy == REPS_CIRCULAR) && !circular_buffer_reps->isFrozenMode()) {
             circular_buffer_reps->setFrozenMode(true);
-            printf("%s started freezing mode at %lu\n", _name.c_str(), eventlist().now() / 1000);
+            printf("%s started freezing mode5 at %lu\n", _name.c_str(), eventlist().now() / 1000);
         }
     }
 
@@ -1062,6 +1062,8 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
         // generic_pacer->schedule_send(pacing_delay);
         last_pac_change = eventlist().now();
     }
+
+    circular_buffer_reps->last_received_ack = eventlist().now();
 
     count_total_ack++;
     if (marked) {
@@ -1964,8 +1966,10 @@ void UecSrc::send_packets() {
 
         p->set_route(*_route);
         int crt = choose_route();
-        printf("Sending packet1 from %d to %d at %lu - Entropy %d\n", from, to, GLOBAL_TIME / 1000, crt);
-        circular_buffer_reps->print();
+        /* printf("Sending packet1 from %d to %d at %lu - Entropy %d\n", from, to, GLOBAL_TIME / 1000, crt);
+        circular_buffer_reps->print(); */
+        circular_buffer_reps->explore_counter--;
+        
         
         p->is_bts_pkt = false;
 
@@ -2160,10 +2164,17 @@ void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
         // apply_timeout_penalty();
 
         _next_pathid = -1;
-        if (circular_buffer_reps->isFrozenMode() && circular_buffer_reps->can_exit_frozen_mode < eventlist().now()) {
+        /* if (circular_buffer_reps->isFrozenMode() && circular_buffer_reps->can_exit_frozen_mode < eventlist().now()) {
             circular_buffer_reps->setFrozenMode(false);
             circular_buffer_reps->can_enter_frozen_mode = eventlist().now() + _base_rtt;
             printf("%s exited freezing mode at %lu\n", _name.c_str(), eventlist().now() / 1000);
+        } */
+
+        if (eventlist().now() > circular_buffer_reps->last_received_ack + (_rto * 2)) {
+            circular_buffer_reps->setFrozenMode(false);
+            circular_buffer_reps->explore_counter = 16;
+            circular_buffer_reps->resetBuffer();
+            /* printf("%s exited freezing mode at %lu\n", _name.c_str(), eventlist().now() / 1000); */
         }
 
         cout << "At " << timeAsUs(now) << "us RTO " << timeAsUs(_rto) << "us RTT " << timeAsUs(_rtt) << "us SEQ "
@@ -2211,7 +2222,8 @@ bool UecSrc::resend_packet(std::size_t idx) {
 
     p->set_route(*_route);
     int crt = choose_route();
-    printf("Sending packet2 from %d to %d at %lu - Entropy %d\n", from, to, GLOBAL_TIME / 1000, crt);
+    /* printf("Sending packet2 from %d to %d at %lu - Entropy %d\n", from, to, GLOBAL_TIME / 1000, crt); */
+    circular_buffer_reps->explore_counter--;
     circular_buffer_reps->print();
     p->from = this->from;
     p->to = this->to;
@@ -2256,11 +2268,16 @@ void UecSrc::retransmit_packet() {
             sp.timedOut = true;
             reduce_unacked(_mss);
             if ((_route_strategy == REPS_CIRCULAR) && !circular_buffer_reps->isFrozenMode()) {
-                if (circular_buffer_reps->can_enter_frozen_mode < eventlist().now()) {
+                /* if (circular_buffer_reps->can_enter_frozen_mode < eventlist().now()) {
                     circular_buffer_reps->setFrozenMode(true);
                     circular_buffer_reps->can_exit_frozen_mode = eventlist().now() + _base_rtt * 10;
                     printf("%s started freezing mode at %lu\n", _name.c_str(), eventlist().now() / 1000);
-                }
+                } */
+/*                printf("considering freezing mode, counter is %d - %d\n", circular_buffer_reps->explore_counter, circular_buffer_reps->isFrozenMode());
+ */               if (circular_buffer_reps->explore_counter <= 0) {
+                    circular_buffer_reps->setFrozenMode(true);
+/*                     printf("%s started freezing mode at %lu - %d\n", _name.c_str(), eventlist().now() / 1000, circular_buffer_reps->isFrozenMode());
+ */               }
             }
         }
         if (!sp.acked && (sp.timedOut || sp.nacked)) {
@@ -2470,7 +2487,7 @@ void UecSink::send_ack(simtime_picosec ts, bool marked, UecAck::seq_t seqno, Uec
     case ECMP_RANDOM_ECN:
         ack = UecAck::newpkt(_src->_flow, *_route, seqno, ackno, 0, _srcaddr);
 
-        ack->set_pathid(_path_ids[_crt_path]);
+        ack->set_pathid(path_id);
         _crt_path++;
         if (_crt_path == _paths.size()) {
             _crt_path = 0;
@@ -2492,7 +2509,7 @@ void UecSink::send_ack(simtime_picosec ts, bool marked, UecAck::seq_t seqno, Uec
         break;
     }
     assert(ack);
-    ack->set_pathid(_path_ids[path_id]);
+    ack->set_pathid(path_id);
     ack->pathid_echo = path_id;
     ack->pfc_just_happened = false;
     if (pfc_just_seen == 1) {

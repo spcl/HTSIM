@@ -43,6 +43,7 @@ public:
     bool isEmpty() const;
     bool isFull() const;
     void print();
+    void resetBuffer();
     int numValid() const;
     void setFrozenMode(bool mode) {
         if (repsUseFreezing) {
@@ -68,6 +69,10 @@ public:
 
     uint64_t can_exit_frozen_mode = 0;
     uint64_t can_enter_frozen_mode = 0;
+
+    uint64_t last_received_ack = 0;
+    int explore_counter = 0;
+
 };
 
 #endif  // CIRCULARBUFFERREPS_H
