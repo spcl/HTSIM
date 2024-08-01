@@ -2162,6 +2162,7 @@ void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
         _next_pathid = -1;
         if (circular_buffer_reps->isFrozenMode() && circular_buffer_reps->can_exit_frozen_mode < eventlist().now()) {
             circular_buffer_reps->setFrozenMode(false);
+            circular_buffer_reps->can_enter_frozen_mode = eventlist().now() + _base_rtt;
             printf("%s exited freezing mode at %lu\n", _name.c_str(), eventlist().now() / 1000);
         }
 
@@ -2255,7 +2256,7 @@ void UecSrc::retransmit_packet() {
             sp.timedOut = true;
             reduce_unacked(_mss);
             if ((_route_strategy == REPS_CIRCULAR) && !circular_buffer_reps->isFrozenMode()) {
-                if (circular_buffer_reps->can_enter_frozen_mode > eventlist().now()) {
+                if (circular_buffer_reps->can_enter_frozen_mode < eventlist().now()) {
                     circular_buffer_reps->setFrozenMode(true);
                     circular_buffer_reps->can_exit_frozen_mode = eventlist().now() + _base_rtt * 10;
                     printf("%s started freezing mode at %lu\n", _name.c_str(), eventlist().now() / 1000);
