@@ -105,6 +105,12 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
     incast_ratio = 0
     number_of_nodes = 0
 
+    height_board = 0
+    width_board = 0
+    p = 0
+    a = 0
+    h = 0
+
     if(is_element("SMaRTT", list_algorithm)):
         # SMaRTT
         out_name = "experiments/{}/outSMaRTT.txt".format(experiment_cm)
@@ -154,6 +160,7 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
         num_nack_smartt = getNumTrimmed(out_name)
         numbers.append(num_nack_smartt)
         print("SMARTT: Flow Diff {} - Total {}".format(max(list_smartt) - min(list_smartt), max(list_smartt)))
+        print("Mean: {}".format(sum(list_smartt)/len(list_smartt)))
 
     if(is_element("NDP", list_algorithm)):
         # NDP
@@ -280,9 +287,41 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
         best_time = incast_ratio * message_size * 84
     elif(traffic_pattern == "All-to-all"):
         best_time = 8 * message_size * 84
-    else:
-        # traffic_pattern == "Permutation"
+    elif(traffic_pattern == "Permutation"):
         best_time = message_size * 84
+        if(topology == "Dragonfly"):
+            n_nodes = (1 + a * h) * a * p
+            if(routing_name == "minimal"):
+                cumulated_local_path_length = p * (a-1) * (1 + 2 * h * a)
+                cumulated_local_path_length *= n_nodes
+                cumulated_local_path_length /= n_nodes - 1
+                n_local_links = ((1 + h * a) * (a * (a - 1))) / 2
+                best_time = cumulated_local_path_length * message_size * 84 / (2 * n_local_links)
+            else:
+                # routing_name == "valiants"
+                cumulated_local_path_length = p * (a-1) * ((2 * a - 1) * (1 + 2 * h) + (3 * a - 1) * (a - 1) * h) / a
+                cumulated_local_path_length *= n_nodes
+                cumulated_local_path_length /= n_nodes - 1
+                n_local_links = ((1 + h * a) * (a * (a - 1))) / 2
+                best_time = cumulated_local_path_length * message_size * 84 / (2 * n_local_links)
+
+        elif(topology == "Slimfly"):
+            best_time = 0
+        elif(topology == "Hammingmesh"):
+            """ number_of_nodes = height * height_board * width * width_board
+            number_of_incasting_nodes = number_of_nodes - height * height_board * (((width_board - 1) // 2) + 1)
+            number_of_incasting_nodes -= width * width_board * (((height_board - 1) // 2) + 1)
+            number_of_incasting_nodes += (((width_board - 1) // 2) + 1) * (((height_board - 1) // 2) + 1)
+            best_time = height_board * width_board  * number_of_incasting_nodes * message_size * 84 / (4 * number_of_nodes * 2) """
+            best_time = 0
+        elif(topology == "BCube"):
+            best_time = 0
+        else:
+            # topology == "Fat_Tree"
+            best_time = 0
+    else:
+        # (traffic_patter == "All-Reduce"):
+        best_time = message_size * 84 // number_of_nodes
 
     if(best_time != 0):
         print("Best Time {}".format(best_time))
@@ -405,9 +444,10 @@ def main():
         {"topology": "Fat_Tree", "list_routing": ["Minimal"], "list_parameters_set": [[[16], [32]], [[128, 64], [1024, 128]]]}
     ]
     # maybe also "Fat_Tree"
-    list_traffic_pattern = ["All-to-all"]
+    list_traffic_pattern = ["All-reduce"]
+    # "Incast", "All-to-all", "Permutation"
     # later on also "All-reduce"
-    list_message_size = [8]
+    list_message_size = [1, 8]
     # 1, 8
 
     # list_topologies = ["fat_tree_1024_8os_800.topo", "fat_tree_1024_8os_800.topo"]   
@@ -420,12 +460,12 @@ def main():
         topology = item["topology"]
         list_routing = item["list_routing"]
         list_parameters_set = item["list_parameters_set"]
-        list_parameters_ata, list_parameters = list_parameters_set
+        list_parameters_a, list_parameters = list_parameters_set
         for routing in list_routing:
             for traffic_pattern in list_traffic_pattern:
                 list_parameters_tmp = []
-                if (traffic_pattern == "All-to-all"):
-                    list_parameters_tmp = list_parameters_ata
+                if (traffic_pattern == "All-to-all" or traffic_pattern == "All-reduce"):
+                    list_parameters_tmp = list_parameters_a
                 else:
                     list_parameters_tmp = list_parameters
                 for parameters in list_parameters_tmp:
@@ -462,6 +502,12 @@ def main():
                             os.system("python3 ../sim/datacenter/connection_matrices/gen_permutation.py {} {} {} {} 0 15 && mv {} ../sim/datacenter/connection_matrices/".format(tm_name, topo_size, topo_size, 1048576 * message_size, tm_name)) """
                         # else:
                             # traffic_pattern == "All-reduce"
+                            
+                        if (traffic_pattern == "Permutation"):
+                            os.system("python3 ../sim/datacenter/connection_matrices/gen_permutation.py {} {} {} {} 0 15 && mv {} ../sim/datacenter/connection_matrices/".format(tm_name, topo_size, topo_size, 1048576 * message_size, tm_name))
+                        else:
+                            # traffic_pattern == "All-reduce"
+                            os.system("python3 ../sim/datacenter/connection_matrices/gen_allreduce.py {} {} {} {} {} 1 15 && mv {} ../sim/datacenter/connection_matrices/".format(tm_name, topo_size, topo_size, topo_size, 1048576 * message_size // topo_size, tm_name))
 
                         run_experiment(name, tm_name, list_algorithm, topology, routing_name, parameters, traffic_pattern, message_size)
                         # os.system("rm ../sim/datacenter/connection_matrices/{}".format(tm_name))

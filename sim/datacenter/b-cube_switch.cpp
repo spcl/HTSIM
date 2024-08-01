@@ -204,6 +204,7 @@ Route *BCubeSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                     break;
                 }
                 case MINIMAL: {
+                    permute_paths(available_hops);
                     break;
                 }
             }

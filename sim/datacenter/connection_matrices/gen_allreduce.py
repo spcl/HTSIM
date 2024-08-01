@@ -40,7 +40,7 @@ srcs = []
 dsts = []
 groups = conns // groupsize
 
-print("Groups ", groups)
+# print("Groups ", groups)
 
 for n in range(nodes):
     srcs.append(n)
@@ -53,7 +53,7 @@ shuffle(srcs)
 id = 0
 trig_id = 1
 for group in range(groups):
-    print("group: ", group)
+    # print("group: ", group)
     groupsrcs = []
     for n in range(groupsize):
         groupsrcs.append(srcs[group * groupsize + n])
@@ -61,9 +61,9 @@ for group in range(groups):
     if (locality==1):
         groupsrcs.sort()
 
-    print(groupsrcs)
+    # rint(groupsrcs)
     for s in range(groupsize):
-        print (" ")
+        # print (" ")
         for d in range(1, 2*groupsize):
             id += 1
             src = (s+d-1)%groupsize
@@ -80,7 +80,7 @@ for group in range(groups):
             if d != 2 * groupsize - 1:
                 out = out + " send_done_trigger " + str(trig_id)
             print(out, file=f)
-            print(groupsrcs[src], "->", groupsrcs[dst])
+            # print(groupsrcs[src], "->", groupsrcs[dst])
 
 for t in range(1, trig_id):
     out = "trigger id " + str(t) + " oneshot"
