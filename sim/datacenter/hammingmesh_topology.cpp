@@ -260,7 +260,7 @@ void HammingmeshTopology::init_network() {
         queues_switch_host[j][k]->setName("SW" + ntoa(j) + "->DST" + ntoa(k));
         //logfile->writeName(*(queues_switch_host[j][k]));
 
-        pipes_switch_host[j][k] = new Pipe(_hop_latency, *_eventlist);
+        pipes_switch_host[j][k] = new Pipe(_short_hop_latency, *_eventlist);
         pipes_switch_host[j][k]->setName("Pipe-SW" + ntoa(j) + "->DST" + ntoa(k));
         //logfile->writeName(*(pipes_switch_host[j][k]));
 
@@ -286,7 +286,7 @@ void HammingmeshTopology::init_network() {
             new LosslessInputQueue(*_eventlist, queues_host_switch[k][j]);
         }
 
-        pipes_host_switch[k][j] = new Pipe(_hop_latency, *_eventlist);
+        pipes_host_switch[k][j] = new Pipe(_short_hop_latency, *_eventlist);
         pipes_host_switch[k][j]->setName("Pipe-SRC" + ntoa(k) + "->SW" + ntoa(j));
         //logfile->writeName(*(pipes_host_switch[k][j]));
     }

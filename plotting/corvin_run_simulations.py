@@ -85,11 +85,11 @@ def is_element(element, list):
     return False
 
 
-def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, routing_name, parameters, traffic_pattern, message_size):
+def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, routing_name, parameters, traffic_pattern, message_size, folder_name):
     
     os.system("mkdir -p experiments")
-    os.system("rm -rf experiments/{}".format(experiment_cm))
-    os.system("mkdir experiments/{}".format(experiment_cm))
+    os.system("rm -rf experiments/{}".format(folder_name))
+    os.system("mkdir experiments/{}".format(folder_name))
 
     all_data = []
     numbers = []
@@ -113,21 +113,21 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
 
     if(is_element("SMaRTT", list_algorithm)):
         # SMaRTT
-        out_name = "experiments/{}/outSMaRTT.txt".format(experiment_cm)
+        out_name = "experiments/{}/outSMaRTT.txt".format(folder_name)
         string_to_run = ""
         if (topology == "Dragonfly"):
             p = parameters[0]
             a = parameters[1]
             h = parameters[2]
             number_of_nodes = (1 + a * h) * a * p
-            string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology dragonfly -df_strategy {} -p {} -a {} -h {} > {}".format(experiment_cm, routing_name, p, a, h, out_name)
+            string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{}/{} -topology dragonfly -df_strategy {} -p {} -a {} -h {} > {}".format(folder_name, experiment_cm, routing_name, p, a, h, out_name)
         
         elif (topology == "Slimfly"):
             p = parameters[0]
             q_base = parameters[1]
             q_exp = parameters[2]
             number_of_nodes = 2 * pow(q_base, q_exp) * p
-            string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology slimfly -sf_strategy {} -p {} -q_base {} -q_exp {} > {}".format(experiment_cm, routing_name, p, q_base, q_exp, out_name) 
+            string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{}/{} -topology slimfly -sf_strategy {} -p {} -q_base {} -q_exp {} > {}".format(folder_name, experiment_cm, routing_name, p, q_base, q_exp, out_name) 
         
         elif (topology == "Hammingmesh"):
             height = parameters[0]
@@ -135,23 +135,23 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
             height_board = parameters[2]
             width_board = parameters[3]
             number_of_nodes = height * height_board * width * width_board
-            string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology hammingmesh -hm_strategy {} -height {} -width {} -height_board {} -width_board {} > {}".format(experiment_cm, routing_name, height, width, height_board, width_board, out_name) 
+            string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{}/{} -topology hammingmesh -hm_strategy {} -height {} -width {} -height_board {} -width_board {} > {}".format(folder_name, experiment_cm, routing_name, height, width, height_board, width_board, out_name) 
         
         elif (topology == "BCube"):
             # topology == "BCube"
             n = parameters[0]
             k = parameters[1]
             number_of_nodes = pow(n, k)
-            string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology bcube -bc_strategy {} -n_bcube {} -k_bcube {} > {}".format(experiment_cm, routing_name, n, k, out_name) 
+            string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{}/{} -topology bcube -bc_strategy {} -n_bcube {} -k_bcube {} > {}".format(folder_name, experiment_cm, routing_name, n, k, out_name) 
 
         else:
             # topology == "Fat_Tree"
             topo_file = parameters[0]
             number_of_nodes = topo_file
-            string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology fat_tree -nodes {} -topo topo/fat_tree_{}N.topo > {}".format(experiment_cm, topo_file, topo_file, out_name)
+            string_to_run = "../sim/datacenter/htsim_uec_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -use_fast_increase 1 -use_super_fast_increase 1 -fast_drop 1 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -reuse_entropy 1 -x_gain 0.25 -y_gain 2 -w_gain 1 -z_gain 0.8 -bonus_drop 1.5 -collect_data 1 -decrease_on_nack 1 -algorithm smartt -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{}/{} -topology fat_tree -nodes {} -topo topo/fat_tree_{}N.topo > {}".format(folder_name, experiment_cm, topo_file, topo_file, out_name)
 
         
-        print(string_to_run)
+        # print(string_to_run)
         # .format(link_speed, experiment_cm, queue_size, initial_cwnd, experiment_topo, ecn_min, ecn_max, paths, mi_gain, fi_gain, md_gain, fd_gain, out_name)
         os.system(string_to_run)
         list_smartt = getListFCT(out_name)
@@ -164,39 +164,39 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
 
     if(is_element("NDP", list_algorithm)):
         # NDP
-        out_name = "experiments/{}/outNDP.txt".format(experiment_cm)
+        out_name = "experiments/{}/outNDP.txt".format(folder_name)
         string_to_run = ""
 
         if (topology == "Dragonfly"):
             p = parameters[0]
             a = parameters[1]
             h = parameters[2]
-            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology dragonfly -df_strategy {} -p {} -a {} -h {} > {}".format(experiment_cm, routing_name, p, a, h, out_name)
+            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{}/{} -topology dragonfly -df_strategy {} -p {} -a {} -h {} > {}".format(folder_name, experiment_cm, routing_name, p, a, h, out_name)
         
         elif (topology == "Slimfly"):
             p = parameters[0]
             q_base = parameters[1]
             q_exp = parameters[2]
-            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology slimfly -sf_strategy {} -p {} -q_base {} -q_exp {} > {}".format(experiment_cm, routing_name, p, q_base, q_exp, out_name) 
+            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{}/{} -topology slimfly -sf_strategy {} -p {} -q_base {} -q_exp {} > {}".format(folder_name, experiment_cm, routing_name, p, q_base, q_exp, out_name) 
         
         elif (topology == "Hammingmesh"):
             height = parameters[0]
             width = parameters[1]
             height_board = parameters[2]
             width_board = parameters[3]
-            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology hammingmesh -hm_strategy {} -height {} -width {} -height_board {} -width_board {} > {}".format(experiment_cm, routing_name, height, width, height_board, width_board, out_name) 
+            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{}/{} -topology hammingmesh -hm_strategy {} -height {} -width {} -height_board {} -width_board {} > {}".format(folder_name, experiment_cm, routing_name, height, width, height_board, width_board, out_name) 
         
         elif(topology == "BCube"):
             # topology == "BCube"
             n = parameters[0]
             k = parameters[1]
-            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology bcube -bc_strategy {} -n_bcube {} -k_bcube {} > {}".format(experiment_cm, routing_name, n, k, out_name) 
+            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o ndp_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{}/{} -topology bcube -bc_strategy {} -n_bcube {} -k_bcube {} > {}".format(folder_name, experiment_cm, routing_name, n, k, out_name) 
         else:
             # topology == "Fat_Tree"
             topo_file = parameters[0]
-            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology fat_tree -nodes {} -topo topo/fat_tree_{}N.topo > {}".format(experiment_cm, topo_file, topo_file, out_name)
+            string_to_run = "../sim/datacenter/htsim_ndp_entry_modern -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{}/{} -topology fat_tree -nodes {} -topo topo/fat_tree_{}N.topo > {}".format(folder_name, experiment_cm, topo_file, topo_file, out_name)
 
-        print(string_to_run)
+        # print(string_to_run)
         os.system(string_to_run)
         list_ndp = getListFCT(out_name)
         all_data.append(list_ndp)
@@ -207,40 +207,40 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
 
     if(is_element("BBR", list_algorithm)):
         # BBR
-        out_name = "experiments/{}/outBBR.txt".format(experiment_cm)
+        out_name = "experiments/{}/outBBR.txt".format(folder_name)
         string_to_run = ""
         
         if (topology == "Dragonfly"):
             p = parameters[0]
             a = parameters[1]
             h = parameters[2]
-            string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology dragonfly -df_strategy {} -p {} -a {} -h {} > {}".format(experiment_cm, routing_name, p, a, h, out_name)
+            string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{}/{} -topology dragonfly -df_strategy {} -p {} -a {} -h {} > {}".format(folder_name, experiment_cm, routing_name, p, a, h, out_name)
         
         elif (topology == "Slimfly"):
             p = parameters[0]
             q_base = parameters[1]
             q_exp = parameters[2]
-            string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology slimfly -sf_strategy {} -p {} -q_base {} -q_exp {} > {}".format(experiment_cm, routing_name, p, q_base, q_exp, out_name) 
+            string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{}/{} -topology slimfly -sf_strategy {} -p {} -q_base {} -q_exp {} > {}".format(folder_name, experiment_cm, routing_name, p, q_base, q_exp, out_name) 
         
         elif (topology == "Hammingmesh"):
             height = parameters[0]
             width = parameters[1]
             height_board = parameters[2]
             width_board = parameters[3]
-            string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology hammingmesh -hm_strategy {} -height {} -width {} -height_board {} -width_board {} > {}".format(experiment_cm, routing_name, height, width, height_board, width_board, out_name) 
+            string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -short_hop_latency 100 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{}/{} -topology hammingmesh -hm_strategy {} -height {} -width {} -height_board {} -width_board {} > {}".format(folder_name, experiment_cm, routing_name, height, width, height_board, width_board, out_name) 
         
         elif(topology == "BCube"):
             # topology == "BCube"
             n = parameters[0]
             k = parameters[1]
-            string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology bcube -bc_strategy {} -n_bcube {} -k_bcube {} > {}".format(experiment_cm, routing_name, n, k, out_name) 
+            string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{}/{} -topology bcube -bc_strategy {} -n_bcube {} -k_bcube {} > {}".format(folder_name, experiment_cm, routing_name, n, k, out_name) 
         
         else:
             # topology == "Fat_Tree"
             topo_file = parameters[0]
-            string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{} -topology fat_tree -nodes {} -topo topo/fat_tree_{}N.topo > {}".format(experiment_cm, topo_file, topo_file, out_name)
+            string_to_run = "../sim/datacenter/htsim_bbr -o uec_entry -q 50 -strat ecmp_host_random2_ecn -number_entropies 1024 -linkspeed 100000 -mtu 4096 -seed 15 -queue_type composite -hop_latency 1000 -switch_latency 0 -collect_data 1 -ecn 10 40 -tm ../sim/datacenter/connection_matrices/{}/{} -topology fat_tree -nodes {} -topo topo/fat_tree_{}N.topo > {}".format(folder_name, experiment_cm, topo_file, topo_file, out_name)
         
-        print(string_to_run)
+        # print(string_to_run)
         os.system(string_to_run)
         list_bbr = getListFCT(out_name)
         all_data.append(list_bbr)
@@ -290,38 +290,48 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
     elif(traffic_pattern == "Permutation"):
         best_time = message_size * 84
         if(topology == "Dragonfly"):
-            n_nodes = (1 + a * h) * a * p
             if(routing_name == "minimal"):
-                cumulated_local_path_length = p * (a-1) * (1 + 2 * h * a)
-                cumulated_local_path_length *= n_nodes
-                cumulated_local_path_length /= n_nodes - 1
-                n_local_links = ((1 + h * a) * (a * (a - 1))) / 2
-                best_time = cumulated_local_path_length * message_size * 84 / (2 * n_local_links)
+                best_time += 0.4
             else:
                 # routing_name == "valiants"
-                cumulated_local_path_length = p * (a-1) * ((2 * a - 1) * (1 + 2 * h) + (3 * a - 1) * (a - 1) * h) / a
-                cumulated_local_path_length *= n_nodes
-                cumulated_local_path_length /= n_nodes - 1
-                n_local_links = ((1 + h * a) * (a * (a - 1))) / 2
-                best_time = cumulated_local_path_length * message_size * 84 / (2 * n_local_links)
-
+                best_time += 0.4
         elif(topology == "Slimfly"):
-            best_time = 0
+            if(routing_name == "minimal"):
+                best_time += 0.4
+            else:
+                # routing_name == "valiants"
+                best_time += 0.4
         elif(topology == "Hammingmesh"):
-            """ number_of_nodes = height * height_board * width * width_board
-            number_of_incasting_nodes = number_of_nodes - height * height_board * (((width_board - 1) // 2) + 1)
-            number_of_incasting_nodes -= width * width_board * (((height_board - 1) // 2) + 1)
-            number_of_incasting_nodes += (((width_board - 1) // 2) + 1) * (((height_board - 1) // 2) + 1)
-            best_time = height_board * width_board  * number_of_incasting_nodes * message_size * 84 / (4 * number_of_nodes * 2) """
-            best_time = 0
+            best_time += 0.6
         elif(topology == "BCube"):
-            best_time = 0
+            best_time += 8
         else:
             # topology == "Fat_Tree"
-            best_time = 0
+            best_time += 4
+    # (traffic_patter == "All-Reduce"):
     else:
-        # (traffic_patter == "All-Reduce"):
-        best_time = message_size * 84 // number_of_nodes
+        best_time = message_size * 84 / number_of_nodes
+        if(topology == "Dragonfly"):
+            if(routing_name == "minimal"):
+                best_time += 2.8
+            else:
+                # routing_name == "valiants"
+                best_time += 5
+        elif(topology == "Slimfly"):
+            if(routing_name == "minimal"):
+                best_time += 4.4
+            else:
+                # routing_name == "valiants"
+                best_time += 8.4
+        elif(topology == "Hammingmesh"):
+            best_time += (height_board + width_board) * 0.2 + 8.4
+        elif(topology == "BCube"):
+            best_time += 4 * k + 4
+        else:
+            # topology == "Fat_Tree"
+            best_time += 12
+ 
+        
 
     if(best_time != 0):
         print("Best Time {}".format(best_time))
@@ -337,9 +347,9 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
 
     # Show the plot
     plt.tight_layout()
-    plt.savefig("experiments/{}/cdf.svg".format(experiment_cm), bbox_inches='tight')
-    plt.savefig("experiments/{}/cdf.png".format(experiment_cm), bbox_inches='tight')
-    plt.savefig("experiments/{}/cdf.pdf".format(experiment_cm), bbox_inches='tight')
+    plt.savefig("experiments/{}/cdf.svg".format(folder_name), bbox_inches='tight')
+    plt.savefig("experiments/{}/cdf.png".format(folder_name), bbox_inches='tight')
+    plt.savefig("experiments/{}/cdf.pdf".format(folder_name), bbox_inches='tight')
 
     plt.savefig("../../Plots/CDF/cdf_{}.png".format(experiment_cm), bbox_inches='tight')
     plt.close()
@@ -363,9 +373,9 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
     plt.title('{}\nLink Speed 100Gbps - 4KiB MTU'.format(experiment_name), fontsize=16.5)
     plt.grid()  #just add this
     
-    plt.savefig("experiments/{}/nack.svg".format(experiment_cm), bbox_inches='tight')
-    plt.savefig("experiments/{}/nack.png".format(experiment_cm), bbox_inches='tight')
-    plt.savefig("experiments/{}/nack.pdf".format(experiment_cm), bbox_inches='tight')
+    plt.savefig("experiments/{}/nack.svg".format(folder_name), bbox_inches='tight')
+    plt.savefig("experiments/{}/nack.png".format(folder_name), bbox_inches='tight')
+    plt.savefig("experiments/{}/nack.pdf".format(folder_name), bbox_inches='tight')
 
     plt.savefig("../../Plots/NACK/nack_{}.png".format(experiment_cm), bbox_inches='tight')
     plt.close()
@@ -390,9 +400,9 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
     plt.title('{}\n100Gbps - 4KiB MTU'.format(experiment_name), fontsize=17)
     plt.grid()  #just add this
 
-    plt.savefig("experiments/{}/completion.svg".format(experiment_cm), bbox_inches='tight')
-    plt.savefig("experiments/{}/completion.png".format(experiment_cm), bbox_inches='tight')
-    plt.savefig("experiments/{}/completion.pdf".format(experiment_cm), bbox_inches='tight')
+    plt.savefig("experiments/{}/completion.svg".format(folder_name), bbox_inches='tight')
+    plt.savefig("experiments/{}/completion.png".format(folder_name), bbox_inches='tight')
+    plt.savefig("experiments/{}/completion.pdf".format(folder_name), bbox_inches='tight')
 
     plt.savefig("../../Plots/Completion/completion_{}.png".format(experiment_cm), bbox_inches='tight')
     plt.close()
@@ -419,9 +429,9 @@ def run_experiment(experiment_name, experiment_cm, list_algorithm, topology, rou
     plt.title('{}\nLink Speed 100Gbps - 4KiB MTU'.format(experiment_name), fontsize=17)
     plt.grid()  #just add this
 
-    plt.savefig("experiments/{}/violin_fct.svg".format(experiment_cm), bbox_inches='tight')
-    plt.savefig("experiments/{}/violin_fct.png".format(experiment_cm), bbox_inches='tight')
-    plt.savefig("experiments/{}/violin_fct.pdf".format(experiment_cm), bbox_inches='tight')
+    plt.savefig("experiments/{}/violin_fct.svg".format(folder_name), bbox_inches='tight')
+    plt.savefig("experiments/{}/violin_fct.png".format(folder_name), bbox_inches='tight')
+    plt.savefig("experiments/{}/violin_fct.pdf".format(folder_name), bbox_inches='tight')
 
     plt.savefig("../../Plots/Violin_FCT/violin_fct_{}.png".format(experiment_cm), bbox_inches='tight')
     plt.close()
@@ -437,15 +447,15 @@ def main():
         # 
         {"topology": "Slimfly", "list_routing": ["Minimal", "Valiant's"], "list_parameters_set": [[[1, 3, 1], [2, 3, 1]], [[2, 5, 1, 64], [4, 11, 1, 128]]]},
         # 
-        {"topology": "Hammingmesh", "list_routing": ["Minimal"], "list_parameters_set": [[[2, 2, 2, 2], [2, 2, 3, 3]], [[3, 3, 3, 3, 64], [4, 5, 7, 7, 128]]]},
+        # {"topology": "Hammingmesh", "list_routing": ["Minimal"], "list_parameters_set": [[[2, 2, 2, 2], [2, 2, 3, 3]], [[3, 3, 3, 3, 64], [4, 5, 7, 7, 128]]]},
         # 
-        {"topology": "BCube", "list_routing": ["Minimal"], "list_parameters_set": [[[4, 2], [6, 2]], [[3, 4, 64], [4, 5, 128]]]},
+        # {"topology": "BCube", "list_routing": ["Minimal"], "list_parameters_set": [[[4, 2], [6, 2]], [[3, 4, 64], [4, 5, 128]]]},
         # 
-        {"topology": "Fat_Tree", "list_routing": ["Minimal"], "list_parameters_set": [[[16], [32]], [[128, 64], [1024, 128]]]}
+        # {"topology": "Fat_Tree", "list_routing": ["Minimal"], "list_parameters_set": [[[16], [32]], [[128, 64], [1024, 128]]]}
     ]
     # maybe also "Fat_Tree"
     list_traffic_pattern = ["All-reduce"]
-    # "Incast", "All-to-all", "Permutation"
+    # "Incast", "All-to-all", "Permutation", "All-reduce"
     # later on also "All-reduce"
     list_message_size = [1, 8]
     # 1, 8
@@ -482,6 +492,8 @@ def main():
                             # routing == "Valiant's"
                             routing_name = "valiants"
                             routing_name_cap = "Valiants"
+                        
+                        folder_name = "corvin/{}/{}/{}/{}N/{}MiB".format(topology, routing_name_cap, traffic_pattern, topo_size, message_size)
 
                         if (traffic_pattern == "Incast"):
                             name = "{}, {}, {} {}:1, {} Nodes, {} MiB".format(topology, routing, traffic_pattern, ratio, topo_size, message_size)
@@ -495,21 +507,17 @@ def main():
                             print("-tm {}".format(tm_name))
 
                         """ if (traffic_pattern == "Incast"):
-                            os.system("python3 ../sim/datacenter/connection_matrices/corvinGenIncast.py {} {} {} {} 0 15 && mv {} ../sim/datacenter/connection_matrices/".format(tm_name, topo_size, ratio, 1048576 * message_size, tm_name))
+                            os.system("python3 ../sim/datacenter/connection_matrices/corvinGenIncast.py {} {} {} {} 0 15 && mv {} ../sim/datacenter/connection_matrices/{}/".format(tm_name, topo_size, ratio, 1048576 * message_size, tm_name, folder_name))
                         elif (traffic_pattern == "All-to-all"):
-                            os.system("python3 ../sim/datacenter/connection_matrices/gen_serialn_alltoall.py {} {} {} {} 8 {} 0 15 && mv {} ../sim/datacenter/connection_matrices/".format(tm_name, topo_size, topo_size, topo_size, 1048576 * message_size, tm_name))
+                            os.system("python3 ../sim/datacenter/connection_matrices/gen_serialn_alltoall.py {} {} {} {} 8 {} 0 15 && mv {} ../sim/datacenter/connection_matrices/{}/".format(tm_name, topo_size, topo_size, topo_size, 1048576 * message_size, tm_name, folder_name))
                         elif (traffic_pattern == "Permutation"):
-                            os.system("python3 ../sim/datacenter/connection_matrices/gen_permutation.py {} {} {} {} 0 15 && mv {} ../sim/datacenter/connection_matrices/".format(tm_name, topo_size, topo_size, 1048576 * message_size, tm_name)) """
+                            os.system("python3 ../sim/datacenter/connection_matrices/gen_permutation.py {} {} {} {} 0 15 && mv {} ../sim/datacenter/connection_matrices/{}/".format(tm_name, topo_size, topo_size, 1048576 * message_size, tm_name, folder_name))
                         # else:
-                            # traffic_pattern == "All-reduce"
+                            #  """
+                        if (traffic_pattern == "All-reduce"):
+                            os.system("python3 ../sim/datacenter/connection_matrices/gen_allreduce.py {} {} {} {} {} 1 15 && mv {} ../sim/datacenter/connection_matrices/{}/".format(tm_name, topo_size, topo_size, topo_size, 1048576 * message_size // topo_size, tm_name, folder_name))
                             
-                        if (traffic_pattern == "Permutation"):
-                            os.system("python3 ../sim/datacenter/connection_matrices/gen_permutation.py {} {} {} {} 0 15 && mv {} ../sim/datacenter/connection_matrices/".format(tm_name, topo_size, topo_size, 1048576 * message_size, tm_name))
-                        else:
-                            # traffic_pattern == "All-reduce"
-                            os.system("python3 ../sim/datacenter/connection_matrices/gen_allreduce.py {} {} {} {} {} 1 15 && mv {} ../sim/datacenter/connection_matrices/".format(tm_name, topo_size, topo_size, topo_size, 1048576 * message_size // topo_size, tm_name))
-
-                        run_experiment(name, tm_name, list_algorithm, topology, routing_name, parameters, traffic_pattern, message_size)
+                        run_experiment(name, tm_name, list_algorithm, topology, routing_name, parameters, traffic_pattern, message_size, folder_name)
                         # os.system("rm ../sim/datacenter/connection_matrices/{}".format(tm_name))
                         cnt += 1
     print("\nDone.\nSimulations: {}".format(cnt))

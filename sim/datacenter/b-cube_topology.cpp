@@ -278,12 +278,12 @@ void BCubeTopology::init_network() {
     }
 
 // Prints out all connections in the topology. Debugging use only.
-    for (uint32_t i = 0; i < _no_of_switches; i++){
+    /* for (uint32_t i = 0; i < _no_of_switches; i++){
         for (uint32_t j = i+1; j < _no_of_switches; j++){
             if(!pipes_switch_switch[i][j] == NULL){
                 printf("%u <-> %u\n", i, j);
             }
         }
         printf("\n");
-    }
+    } */
 }
