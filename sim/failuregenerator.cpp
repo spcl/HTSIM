@@ -122,7 +122,7 @@ void failuregenerator::dropRandomPacket(Packet &pkt) {
             FAILURE_GENERATOR->nr_dropped_packets++;
             numberOfRandomDroppedPacketsTest++;
             FAILURE_GENERATOR->_list_random_packet_drops.push_back(GLOBAL_TIME);
-            std::cout << "Packet dropped at Random Packet drop" << std::endl;
+            // std::cout << "Packet dropped at Random Packet drop" << std::endl;
 
             // Return if using a timeout, otherwise transform it in a trim and mark it as failed
             if (_use_timeouts) {
@@ -251,7 +251,7 @@ bool failuregenerator::switchFail(Switch *sw) {
             failingSwitches.erase(switch_id);
             return false;
         } else {
-            std::cout << "Packet dropped at SwitchFail " << switch_name << std::endl;
+            // std::cout << "Packet dropped at SwitchFail " << switch_name << std::endl;
             return true;
         }
     } else {
@@ -303,7 +303,7 @@ bool failuregenerator::dropPacketsSwitchBER(Packet &pkt) {
     uint32_t pkt_id = pkt.id();
     if (corrupted_packets.find(pkt_id) != corrupted_packets.end()) {
         corrupted_packets.erase(pkt_id);
-        std::cout << "Packet dropped at SwitchBER" << std::endl;
+        // std::cout << "Packet dropped at SwitchBER" << std::endl;
         FAILURE_GENERATOR->nr_dropped_packets++;
         FAILURE_GENERATOR->_list_switch_packet_drops.push_back(GLOBAL_TIME);
         return true;
@@ -320,7 +320,7 @@ bool failuregenerator::switchDegradation(Switch *sw) {
 
     if (degraded_switches.find(switch_id) != degraded_switches.end()) {
         if (trueWithProb(0.1)) {
-            std::cout << "Packet dropped at SwitchDegradation" << std::endl;
+            // std::cout << "Packet dropped at SwitchDegradation" << std::endl;
             return true;
         } else {
             return false;
@@ -364,7 +364,7 @@ bool failuregenerator::switchDegradation(Switch *sw) {
             degraded_switches.insert(switch_id);
 
             if (trueWithProb(0.1)) {
-                std::cout << "Packet dropped at SwitchDegradation" << std::endl;
+                // std::cout << "Packet dropped at SwitchDegradation" << std::endl;
                 return true;
             } else {
                 return false;
@@ -403,11 +403,11 @@ bool failuregenerator::switchPeriodicDrop(Switch *sw) {
             if (nrDrops + 1 >= switch_periodic_loss_pkt_amount) {
                 SwitchToNrDrops[switch_id] = 0;
                 SwitchToNextDropTime[switch_id] = 0;
-                std::cout << "Packet dropped at switchPeriodicDrop " << switch_name << std::endl;
+                // std::cout << "Packet dropped at switchPeriodicDrop " << switch_name << std::endl;
                 return true;
             }
 
-            std::cout << "Packet dropped at switchPeriodicDrop " << switch_name << std::endl;
+            // std::cout << "Packet dropped at switchPeriodicDrop " << switch_name << std::endl;
             return true;
         }
     } else {
@@ -581,7 +581,7 @@ bool failuregenerator::cableFail(Pipe *p, Packet &pkt) {
             failingCables.erase(cable_id);
             return false;
         } else {
-            std::cout << "Packet dropped at CableFail" << std::endl;
+            // std::cout << "Packet dropped at CableFail" << std::endl;
             return true;
         }
     } else {
@@ -625,7 +625,7 @@ bool failuregenerator::cableBER(Packet &pkt) {
             FAILURE_GENERATOR->nr_dropped_packets++;
             FAILURE_GENERATOR->_list_cable_packet_drops.push_back(GLOBAL_TIME);
             corrupted_packets.erase(pkt_id);
-            std::cout << "Packet dropped at cableBER" << std::endl;
+            // std::cout << "Packet dropped at cableBER" << std::endl;
             return true;
         }
     }
@@ -662,7 +662,7 @@ bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
             break;
         }
         if (decision) {
-            std::cout << "Packet dropped at CableDegradation" << std::endl;
+            // std::cout << "Packet dropped at CableDegradation" << std::endl;
             return true;
         } else {
             return false;
@@ -754,11 +754,11 @@ bool failuregenerator::cablePeriodicDrop(Pipe *p, Packet &pkt) {
             if (nrDrops + 1 == cable_periodic_loss_pkt_amount) {
                 CableToNrDrops[cable_id] = 0;
                 CableToNextDropTime[cable_id] = 0;
-                std::cout << "Packet dropped at periodicCableFail " << p->nodename() << std::endl;
+                // std::cout << "Packet dropped at periodicCableFail " << p->nodename() << std::endl;
                 return true;
             }
 
-            std::cout << "Packet dropped at periodicCableFail " << p->nodename() << std::endl;
+            // std::cout << "Packet dropped at periodicCableFail " << p->nodename() << std::endl;
             return true;
         }
     } else {
@@ -821,7 +821,7 @@ bool failuregenerator::nicFail(UecSrc *src, UecSink *sink, Packet &pkt) {
             failingNICs.erase(nic_id);
             return false;
         } else {
-            std::cout << "Packet dropped at nicFail" << std::endl;
+            // std::cout << "Packet dropped at nicFail" << std::endl;
             return true;
         }
     } else {
@@ -845,7 +845,7 @@ bool failuregenerator::nicDegradation(UecSrc *src, UecSink *sink, Packet &pkt) {
 
     if (degraded_NICs.find(nic_id) != degraded_NICs.end()) {
         if (trueWithProb(0.05)) {
-            std::cout << "Packet dropped at nicDegradation" << std::endl;
+            // std::cout << "Packet dropped at nicDegradation" << std::endl;
             return true;
         } else {
             return false;
@@ -872,7 +872,7 @@ bool failuregenerator::nicDegradation(UecSrc *src, UecSink *sink, Packet &pkt) {
             std::cout << "New NIC degraded Queue bitrate now 1000bps " << std::endl;
 
             if (trueWithProb(0.05)) {
-                std::cout << "Packet dropped at nicDegradation" << std::endl;
+                // std::cout << "Packet dropped at nicDegradation" << std::endl;
                 return true;
             } else {
                 return false;
@@ -1025,7 +1025,7 @@ bool failuregenerator::check_connectivity() {
                 }
             }
             if (all_switches_active && all_cables_active) {
-                std::cout << "Path " << src->nodename() << " is connected by" << found_path << ::endl;
+                // std::cout << "Path " << src->nodename() << " is connected by" << found_path << ::endl;
                 src_dst_connected = true;
                 break;
             }

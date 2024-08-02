@@ -330,7 +330,8 @@ void CompositeQueue::receivePacket(Packet &pkt) {
 
     if (FAILURE_GENERATOR->simSwitchFailures(pkt, _switch, *this)) {
 
-        printf("Dropping a PKT (%dto%d) - Size %d Entropy %d %d - Time %lu\n",pkt.from, pkt.to, pkt.size(), pkt.pathid(), pkt.pathid_echo, eventlist().now() / 1000);
+        // printf("Dropping a PKT (%dto%d) - Size %d Entropy %d %d - Time %lu\n",pkt.from, pkt.to, pkt.size(),
+        // pkt.pathid(), pkt.pathid_echo, eventlist().now() / 1000);
 
         FAILURE_GENERATOR->nr_dropped_packets++;
         FAILURE_GENERATOR->_list_switch_packet_drops.push_back(GLOBAL_TIME);
@@ -480,7 +481,7 @@ void CompositeQueue::receivePacket(Packet &pkt) {
                     // Dropping Packet and returning
                     /*printf("Queue Size %d - Max %d\n", _queuesize_low,
                            _maxsize);*/
-                    printf("Dropping a PKT\n");
+                    // printf("Dropping a PKT\n");
                     pkt.free();
                     return;
                 }
