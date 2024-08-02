@@ -259,7 +259,7 @@ Route *BCubeSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
                         uint32_t layer_pow = (uint32_t)pow(n, layer);
                         uint32_t corr_digit = (pkt.dst() / layer_pow) % n;
 
-                        uint32_t hop_offset = (layer_id / layer_pow) * layer_pow * n + (layer_id % layer_pow);
+                        uint32_t hop_offset = layer_id * n + (layer_id % layer_pow);
                         uint32_t next_node = corr_digit * layer_pow + hop_offset;
                         
                         r->push_back(_bt->queues_switch_switch[_id][next_node]);
