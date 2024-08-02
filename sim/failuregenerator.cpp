@@ -679,7 +679,7 @@ bool failuregenerator::cableDegradation(Pipe *p, Packet &pkt) {
             return false;
         }
 
-        if (neededCables.find(cable_id) != neededCables.end()) {
+        if (needed_degraded_cables.find(cable_id) != needed_degraded_cables.end()) {
             // std::cout << "Did not degrade critical Cable name: " << p->nodename() << std::endl;
             return false;
         }
