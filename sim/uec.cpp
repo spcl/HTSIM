@@ -1064,6 +1064,7 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
     }
 
     circular_buffer_reps->last_received_ack = eventlist().now();
+    _last_received_ack_time = eventlist().now();
 
     count_total_ack++;
     if (marked) {
@@ -2163,7 +2164,7 @@ void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
         _rtx_timeout_pending = true;
         // apply_timeout_penalty();
 
-        _next_pathid = -1;
+        //_next_pathid = -1;
         /* if (circular_buffer_reps->isFrozenMode() && circular_buffer_reps->can_exit_frozen_mode < eventlist().now()) {
             circular_buffer_reps->setFrozenMode(false);
             circular_buffer_reps->can_enter_frozen_mode = eventlist().now() + _base_rtt;
@@ -2175,6 +2176,11 @@ void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
             circular_buffer_reps->explore_counter = 16;
             circular_buffer_reps->resetBuffer();
             /* printf("%s exited freezing mode at %lu\n", _name.c_str(), eventlist().now() / 1000); */
+        }
+
+        if (eventlist().now() > _last_received_ack_time + (_rto * 3)) {
+            _next_pathid = -1;
+            printf("Resetting REPS at %lu\n", eventlist().now() / 1000);
         }
 
         cout << "At " << timeAsUs(now) << "us RTO " << timeAsUs(_rto) << "us RTT " << timeAsUs(_rtt) << "us SEQ "
@@ -2279,6 +2285,7 @@ void UecSrc::retransmit_packet() {
 /*                     printf("%s started freezing mode at %lu - %d\n", _name.c_str(), eventlist().now() / 1000, circular_buffer_reps->isFrozenMode());
  */               }
             }
+            _next_pathid = -1;
         }
         if (!sp.acked && (sp.timedOut || sp.nacked)) {
             if (!resend_packet(i)) {

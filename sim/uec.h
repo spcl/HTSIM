@@ -208,6 +208,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     bool tried_qa = false;
     bool stop_decrease = false;
     uint32_t count_total_ack = 0;
+    uint64_t _last_received_ack_time = 0;
     uint64_t _last_acked;
     uint32_t _flight_size;
     uint32_t _dstaddr;
