@@ -133,3 +133,35 @@ Specific to InterDC SMaRTT:
 - ```-use_pacing``` enables pacing.
 - ```-phantom_slowdown``` indicates how much the phantom queue dequeues slower compared to the real queue.
 - ```-phantom_size``` indicates the phantom queue size.
+
+## Added network topologies
+# Dragonfly
+This is a network topology specified by
+p: number of endpoints per switch
+a: number of switches in a group
+and h : number of global connections of each switch.
+Every group of switches forms a fully connected graph. There are 1 + a * h groups.
+
+# Slimfly
+This is a network topology specified by
+p: number of endpoints per switch
+q_base: the base of q which has to be a prime number
+and q_exp: the exponent of q (which we restricted to 1).
+The topology consists of to squares of switches with side length q = q_base ^ q_exp.
+Switches are either connected between the groups if y = m * x + c (where x and c denote the row of the switches in the corresponding square and y and c the column) or
+with in the same column to a specific set of other switches. (Details can be found in the paper about SLimfly topologies.)
+
+# Hammingmesh
+This is a network topology specified by
+height: the number of rows of boards
+width: the number of columns of boards
+height_board: the number of rows of switches on a board
+and width_board_ the number of columns of switches on a board.
+A board is a grid of switches which have each only one endpoint and are connected horizontally and vertically.
+The boards themselves are organized as a grid. For each row of switches in each row of boards there is a tree which connects the nodes at the edge of the board. The same is also for columns.
+
+# BCube
+This is a network topology specified by
+n: the number of smaller units per recursion
+and k: the number of recursions.
+There are n^k endpoints which connect to a switch those switches are labelled by k numbers from 0 to n-1. For each number we have n ^ (k-1) switches without an endpoint which connect to all n host switches that differ only in that number.
