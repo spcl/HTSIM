@@ -21,14 +21,14 @@ template <typename T> CircularBufferREPS<T>::~CircularBufferREPS() { delete[] bu
 
 // Adds an element to the buffer
 template <typename T> void CircularBufferREPS<T>::add(T element) {
-    if (isFrozenMode()) {
+    /* if (isFrozenMode()) {
         // If the element is contained in the buffer, return
-        /* printf("elment is %d, max size is %d\n", element, max_size);
-        fflush(stdout); */
+        printf("elment is %d, max size is %d\n", element, max_size);
+        fflush(stdout); 
         if (containsEntropy(element)) {
             return;
         }
-    }
+    } */
 
     if (!buffer[head].isValid) {
         number_fresh_entropies++;
@@ -182,6 +182,7 @@ template <typename T> bool CircularBufferREPS<T>::is_valid_frozen() {
 
 template <typename T> void CircularBufferREPS<T>::resetBuffer() {
     for (int i = 0; i < max_size; i++) {
+        buffer[i].value = 0;
         buffer[i].isValid = false;
         buffer[i].usable_lifetime = 0;
     }

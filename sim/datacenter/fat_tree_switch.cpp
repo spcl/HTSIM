@@ -452,6 +452,12 @@ Route *FatTreeSwitch::getNextHop(Packet &pkt, BaseQueue *ingress_port) {
             }
         }
 
+
+        /* if (pkt.from == 1) {
+            printf("Switch %s: from %d to %d, entropy %d, direction %d, ecmp_choice %d (%d),\n egress %s - id %d - size %d -- %d freeBSDHash(pkt.flow_id() %d, pkt.pathid() %d, _hash_salt %d) % available_hops->size()\n", nodename().c_str(),
+                   pkt.from, pkt.to, pkt.pathid() ,pkt.get_direction(), ecmp_choice, available_hops->size(), next_switch->nodename().c_str(), pkt.id(), pkt.size(), freeBSDHash(pkt.flow_id(), pkt.pathid(), _hash_salt) % available_hops->size(), pkt.flow_id(), pkt.pathid(),  _hash_salt);
+        } */
+
         return e->getEgressPort();
     }
 

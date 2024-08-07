@@ -689,7 +689,7 @@ void UecSrc::processNack(UecNack &pkt) {
     if (pkt.is_failed) {
         if ((_route_strategy == REPS_CIRCULAR) && !circular_buffer_reps->isFrozenMode()) {
             circular_buffer_reps->setFrozenMode(true);
-            printf("%s started freezing mode5 at %lu\n", _name.c_str(), eventlist().now() / 1000);
+            /* printf("%s started freezing mode5 at %lu\n", _name.c_str(), eventlist().now() / 1000); */
         }
     }
 
@@ -1029,9 +1029,15 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
     received_first_ack = true;
     UecAck::seq_t seqno = pkt.ackno();
     simtime_picosec ts = pkt.ts();
+    bool marked = pkt.flags() & ECN_ECHO; // ECN was marked on data packet and echoed on ACK
+
+    /* printf("Received Ack %d at %lu - Entropy %d %d - ECN %d\n", from, eventlist().now() / 1000, pkt.pathid_echo, pkt.pathid(), marked);
+    circular_buffer_reps->print(); */
+    /* valid_entropies_set.insert(pkt.pathid()); */
+    circular_buffer_reps->explore_counter--;
 
     consecutive_nack = 0;
-    bool marked = pkt.flags() & ECN_ECHO; // ECN was marked on data packet and echoed on ACK
+    
 
     if (COLLECT_DATA && marked) {
         std::string file_name = PROJECT_ROOT_PATH / ("sim/output/ecn/ecn" + std::to_string(pkt.from) + "_" +
@@ -1127,6 +1133,9 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
         if (_end_trigger) {
             _end_trigger->activate();
         }
+
+        printf("Valid Entropies received %d\n", valid_entropies_set.size());
+        printf("Entropies tried %d\n", tried_entropies_set.size());
         return;
     }
 
@@ -1969,7 +1978,6 @@ void UecSrc::send_packets() {
         int crt = choose_route();
         /* printf("Sending packet1 from %d to %d at %lu - Entropy %d\n", from, to, GLOBAL_TIME / 1000, crt);
         circular_buffer_reps->print(); */
-        circular_buffer_reps->explore_counter--;
         
         
         p->is_bts_pkt = false;
@@ -1983,6 +1991,7 @@ void UecSrc::send_packets() {
 
         p->flow().logTraffic(*p, *this, TrafficLogger::PKT_CREATESEND);
         p->set_ts(eventlist().now());
+        /* tried_entropies_set.insert(p->pathid()); */
 
         // send packet
         _highest_sent += _mss;
@@ -2173,14 +2182,14 @@ void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
 
         if (eventlist().now() > circular_buffer_reps->last_received_ack + (_rto * 2)) {
             circular_buffer_reps->setFrozenMode(false);
-            circular_buffer_reps->explore_counter = 16;
+            circular_buffer_reps->explore_counter = 8;
             circular_buffer_reps->resetBuffer();
             /* printf("%s exited freezing mode at %lu\n", _name.c_str(), eventlist().now() / 1000); */
         }
 
         if (eventlist().now() > _last_received_ack_time + (_rto * 3)) {
             _next_pathid = -1;
-            printf("Resetting REPS at %lu\n", eventlist().now() / 1000);
+            /* printf("Resetting REPS at %lu\n", eventlist().now() / 1000); */
         }
 
         cout << "At " << timeAsUs(now) << "us RTO " << timeAsUs(_rto) << "us RTT " << timeAsUs(_rtt) << "us SEQ "
@@ -2228,9 +2237,8 @@ bool UecSrc::resend_packet(std::size_t idx) {
 
     p->set_route(*_route);
     int crt = choose_route();
-    /* printf("Sending packet2 from %d to %d at %lu - Entropy %d\n", from, to, GLOBAL_TIME / 1000, crt); */
-    circular_buffer_reps->explore_counter--;
-    circular_buffer_reps->print();
+    /* printf("Sending packet2 from %d to %d at %lu - Entropy %d\n", from, to, GLOBAL_TIME / 1000, crt);
+    circular_buffer_reps->print(); */
     p->from = this->from;
     p->to = this->to;
     p->tag = this->tag;
@@ -2239,6 +2247,7 @@ bool UecSrc::resend_packet(std::size_t idx) {
     // printf("Resending to %d\n", this->from);
 
     p->set_pathid(_path_ids[crt]);
+    /* tried_entropies_set.insert(p->pathid()); */
     p->flow().logTraffic(*p, *this, TrafficLogger::PKT_CREATE);
     /* printf("Send on at %lu -- %d %d\n", GLOBAL_TIME / 1000, pause_send, stop_after_quick); */
     PacketSink *sink = p->sendOn();
@@ -2282,8 +2291,8 @@ void UecSrc::retransmit_packet() {
 /*                printf("considering freezing mode, counter is %d - %d\n", circular_buffer_reps->explore_counter, circular_buffer_reps->isFrozenMode());
  */               if (circular_buffer_reps->explore_counter <= 0) {
                     circular_buffer_reps->setFrozenMode(true);
-/*                     printf("%s started freezing mode at %lu - %d\n", _name.c_str(), eventlist().now() / 1000, circular_buffer_reps->isFrozenMode());
- */               }
+                    /* printf("%s started freezing mode at %lu - %d\n", _name.c_str(), eventlist().now() / 1000, circular_buffer_reps->isFrozenMode()); */
+           }
             }
             _next_pathid = -1;
         }

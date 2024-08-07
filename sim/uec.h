@@ -9,6 +9,8 @@
 #include "buffer_reps.h"
 #include "config.h"
 #include "eventlist.h"
+#include <set>
+
 
 #include "fairpullqueue.h"
 #include "smartt_pacer.h"
@@ -229,6 +231,9 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     bool increasing = false;
     int bts_received = 0;
     int tot_pkt_seen_qa = 0;
+    std::set <int> valid_entropies_set;
+    std::set <int> tried_entropies_set;
+
 
     int total_routes;
     // simtime_picosec internal_stop_pacing_rtt;

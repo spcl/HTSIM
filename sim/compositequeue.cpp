@@ -318,6 +318,31 @@ void CompositeQueue::receivePacket(Packet &pkt) {
 
     FAILURE_GENERATOR->dropRandomPacket(pkt);
 
+
+    /* if (_nodename.find("CS15") != std::string::npos) {
+        std::cout << "found!" << '\n';
+        pkt.free();
+        return;
+    }
+
+    if (_nodename.find("US1") != std::string::npos) {
+        std::cout << "found!" << '\n';
+        pkt.free();
+        return;
+    }
+
+    if (_nodename.find("US28") != std::string::npos) {
+        std::cout << "found!" << '\n';
+        pkt.free();
+        return;
+    }
+
+    if (_nodename.find("US31") != std::string::npos) {
+        std::cout << "found!" << '\n';
+        pkt.free();
+        return;
+    } */
+
     /* printf("Going through queue %s\n", _nodename.c_str());
 
     if (_nodename == "compqueue(800000Mb/s,864000bytes)US0->CS1(0)" && !pkt.header_only()) {
