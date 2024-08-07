@@ -2192,8 +2192,8 @@ void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) {
             /* printf("Resetting REPS at %lu\n", eventlist().now() / 1000); */
         }
 
-        cout << "At " << timeAsUs(now) << "us RTO " << timeAsUs(_rto) << "us RTT " << timeAsUs(_rtt) << "us SEQ "
-             << _last_acked / _mss << " CWND " << _cwnd / _mss << " Flow ID " << str() << endl;
+        // cout << "At " << timeAsUs(now) << "us RTO " << timeAsUs(_rto) << "us RTT " << timeAsUs(_rtt) << "us SEQ "
+        //      << _last_acked / _mss << " CWND " << _cwnd / _mss << " Flow ID " << str() << endl;
     }
     retransmit_packet();
 }
@@ -2288,8 +2288,10 @@ void UecSrc::retransmit_packet() {
                     circular_buffer_reps->can_exit_frozen_mode = eventlist().now() + _base_rtt * 10;
                     printf("%s started freezing mode at %lu\n", _name.c_str(), eventlist().now() / 1000);
                 } */
-/*                printf("considering freezing mode, counter is %d - %d\n", circular_buffer_reps->explore_counter, circular_buffer_reps->isFrozenMode());
- */               if (circular_buffer_reps->explore_counter <= 0) {
+                /*                printf("considering freezing mode, counter is %d - %d\n",
+                 * circular_buffer_reps->explore_counter, circular_buffer_reps->isFrozenMode());
+                 */
+                if (circular_buffer_reps->explore_counter <= 0) {
                     circular_buffer_reps->setFrozenMode(true);
                     /* printf("%s started freezing mode at %lu - %d\n", _name.c_str(), eventlist().now() / 1000, circular_buffer_reps->isFrozenMode()); */
            }

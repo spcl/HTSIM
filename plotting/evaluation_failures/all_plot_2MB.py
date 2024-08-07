@@ -886,9 +886,9 @@ def main():
     ]
 
     connection_matrix = [
-        "elias_incast_32_1_2MB",
-        "elias_incast_32_1_2MB",
         "elias_perm_128_2MB",
+        "elias_perm_128_2MB",
+        "elias_incast_32_1_2MB",
     ]
 
     short_title = ["_1os_perm", "_8os_perm", "_1os_incast"]
