@@ -911,7 +911,7 @@ def main():
         'ExperimentName': title,
         'REPS': list_fct[0],
         'REPS Circular': list_fct[1],
-        'REPS Circular\n without freezing': list_fct[2],
+        'REPS Circular without freezing': list_fct[2],
         'Spraying': list_fct[3],
         "Mode": failures_input[i]    })
         df = pd.DataFrame(data)

@@ -37,15 +37,23 @@ def speedUpPlot(df, title):
     }
 
     modes = df["Mode"].tolist()
-    experiments = [replacement_rules[string] if string in replacement_rules else string for string in modes]
+    experiments = [replacement_rules[string] if string in replacement_rules else string for string in modes] + ["Overall Average"]
     time_REPS = df["REPS"].tolist()
     time_REPSC = df["REPS Circular"].tolist()
-    time_REPSCNF = df["REPS Circular\n without freezing"].tolist()
+    time_REPSCNF = df["REPS Circular without freezing"].tolist()
     time_SPRAYING = df["Spraying"].tolist()
 
     speedup_REPS_percent = (np.array(time_SPRAYING) / np.array(time_REPS) - 1) * 100
     speedup_REPSC_percent = (np.array(time_SPRAYING) / np.array(time_REPSC) - 1) * 100
     speedup_REPSCNF_percent = (np.array(time_SPRAYING) / np.array(time_REPSCNF) - 1) * 100
+
+    average_REPS = speedup_REPS_percent.mean()
+    average_REPSC = speedup_REPSC_percent.mean()
+    average_REPSCNF = speedup_REPSCNF_percent.mean()
+
+    speedup_REPS_percent = np.append(speedup_REPS_percent, average_REPS)
+    speedup_REPSC_percent = np.append(speedup_REPSC_percent, average_REPSC)
+    speedup_REPSCNF_percent = np.append(speedup_REPSCNF_percent, average_REPSCNF)
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -82,17 +90,6 @@ def speedUpPlot(df, title):
     return plt
     # plt.savefig("Speedup-Comparison", bbox_inches="tight")
 
-def getSumRow(df):
-    sum_row = {
-        "ExperimentName": "",
-        "REPS": df["REPS"].sum(),
-        "REPS Circular": df["REPS Circular"].sum(),
-        "REPS Circular\n without freezing": df["REPS Circular\n without freezing"].sum(),
-        "Spraying": df["Spraying"].sum(),
-        "Mode": "Overall"
-    }
-    return sum_row
-
 
 def main():
     mb = "2MB"
@@ -101,22 +98,13 @@ def main():
     df_Per128os8 = df[df['ExperimentName'].str.startswith('Permutation 128 - 800Gpbs - 4KiB MTU - 8:1', na=False)].reset_index(drop=True)
     df_Incast =    df[df['ExperimentName'].str.startswith('Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1', na=False)].reset_index(drop=True)
 
-    df_Per128os1 = df_Per128os1._append(getSumRow(df_Per128os1), ignore_index=True)
-    df_Per128os8 = df_Per128os8._append(getSumRow(df_Per128os8), ignore_index=True)
-    df_Incast = df_Incast._append(getSumRow(df_Incast), ignore_index=True)
 
     plt = speedUpPlot(df_Per128os1, "Permutation 128 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows")
-    fig = plt.gcf()
-    fig.set_size_inches(20, 40)
-    plt.savefig("Speedup-Comparison-Per128os1-{}-NUMBERS.pdf".format(mb), bbox_inches="tight")
+    plt.savefig("Speedup-Comparison-Per128os1-{}.pdf".format(mb), bbox_inches="tight")
     plt = speedUpPlot(df_Per128os8, "Permutation 128 - 800Gpbs - 4KiB MTU - 8:1 Oversubscription - 2MB Flows")
-    fig = plt.gcf()
-    fig.set_size_inches(20, 40)
-    plt.savefig("Speedup-Comparison-Per128os8-{}-NUMBERS.pdf".format(mb), bbox_inches="tight")
+    plt.savefig("Speedup-Comparison-Per128os8-{}.pdf".format(mb), bbox_inches="tight")
     plt = speedUpPlot(df_Incast, "Incast 32:1 - 800Gpbs - 4KiB MTU - 1:1 Oversubscription - 2MB Flows")
-    fig = plt.gcf()
-    fig.set_size_inches(20, 40)    
-    plt.savefig("Speedup-Comparison-Incast-{}-NUMBERS.pdf".format(mb), bbox_inches="tight")
+    plt.savefig("Speedup-Comparison-Incast-{}.pdf".format(mb), bbox_inches="tight")
 
 if __name__ == "__main__":
     main()
