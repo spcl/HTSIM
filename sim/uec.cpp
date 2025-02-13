@@ -1707,8 +1707,9 @@ void UecSrc::send_packets() {
         // Getting time until packet is really sent
         /* printf("Send on at %lu -- %d %d\n", GLOBAL_TIME / 1000, pause_send, stop_after_quick); */
         PacketSink *sink = p->sendOn();
-        track_sending_rate();
         tracking_bytes += _mss;
+        track_sending_rate();
+        
         HostQueue *q = dynamic_cast<HostQueue *>(sink);
         assert(q);
         uint32_t service_time = q->serviceTime(*p);
@@ -1863,7 +1864,9 @@ void UecSrc::rtx_timer_hook(simtime_picosec now, simtime_picosec period) { retra
 
 void UecSrc::track_sending_rate() {
     if (eventlist().now() > last_track_ts + tracking_period) {
-        int rate = (double)(tracking_bytes * 8 / ((eventlist().now() - last_track_ts) / 1000));
+        double rate = ((double) tracking_bytes * 8.0 / ((eventlist().now() - last_track_ts) / 1000));
+        // std::cout << "[DEBUG] tracking bytes: " << tracking_bytes << std::endl;
+        // std::cout << "[DEBUG] Sending rate: " << rate << " bps" << std::endl;
         list_sending_rate.push_back(std::make_pair(eventlist().now() / 1000, rate));
         tracking_bytes = 0;
         last_track_ts = eventlist().now();

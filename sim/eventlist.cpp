@@ -2,6 +2,8 @@
 
 #include "eventlist.h"
 #include "trigger.h"
+#include "clock.h"
+#include "compute_event.h"
 
 EventList::EventList() : _endtime(0), _lasteventtime(0) {}
 
@@ -14,6 +16,7 @@ bool EventList::doNextEvent() {
         TriggerTarget *target = _pending_triggers.back();
         _pending_triggers.pop_back();
         target->activate();
+        // std::cout << "[DEBUG] Trigger Activated" << std::endl;
         return true;
     }
 
@@ -30,6 +33,9 @@ bool EventList::doNextEvent() {
     GLOBAL_TIME = nexteventtime;
     _lasteventtime = nexteventtime; // set this before calling doNextEvent, so
                                     // that this::now() is accurate
+    // if (typeid(*nextsource) == typeid(Clock)) {
+    //     std::cout << "[DEBUG] Length of pending sources " << _pendingsources.size() << std::endl;
+    // }
     nextsource->doNextEvent();
     return true;
 }

@@ -40,6 +40,7 @@ class EventList {
         // return ((_lasteventtime + 100000 - 1) / 100000) * 100000;
         return _lasteventtime;
     }
+    int length() const { return _pendingsources.size(); }
     simtime_picosec comp_add = 0;
 
   private:

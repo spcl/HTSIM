@@ -87,7 +87,6 @@ void LogSimInterface::htsim_schedule(u_int32_t host, int to, int size, int tag, 
 void LogSimInterface::execute_compute(graph_node_properties comp_elem, int size_p) {
     if (_protocolName == UEC_PROTOCOL) {
         /* printf("Running Compute of %lu ns\n", comp_elem.size); */
-
         compute_events_handler->setCompute(comp_elem.size);
     }
 }
@@ -562,7 +561,7 @@ void LogSimInterface::terminate_sim() {
 
 graph_node_properties LogSimInterface::htsim_simulate_until(u_int64_t until) {
 
-    /* printf("Simulating Until Called\n"); */
+    // printf("Simulating Until Called\n");
     // GO!
 
     while (_eventlist->doNextEvent()) {
@@ -585,6 +584,7 @@ graph_node_properties LogSimInterface::htsim_simulate_until(u_int64_t until) {
         printf("Updated - Time %lu\n", _latest_recv->time);
     } else
         printf("Nothing\n"); */
+    // std::cout << "[DEBUG] Returning Latest Receive\n";
     return *_latest_recv;
 }
 
@@ -768,7 +768,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                "%d %d %d\n",
                aq.empty(), aq.top().time, lgs_interface->htsim_time, 1, first_cycle, size_queue(rq, p),
                size_queue(uq, p), aq.size(), aq.top().host, aq.top().target, aq.top().tag); */
-
+        
         graph_node_properties temp_elem = aq.top();
 
         while (!aq.empty() && aq.top().time <= (lgs_interface->htsim_time)) {
@@ -793,15 +793,16 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
             // the lists of hosts that actually finished someting -- a host is
             // added whenever an irequires or requires is satisfied
             std::vector<int> check_hosts;
-
+            // if(elem.host == 0) print = 1;
+            // else print = 0;
+            // print = 1;
             // the BIG switch on element type that we just found
-            // printf("Elem Type is %d\n", elem.type);
             switch (elem.type) {
             case OP_LOCOP: {
                 if (print)
                     printf("[%i] found loclop of length %lu - t: %lu (CPU: "
-                           "%i)\n",
-                           elem.host, (ulint)elem.size, (ulint)elem.time, elem.proc);
+                           "%i) offset: %d\n",
+                           elem.host, (ulint)elem.size, (ulint)elem.time, elem.proc, elem.offset);
                 if (nexto[elem.host][elem.proc] <= elem.time || true) {
 
                     // TEMP Change size of compute to 1 if it is zero
@@ -830,9 +831,9 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                     // add to timeline
                     // tlviz.add_loclop(elem.host, elem.time,
                     elem.time += (elem.size * 1000);
-                    /* printf("Host %d - Scheduling compute - Time %lu - Finish "
-                           "at %lu vs %lu\n",
-                           elem.host, elem.size, elem.time, GLOBAL_TIME + (elem.size * 1000)); */
+                    // printf("Host %d - Scheduling compute - Time %lu - Finish "
+                    //        "at %lu vs %lu\n",
+                    //        elem.host, elem.size, elem.time, GLOBAL_TIME + (elem.size * 1000));
                     aq.push(elem);
                     lgs_interface->execute_compute(elem, p);
                 } else {
@@ -846,6 +847,8 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
 
             case OP_LOCOP_IN_PROGRESS: {
                 /* printf("LOCOP Finished - Host %d - Size %d\n", elem.host, elem.size); */
+                // if (print)
+                //     printf("LOCOP Finished - Host %d - Size %d\n", elem.host, elem.size);
 
                 parser.schedules[elem.host].MarkNodeAsDone(elem.offset);
             } break;
@@ -861,9 +864,28 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                     break;
                 }
 
-                if (0)
+                // If the src and destination are the same, we convert
+                // the send into a LOCOP
+                if (elem.host == elem.target) {
+                    elem.type = OP_LOCOP;
+                    // The amount of computation should be proportional to the
+                    // size of the message
+                    elem.size = (uint64_t) elem.size / 1000;
+                    aq.push(elem);
+                    break;
+                }
+
+                // If message size is 0, set it to 1
+                if (elem.size == 0) {
+                    elem.size = 1;
+                }
+
+                if (print)
                     printf("[%i] found send to %i - t: %lu (CPU: %i)\n", elem.host, elem.target, (ulint)elem.time,
                            elem.proc);
+                // if (elem.size == 0) {
+                //     elem.size = 1;
+                // }
                 if (std::max(nexto[elem.host][elem.proc],
                              nextgs[elem.host][elem.nic]) <= elem.time ||
                     true) { // local o,g available!
@@ -871,22 +893,38 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                         printf("-- satisfy local irequires\n");
 
                     parser.schedules[elem.host].MarkNodeAsStarted(elem.offset);
+                    
+                    elem.size *= 10;
 
                     lgs_interface->htsim_schedule(elem.host, elem.target, elem.size, elem.tag, GLOBAL_TIME,
                                                   elem.offset);
 
                     // printf("Send host %d - offset %d\n", elem.host, elem.offset);
-                    //  parser.schedules[elem.host].MarkNodeAsDone(elem.offset);
+                    // parser.schedules[elem.host].MarkNodeAsDone(elem.offset);
                 }
             } break;
             case OP_RECV: {
                 // printf("OP_RECV\n");
-                if (0)
+                if (print)
                     printf("[%i] found recv from %i - t: %lu (CPU: %i)\n", elem.host, elem.target, (ulint)elem.time,
                            elem.proc);
-
                 parser.schedules[elem.host].MarkNodeAsStarted(elem.offset);
                 check_hosts.push_back(elem.host);
+
+                // if (elem.size == 0) {
+                //     parser.schedules[elem.host].MarkNodeAsDone(elem.offset);
+                //     break;
+                // }
+                
+                // If the src and destination are the same, we convert
+                // the send into a LOCOP
+                if (elem.host == elem.target) {
+                    elem.type = OP_LOCOP;
+                    elem.size = 100;
+                    aq.push(elem);
+                    break;
+                }
+
                 if (print)
                     printf("-- satisfy local irequires\n");
 
@@ -930,8 +968,8 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
             case OP_MSG: {
                 if (print)
                     printf("[%i] found msg from %i, t: %lu (CPU: %i) - %d %d "
-                           "%d\n",
-                           elem.host, elem.target, (ulint)elem.time, elem.proc, elem.nic, elem.proc, elem.offset);
+                           "%d [size %d]\n",
+                           elem.host, elem.target, (ulint)elem.time, elem.proc, elem.nic, elem.proc, elem.offset, elem.size);
                 uint64_t earliestfinish = 0;
                 // NUMBER of elements that were searched during message matching
                 int32_t match_attempts;
@@ -1083,7 +1121,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                     freeop->time = lgs_interface->htsim_time;
                     // freeop->time = std::max(nexto[host][freeop->proc],
                     // nextgs[host][freeop->nic]);
-                    if (0)
+                    if (print)
                         printf("%i (%i,%i) send to: %i, tag: %i, size: %lu, "
                                "time: %lu, offset: %i\n",
                                host, freeop->proc, freeop->nic, freeop->target, freeop->tag,
@@ -1092,7 +1130,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                     break;
                 case OP_RECV:
                     freeop->time = nexto[host][freeop->proc];
-                    if (0)
+                    if (print)
                         printf("%i (%i,%i) recvs from: %i, tag: %i, size: %lu, "
                                "time: %lu, offset: %i\n",
                                host, freeop->proc, freeop->nic, freeop->target, freeop->tag,
@@ -1109,9 +1147,9 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
 
                 unlocked_elem = true;
                 aq.push(*freeop);
+                // std::cout << "[DEBUG] AQ size after push: " << aq.size() << "\n";
             }
         }
-
         /*if (!lgs_interface->all_sends_delivered() ||
             lgs_interface->compute_started != 0) {
             if (aq.top().time <= lgs_interface->htsim_time) {
@@ -1148,6 +1186,8 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                        "%lu - Global %lu ---- Time Now %lu vs Top %lu\n",
                        (int)aq.size(), temp_elem.time, lgs_interface->htsim_time, GLOBAL_TIME, GLOBAL_TIME,
                        aq.top().time); */
+                // std::cout << "[DEBUG] aq size: " << aq.size() << "\n";
+                // pritns the first element of the queue
                 recev_msg = lgs_interface->htsim_simulate_until(100);
                 lgs_interface->htsim_time = GLOBAL_TIME;
             }
@@ -1253,7 +1293,7 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
                     max = cur;
                 }
             }
-            std::cout << "Maximum finishing time at host " << host << ": " << max << " (" << (double)max / 1e9
+            std::cout << "Maximum finishing time at host " << host << ": " << max << " (" << (double)max / 1e12
                       << " s)\n";
         }
 

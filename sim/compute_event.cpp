@@ -29,6 +29,8 @@ void ComputeEvent::doNextEvent() {
 void ComputeEvent::setCompute(simtime_picosec computation_time) {
     /* printf("ComputeEvent::setCompute at %lu\n", computation_time * 1000); */
     eventlist().sourceIsPendingRel(*this, computation_time * 1000); // ns to ps
+    // std::cout << "[DEBUG] ComputeEvent::setCompute at " << computation_time * 1000 << std::endl;
+    // std::cout << "[DEBUG] evenlist size: " << eventlist().length() << std::endl;
     // eventlist().doNextEvent();
 }
 

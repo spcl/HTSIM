@@ -487,7 +487,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     vector<pair<simtime_picosec, int>> count_case_3;
     vector<pair<simtime_picosec, int>> count_case_4;
     vector<pair<simtime_picosec, int>> list_ecn_rate;
-    vector<pair<simtime_picosec, int>> list_sending_rate;
+    vector<pair<simtime_picosec, double>> list_sending_rate;
 
     void send_packets();
     void quick_adapt(bool);
