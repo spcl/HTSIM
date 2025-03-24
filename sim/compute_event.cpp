@@ -13,7 +13,7 @@
 #define timeInf 0
 
 ComputeEvent::ComputeEvent(UecLogger *logger, EventList &eventList)
-        : EventSource(eventList, "compute_event") {} // Fix the name
+        : EventSource(eventList, "compute_event") {} 
 
 void ComputeEvent::doNextEvent() {
     /* printf("ComputeEvent at %lu\n", GLOBAL_TIME);

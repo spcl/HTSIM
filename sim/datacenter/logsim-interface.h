@@ -9,6 +9,8 @@
 #include "lgs/logsim.h"
 #include "uec.h"
 #include "uec_drop.h"
+#include "atlahs_htsim_api.h"
+#include "atlahs_event.h"
 #include <string>
 #include <unordered_map>
 
@@ -39,6 +41,8 @@ class MsgInfo {
     int offset;
     int to_parse;
 };
+
+//
 
 class LogSimInterface {
   public:
@@ -84,6 +88,8 @@ class LogSimInterface {
     void terminate_sim();
     int track_times[8192] = {0};
     std::uint64_t htsim_time = 0;
+
+    AtlahsHtsimApi* htsim_api;
 
   private:
     bool debug_prints = false;

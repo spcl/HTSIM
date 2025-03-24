@@ -8,7 +8,7 @@
  */
 #include "config.h"
 #include "eventlist.h"
-#include "fairpullqueue.h"
+//#include "fairpullqueue.h"
 //#include "datacenter/logsim-interface.h"
 #include "network.h"
 #include "trigger.h"

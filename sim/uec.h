@@ -21,6 +21,8 @@
 class UecSink;
 // class LogSimInterface;
 
+class AtlahsHtsimApi;
+
 class SentPacket {
   public:
     SentPacket(simtime_picosec t, uint64_t s, bool a, bool n, bool to)
@@ -63,6 +65,8 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     virtual void activate() { startflow(); }
 
     void set_end_trigger(Trigger &trigger);
+
+    AtlahsHtsimApi *_atlahs_api;
 
     inline void set_flowid(flowid_t flow_id) { _flow.set_flowid(flow_id); }
     inline flowid_t flow_id() const { return _flow.flow_id(); }

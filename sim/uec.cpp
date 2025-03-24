@@ -9,6 +9,8 @@
 #include <regex>
 #include <stdio.h>
 #include <utility>
+#include "datacenter/atlahs_event.h"
+#include "datacenter/atlahs_htsim_api.h"
 
 #define timeInf 0
 
@@ -1051,7 +1053,7 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
     }
 
     if (from == 0 && count_total_ack % 10 == 0) {
-        printf("Currently at Pkt %d\n", count_total_ack);
+        printf("Currently at Pkt %d - Flow Size %d\n", count_total_ack, _flow_size);
     }
 
     if (!marked) {
@@ -1071,12 +1073,16 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
     }
 
     if (newRtt > _base_rtt * quickadapt_lossless_rtt && marked && queue_type == "lossless_input") {
-
         simulateTrimEvent(dynamic_cast<UecAck &>(pkt));
     }
 
     if (seqno >= _flow_size && _sent_packets.empty() && !_flow_finished) {
         _flow_finished = true;
+        
+            EventOver *flow_over = new EventOver(from, to, _flow_size, tag, eventlist().now(), AtlahsEventType::SEND_EVENT_OVER);
+            flow_over->setPacket(&pkt);
+            _atlahs_api->EventFinished(*flow_over);
+
         if (f_flow_over_hook) {
             f_flow_over_hook(pkt);
         }

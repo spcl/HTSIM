@@ -977,7 +977,16 @@ int main(int argc, char **argv) {
             FatTreeTopology::set_ignore_data_ecn(ignore_ecn_data);
             FatTreeTopology *top = new FatTreeTopology(no_of_nodes, linkspeed, queuesize, NULL, &eventlist, ff,
                                                        queue_choice, hop_latency, switch_latency);
+            
+
+            AtlahsHtsimApi *api = new AtlahsHtsimApi();
+            api->setTopology(top);
+            api->setEventList(&eventlist);
+            api->setComputeEvent(new ComputeEvent(NULL, eventlist));
             lgs = new LogSimInterface(NULL, &traffic_logger, eventlist, top, NULL);
+            lgs->htsim_api = api;
+            api->setLogSimInterface(lgs);
+
         } else {
             if (interdc_delay != 0) {
                 FatTreeInterDCTopology::set_interdc_delay(interdc_delay);

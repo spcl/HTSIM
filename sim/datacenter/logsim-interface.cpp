@@ -30,6 +30,8 @@
 
 static bool print = false;
 
+
+
 LogSimInterface::LogSimInterface() {}
 
 LogSimInterface::LogSimInterface(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList,
@@ -86,18 +88,29 @@ void LogSimInterface::htsim_schedule(u_int32_t host, int to, int size, int tag, 
 
 void LogSimInterface::execute_compute(graph_node_properties comp_elem, int size_p) {
     if (_protocolName == UEC_PROTOCOL) {
-        /* printf("Running Compute of %lu ns\n", comp_elem.size); */
         compute_events_handler->setCompute(comp_elem.size);
+
+        ComputeAtlahsEvent *compute_event = new ComputeAtlahsEvent(comp_elem.size);
+        htsim_api->Calc(*compute_event);
     }
 }
 
 void LogSimInterface::send_event(int from, int to, int size, int tag, u_int64_t start_time_event) {
+
+
+
+    // Testing New 
+    SendEvent* event = new SendEvent(from, to, size, tag, start_time_event);    
+    htsim_api->Send(*event);
 
     /* printf("LGS Send Event - Time %lu - Host %d - Dst %d - Tag %d - Size %d - "
            "StartTime %d\n",
            GLOBAL_TIME / 1000, from, to, tag, size, start_time_event); */
 
     // Create UEC Src and Dest
+
+    return;
+
     if (_protocolName == UEC_PROTOCOL) {
 
         if (_uecRtxScanner == NULL) {
@@ -591,6 +604,8 @@ graph_node_properties LogSimInterface::htsim_simulate_until(u_int64_t until) {
 int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
     LogSimInterface *lgs_interface = &lgs;
 
+    
+
     filename_goal = PROJECT_ROOT_PATH / ("sim/lgs/input/" + filename_goal);
 
     // Time Inside LGS
@@ -894,10 +909,12 @@ int start_lgs(std::string filename_goal, LogSimInterface &lgs) {
 
                     parser.schedules[elem.host].MarkNodeAsStarted(elem.offset);
                     
-                    elem.size *= 10;
+                    elem.size *= 1;
 
                     lgs_interface->htsim_schedule(elem.host, elem.target, elem.size, elem.tag, GLOBAL_TIME,
                                                   elem.offset);
+
+                    
 
                     // printf("Send host %d - offset %d\n", elem.host, elem.offset);
                     // parser.schedules[elem.host].MarkNodeAsDone(elem.offset);
