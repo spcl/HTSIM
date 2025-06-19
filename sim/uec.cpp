@@ -1075,15 +1075,18 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
         simulateTrimEvent(dynamic_cast<UecAck &>(pkt));
     }
 
+    printf("Seqno %d flow size %d - Sent Packets %lu - Flow Finished %d\n", seqno, _flow_size,
+           _sent_packets.size(), _flow_finished);
+
     if (seqno >= _flow_size && _sent_packets.empty() && !_flow_finished) {
         _flow_finished = true;
         if (f_flow_over_hook) {
             f_flow_over_hook(pkt);
         }
 
-        /* cout << "Flow " << nodename() << " finished at " << timeAsMs(eventlist().now()) << endl;
+        cout << "Flow " << nodename() << " finished at " << timeAsMs(eventlist().now()) << endl;
         cout << "Flow " << nodename() << " completion time is " << timeAsMs(eventlist().now() - _flow_start_time)
-             << endl; */
+             << endl;
 
         // printf("Completion Time Flow is %lu - Overall Time %lu\n", eventlist().now() - _flow_start_time,
         // GLOBAL_TIME);
