@@ -1,5 +1,5 @@
-#include "uecpacket.h"
+#include "pcmpacket.h"
 
-PacketDB<UecPacket> UecPacket::_packetdb;
-PacketDB<UecAck> UecAck::_packetdb;
-PacketDB<UecNack> UecNack::_packetdb;
+PacketDB<PcmPacket> PcmPacket::_packetdb;
+PacketDB<PcmAck> PcmAck::_packetdb;
+PacketDB<PcmNack> PcmNack::_packetdb;

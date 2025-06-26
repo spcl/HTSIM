@@ -9,23 +9,23 @@
 #include "config.h"
 #include "eventlist.h"
 #include "fairpullqueue.h"
-#include "smartt_pacer.h"
+#include "pcm_pacer.h"
 //#include "datacenter/logsim-interface.h"
 #include "network.h"
 #include "trigger.h"
-#include "uecpacket.h"
+#include "pcmpacket.h"
 #include <functional>
 #include <list>
 #include <map>
 
-class UecSink;
+class PcmSink;
 // class LogSimInterface;
 
-class SentPacket {
+class PcmSentPacket {
   public:
-    SentPacket(simtime_picosec t, uint64_t s, bool a, bool n, bool to)
+    PcmSentPacket(simtime_picosec t, uint64_t s, bool a, bool n, bool to)
             : timer{t}, seqno{s}, acked{a}, nacked{n}, timedOut{to} {}
-    SentPacket(const SentPacket &sp)
+    PcmSentPacket(const PcmSentPacket &sp)
             : timer{sp.timer}, seqno{sp.seqno}, acked{sp.acked},
               nacked{sp.nacked}, timedOut{sp.timedOut} {}
     simtime_picosec timer;
@@ -35,22 +35,22 @@ class SentPacket {
     bool timedOut;
 };
 
-class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
-    friend class UecSink;
+class PcmSrc : public PacketSink, public EventSource, public TriggerTarget {
+    friend class PcmSink;
 
   public:
-    UecSrc(UecLogger *logger, TrafficLogger *pktLogger, EventList &eventList,
+    PcmSrc(PcmLogger *logger, TrafficLogger *pktLogger, EventList &eventList,
            uint64_t rtt, uint64_t bdp, uint64_t queueDrainTime, int hops);
-    // UecSrc(UecLogger *logger, TrafficLogger* pktLogger, EventList& eventList,
+    // PcmSrc(PcmLogger *logger, TrafficLogger* pktLogger, EventList& eventList,
     // uint64_t rtt=timeFromUs(5.25), uint64_t bdp=63000);
-    ~UecSrc();
+    ~PcmSrc();
 
     virtual void doNextEvent() override;
 
     void receivePacket(Packet &pkt) override;
     const string &nodename() override;
 
-    virtual void connect(Route *routeout, Route *routeback, UecSink &sink,
+    virtual void connect(Route *routeout, Route *routeback, PcmSink &sink,
                          simtime_picosec startTime);
     void startflow();
     void set_paths(vector<const Route *> *rt);
@@ -381,8 +381,8 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     uint64_t avg_rtt;
     int rx_count = 0;
     uint32_t achieved_bdp = 0;
-    UecLogger *_logger;
-    UecSink *_sink;
+    PcmLogger *_logger;
+    PcmSink *_sink;
 
     uint16_t _crt_direction;
     vector<int> _path_ids;                 // path IDs to be used for ECMP FIB.
@@ -398,7 +398,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     vector<int16_t> _avoid_score; // keeps path scores
     vector<bool> _bad_path;       // keeps path scores
 
-    SmarttPacer *generic_pacer = NULL;
+    PcmPacer *generic_pacer = NULL;
     simtime_picosec pacer_start_time = 0;
     PacketFlow _flow;
 
@@ -418,7 +418,7 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
 
     list<std::tuple<simtime_picosec, bool, uint64_t, uint64_t>>
             _received_ecn; // list of packets received
-    vector<SentPacket> _sent_packets;
+    vector<PcmSentPacket> _sent_packets;
     unsigned _nack_rtx_pending;
     vector<tuple<simtime_picosec, uint64_t, uint64_t, uint64_t, uint64_t,
                  uint64_t>>
@@ -501,28 +501,28 @@ class UecSrc : public PacketSink, public EventSource, public TriggerTarget {
     bool ecn_congestion();
     void drop_old_received();
     const Route *get_path();
-    void mark_received(UecAck &pkt);
+    void mark_received(PcmAck &pkt);
     void add_ack_path(const Route *rt);
     bool resend_packet(std::size_t i);
     void retransmit_packet();
-    void processAck(UecAck &pkt, bool);
+    void processAck(PcmAck &pkt, bool);
     std::size_t get_sent_packet_idx(uint32_t pkt_seqno);
 
     void update_rtx_time();
     void reduce_cwnd(uint64_t amount);
-    void processNack(UecNack &nack);
-    void processBts(UecPacket *nack);
-    void simulateTrimEvent(UecAck &nack);
+    void processNack(PcmNack &nack);
+    void processBts(PcmPacket *nack);
+    void simulateTrimEvent(PcmAck &nack);
     void reduce_unacked(uint64_t amount);
     void check_limits_cwnd();
     void apply_timeout_penalty();
 };
 
-class UecSink : public PacketSink, public DataReceiver {
-    friend class UecSrc;
+class PcmSink : public PacketSink, public DataReceiver {
+    friend class PcmSrc;
 
   public:
-    UecSink();
+    PcmSink();
 
     void receivePacket(Packet &pkt) override;
     const string &nodename() override;
@@ -531,7 +531,7 @@ class UecSink : public PacketSink, public DataReceiver {
 
     uint64_t cumulative_ack() override;
     uint32_t drops() override;
-    void connect(UecSrc &src, const Route *route);
+    void connect(PcmSrc &src, const Route *route);
     void set_paths(uint32_t num_paths);
     void set_src(uint32_t s) { _srcaddr = s; }
     uint32_t from = -1;
@@ -545,40 +545,40 @@ class UecSink : public PacketSink, public DataReceiver {
     int pfc_just_seen = -10;
 
   private:
-    UecAck::seq_t _cumulative_ack;
+    PcmAck::seq_t _cumulative_ack;
     uint64_t _packets;
     uint32_t _srcaddr;
     uint32_t _drops;
     int ack_count_idx = 0;
     string _nodename;
-    list<UecAck::seq_t> _received; // list of packets received OOO
+    list<PcmAck::seq_t> _received; // list of packets received OOO
     uint16_t _crt_path;
     const Route *_route;
     vector<const Route *> _paths;
     vector<int> _path_ids;                 // path IDs to be used for ECMP FIB.
     vector<const Route *> _original_paths; // paths in original permutation
                                            // order
-    UecSrc *_src;
+    PcmSrc *_src;
     vector<int> _good_entropies_list;
 
-    void send_ack(simtime_picosec ts, bool marked, UecAck::seq_t seqno,
-                  UecAck::seq_t ackno, const Route *rt, const Route *inRoute,
+    void send_ack(simtime_picosec ts, bool marked, PcmAck::seq_t seqno,
+                  PcmAck::seq_t ackno, const Route *rt, const Route *inRoute,
                   int path_id);
-    void send_nack(simtime_picosec ts, bool marked, UecAck::seq_t seqno,
-                   UecAck::seq_t ackno, const Route *rt, int, bool);
-    bool already_received(UecPacket &pkt);
+    void send_nack(simtime_picosec ts, bool marked, PcmAck::seq_t seqno,
+                   PcmAck::seq_t ackno, const Route *rt, int, bool);
+    bool already_received(PcmPacket &pkt);
 };
 
-class UecRtxTimerScanner : public EventSource {
+class PcmRtxTimerScanner : public EventSource {
   public:
-    UecRtxTimerScanner(simtime_picosec scanPeriod, EventList &eventlist);
+    PcmRtxTimerScanner(simtime_picosec scanPeriod, EventList &eventlist);
     void doNextEvent();
-    void registerUec(UecSrc &uecsrc);
+    void registerPcm(PcmSrc &uecsrc);
 
   private:
     simtime_picosec _scanPeriod;
     simtime_picosec _lastScan;
-    typedef list<UecSrc *> uecs_t;
+    typedef list<PcmSrc *> uecs_t;
     uecs_t _uecs;
 };
 

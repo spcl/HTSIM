@@ -8,6 +8,7 @@ class TcpSrc;
 class NdpSrc;
 class BBRSrc;
 class UecSrc;
+class PcmSrc;
 class UecDropSrc;
 class SwiftTrimmingSrc;
 class SwiftSrc;
@@ -352,6 +353,16 @@ class UecLogger : public Logger {
     enum UecMemoryRecord { MEMORY = 0 };
     virtual void logUec(UecSrc &src, UecEvent ev) = 0;
     virtual ~UecLogger(){};
+};
+
+class PcmLogger : public Logger {
+  public:
+    enum UecEvent { UEC_RCV = 0, UEC_TIMEOUT = 1 }; // TODO: add more events
+    enum UecState { UECSTATE_CNTRL = 0, UECSTATE_SEQ = 1 };
+    enum UecRecord { AVE_CWND = 0 };
+    enum UecMemoryRecord { MEMORY = 0 };
+    virtual void logUec(PcmSrc &src, PcmLogger::UecEvent ev) = 0;
+    virtual ~PcmLogger(){};
 };
 
 class BBRLogger : public Logger {
