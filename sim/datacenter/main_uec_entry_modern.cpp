@@ -83,7 +83,7 @@ void print_path(std::ofstream &paths, const Route *rt) {
 
 int main(int argc, char **argv) {
     Packet::set_packet_size(PKT_SIZE_MODERN);
-    // eventlist.setEndtime(timeFromSec(1));
+    simtime_picosec end_time = timeFromUs(1000.0);
     Clock c(timeFromSec(5 / 100.), eventlist);
     mem_b queuesize = INFINITE_BUFFER_SIZE;
     int no_of_conns = 0, cwnd = MAX_CWD_MODERN_UEC, no_of_nodes = DEFAULT_NODES;
@@ -185,6 +185,10 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-q")) {
             queuesize = atoi(argv[i + 1]);
             i++;
+        } else if (!strcmp(argv[i],"-end_time")) {
+            end_time = atoi(argv[i+1]);
+            cout << "endtime(us) "<< end_time << endl;
+            i++;            
         } else if (!strcmp(argv[i], "-use_mixed")) {
             use_mixed = atoi(argv[i + 1]);
             // UecSrc::set_use_mixed(use_mixed);
@@ -623,7 +627,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    // eventlist.setEndtime(timeFromUs((uint32_t)1000 * 1000 * 7));
+    eventlist.setEndtime(timeFromUs((uint32_t)end_time));
 
     // Calculate Network Info
     int hops = 6; // hardcoded for now

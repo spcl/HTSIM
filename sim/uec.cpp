@@ -1075,8 +1075,8 @@ void UecSrc::processAck(UecAck &pkt, bool force_marked) {
         simulateTrimEvent(dynamic_cast<UecAck &>(pkt));
     }
 
-    printf("Seqno %d flow size %d - Sent Packets %lu - Flow Finished %d\n", seqno, _flow_size,
-           _sent_packets.size(), _flow_finished);
+    /* printf("Seqno %d flow size %d - Sent Packets %lu - Flow Finished %d\n", seqno, _flow_size,
+           _sent_packets.size(), _flow_finished); */
 
     if (seqno >= _flow_size && _sent_packets.empty() && !_flow_finished) {
         _flow_finished = true;
