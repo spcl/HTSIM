@@ -1,0 +1,4 @@
+[ZoneTransfer]
+ZoneId=3
+ReferrerUrl=http://storage2.spcl.ethz.ch/traces/ai/mmada/mmada_N2_GPU8_stage3/
+HostUrl=http://storage2.spcl.ethz.ch/traces/ai/mmada/mmada_N2_GPU8_stage3/mmada.bin

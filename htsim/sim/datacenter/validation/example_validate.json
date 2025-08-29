@@ -1,0 +1,14 @@
+{
+  "global_parameters": {
+    "link_speed_Gbps": ["200Gbps"],
+    "oversubscription_ratio": ["1:1"],
+    "topology_sizes": [128],
+    "cc_algo": ["nscc", "rccc", "rccc+os_cc", "nscc+rccc"]
+  },
+  "experiments": [
+    {
+      "name": "permutation",
+      "message_size_bytes": [262144, 1048576, 4194304]
+    }
+  ]
+}

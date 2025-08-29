@@ -1,0 +1,241 @@
+Using experiment1_200g_nscc_8_to_1.txt as experiment plan
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 32 paths, 1MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_1MB.cm -end 1568 -paths 32 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 442.371 us below the target of 470 us
+[PASS] Connection count 8192
+FCT Spread 45.0313 -> 442.371 ratio 9.823633783612731
+Summary: New: 2007040 Rtx: 529004 RTS: 0 Bounced: 0 ACKs: 1913040
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 64 paths, 1MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_1MB.cm -end 1568 -paths 64 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 420.696 us below the target of 470 us
+[PASS] Connection count 8192
+FCT Spread 45.0287 -> 420.696 ratio 9.34284134340987
+Summary: New: 2007040 Rtx: 532015 RTS: 0 Bounced: 0 ACKs: 1896453
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 128 paths, 1MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_1MB.cm -end 1568 -paths 128 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 416.009 us below the target of 470 us
+[PASS] Connection count 8192
+FCT Spread 45.0338 -> 416.009 ratio 9.237705900901101
+Summary: New: 2007040 Rtx: 531996 RTS: 0 Bounced: 0 ACKs: 1900647
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 32 paths, 2MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_2MB.cm -end 2848 -paths 32 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 766.158 us below the target of 854 us
+[PASS] Connection count 8192
+FCT Spread 85.7046 -> 766.158 ratio 8.939520165778733
+Summary: New: 4014080 Rtx: 534441 RTS: 0 Bounced: 0 ACKs: 3821905
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 64 paths, 2MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_2MB.cm -end 2848 -paths 64 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 758.659 us below the target of 854 us
+[PASS] Connection count 8192
+FCT Spread 85.702 -> 758.659 ratio 8.852290494970946
+Summary: New: 4014080 Rtx: 542135 RTS: 0 Bounced: 0 ACKs: 3800784
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 128 paths, 2MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_2MB.cm -end 2848 -paths 128 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 758.181 us below the target of 854 us
+[PASS] Connection count 8192
+FCT Spread 85.7071 -> 758.181 ratio 8.846186605310413
+Summary: New: 4014080 Rtx: 546431 RTS: 0 Bounced: 0 ACKs: 3796868
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 32 paths, 4MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_4MB.cm -end 5408 -paths 32 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 1440.88 us below the target of 1622 us
+[PASS] Connection count 8192
+FCT Spread 167.097 -> 1440.88 ratio 8.623015374303549
+Summary: New: 8019968 Rtx: 547933 RTS: 0 Bounced: 0 ACKs: 7639219
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 64 paths, 4MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_4MB.cm -end 5408 -paths 64 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 1450.35 us below the target of 1622 us
+[PASS] Connection count 8192
+FCT Spread 167.115 -> 1450.35 ratio 8.678754151332914
+Summary: New: 8019968 Rtx: 566436 RTS: 0 Bounced: 0 ACKs: 7612782
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 128 paths, 4MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_4MB.cm -end 5408 -paths 128 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 1448.49 us below the target of 1622 us
+[PASS] Connection count 8192
+FCT Spread 167.095 -> 1448.49 ratio 8.668661539842605
+Summary: New: 8019968 Rtx: 574098 RTS: 0 Bounced: 0 ACKs: 7606119
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 32 paths, 8MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_8MB.cm -end 10528 -paths 32 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 2813.71 us below the target of 3158 us
+[PASS] Connection count 8192
+FCT Spread 329.826 -> 2813.71 ratio 8.53089204610916
+Summary: New: 16039936 Rtx: 577928 RTS: 0 Bounced: 0 ACKs: 15324627
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 64 paths, 8MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_8MB.cm -end 10528 -paths 64 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 2819.09 us below the target of 3158 us
+[PASS] Connection count 8192
+FCT Spread 329.842 -> 2819.09 ratio 8.546789068705623
+Summary: New: 16039936 Rtx: 615046 RTS: 0 Bounced: 0 ACKs: 15281345
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 128 paths, 8MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_8MB.cm -end 10528 -paths 128 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 2831.54 us below the target of 3158 us
+[PASS] Connection count 8192
+FCT Spread 329.813 -> 2831.54 ratio 8.58528923966005
+Summary: New: 16039936 Rtx: 629738 RTS: 0 Bounced: 0 ACKs: 15256698
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 32 paths, 16MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_16MB.cm -end 20768 -paths 32 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 5560.94 us below the target of 6230 us
+[PASS] Connection count 8192
+FCT Spread 655.353 -> 5560.94 ratio 8.485411678896718
+Summary: New: 32079872 Rtx: 646485 RTS: 0 Bounced: 0 ACKs: 30700155
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 64 paths, 16MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_16MB.cm -end 20768 -paths 64 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 5522.66 us below the target of 6230 us
+[PASS] Connection count 8192
+FCT Spread 655.33 -> 5522.66 ratio 8.427296171394564
+Summary: New: 32079872 Rtx: 705987 RTS: 0 Bounced: 0 ACKs: 30633966
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 128 paths, 16MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_16MB.cm -end 20768 -paths 128 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 5574.35 us below the target of 6230 us
+[PASS] Connection count 8192
+FCT Spread 655.361 -> 5574.35 ratio 8.505770102279508
+Summary: New: 32079872 Rtx: 736760 RTS: 0 Bounced: 0 ACKs: 30599608
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 32 paths, 32MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_32MB.cm -end 41248 -paths 32 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 11051.0 us below the target of 12374 us
+[PASS] Connection count 8192
+FCT Spread 1306.34 -> 11051.0 ratio 8.459512837393023
+Summary: New: 64159744 Rtx: 805686 RTS: 0 Bounced: 0 ACKs: 61509830
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 64 paths, 32MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_32MB.cm -end 41248 -paths 64 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 10941.4 us below the target of 12374 us
+[PASS] Connection count 8192
+FCT Spread 1306.49 -> 10941.4 ratio 8.374652695389937
+Summary: New: 64159744 Rtx: 878342 RTS: 0 Bounced: 0 ACKs: 61468062
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 128 paths, 32MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_32MB.cm -end 41248 -paths 128 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 10969.6 us below the target of 12374 us
+[PASS] Connection count 8192
+FCT Spread 1306.43 -> 10969.6 ratio 8.396622857711472
+Summary: New: 64159744 Rtx: 938207 RTS: 1 Bounced: 0 ACKs: 61383639
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 32 paths, 64MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_64MB.cm -end 82208 -paths 32 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 21946.6 us below the target of 24662 us
+[PASS] Connection count 8192
+FCT Spread 2608.31 -> 21946.6 ratio 8.41410721885052
+Summary: New: 128319488 Rtx: 1136754 RTS: 0 Bounced: 0 ACKs: 123121856
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 64 paths, 64MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_64MB.cm -end 82208 -paths 64 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 21868.5 us below the target of 24662 us
+[PASS] Connection count 8192
+FCT Spread 2608.7 -> 21868.5 ratio 8.38291102848162
+Summary: New: 128319488 Rtx: 1212013 RTS: 1 Bounced: 0 ACKs: 123211196
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 128 paths, 64MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_64MB.cm -end 82208 -paths 128 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 21862.0 us below the target of 24662 us
+[PASS] Connection count 8192
+FCT Spread 2608.88 -> 21862.0 ratio 8.379841157891509
+Summary: New: 128319488 Rtx: 1301835 RTS: 1 Bounced: 0 ACKs: 123129512
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 32 paths, 100MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_100MB.cm -end 128288 -paths 32 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 34086.6 us below the target of 38486 us
+[PASS] Connection count 8192
+FCT Spread 4072.84 -> 34086.6 ratio 8.369246029797388
+Summary: New: 200491008 Rtx: 1515985 RTS: 1 Bounced: 0 ACKs: 192417800
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 64 paths, 100MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_100MB.cm -end 128288 -paths 64 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 33895.8 us below the target of 38486 us
+[PASS] Connection count 8192
+FCT Spread 4073.16 -> 33895.8 ratio 8.321745278849837
+Summary: New: 200491008 Rtx: 1583111 RTS: 0 Bounced: 0 ACKs: 192626498
+Using binary: ./htsim_uec
+
+
+Experiment: 8K permutation, 8K leaf-spine, 200Gbps, 128 paths, 100MB messages, NSCC 
+==========================================
+Running ./htsim_uec -tm connection_matrices/perm_8192n_8192c_100MB.cm -end 128288 -paths 128 -linkspeed 200000 -topo topologies/leaf_spine_8192_200g_8_to_1.topo -q 50 -ecn 12 37 -cwnd 75 -sender_cc_only 
+[PASS] Tail FCT 33977.8 us below the target of 38486 us
+[PASS] Connection count 8192
+FCT Spread 4073.23 -> 33977.8 ratio 8.341733710102302
+Summary: New: 200491008 Rtx: 1688710 RTS: 1 Bounced: 0 ACKs: 192588568

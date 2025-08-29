@@ -1,0 +1,30 @@
+name: C++ Build and Test CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-linux:
+    name: Build and Test on Ubuntu
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo DEBIAN_FRONTEND=noninteractive apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends make g++ cmake
+
+      - name: Configure CMake project
+        run: cmake -S htsim/sim -B build -DENABLE_TESTS=ON
+
+      - name: Build CMake project
+        run: cmake --build build -j$(nproc)
+
+      - name: Run CTests
+        run: cd build && ctest --output-on-failure -j$(nproc)

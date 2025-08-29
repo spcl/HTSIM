@@ -1,0 +1,65 @@
+connection_matrices/one.cm 
+!Experiment Single Connection
+!Param -end 1000
+!tailFCT 180
+connection_matrices/bidir.cm
+!Experiment Bidirectional Connection
+!Param -end 1000
+!tailFCT 190
+connection_matrices/incast.cm
+!Experiment Small incast
+!Param -end 3000
+!tailFCT 2500
+connection_matrices/incast_128.cm
+!Experiment Large incast
+!Param -end 30000
+!tailFCT 23000
+connection_matrices/incast_collateral_128.cm
+!Experiment Incast collateral damage
+!Param -end 30000
+!FCT Eqds_38_34 220
+!tailFCT 23000
+connection_matrices/outcast_incast.cm
+!Experiment Outcast+Incast
+!Param -end 3000
+!tailFCT 2500
+!FCT Eqds_1_0 240
+connection_matrices/perm_16n_16c_2MB.cm
+!Experiment Small permutation with multipath
+!Param -end 1000
+!Param -paths 128
+!tailFCT 210
+connection_matrices/perm_16n_16c_2MB.cm
+!Experiment Small permutation with single path.
+!Param -end 2000
+!Param -paths 1
+!tailFCT 1300
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Large permutation with multipath
+!Param -end 2000
+!Param -paths 128
+!tailFCT 220
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Large permutation with multipath and ECN marking
+!Param -end 2000
+!Param -paths 128
+!Param -ecn 12 25
+!tailFCT 220
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Large permutation with single path
+!Param -end 3000
+!Param -paths 1
+!tailFCT 1300
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Oversubscribed permutation with multipath
+!Param -end 2000
+!Param -paths 128
+!Param -topo topologies/leaf_spine_1024_oversub.topo
+!tailFCT 880
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Oversubscribed permutation with multipath and ECN
+!Param -end 2000
+!Param -paths 128
+!Param -ecn 12 25
+!Param -topo topologies/leaf_spine_1024_oversub.topo
+!tailFCT 880

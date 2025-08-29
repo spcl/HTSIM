@@ -1,0 +1,4 @@
+[ZoneTransfer]
+ZoneId=3
+ReferrerUrl=http://storage2.spcl.ethz.ch/traces/ai/moe/MoE8x8B_N16_GPU64_TP1_PP8_DP8_EP1_7B_BS32/
+HostUrl=http://storage2.spcl.ethz.ch/traces/ai/moe/MoE8x8B_N16_GPU64_TP1_PP8_DP8_EP1_7B_BS32/moe.bin

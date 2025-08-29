@@ -1,0 +1,150 @@
+connection_matrices/one.cm 
+!Experiment Single Connection
+!Binary ./htsim_uec
+!Param -end 1000
+!Param -sender_cc_only
+!Param -sleek
+!Param -disable_trim
+!Param -q 190
+!tailFCT 190
+connection_matrices/bidir.cm
+!Experiment Bidirectional Connection
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -sleek
+!Param -disable_trim
+!Param -q 190
+!Param -end 1000
+!tailFCT 190
+connection_matrices/incast.cm
+!Experiment Small 16 node incast
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -sleek
+!Param -disable_trim
+!Param -q 190
+!Param -end 3000
+!tailFCT 2550
+connection_matrices/incast_128.cm
+!Experiment 128 node incast
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -sleek
+!Param -disable_trim
+!Param -q 190
+!Param -end 30000
+!tailFCT 23000
+connection_matrices/incast_1024_100K.cm
+!Experiment 1024 node incast
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -sleek
+!Param -disable_trim
+!Param -q 190
+!Param -end 15000
+!Param -cwnd 50
+!tailFCT 8950
+connection_matrices/incast_3-1_overlapped.tm
+!Experiment 3 to 1 incast with long running flow
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -sleek
+!Param -disable_trim
+!Param -q 190
+!Param -end 1000
+!Param -cwnd 50
+!tailFCT 220
+connection_matrices/outcast_incast.cm
+!Experiment outcast incast
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -sleek
+!Param -disable_trim
+!Param -q 190
+!Param -end 3000
+!tailFCT 2500
+!FCT Uec_1_0 215
+connection_matrices/perm_16n_16c_2MB.cm
+!Experiment Small permutation (16 nodes)
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -sleek
+!Param -disable_trim
+!Param -q 190
+!Param -end 1000
+!Param -paths 128
+!tailFCT 210
+connection_matrices/perm_16n_16c_2MB.cm
+!Experiment Small permutation, INC (16 nodes)
+!Binary ./htsim_uec
+!Param -failed 1
+!Param -sender_cc_only
+!Param -sleek
+!Param -disable_trim
+!Param -q 190
+!Param -end 2000
+!Param -paths 128
+!tailFCT 210
+connection_matrices/perm_16n_16c_2MB.cm
+!Experiment Small permutation, single path.
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -sleek
+!Param -disable_trim
+!Param -q 190
+!Param -end 2000
+!Param -paths 1
+!tailFCT 1300
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Large permutation (1024 nodes)
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -sleek
+!Param -disable_trim
+!Param -q 190
+!Param -end 400
+!Param -paths 128
+!tailFCT 220
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Large permutation, INC (1024 nodes)
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -sleek
+!Param -disable_trim
+!Param -q 190
+!Param -failed 1
+!Param -end 400
+!Param -paths 128
+!tailFCT 220
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Large permutation (1024 nodes), single path.
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -sleek
+!Param -disable_trim
+!Param -q 190
+!Param -end 3000
+!Param -paths 1
+!tailFCT 1300
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Oversubscribed permutation with multipath
+!Binary ./htsim_uec
+!Param -end 2000
+!Param -paths 128
+!Param -sender_cc_only
+!Param -sleek
+!Param -disable_trim
+!Param -q 190
+!Param -topo topologies/leaf_spine_1024_oversub.topo
+!tailFCT 880
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment 8:1 oversubscribed permutation with multipath
+!Binary ./htsim_uec
+!Param -end 2000
+!Param -sender_cc_only
+!Param -sleek
+!Param -disable_trim
+!Param -q 190
+!Param -paths 128
+!Param -topo topologies/leaf_spine_1024_oversub_8-1.topo
+!tailFCT 1760

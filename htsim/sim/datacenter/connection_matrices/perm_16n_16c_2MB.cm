@@ -1,0 +1,18 @@
+Nodes 16
+Connections 16
+13->6 start 0 size 2000000
+1->4 start 0 size 2000000
+6->0 start 0 size 2000000
+2->13 start 0 size 2000000
+10->5 start 0 size 2000000
+15->1 start 0 size 2000000
+8->14 start 0 size 2000000
+14->2 start 0 size 2000000
+5->15 start 0 size 2000000
+4->12 start 0 size 2000000
+12->11 start 0 size 2000000
+0->8 start 0 size 2000000
+9->7 start 0 size 2000000
+7->9 start 0 size 2000000
+3->10 start 0 size 2000000
+11->3 start 0 size 2000000

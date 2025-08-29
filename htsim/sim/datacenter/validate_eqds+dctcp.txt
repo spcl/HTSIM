@@ -1,0 +1,85 @@
+connection_matrices/one.cm 
+!Experiment Single Connection
+!Param -end 1000
+!Param -sender_cc
+!Param -ecn 10 25
+!Param -sender_cc_algo dctcp
+!tailFCT 180
+connection_matrices/bidir.cm 
+!Experiment Bidirectional Connection
+!Param -end 1000
+!Param -sender_cc
+!Param -ecn 10 25
+!Param -sender_cc_algo dctcp
+!tailFCT 190
+connection_matrices/incast.cm
+!Experiment Small incast
+!Param -end 3000
+!Param -sender_cc
+!Param -ecn 10 25
+!Param -sender_cc_algo dctcp
+!tailFCT 2500
+connection_matrices/incast_128.cm
+!Experiment Large incast
+!Param -end 30000
+!Param -sender_cc
+!Param -ecn 10 25
+!Param -sender_cc_algo dctcp
+!tailFCT 23000
+connection_matrices/incast_collateral_128.cm
+!Experiment Incast collateral damage
+!Param -end 30000
+!Param -sender_cc
+!Param -ecn 10 25
+!Param -sender_cc_algo dctcp
+!FCT Eqds_38_34 220
+!tailFCT 23000
+connection_matrices/outcast_incast.cm
+!Experiment Outcast+Incast
+!Param -end 3000
+!Param -sender_cc
+!Param -ecn 10 25
+!Param -sender_cc_algo dctcp
+!tailFCT 2500
+!FCT Eqds_1_0 215
+connection_matrices/perm_16n_16c_2MB.cm
+!Experiment Small permutation with multipath
+!Param -end 1000
+!Param -sender_cc
+!Param -ecn 10 25
+!Param -paths 128
+!Param -sender_cc_algo dctcp
+!tailFCT 210
+connection_matrices/perm_16n_16c_2MB.cm
+!Experiment Small permutation with single path.
+!Param -end 2000
+!Param -sender_cc
+!Param -ecn 10 25
+!Param -paths 1
+!Param -sender_cc_algo dctcp
+!tailFCT 1300
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Large permutation with multipath
+!Param -end 2000
+!Param -sender_cc
+!Param -ecn 10 25
+!Param -paths 128
+!Param -sender_cc_algo dctcp
+!tailFCT 220
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Large permutation with single path
+!Param -end 3000
+!Param -sender_cc
+!Param -ecn 10 25
+!Param -paths 1
+!Param -sender_cc_algo dctcp
+!tailFCT 1300
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Oversubscribed permutation with multipath
+!Param -end 2000
+!Param -paths 128
+!Param -ecn 10 25
+!Param -sender_cc
+!Param -topo topologies/leaf_spine_1024_oversub.topo
+!Param -sender_cc_algo dctcp
+!tailFCT 880

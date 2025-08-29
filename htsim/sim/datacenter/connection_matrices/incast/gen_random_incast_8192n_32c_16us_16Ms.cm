@@ -1,0 +1,34 @@
+Nodes 8192
+Connections 32
+1030->0 id 1 start 8 size 16777216
+3370->0 id 2 start 4 size 16777216
+1597->0 id 3 start 1 size 16777216
+7220->0 id 4 start 9 size 16777216
+3892->0 id 5 start 9 size 16777216
+7937->0 id 6 start 15 size 16777216
+4192->0 id 7 start 16 size 16777216
+7286->0 id 8 start 15 size 16777216
+5536->0 id 9 start 1 size 16777216
+5441->0 id 10 start 3 size 16777216
+1584->0 id 11 start 12 size 16777216
+3790->0 id 12 start 13 size 16777216
+6247->0 id 13 start 3 size 16777216
+4252->0 id 14 start 1 size 16777216
+826->0 id 15 start 13 size 16777216
+3129->0 id 16 start 4 size 16777216
+6520->0 id 17 start 15 size 16777216
+4177->0 id 18 start 16 size 16777216
+1401->0 id 19 start 12 size 16777216
+3732->0 id 20 start 11 size 16777216
+5969->0 id 21 start 12 size 16777216
+3146->0 id 22 start 5 size 16777216
+4191->0 id 23 start 16 size 16777216
+888->0 id 24 start 2 size 16777216
+5180->0 id 25 start 16 size 16777216
+4794->0 id 26 start 3 size 16777216
+8114->0 id 27 start 6 size 16777216
+3628->0 id 28 start 8 size 16777216
+1848->0 id 29 start 6 size 16777216
+2161->0 id 30 start 4 size 16777216
+1852->0 id 31 start 15 size 16777216
+1694->0 id 32 start 7 size 16777216

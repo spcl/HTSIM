@@ -1,0 +1,10 @@
+Nodes 8192
+Connections 8
+2901->0 id 1 start 0 size 16777216
+6379->0 id 2 start 0 size 16777216
+363->0 id 3 start 0 size 16777216
+7621->0 id 4 start 0 size 16777216
+1121->0 id 5 start 0 size 16777216
+3060->0 id 6 start 0 size 16777216
+2095->0 id 7 start 0 size 16777216
+2193->0 id 8 start 0 size 16777216

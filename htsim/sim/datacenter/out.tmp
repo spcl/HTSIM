@@ -1,0 +1,124 @@
+sender based CC enabled ONLY
+no_of_nodes 1024
+endtime(us) 10000000
+FatTree topology input file: topologies/fat_tree_1024_1os.topo
+Packet size (MTU) is 4150
+Parsed args
+Logging to logout.dat
+Linkspeed set to 100Gbps
+Automatic queue sizing enabled trimming queue-size-to-bdp-factor is 1xBDP
+Topology load done
+Fat Tree topology (0) with 1us Src-ToR links, 1us ToR-Agg links, 1us Agg-Core links, 0us ToR switch latency, 0us Agg switch latency, 0us Core switch latency.
+ for 6us diameter latency.
+no_of_tor_uplinks: 1024
+no_of_agg_uplinks: 1024
+No of nodes: 1024
+No of pods: 16
+Hosts per pod: 64
+Hosts per pod: 64
+ToR switches per pod: 8
+Agg switches per pod: 8
+No of core switches: 64
+FatTreeCfg constructor done.
+Tier 0 QueueSize Down 178450 bytes
+Tier 0 QueueSize Up 178450 bytes
+Tier 1 QueueSize Down 178450 bytes
+Tier 1 QueueSize Up 178450 bytes
+Tier 2 QueueSize Down 178450 bytes
+Setting min RTO to 100.656
+Setting ECN to parameters low 37350 high 145250 enable on tor downlink 1
+FatTreeTopologyCfg NCORE=64 NAGG=128 NTOR=128 NSRV=1024 NPOD=16 tor_switches_per_pod=8 agg_switches_per_pod=8 tiers=3 host_per_pod=64 enabled_ecn=1 enable_ecn_on_tor_downlink=1 ecn_low=37350 ecn_high=145250 num_failed_links=0 failed_link_ratio=0.25 no_of_nodes=1024 hop_latency=0 switch_latency=0 diameter_latency=6000000 diameter=6 tier=0 link_latency=1000000 switch_latencies=0 bundlesize=1 downlink_speeds=200000000000 oversub=1 radix_down=8 queue_down=178450 radix_up=8 queue_up=178450 tier=1 link_latency=1000000 switch_latencies=0 bundlesize=1 downlink_speeds=200000000000 oversub=1 radix_down=8 queue_down=178450 radix_up=8 queue_up=178450 tier=2 link_latency=1000000 switch_latencies=0 bundlesize=1 downlink_speeds=200000000000 oversub=1 radix_down=16 queue_down=178450
+queue_id 2 ecn_low 37350 ecn_high 145250
+network_max_unloaded_rtt 14.0227
+Initializing static NSCC parameters: _reference_network_linkspeed=100000000000 _reference_network_rtt=12000000 _reference_network_bdp=150000 _target_Qdelay=10517040 _network_linkspeed=100000000000 _network_rtt=14022720 _network_bdp=175284 _qa_gate=2^3 _qa_threshold=4.20682e+07 _scaling_factor_a=1.16856 _scaling_factor_b=0.87642 _alpha=0.00159158 _fi=23873.7 _eta=716.21 _qa_scaling=1 _gamma=0.8 _fi_scale=0.29214 _delay_alpha=0.0125 _adjust_period_threshold=14022720 _adjust_bytes_threshold=33200
+<HTSIM> G 0.080000
+No of nodes 1024
+Started LGS
+filename is atlahs_input/llama_N4_GPU16.bin
+Starting 4
+progress: 0 % (4) - 1 [sizes: aq: 4 max rq: 0 max uq: 0: reinserts: (0, 0, 0)]
+progress: 1 % (53285) - 43889368 [sizes: aq: 33 max rq: 1169 max uq: 167: reinserts: (82064, 19255, 0)]
+.progress: 2 % (106653) - 55160731 [sizes: aq: 52 max rq: 2127 max uq: 170: reinserts: (6119, 6601, 0)]
+progress: 3 % (160102) - 67700553 [sizes: aq: 29 max rq: 3146 max uq: 170: reinserts: (6360, 6465, 0)]
+progress: 4 % (213637) - 79198646 [sizes: aq: 36 max rq: 4279 max uq: 172: reinserts: (8730, 7832, 0)]
+progress: 5 % (267256) - 91334916 [sizes: aq: 39 max rq: 5235 max uq: 175: reinserts: (6896, 6281, 0)]
+.progress: 6 % (320954) - 103400308 [sizes: aq: 114 max rq: 6371 max uq: 184: reinserts: (7623, 6624, 0)]
+progress: 7 % (374746) - 114908049 [sizes: aq: 40 max rq: 7388 max uq: 186: reinserts: (7735, 7330, 0)]
+progress: 8 % (428617) - 127497799 [sizes: aq: 27 max rq: 8343 max uq: 194: reinserts: (7413, 6249, 0)]
+progress: 9 % (482572) - 139200135 [sizes: aq: 17 max rq: 9538 max uq: 197: reinserts: (8058, 7810, 0)]
+.progress: 10 % (536621) - 152036252 [sizes: aq: 32 max rq: 10494 max uq: 202: reinserts: (6993, 6244, 0)]
+progress: 11 % (590778) - 163853765 [sizes: aq: 200 max rq: 11686 max uq: 210: reinserts: (7482, 6692, 0)]
+progress: 12 % (644953) - 176788512 [sizes: aq: 50 max rq: 12634 max uq: 210: reinserts: (7595, 7794, 0)]
+progress: 13 % (699258) - 188559220 [sizes: aq: 34 max rq: 13587 max uq: 210: reinserts: (6942, 6711, 0)]
+.progress: 14 % (753635) - 201651454 [sizes: aq: 29 max rq: 14787 max uq: 211: reinserts: (7780, 7840, 0)]
+progress: 15 % (808111) - 213376172 [sizes: aq: 35 max rq: 15745 max uq: 212: reinserts: (6582, 6448, 0)]
+progress: 16 % (862641) - 226194240 [sizes: aq: 150 max rq: 16943 max uq: 213: reinserts: (7855, 7359, 0)]
+progress: 17 % (917304) - 238191721 [sizes: aq: 26 max rq: 17898 max uq: 224: reinserts: (7937, 6760, 0)]
+.progress: 18 % (972021) - 251171129 [sizes: aq: 109 max rq: 19095 max uq: 228: reinserts: (7162, 6446, 0)]
+progress: 19 % (1026856) - 263327652 [sizes: aq: 22 max rq: 20046 max uq: 230: reinserts: (8204, 7495, 0)]
+progress: 20 % (1081782) - 276425066 [sizes: aq: 135 max rq: 21090 max uq: 234: reinserts: (6934, 6413, 0)]
+progress: 21 % (1136731) - 288382338 [sizes: aq: 38 max rq: 22196 max uq: 245: reinserts: (8237, 7715, 0)]
+.progress: 22 % (1191871) - 301507711 [sizes: aq: 83 max rq: 23156 max uq: 246: reinserts: (6742, 6458, 0)]
+....|...progress: 23 % (1246969) - 713494185 [sizes: aq: 24 max rq: 24350 max uq: 248: reinserts: (13915, 12517, 0)]
+progress: 24 % (1302217) - 733898748 [sizes: aq: 26 max rq: 25296 max uq: 273: reinserts: (16015, 12437, 0)]
+.progress: 25 % (1357480) - 755483312 [sizes: aq: 263 max rq: 26712 max uq: 278: reinserts: (20434, 14197, 0)]
+progress: 26 % (1412945) - 775304310 [sizes: aq: 50 max rq: 27663 max uq: 284: reinserts: (21470, 19296, 0)]
+progress: 27 % (1468450) - 795456204 [sizes: aq: 43 max rq: 28606 max uq: 292: reinserts: (14841, 13057, 0)]
+.progress: 28 % (1524013) - 815290473 [sizes: aq: 21 max rq: 29566 max uq: 306: reinserts: (14585, 13217, 0)]
+progress: 29 % (1579660) - 835621130 [sizes: aq: 62 max rq: 30526 max uq: 310: reinserts: (13245, 12421, 0)]
+.progress: 30 % (1635421) - 855541051 [sizes: aq: 30 max rq: 31726 max uq: 315: reinserts: (14508, 13750, 0)]
+progress: 31 % (1691268) - 875584566 [sizes: aq: 25 max rq: 32684 max uq: 320: reinserts: (13893, 12695, 0)]
+progress: 32 % (1747169) - 895858198 [sizes: aq: 26 max rq: 33879 max uq: 330: reinserts: (14609, 13807, 0)]
+.progress: 33 % (1803220) - 916397872 [sizes: aq: 27 max rq: 34835 max uq: 332: reinserts: (13754, 11815, 0)]
+progress: 34 % (1859223) - 937070413 [sizes: aq: 380 max rq: 36271 max uq: 351: reinserts: (17532, 13454, 0)]
+.progress: 35 % (1915516) - 957073935 [sizes: aq: 27 max rq: 37225 max uq: 365: reinserts: (18419, 18941, 0)]
+progress: 36 % (1971793) - 976944606 [sizes: aq: 39 max rq: 38181 max uq: 373: reinserts: (15872, 13243, 0)]
+progress: 37 % (2028157) - 998009441 [sizes: aq: 31 max rq: 39134 max uq: 382: reinserts: (15630, 13011, 0)]
+.progress: 38 % (2084567) - 1019450878 [sizes: aq: 107 max rq: 40310 max uq: 406: reinserts: (17376, 14000, 0)]
+progress: 39 % (2141140) - 1040142951 [sizes: aq: 30 max rq: 41265 max uq: 419: reinserts: (14355, 12532, 0)]
+.progress: 40 % (2197801) - 1060615878 [sizes: aq: 19 max rq: 42463 max uq: 436: reinserts: (15772, 14138, 0)]
+progress: 41 % (2254509) - 1082028192 [sizes: aq: 25 max rq: 43410 max uq: 450: reinserts: (13957, 12839, 0)]
+|progress: 42 % (2311219) - 1102520646 [sizes: aq: 407 max rq: 44847 max uq: 465: reinserts: (20237, 13819, 0)]
+progress: 43 % (2368269) - 1122677699 [sizes: aq: 36 max rq: 45805 max uq: 472: reinserts: (15356, 19193, 0)]
+progress: 44 % (2425237) - 1142627929 [sizes: aq: 27 max rq: 46762 max uq: 477: reinserts: (14274, 12768, 0)]
+.progress: 45 % (2482292) - 1164550774 [sizes: aq: 98 max rq: 47781 max uq: 482: reinserts: (13212, 12329, 0)]
+progress: 46 % (2539524) - 1184898674 [sizes: aq: 22 max rq: 48918 max uq: 486: reinserts: (15124, 13399, 0)]
+.progress: 47 % (2596707) - 1205456786 [sizes: aq: 167 max rq: 50116 max uq: 488: reinserts: (14864, 13107, 0)]
+progress: 48 % (2654161) - 1227285632 [sizes: aq: 27 max rq: 51075 max uq: 492: reinserts: (14885, 13689, 0)]
+progress: 49 % (2711465) - 1248426949 [sizes: aq: 353 max rq: 52509 max uq: 495: reinserts: (18129, 13709, 0)]
+.progress: 50 % (2769151) - 1268665049 [sizes: aq: 33 max rq: 53468 max uq: 499: reinserts: (16068, 19185, 0)]
+progress: 51 % (2826778) - 1288836494 [sizes: aq: 26 max rq: 54421 max uq: 503: reinserts: (14732, 12623, 0)]
+.progress: 52 % (2884441) - 1325200275 [sizes: aq: 12 max rq: 55415 max uq: 531: reinserts: (24531, 24155, 0)]
+.progress: 53 % (2942349) - 1396744725 [sizes: aq: 37 max rq: 56472 max uq: 648: reinserts: (112170, 21368, 0)]
+.progress: 54 % (3000296) - 1409035232 [sizes: aq: 48 max rq: 57672 max uq: 650: reinserts: (7593, 7840, 0)]
+progress: 55 % (3058276) - 1422358683 [sizes: aq: 99 max rq: 58869 max uq: 655: reinserts: (7670, 6734, 0)]
+progress: 56 % (3116513) - 1435243927 [sizes: aq: 24 max rq: 59829 max uq: 657: reinserts: (6895, 7727, 0)]
+progress: 57 % (3174787) - 1447915256 [sizes: aq: 27 max rq: 61028 max uq: 665: reinserts: (8568, 7835, 0)]
+.progress: 58 % (3233095) - 1461433211 [sizes: aq: 32 max rq: 62226 max uq: 671: reinserts: (8198, 7746, 0)]
+progress: 59 % (3291509) - 1474008059 [sizes: aq: 199 max rq: 63409 max uq: 680: reinserts: (9141, 6795, 0)]
+progress: 60 % (3350101) - 1487834060 [sizes: aq: 27 max rq: 64361 max uq: 683: reinserts: (7751, 7641, 0)]
+.progress: 61 % (3408681) - 1501189731 [sizes: aq: 26 max rq: 65541 max uq: 684: reinserts: (8701, 8558, 0)]
+progress: 62 % (3467413) - 1514716341 [sizes: aq: 39 max rq: 66717 max uq: 690: reinserts: (9501, 8353, 0)]
+progress: 63 % (3526181) - 1528459745 [sizes: aq: 184 max rq: 67910 max uq: 697: reinserts: (8997, 7234, 0)]
+progress: 64 % (3585153) - 1541445597 [sizes: aq: 12 max rq: 68855 max uq: 698: reinserts: (7689, 7682, 0)]
+.progress: 65 % (3644161) - 1555287724 [sizes: aq: 36 max rq: 70049 max uq: 699: reinserts: (8174, 7754, 0)]
+progress: 66 % (3703261) - 1568593413 [sizes: aq: 27 max rq: 71240 max uq: 703: reinserts: (8406, 7899, 0)]
+progress: 67 % (3762520) - 1582147456 [sizes: aq: 39 max rq: 72423 max uq: 704: reinserts: (8865, 8098, 0)]
+progress: 68 % (3821737) - 1595670925 [sizes: aq: 131 max rq: 73620 max uq: 704: reinserts: (7887, 7283, 0)]
+.progress: 69 % (3881158) - 1608719101 [sizes: aq: 189 max rq: 74812 max uq: 705: reinserts: (7392, 7395, 0)]
+progress: 70 % (3940722) - 1622956974 [sizes: aq: 37 max rq: 75760 max uq: 705: reinserts: (7738, 7928, 0)]
+progress: 71 % (4000355) - 1636713522 [sizes: aq: 27 max rq: 76952 max uq: 708: reinserts: (8864, 7894, 0)]
+|progress: 72 % (4060009) - 1650031247 [sizes: aq: 31 max rq: 78149 max uq: 711: reinserts: (8333, 7635, 0)]
+..........|progress: 73 % (4119902) - 2234479873 [sizes: aq: 28 max rq: 79348 max uq: 719: reinserts: (15467, 13088, 0)]
+.progress: 74 % (4179521) - 2258283384 [sizes: aq: 136 max rq: 80502 max uq: 752: reinserts: (25218, 15372, 0)]
+progress: 75 % (4239527) - 2280335868 [sizes: aq: 16 max rq: 81462 max uq: 766: reinserts: (15279, 12397, 0)]
+.progress: 76 % (4299626) - 2300440543 [sizes: aq: 42 max rq: 82887 max uq: 791: reinserts: (25953, 19927, 0)]
+progress: 77 % (4359664) - 2321937712 [sizes: aq: 20 max rq: 83841 max uq: 804: reinserts: (17578, 13853, 0)]
+progress: 78 % (4419871) - 2344896155 [sizes: aq: 33 max rq: 85019 max uq: 814: reinserts: (20047, 15128, 0)]
+.progress: 79 % (4480093) - 2367110280 [sizes: aq: 152 max rq: 86213 max uq: 826: reinserts: (18616, 13495, 0)]
+progress: 80 % (4540687) - 2391252397 [sizes: aq: 172 max rq: 87287 max uq: 840: reinserts: (16286, 14020, 0)]
+.progress: 81 % (4601206) - 2412860524 [sizes: aq: 40 max rq: 88598 max uq: 857: reinserts: (25617, 20052, 0)]
+progress: 82 % (4661783) - 2434671413 [sizes: aq: 30 max rq: 89545 max uq: 865: reinserts: (16090, 13636, 0)]
+.progress: 83 % (4722452) - 2457801163 [sizes: aq: 30 max rq: 90729 max uq: 882: reinserts: (18414, 15045, 0)]
+progress: 84 % (4783297) - 2480929818 [sizes: aq: 20 max rq: 91915 max uq: 896: reinserts: (17394, 14942, 0)]
+.

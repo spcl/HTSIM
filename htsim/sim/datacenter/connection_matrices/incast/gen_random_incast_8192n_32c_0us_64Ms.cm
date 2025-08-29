@@ -1,0 +1,34 @@
+Nodes 8192
+Connections 32
+5652->0 id 1 start 0 size 67108864
+46->0 id 2 start 0 size 67108864
+6334->0 id 3 start 0 size 67108864
+3235->0 id 4 start 0 size 67108864
+2796->0 id 5 start 0 size 67108864
+2088->0 id 6 start 0 size 67108864
+725->0 id 7 start 0 size 67108864
+1176->0 id 8 start 0 size 67108864
+3897->0 id 9 start 0 size 67108864
+932->0 id 10 start 0 size 67108864
+3999->0 id 11 start 0 size 67108864
+4516->0 id 12 start 0 size 67108864
+7991->0 id 13 start 0 size 67108864
+4571->0 id 14 start 0 size 67108864
+6726->0 id 15 start 0 size 67108864
+756->0 id 16 start 0 size 67108864
+2852->0 id 17 start 0 size 67108864
+2648->0 id 18 start 0 size 67108864
+1997->0 id 19 start 0 size 67108864
+404->0 id 20 start 0 size 67108864
+3850->0 id 21 start 0 size 67108864
+3140->0 id 22 start 0 size 67108864
+4790->0 id 23 start 0 size 67108864
+4903->0 id 24 start 0 size 67108864
+1570->0 id 25 start 0 size 67108864
+3347->0 id 26 start 0 size 67108864
+5742->0 id 27 start 0 size 67108864
+4250->0 id 28 start 0 size 67108864
+7972->0 id 29 start 0 size 67108864
+4363->0 id 30 start 0 size 67108864
+721->0 id 31 start 0 size 67108864
+6673->0 id 32 start 0 size 67108864

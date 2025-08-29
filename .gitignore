@@ -1,0 +1,16 @@
+*.o
+*.a
+parse_output
+htsim_*
+*.dat
+*.csv
+*.json
+idmap.txt
+*_test
+*.out
+*.pyc
+**/validation/**/*.cm
+*.pdf
+*.png
+!example_validate.json
+build/

@@ -1,0 +1,24 @@
+connection_matrices/perm_16n_16c_2MB.cm
+!Experiment Small permutation (16 nodes)
+!Binary ./htsim_uec
+!Param -receiver_cc_only
+!Param -end 1000
+!Param -paths 128
+!tailFCT 210
+!continue
+connection_matrices/perm_16n_16c_2MB.cm
+!Experiment Small permutation, INC (16 nodes)
+!Binary ./htsim_uec
+!Param -receiver_cc_only
+!Param -failed 1
+!Param -end 2000
+!Param -paths 128
+!tailFCT 210
+!continue
+connection_matrices/perm_16n_16c_2MB.cm
+!Experiment Small permutation, single path.
+!Binary ./htsim_uec
+!Param -receiver_cc_only
+!Param -end 2000
+!Param -paths 1
+!tailFCT 1300

@@ -1,0 +1,17 @@
+Nodes 8192
+Tiers 2
+Podsize 8192
+
+Tier 0
+Downlink_speed_Gbps 800
+Radix_Down 64
+Radix_Up 16
+Downlink_Latency_ns 1000
+Oversubscribed 4
+Switch_Latency_ns 0
+
+Tier 1
+Downlink_speed_Gbps 800
+Radix_Down 128
+Downlink_Latency_ns 1000
+Switch_Latency_ns 0

@@ -1,0 +1,34 @@
+Nodes 8192
+Connections 32
+8191->0 id 1 start 0 size 67108864
+8190->0 id 2 start 0 size 67108864
+8189->0 id 3 start 0 size 67108864
+8188->0 id 4 start 0 size 67108864
+8187->0 id 5 start 0 size 67108864
+8186->0 id 6 start 0 size 67108864
+8185->0 id 7 start 0 size 67108864
+8184->0 id 8 start 0 size 67108864
+8183->0 id 9 start 0 size 67108864
+8182->0 id 10 start 0 size 67108864
+8181->0 id 11 start 0 size 67108864
+8180->0 id 12 start 0 size 67108864
+8179->0 id 13 start 0 size 67108864
+8178->0 id 14 start 0 size 67108864
+8177->0 id 15 start 0 size 67108864
+8176->0 id 16 start 0 size 67108864
+8175->0 id 17 start 0 size 67108864
+8174->0 id 18 start 0 size 67108864
+8173->0 id 19 start 0 size 67108864
+8172->0 id 20 start 0 size 67108864
+8171->0 id 21 start 0 size 67108864
+8170->0 id 22 start 0 size 67108864
+8169->0 id 23 start 0 size 67108864
+8168->0 id 24 start 0 size 67108864
+8167->0 id 25 start 0 size 67108864
+8166->0 id 26 start 0 size 67108864
+8165->0 id 27 start 0 size 67108864
+8164->0 id 28 start 0 size 67108864
+8163->0 id 29 start 0 size 67108864
+8162->0 id 30 start 0 size 67108864
+8161->0 id 31 start 0 size 67108864
+8160->0 id 32 start 0 size 67108864

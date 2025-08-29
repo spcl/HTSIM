@@ -1,0 +1,87 @@
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Large permutation, oblivious (1024 nodes), 8 core links running at 10% capacity
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -end 3000
+!Param -load_balancing_algo oblivious
+!Param -paths 128
+!Param -failed 8
+!tailFCT 220
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Large permutation, oblivious, large queues (1024 nodes), 8 core links running at 10% capacity
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -end 3000
+!Param -q 500
+!Param -load_balancing_algo oblivious
+!Param -paths 128
+!Param -failed 8
+!tailFCT 220
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Large permutation, bitmap (1024 nodes), 8 core links running at 10% capacity
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -end 3000
+!Param -load_balancing_algo bitmap
+!Param -paths 128
+!Param -failed 8
+!tailFCT 220
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Large permutation, bitmap, large queues (1024 nodes), 8 core links running at 10% capacity
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -end 3000
+!Param -q 500
+!Param -load_balancing_algo bitmap
+!Param -paths 128
+!Param -failed 8
+!tailFCT 220
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Large permutation, REPS, 1SACK/packet (1024 nodes), 8 core links running at 10% capacity
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -end 3000
+!Param -load_balancing_algo reps
+!Param -sack_threshold 4000
+!Param -paths 128
+!Param -failed 8
+!tailFCT 220
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Large permutation, REPS, 1SACK/packet , large queues (1024 nodes), 8 core links running at 10% capacity
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -end 3000
+!Param -q 500
+!Param -load_balancing_algo reps
+!Param -sack_threshold 4000
+!Param -paths 128
+!Param -failed 8
+!tailFCT 220
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Large permutation, REPS, 4SACK/packet (1024 nodes), 8 core links running at 10% capacity
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -end 3000
+!Param -load_balancing_algo reps
+!Param -paths 128
+!Param -failed 8
+!tailFCT 220
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Large permutation, mixed (bitmap+REPS), 1SACK/packet (1024 nodes), 8 core links running at 10% capacity
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -end 3000
+!Param -load_balancing_algo mixed
+!Param -sack_threshold 4000
+!Param -paths 128
+!Param -failed 8
+!tailFCT 220
+connection_matrices/perm_1024n_1024c_0u_2000000b.cm
+!Experiment Large permutation, mixed, 4SACK/packet (1024 nodes), 8 core links running at 10% capacity
+!Binary ./htsim_uec
+!Param -sender_cc_only
+!Param -end 3000
+!Param -load_balancing_algo mixed
+!Param -paths 128
+!Param -failed 8
+!tailFCT 220

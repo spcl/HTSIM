@@ -1,0 +1,10 @@
+Nodes 8192
+Connections 8
+4945->0 id 1 start 0 size 67108864
+2372->0 id 2 start 0 size 67108864
+789->0 id 3 start 0 size 67108864
+1969->0 id 4 start 0 size 67108864
+5381->0 id 5 start 0 size 67108864
+4736->0 id 6 start 0 size 67108864
+8096->0 id 7 start 0 size 67108864
+1041->0 id 8 start 0 size 67108864

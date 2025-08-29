@@ -1,0 +1,4 @@
+Nodes 8192
+Connections 2
+8191->0 id 1 start 16 size 2097152
+8190->0 id 2 start 13 size 2097152
