@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
     simtime_picosec switch_latency = timeFromUs((uint32_t)0);
     queue_type qt = COMPOSITE;
 
-    enum LoadBalancing_Algo { BITMAP, REPS, REPS_LEGACY, OBLIVIOUS, MIXED};
+    enum LoadBalancing_Algo { BITMAP, REPS, REPS_LEGACY, OBLIVIOUS, MIXED, ECMP};
     LoadBalancing_Algo load_balancing_algo = MIXED;
 
     bool log_sink = false;
@@ -236,6 +236,12 @@ int main(int argc, char **argv) {
             else if (!strcmp(argv[i+1], "mixed")) {
                 load_balancing_algo = MIXED;
             }
+            else if (!strcmp(argv[i+1], "mixed")) {
+                load_balancing_algo = MIXED;
+            }
+            else if (!strcmp(argv[i+1], "ecmp")) {
+                load_balancing_algo = ECMP;
+            }
             else {
                 cout << "Unknown load balancing algorithm of type " << argv[i+1] << ", expecting bitmap, reps or reps2" << endl;
                 exit_error(argv[0]);
@@ -378,6 +384,9 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i],"-disable_trim")) {
             disable_trim = true;
             cout << "Trimming disabled, dropping instead." << endl;
+        } else if (!strcmp(argv[i],"-print_stats_flows")) {
+            LogSimInterface::print_stats_flows = true;
+            cout << "Printing stats for all flows (ONLY when running with LGS/GOAL)." << endl;
         } else if (!strcmp(argv[i],"-trimsize")){
             // size of trimmed packet in bytes
             trimsize = atoi(argv[i+1]);
@@ -801,6 +810,7 @@ int main(int argc, char **argv) {
         api->setLogSimInterface(lgs);
         lgs->set_protocol(UEC_PROTOCOL);
         lgs->htsim_api->linkspeed = linkspeed;
+        api->print_stats_flows = LogSimInterface::print_stats_flows;
 
         // Build a factory for creating per-flow multipath instances
         switch (load_balancing_algo) {
@@ -822,6 +832,11 @@ int main(int argc, char **argv) {
             case OBLIVIOUS:
                 api->setMultipathFactory([path_entropy_size]() {
                     return std::make_unique<UecMpOblivious>(path_entropy_size, UecSrc::_debug);
+                });
+                break;
+            case ECMP:
+                api->setMultipathFactory([path_entropy_size]() {
+                    return std::make_unique<UecMpEcmp>(path_entropy_size, UecSrc::_debug);
                 });
                 break;
             case MIXED:
@@ -886,6 +901,8 @@ int main(int argc, char **argv) {
                 mp = make_unique<UecMpOblivious>(path_entropy_size, UecSrc::_debug);
             } else if (load_balancing_algo == MIXED){
                 mp = make_unique<UecMpMixed>(path_entropy_size, UecSrc::_debug);
+            } else if (load_balancing_algo == ECMP){
+                mp = make_unique<UecMpEcmp>(path_entropy_size, UecSrc::_debug);
             } else {
                 cout << "ERROR: Failed to set multipath algorithm, abort." << endl;
                 abort();

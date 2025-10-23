@@ -2359,6 +2359,8 @@ void UecSrc::rtxTimerExpired() {
     //_send_times.erase(first_entry);
     delFromSendTimes(send_record->second.send_time,seqno);
 
+    //cout << _nodename << " rtx timer expired for seqno " << seqno << " flow " << _flow.str() << " packet sent at " << timeAsUs(send_record->second.send_time) << " now time is " << timeAsUs(eventlist().now()) << endl;
+
     if (_debug_src)
         cout << _nodename << " rtx timer expired for seqno " << seqno << " flow " << _flow.str() << " packet sent at " << timeAsUs(send_record->second.send_time) << " now time is " << timeAsUs(eventlist().now()) << endl;
     

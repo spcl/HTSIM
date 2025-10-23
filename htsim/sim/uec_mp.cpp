@@ -286,3 +286,24 @@ uint16_t UecMpMixed::nextEntropy(uint64_t seq_sent, uint64_t cur_cwnd_in_pkts) {
         return _bitmap.nextEntropy(seq_sent, cur_cwnd_in_pkts);
     }
 }
+
+UecMpEcmp::UecMpEcmp(uint16_t no_of_paths, bool debug)
+    : UecMultipath(debug),
+      _crt_path(0) {
+    if (_debug)
+        cout << "Multipath"
+            << " ECMP"
+            << " _no_of_paths " << no_of_paths
+            << endl;
+    _crt_path = rand() % no_of_paths;
+}
+
+void UecMpEcmp::processEv(uint16_t path_id, PathFeedback feedback) {
+    // No OP in ECMP
+    return;
+}
+
+uint16_t UecMpEcmp::nextEntropy(uint64_t seq_sent, uint64_t cur_cwnd_in_pkts) {
+    // Always same path for a given flow in ECMP
+    return _crt_path;
+}

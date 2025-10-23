@@ -39,6 +39,7 @@ namespace std
 
 static bool print = false;
 int LogSimInterface::percentage_lgs = 0;
+bool LogSimInterface::print_stats_flows = false;
 
 LogSimInterface::LogSimInterface() {}
 
