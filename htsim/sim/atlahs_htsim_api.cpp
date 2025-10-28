@@ -53,8 +53,7 @@ void AtlahsHtsimApi::Send(const SendEvent &event, graph_node_properties elem) {
         }
         auto per_flow_mp = mp_factory();
 
-        UecSrc *uecSrc = new UecSrc(traffic_logger, *_eventlist, std::move(per_flow_mp), *uec_nics.at(from), 1);
-
+        UecSrc *uecSrc = new UecSrc(traffic_logger, *_eventlist, std::move(per_flow_mp), *uec_nics.at(from), 1, false, tag);
         // setFlowsize is the correct method name
         uecSrc->setFlowsize(size);
         uecSrc->initNscc(cwnd_b, base_rtt_bw_two_points);
