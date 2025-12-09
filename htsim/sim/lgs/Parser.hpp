@@ -1,3 +1,4 @@
+#include <cstring>
 #include <map>
 #include <vector>
 #include <string>
@@ -368,30 +369,42 @@ class Graph {
 		pos = start_rankdata;
 		uint32_t num_in_appendix = 0;
 
-		*((uint32_t*) pos) = (uint32_t) allNodes.size();	 	pos += sizeof(uint32_t);	// number of nodes in the schedule
-		*((uint32_t*) pos) = (uint32_t) RootNodes.size();		pos += sizeof(uint32_t);	// number of independent actions
+		{
+			const uint32_t size = (uint32_t) allNodes.size();
+			memcpy(pos, &size, sizeof(uint32_t));	 	pos += sizeof(uint32_t);	// number of nodes in the schedule
+		}
+		{
+			const uint32_t size = (uint32_t) RootNodes.size();
+			memcpy(pos, &size, sizeof(uint32_t));		pos += sizeof(uint32_t);	// number of independent actions
+		}
 		
 		// independent action offsets
 		for (std::vector<Node*>::iterator it = RootNodes.begin(); it != RootNodes.end(); it++) {
-			*((uint32_t*) pos) = (**it).offset; pos += sizeof(uint32_t);
+			memcpy(pos, &(**it).offset, sizeof(uint32_t)); pos += sizeof(uint32_t);
 		}
 
 		// node data 
 
 		for (std::vector<Node*>::iterator it = allNodes.begin(); it != allNodes.end(); it++) {
 
-			*((uint32_t*) pos) = (**it).DependenciesCnt; 		pos += sizeof(uint32_t);	// number of actions this action depends on
-			*((char*) pos)     = (**it).Type;            		pos += sizeof(char);		// type of this action
-			*((uint32_t*) pos) = (**it).Peer;            		pos += sizeof(uint32_t);	// peer of this action
-			*((uint64_t*) pos) = (**it).Size;            		pos += sizeof(uint64_t);	// size of the data transfer / length of the local calculation
-			*((uint32_t*) pos) = (**it).Tag;             		pos += sizeof(uint32_t);	// tag of the send/recv operation
-			*((uint8_t*) pos)  = (**it).Proc;            		pos += sizeof(uint8_t);		// processor used for this action
-			*((uint8_t*) pos)  = (**it).Nic;             		pos += sizeof(uint8_t);		// network interface used for this action
-			*((uint32_t*) pos) = (**it).DependOnMe.size();		pos += sizeof(uint32_t);	// number of actions that depend on this actions termination
-			*((uint32_t*) pos) = num_in_appendix;				pos += sizeof(uint32_t);	// start index of dependent actions (in appendix)
+			memcpy(pos, &(**it).DependenciesCnt, sizeof(uint32_t)); 		pos += sizeof(uint32_t);	// number of actions this action depends on
+			memcpy(pos, &(**it).Type, sizeof(char));                		pos += sizeof(char);		// type of this action
+			memcpy(pos, &(**it).Peer, sizeof(uint32_t));            		pos += sizeof(uint32_t);	// peer of this action
+			memcpy(pos, &(**it).Size, sizeof(uint64_t));            		pos += sizeof(uint64_t);	// size of the data transfer / length of the local calculation
+			memcpy(pos, &(**it).Tag, sizeof(uint32_t));             		pos += sizeof(uint32_t);	// tag of the send/recv operation
+			memcpy(pos, &(**it).Proc, sizeof(uint8_t));             		pos += sizeof(uint8_t);		// processor used for this action
+			memcpy(pos, &(**it).Nic, sizeof(uint8_t));              		pos += sizeof(uint8_t);		// network interface used for this action
+			{
+				const uint32_t size = (**it).DependOnMe.size();
+				memcpy(pos, &size, sizeof(uint32_t));                 		pos += sizeof(uint32_t);	// number of actions that depend on this actions termination
+			}
+			memcpy(&pos, &num_in_appendix, sizeof(uint32_t));   				pos += sizeof(uint32_t);	// start index of dependent actions (in appendix)
 			num_in_appendix += (**it).DependOnMe.size();
-			*((uint32_t*) pos) = (**it).StartDependOnMe.size();	pos += sizeof(uint32_t);	// number of actions that depend on this actions start
-			*((uint32_t*) pos) = num_in_appendix;				pos += sizeof(uint32_t);	// start index of start-dependent actions (in appendix)
+			{
+				const uint32_t size = (**it).StartDependOnMe.size();
+				memcpy(pos, &size, sizeof(uint32_t));                   	pos += sizeof(uint32_t);	// number of actions that depend on this actions start
+			}
+			memcpy(pos, &num_in_appendix, sizeof(uint32_t));    				pos += sizeof(uint32_t);	// start index of start-dependent actions (in appendix)
 			num_in_appendix += (**it).StartDependOnMe.size();
 		}
 		
@@ -399,10 +412,10 @@ class Graph {
 	
 		for (std::vector<Node*>::iterator it = allNodes.begin(); it != allNodes.end(); it++) {
 			for (std::vector<Node*>::iterator dit = (**it).DependOnMe.begin(); dit != (**it).DependOnMe.end(); dit++) {
-				*((uint32_t*) pos) = (**dit).offset;       		pos += sizeof(uint32_t);	// offset of dependent action
+				memcpy(pos, &(**dit).offset, sizeof(uint32_t));       		pos += sizeof(uint32_t);	// offset of dependent action
 			}
 			for (std::vector<Node*>::iterator dit = (**it).StartDependOnMe.begin(); dit != (**it).StartDependOnMe.end(); dit++) {
-				*((uint32_t*) pos) = (**dit).offset;       		pos += sizeof(uint32_t);	// offset of start-dependent action
+				memcpy(pos, &(**dit).offset, sizeof(uint32_t));       		pos += sizeof(uint32_t);	// offset of start-dependent action
 			}
 		}
 
