@@ -3,6 +3,7 @@
 #include <math.h>
 #include <cstdint>
 #include <fstream>
+#include <limits>
 #include <sstream>
 #include "circular_buffer.h"
 #include "uec_logger.h"
@@ -599,20 +600,6 @@ UecSrc::UecSrc(TrafficLogger* trafficLogger,
     _nscc_fulfill_stats = {};
 }
 
-void UecSrc::delFromSendTimes(simtime_picosec time, UecDataPacket::seq_t seq_no) {
-    //cout << eventlist().now() << " flowid " << _flow.flow_id() << " _send_times.erase " << time << " for " << seq_no << endl;
-    auto snd_seq_range = _send_times.equal_range(time);
-    auto snd_it = snd_seq_range.first;
-    while (snd_it != snd_seq_range.second) {
-        if (snd_it->second == seq_no) {
-            _send_times.erase(snd_it);
-            break;
-        } else {
-            ++snd_it;
-        }
-    }
-}
-
 void UecSrc::connectPort(uint32_t port_num,
                           Route& routeout,
                           Route& routeback,
@@ -694,6 +681,7 @@ mem_b UecSrc::handleAckno(UecDataPacket::seq_t ackno) {
             if (_msg_tracker.has_value()) {
                 _msg_tracker.value()->addSAck(ackno);
             }
+            _rtx_times.erase(ackno);
         }
         return 0;
     } else {
@@ -718,8 +706,7 @@ mem_b UecSrc::handleAckno(UecDataPacket::seq_t ackno) {
         }
 
         _tx_bitmap.erase(i);
-        // _send_times.erase(send_time);
-        delFromSendTimes(send_time, ackno);
+        _rtx_times.erase(ackno);
 
         if (send_time == _rto_send_time) {
             recalculateRTO();
@@ -727,32 +714,6 @@ mem_b UecSrc::handleAckno(UecDataPacket::seq_t ackno) {
 
         return pkt_size;
     }
-
-
-    abort(); // dead code below
-    /*
-    
-    // mem_b pkt_size = i->second.pkt_size;
-    simtime_picosec send_time = i->second.send_time;
-
-    mem_b pkt_size = i->second.pkt_size;
-    
-    if (_debug_src)
-        cout << _flow.str() << " " << _nodename << " handleAck " << ackno << " flow " << _flow.str() << endl;
-    if(_flow.flow_id() == _debug_flowid ){
-        cout << timeAsUs(eventlist().now()) << " flowid " << _flow.flow_id() << " handleAck ackno " << ackno
-             << endl;
-    }    
-    _tx_bitmap.erase(i);
-    // _send_times.erase(send_time);
-    delFromSendTimes(send_time, ackno);
-
-    if (send_time == _rto_send_time) {
-        recalculateRTO();
-    }
-
-    return pkt_size;
-    */
 }
 
 mem_b UecSrc::handleCumulativeAck(UecDataPacket::seq_t cum_ack) {
@@ -781,8 +742,9 @@ mem_b UecSrc::handleCumulativeAck(UecDataPacket::seq_t cum_ack) {
         auto seqno = i->first;
         // cumulative ack is next expected packet, not yet received
         if (seqno >= cum_ack) {
-            // nothing else acked
-            break;
+            // skip entries not covered by this cumulative ack
+            ++i;
+            continue;
         }
         simtime_picosec send_time = i->second.send_time;
 
@@ -794,18 +756,12 @@ mem_b UecSrc::handleCumulativeAck(UecDataPacket::seq_t cum_ack) {
             cout << timeAsUs(eventlist().now()) << " flowid " << _flow.flow_id() << " handleCumulativeAck seqno " << seqno
                 << endl;
         }  
-        _tx_bitmap.erase(i);
-        i = _tx_bitmap.begin();
-        // _send_times.erase(send_time);
-        delFromSendTimes(send_time, seqno);
+        i = _tx_bitmap.erase(i);
         if (send_time == _rto_send_time) {
             recalculateRTO();
         }
         //we can safely remove the number of retranmission times if we receive the packets' ACK
-        auto rtx_time = _rtx_times.find(seqno);
-        if (rtx_time != _rtx_times.end()){
-            _rtx_times.erase(rtx_time);
-        }
+        _rtx_times.erase(seqno);
     }
     return newly_acked;
 }
@@ -1535,8 +1491,6 @@ void UecSrc::runSleek(uint32_t ooo, UecBasePacket::seq_t cum_ack) {
 
         _in_flight -= pkt_size;
 
-        // _send_times.erase(send_time);
-        delFromSendTimes(send_time, rtx_seqno);
         _highest_rtx_sent = seqno+1;
         queueForRtx(seqno, pkt_size);
 
@@ -1625,9 +1579,6 @@ void UecSrc::processNack(const UecNackPacket& pkt) {
 
     _in_flight -= pkt_size;
     //assert(_in_flight >= 0);
-
-    // _send_times.erase(send_time);
-    delFromSendTimes(send_time, seqno);
 
     stopSpeculating();
     queueForRtx(seqno, pkt_size);
@@ -2254,7 +2205,6 @@ void UecSrc::createSendRecord(UecBasePacket::seq_t seqno, mem_b full_pkt_size) {
     assert(_tx_bitmap.find(seqno) == _tx_bitmap.end());
 
     _tx_bitmap.emplace(seqno, sendRecord(full_pkt_size, eventlist().now()));
-    _send_times.emplace(eventlist().now(), seqno);
 
     if (_rtx_times.find(seqno) == _rtx_times.end()) {
         _rtx_times.emplace(seqno, 0);
@@ -2352,11 +2302,16 @@ void UecSrc::recalculateRTO() {
     // we're no longer waiting for the packet we set the timer for -
     // figure out what the timer should be now.
     cancelRTO();
-    if (_send_times.empty()) {
+    if (_tx_bitmap.empty()) {
         // nothing left that we're waiting for
         return;
     }
-    auto earliest_send_time = _send_times.begin()->first;
+    // Find the earliest send_time across all in-flight packets
+    simtime_picosec earliest_send_time = std::numeric_limits<simtime_picosec>::max();
+    for (const auto& entry : _tx_bitmap) {
+        if (entry.second.send_time < earliest_send_time)
+            earliest_send_time = entry.second.send_time;
+    }
     startRTO(earliest_send_time);
 }
 
@@ -2364,22 +2319,20 @@ void UecSrc::rtxTimerExpired() {
     assert(eventlist().now() == _rtx_timeout);
     clearRTO();
 
-    auto first_entry = _send_times.begin();
-    assert(first_entry != _send_times.end());
-    auto seqno = first_entry->second;
-
-    auto send_record = _tx_bitmap.find(seqno);
-    assert(send_record != _tx_bitmap.end());
+    // Find the packet with the earliest send time in _tx_bitmap
+    assert(!_tx_bitmap.empty());
+    auto earliest_it = _tx_bitmap.begin();
+    for (auto it = _tx_bitmap.begin(); it != _tx_bitmap.end(); ++it) {
+        if (it->second.send_time < earliest_it->second.send_time)
+            earliest_it = it;
+    }
+    auto seqno = earliest_it->first;
+    auto send_record = earliest_it;
     mem_b pkt_size = send_record->second.pkt_size;
 
     // Trigger multipathing feedback for timeout. Unless we save EVs on the sender per packet, we will 
     // not be able to recover the original timed-out ev.
     _mp->processEv(UecMultipath::UNKNOWN_EV, UecMultipath::PATH_TIMEOUT);
-
-    // update flightsize?
-
-    //_send_times.erase(first_entry);
-    delFromSendTimes(send_record->second.send_time,seqno);
 
     //cout << _nodename << " rtx timer expired for seqno " << seqno << " flow " << _flow.str() << " packet sent at " << timeAsUs(send_record->second.send_time) << " now time is " << timeAsUs(eventlist().now()) << endl;
 

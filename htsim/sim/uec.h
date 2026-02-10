@@ -28,7 +28,7 @@
 //  *** don't change this default - override it by calling UecSrc::setMinRTO()
 #define DEFAULT_UEC_RTO_MIN 100
 
-static const unsigned uecMaxInFlightPkts = 1 << 14;
+static const unsigned uecMaxInFlightPkts = 1 << 12;
 class UecPullPacer;
 class UecSink;
 class UecSrc;
@@ -135,7 +135,7 @@ public:
            UecNIC& nic, 
            uint32_t no_of_ports, 
            bool rts = false);
-    void delFromSendTimes(simtime_picosec time, UecDataPacket::seq_t seq_no);
+
     /**
      * Initialize global NSCC parameters.
      */
@@ -261,9 +261,8 @@ public:
     // TODO in-flight packet storage - acks and sacks clear it
     // list<UecDataPacket*> _activePackets;
 
-    // we need to access the in_flight packet list quickly by sequence number, or by send time.
+    // we need to access the in_flight packet list quickly by sequence number.
     std::unordered_map<UecDataPacket::seq_t, sendRecord> _tx_bitmap;
-    std::multimap<simtime_picosec, UecDataPacket::seq_t> _send_times;
     std::unordered_map<UecDataPacket::seq_t, uint16_t> _rtx_times;
 
     map<UecDataPacket::seq_t, mem_b> _rtx_queue;
