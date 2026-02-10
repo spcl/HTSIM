@@ -11,6 +11,24 @@ ConnectionMatrix::ConnectionMatrix(uint32_t n)
   N = n;
 }
 
+ConnectionMatrix::~ConnectionMatrix()
+{
+    if (conns) {
+        for (auto* c : *conns) {
+            delete c;
+        }
+    }
+    for (auto& [src, vec] : connections) {
+        delete vec;
+    }
+    for (auto* f : failures) {
+        delete f;
+    }
+    for (auto& [id, t] : triggers) {
+        delete t;
+    }
+}
+
 void ConnectionMatrix::setPermutation(uint32_t conn){
   setPermutation(conn,1);
 }

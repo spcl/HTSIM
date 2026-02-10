@@ -24,7 +24,8 @@ protected:
 
 class EventList {
 public:
-    typedef multimap <simtime_picosec, EventSource*>::iterator Handle;
+    typedef multimap <simtime_picosec, EventSource*> pendingsources_t;
+    typedef pendingsources_t::iterator Handle;
     EventList();
     static void setEndtime(simtime_picosec endtime); // end simulation at endtime (rather than forever)
     static bool doNextEvent(); // returns true if it did anything, false if there's nothing to do
@@ -42,7 +43,7 @@ public:
     static inline simtime_picosec now() {return EventList::_lasteventtime;}
     static inline int trafficEventCount() {return EventList::_trafficeventcount;}
     static Handle nullHandle() {return _pendingsources.end();}
-    static multimap<simtime_picosec, EventSource*> getPendingSources() {return _pendingsources;}
+    static const pendingsources_t& getPendingSources() {return _pendingsources;}
 
 
     static EventList& getTheEventList();
@@ -52,7 +53,6 @@ public:
 private:
     static simtime_picosec _endtime;
     static simtime_picosec _lasteventtime;
-    typedef multimap <simtime_picosec, EventSource*> pendingsources_t;
     static pendingsources_t _pendingsources;
     static vector <TriggerTarget*> _pending_triggers;
 

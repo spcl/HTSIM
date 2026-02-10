@@ -853,14 +853,14 @@ bool UecSrc::checkFinished(UecDataPacket::seq_t cum_ack) {
                 _done_sending = true;
 
                 // ATLAHS 
-                EventOver *flow_over = new EventOver(from, to, _flow_size, tag, eventlist().now(), AtlahsEventType::SEND_EVENT_OVER);
-                flow_over->node = lgs_node;
-                flow_over->start_time_event = _flow_start_time;
+                EventOver flow_over(from, to, _flow_size, tag, eventlist().now(), AtlahsEventType::SEND_EVENT_OVER);
+                flow_over.node = lgs_node;
+                flow_over.start_time_event = _flow_start_time;
                 if (_atlahs_api) {
                     if (_atlahs_api->print_stats_flows) {
                         _atlahs_api->flowInfos.push_back(FlowInfo(timeAsUs(_flow_start_time), timeAsUs(eventlist().now()), timeAsUs(eventlist().now() - _flow_start_time), _flow_size, 1, _cwnd));
                     }
-                    _atlahs_api->EventFinished(*flow_over);
+                    _atlahs_api->EventFinished(flow_over);
                 }
             }
         } else {
@@ -889,14 +889,14 @@ bool UecSrc::checkFinished(UecDataPacket::seq_t cum_ack) {
                 }
                 cancelRTO();
                 // ATLAHS 
-                EventOver *flow_over = new EventOver(from, to, _flow_size, tag, eventlist().now(), AtlahsEventType::SEND_EVENT_OVER);
-                flow_over->node = lgs_node;
-                flow_over->start_time_event = _flow_start_time;
+                EventOver flow_over(from, to, _flow_size, tag, eventlist().now(), AtlahsEventType::SEND_EVENT_OVER);
+                flow_over.node = lgs_node;
+                flow_over.start_time_event = _flow_start_time;
                 if (_atlahs_api) {
                     if (_atlahs_api->print_stats_flows) {
                         _atlahs_api->flowInfos.push_back(FlowInfo(timeAsUs(_flow_start_time), timeAsUs(eventlist().now()), timeAsUs(eventlist().now() - _flow_start_time), _flow_size, 1, _cwnd));
                     }
-                    _atlahs_api->EventFinished(*flow_over);
+                    _atlahs_api->EventFinished(flow_over);
                 }
                 _done_sending = true;
             }

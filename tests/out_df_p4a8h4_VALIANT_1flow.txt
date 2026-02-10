@@ -1,0 +1,18 @@
+Topology type: dragonfly
+Topology input: /home/a-tobonato/TopologyPort/HTSIM/htsim/sim/datacenter/topologies/dragonfly/p4a8h4
+Routing strategy: VALIANT
+traffic matrix input file: /home/a-tobonato/TopologyPort/HTSIM/tests/df_p4a8h4_1flow.tm
+Packet size (MTU) is 4160
+Parsed args
+Logging to logout.dat
+Linkspeed set to 100Gbps
+DF/SF routing strategy: VALIANT (1)
+queue_id 2 ecn_low 70720 ecn_high 291200
+Nodes: 1056 Connections: 1 Triggers: 0 Failures: 0
+network_max_unloaded_rtt 7.3138 us
+Linkspeed: 400 Gbps
+Initializing static NSCC parameters: _reference_network_linkspeed=100000000000 _reference_network_rtt=12000000 _reference_network_bdp=150000 _target_Qdelay=5485350 _network_linkspeed=400000000000 _network_rtt=7313800 _network_bdp=365690 _qa_gate=2^3 _qa_threshold=2.19414e+07 _scaling_factor_a=2.43793 _scaling_factor_b=0.457112 _alpha=0.00332859 _fi=49928.9 _eta=1497.87 _qa_scaling=1 _gamma=0.8 _fi_scale=0.609483 _delay_alpha=0.0125 _adjust_period_threshold=7313800 _adjust_bytes_threshold=33280
+Starting simulation
+Flow Uec_0_1055 flowId 1000000001 uecSrc 1056 finished at 28.5298 total messages 1 total packets 256 RTS 0 total bytes 1048576 in_flight now 0 fair_inc 0 prop_inc 34251 fast_inc 0 eta_inc 4491 multi_dec -0 quick_dec -0 nack_dec -0
+..........|........Done
+New: 256 Rtx: 0 RTS: 0 Bounced: 0 ACKs: 65 NACKs: 0 Pulls: 0 sleek_pkts: 0

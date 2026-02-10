@@ -1,0 +1,27 @@
+Topology type: dragonfly
+Topology input: /home/a-tobonato/TopologyPort/HTSIM/htsim/sim/datacenter/topologies/dragonfly/p3a6h3
+Routing strategy: MINIMAL
+traffic matrix input file: /home/a-tobonato/TopologyPort/HTSIM/tests/df_p3a6h3_10flow.tm
+Packet size (MTU) is 4160
+Parsed args
+Logging to logout.dat
+Linkspeed set to 100Gbps
+DF/SF routing strategy: MINIMAL (0)
+queue_id 2 ecn_low 70720 ecn_high 291200
+Nodes: 342 Connections: 10 Triggers: 0 Failures: 0
+network_max_unloaded_rtt 7.3138 us
+Linkspeed: 400 Gbps
+Initializing static NSCC parameters: _reference_network_linkspeed=100000000000 _reference_network_rtt=12000000 _reference_network_bdp=150000 _target_Qdelay=5485350 _network_linkspeed=400000000000 _network_rtt=7313800 _network_bdp=365690 _qa_gate=2^3 _qa_threshold=2.19414e+07 _scaling_factor_a=2.43793 _scaling_factor_b=0.457112 _alpha=0.00332859 _fi=49928.9 _eta=1497.87 _qa_scaling=1 _gamma=0.8 _fi_scale=0.609483 _delay_alpha=0.0125 _adjust_period_threshold=7313800 _adjust_bytes_threshold=33280
+Starting simulation
+Flow Uec_155_19 flowId 1000000011 uecSrc 347 finished at 25.7039 total messages 1 total packets 256 RTS 0 total bytes 1048576 in_flight now 0 fair_inc 0 prop_inc 17248 fast_inc 453810 eta_inc 4491 multi_dec -0 quick_dec -0 nack_dec -0
+Flow Uec_248_133 flowId 1000000017 uecSrc 350 finished at 25.7039 total messages 1 total packets 256 RTS 0 total bytes 1048576 in_flight now 0 fair_inc 0 prop_inc 17248 fast_inc 453810 eta_inc 4491 multi_dec -0 quick_dec -0 nack_dec -0
+Flow Uec_31_209 flowId 1000000003 uecSrc 343 finished at 26.8384 total messages 1 total packets 256 RTS 0 total bytes 1048576 in_flight now 0 fair_inc 0 prop_inc 18102 fast_inc 392964 eta_inc 4491 multi_dec -0 quick_dec -0 nack_dec -0
+Flow Uec_124_323 flowId 1000000009 uecSrc 346 finished at 26.8384 total messages 1 total packets 256 RTS 0 total bytes 1048576 in_flight now 0 fair_inc 0 prop_inc 18102 fast_inc 392964 eta_inc 4491 multi_dec -0 quick_dec -0 nack_dec -0
+Flow Uec_186_57 flowId 1000000013 uecSrc 348 finished at 26.8384 total messages 1 total packets 256 RTS 0 total bytes 1048576 in_flight now 0 fair_inc 0 prop_inc 18102 fast_inc 392964 eta_inc 4491 multi_dec -0 quick_dec -0 nack_dec -0
+Flow Uec_217_95 flowId 1000000015 uecSrc 349 finished at 26.8384 total messages 1 total packets 256 RTS 0 total bytes 1048576 in_flight now 0 fair_inc 0 prop_inc 18102 fast_inc 392964 eta_inc 4491 multi_dec -0 quick_dec -0 nack_dec -0
+Flow Uec_93_285 flowId 1000000007 uecSrc 345 finished at 26.8384 total messages 1 total packets 256 RTS 0 total bytes 1048576 in_flight now 0 fair_inc 0 prop_inc 18102 fast_inc 392964 eta_inc 4491 multi_dec -0 quick_dec -0 nack_dec -0
+Flow Uec_62_247 flowId 1000000005 uecSrc 344 finished at 26.8384 total messages 1 total packets 256 RTS 0 total bytes 1048576 in_flight now 0 fair_inc 0 prop_inc 18102 fast_inc 392964 eta_inc 4491 multi_dec -0 quick_dec -0 nack_dec -0
+Flow Uec_279_171 flowId 1000000019 uecSrc 351 finished at 45.9128 total messages 1 total packets 256 RTS 0 total bytes 1048576 in_flight now 0 fair_inc 10358 prop_inc 2051 fast_inc 0 eta_inc 8982 multi_dec -84058 quick_dec -0 nack_dec -83200
+Flow Uec_0_171 flowId 1000000001 uecSrc 342 finished at 47.0505 total messages 1 total packets 256 RTS 0 total bytes 1048576 in_flight now 0 fair_inc 15637 prop_inc 4396 fast_inc 0 eta_inc 8982 multi_dec -61082 quick_dec -0 nack_dec -70720
+..........|........Done
+New: 2560 Rtx: 37 RTS: 0 Bounced: 0 ACKs: 990 NACKs: 37 Pulls: 0 sleek_pkts: 0

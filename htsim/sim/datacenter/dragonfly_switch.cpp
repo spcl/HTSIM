@@ -193,8 +193,9 @@ uint32_t DragonflySwitch::get_next_switch_source(uint32_t this_switch,
 }
 
 FibEntry* DragonflySwitch::get_fib_entry(uint32_t next_switch) {
-    if (_fib_entries.find(next_switch) != _fib_entries.end())
-        return _fib_entries[next_switch];
+    auto it = _fib_entries.find(next_switch);
+    if (it != _fib_entries.end())
+        return it->second;
 
     Route* route = new Route();
     route->push_back(_topo->queues_switch_switch[_id][next_switch]);

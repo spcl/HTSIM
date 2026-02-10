@@ -42,6 +42,7 @@ protected:
 class RouteTable {
 public:
     RouteTable() {};
+    ~RouteTable();
     void addRoute(int destination, Route* port, int cost, packet_direction direction);  
     void addHostRoute(int destination, Route* port, int flowid);  
     void setRoutes(int destination, vector<FibEntry*>* routes);  

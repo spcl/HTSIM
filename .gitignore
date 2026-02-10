@@ -14,4 +14,4 @@ idmap.txt
 *.png
 !example_validate.json
 build/
-*.bin
+*.bintests/

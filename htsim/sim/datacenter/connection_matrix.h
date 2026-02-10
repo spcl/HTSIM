@@ -48,6 +48,7 @@ struct failure {
 class ConnectionMatrix{
 public:
     ConnectionMatrix(uint32_t );
+    ~ConnectionMatrix();
     void addConnection(uint32_t src, uint32_t dest);
     void setPermutation(uint32_t conn);
     void setPermutation(uint32_t conn, uint32_t rack_size);

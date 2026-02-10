@@ -389,4 +389,6 @@ int main(int argc, char** argv) {
     cout << "New: " << new_pkts << " Rtx: " << rtx_pkts << " RTS: " << rts_pkts
          << " Bounced: " << bounce_pkts << " ACKs: " << ack_pkts << " NACKs: " << nack_pkts
          << " Pulls: " << pull_pkts << " sleek_pkts: " << sleek_pkts << endl;
+
+    delete conns;
 }
