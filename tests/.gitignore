@@ -1,0 +1,8 @@
+# Generated test artifacts (created at runtime)
+*.tm
+*.txt
+*.dat
+edge_tms/
+edge_out/
+e2e_tms/
+e2e_out/
