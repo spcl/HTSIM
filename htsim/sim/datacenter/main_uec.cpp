@@ -29,9 +29,16 @@
 #include "fat_tree_topology.h"
 #include "fat_tree_switch.h"
 
+#include "dragonfly_topology.h"
+#include "dragonfly_switch.h"
+#include "slimfly_topology.h"
+#include "slimfly_switch.h"
+
 #include <list>
 
 // Simulation params
+
+enum TopologyType { TOPOLOGY_FATTREE, TOPOLOGY_DRAGONFLY, TOPOLOGY_SLIMFLY };
 
 //#define PRINTPATHS 1
 
@@ -131,6 +138,10 @@ int main(int argc, char **argv) {
 
     char* tm_file = NULL;
     char* topo_file = NULL;
+    TopologyType topology_type = TOPOLOGY_FATTREE;
+    std::string topo_base_path;  // for dragonfly/slimfly: directory path
+    std::string host_table_base_path;  // for SOURCE routing
+    std::string routing_str = ""; // for dragonfly/slimfly routing strategy
     int8_t qa_gate = -1;
     bool conn_reuse = false;
 
@@ -324,8 +335,10 @@ int main(int argc, char **argv) {
             cout << "traffic matrix input file: "<< tm_file << endl;
             i++;
         } else if (!strcmp(argv[i],"-topo")){
+            // For fattree: path to .topo file; for dragonfly/slimfly: directory path
             topo_file = argv[i+1];
-            cout << "FatTree topology input file: "<< topo_file << endl;
+            topo_base_path = argv[i+1];
+            cout << "Topology input: "<< argv[i+1] << endl;
             i++;
         } else if (!strcmp(argv[i],"-q")){
             param_queuesize_set = true;
@@ -520,6 +533,31 @@ int main(int argc, char **argv) {
                 FatTreeSwitch::set_strategy(FatTreeSwitch::RR);
             }
             i++;
+        } else if (!strcmp(argv[i], "-topology")) {
+            if (!strcmp(argv[i+1], "fattree") || !strcmp(argv[i+1], "fat_tree")) {
+                topology_type = TOPOLOGY_FATTREE;
+            } else if (!strcmp(argv[i+1], "dragonfly")) {
+                topology_type = TOPOLOGY_DRAGONFLY;
+            } else if (!strcmp(argv[i+1], "slimfly")) {
+                topology_type = TOPOLOGY_SLIMFLY;
+            } else {
+                cout << "Unknown topology type " << argv[i+1] << ", expecting fattree, dragonfly, or slimfly" << endl;
+                exit(1);
+            }
+            cout << "Topology type: " << argv[i+1] << endl;
+            i++;
+        } else if (!strcmp(argv[i], "-basepath")) {
+            topo_base_path = argv[i+1];
+            cout << "Topology base path: " << topo_base_path << endl;
+            i++;
+        } else if (!strcmp(argv[i], "-routing")) {
+            routing_str = argv[i+1];
+            cout << "Routing strategy: " << routing_str << endl;
+            i++;
+        } else if (!strcmp(argv[i], "-host_table_basepath")) {
+            host_table_base_path = argv[i+1];
+            cout << "Host table base path: " << host_table_base_path << endl;
+            i++;
         } else {
             cout << "Unknown parameter " << argv[i] << endl;
             exit_error(argv[0]);
@@ -530,6 +568,11 @@ int main(int argc, char **argv) {
     if (end_time > 0 && logtime >= timeFromUs((uint32_t)end_time)){
         cout << "Logtime set to endtime" << endl;
         logtime = timeFromUs((uint32_t)end_time) - 1;
+    }
+
+    // DF/SF default packet size is 4160 (vs 4150 for FT)
+    if (topology_type != TOPOLOGY_FATTREE && packet_size == 4150) {
+        packet_size = 4160;
     }
 
     assert(trimsize >= 64 && trimsize <= (uint32_t)packet_size);
@@ -545,44 +588,43 @@ int main(int argc, char **argv) {
     UecSrc::_mtu = Packet::data_packet_size();
     UecSrc::_mss = UecSrc::_mtu - UecSrc::_hdr_size;
 
-    if (route_strategy==NOT_SET){
-        route_strategy = ECMP_FIB;
-        FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+    // Fat tree specific setup
+    if (topology_type == TOPOLOGY_FATTREE) {
+        if (route_strategy==NOT_SET){
+            route_strategy = ECMP_FIB;
+            FatTreeSwitch::set_strategy(FatTreeSwitch::ECMP);
+        }
+
+        FatTreeSwitch::_ar_sticky = ar_sticky;
+        FatTreeSwitch::_sticky_delta = timeFromUs(ar_sticky_delta);
+        FatTreeSwitch::_ecn_threshold_fraction = ecn_thresh;
+        FatTreeSwitch::_disable_trim = disable_trim;
+        FatTreeSwitch::_trim_size = trimsize;
+
+        switch (route_strategy) {
+        case ECMP_FIB_ECN:
+        case REACTIVE_ECN:
+            if (qt != COMPOSITE_ECN_LB) {
+                fprintf(stderr, "Route Strategy is ECMP ECN.  Must use an ECN queue\n");
+                exit(1);
+            }
+            assert(ecn_thresh > 0 && ecn_thresh < 1);
+            // no break, fall through
+        case ECMP_FIB:
+            if (path_entropy_size > 10000) {
+                fprintf(stderr, "Route Strategy is ECMP.  Must specify path count using -paths\n");
+                exit(1);
+            }
+            break;
+        case NOT_SET:
+            fprintf(stderr, "Route Strategy not set.  Use the -strat param.  \nValid values are perm, rand, pull, rg and single\n");
+            exit(1);
+        default:
+            break;
+        }
     }
-
-    /*
-    UecSink::_oversubscribed_congestion_control = oversubscribed_congestion_control;
-    */
-
-    FatTreeSwitch::_ar_sticky = ar_sticky;
-    FatTreeSwitch::_sticky_delta = timeFromUs(ar_sticky_delta);
-    FatTreeSwitch::_ecn_threshold_fraction = ecn_thresh;
-    FatTreeSwitch::_disable_trim = disable_trim;
-    FatTreeSwitch::_trim_size = trimsize;
 
     eventlist.setEndtime(timeFromMs((double)end_time));
-
-    switch (route_strategy) {
-    case ECMP_FIB_ECN:
-    case REACTIVE_ECN:
-        if (qt != COMPOSITE_ECN_LB) {
-            fprintf(stderr, "Route Strategy is ECMP ECN.  Must use an ECN queue\n");
-            exit(1);
-        }
-        assert(ecn_thresh > 0 && ecn_thresh < 1);
-        // no break, fall through
-    case ECMP_FIB:
-        if (path_entropy_size > 10000) {
-            fprintf(stderr, "Route Strategy is ECMP.  Must specify path count using -paths\n");
-            exit(1);
-        }
-        break;
-    case NOT_SET:
-        fprintf(stderr, "Route Strategy not set.  Use the -strat param.  \nValid values are perm, rand, pull, rg and single\n");
-        exit(1);
-    default:
-        break;
-    }
 
     // prepare the loggers
 
@@ -631,6 +673,20 @@ int main(int argc, char **argv) {
         qlf->set_sample_period(logtime);
     }
 
+    vector<UecSrc*> uec_srcs;
+
+    // These must persist until after dump_idmap() since they contain Logged objects
+    unique_ptr<FatTreeTopologyCfg> topo_cfg;
+    vector<unique_ptr<FatTreeTopology>> topo;
+    DragonflyTopology* df_topo = nullptr;
+    SlimFlyTopology* sf_topo = nullptr;
+    vector<unique_ptr<UecPullPacer>> pacers;
+    vector<PCIeModel*> pcie_models;
+    vector<OversubscribedCC*> oversubscribed_ccs;
+
+    if (topology_type == TOPOLOGY_FATTREE) {
+    // ==================== Fat Tree Path ====================
+
     auto conns = std::make_unique<ConnectionMatrix>(no_of_nodes);
 
     if (tm_file){
@@ -668,7 +724,6 @@ int main(int argc, char **argv) {
              << endl;
     }
 
-    unique_ptr<FatTreeTopologyCfg> topo_cfg;
     if (topo_file) {
         topo_cfg = FatTreeTopologyCfg::load(topo_file, memFromPkt(queuesize_pkt), qt, snd_type);
 
@@ -726,7 +781,6 @@ int main(int argc, char **argv) {
 
     cout << *topo_cfg << endl;
 
-    vector<unique_ptr<FatTreeTopology>> topo;
     topo.resize(planes);
     for (uint32_t p = 0; p < planes; p++) {
         topo[p] = make_unique<FatTreeTopology>(topo_cfg.get(), qlf, &eventlist, nullptr);
@@ -760,10 +814,6 @@ int main(int argc, char **argv) {
         UecSrc::initNsccParams(network_max_unloaded_rtt, linkspeed, target_Qdelay, qa_gate, trimming_enabled);
     }
 
-    vector<unique_ptr<UecPullPacer>> pacers;
-    vector<PCIeModel*> pcie_models;
-    vector<OversubscribedCC*> oversubscribed_ccs;
-
     for (size_t ix = 0; ix < no_of_nodes; ix++){
         auto &pacer = pacers.emplace_back(make_unique<UecPullPacer>(linkspeed, 0.99,
           UecBasePacket::unquantize(UecSink::_credit_per_pull), eventlist, ports));
@@ -786,7 +836,6 @@ int main(int argc, char **argv) {
     list <const Route*> routes;
 
     vector<connection*>* all_conns = conns->getAllConnections();
-    vector <UecSrc*> uec_srcs;
 
     map<flowid_t, pair<UecSrc*, UecSink*>> flowmap;
     map<flowid_t, UecPdcSes*> flow_pdc_map;
@@ -1095,6 +1144,280 @@ int main(int argc, char **argv) {
             }
         }
     }
+
+    } // end TOPOLOGY_FATTREE
+    else {
+    // ==================== Dragonfly / SlimFly Path ====================
+
+    // Parse routing strategy
+    uint32_t df_sf_routing = 0; // MINIMAL
+    if (routing_str.empty() || routing_str == "MINIMAL") {
+        df_sf_routing = 0;
+    } else if (routing_str == "VALIANT") {
+        df_sf_routing = 1;
+    } else if (routing_str == "UGAL_L") {
+        df_sf_routing = 2;
+    } else if (routing_str == "SOURCE") {
+        df_sf_routing = 3;
+    } else {
+        cout << "Unknown routing strategy '" << routing_str
+             << "'. Valid: MINIMAL, VALIANT, UGAL_L, SOURCE" << endl;
+        exit(1);
+    }
+    cout << "DF/SF routing strategy: " << routing_str << " (" << df_sf_routing << ")" << endl;
+
+    // Queue size for DF/SF (default 88 packets if not set via -q)
+    mem_b df_sf_queuesize_pkt = param_queuesize_set ? queuesize_pkt : 88;
+    mem_b df_sf_ecn_low = 0.2 * df_sf_queuesize_pkt;
+    mem_b df_sf_ecn_high = 0.8 * df_sf_queuesize_pkt;
+    mem_b df_sf_queuesize = memFromPkt(df_sf_queuesize_pkt);
+    df_sf_ecn_low = memFromPkt(df_sf_ecn_low);
+    df_sf_ecn_high = memFromPkt(df_sf_ecn_high);
+
+    // Configure switch and ECN
+    if (topology_type == TOPOLOGY_DRAGONFLY) {
+        DragonflySwitch::set_config((DragonflySwitch::RoutingStrategy)df_sf_routing,
+                                    disable_trim, trimsize);
+        if (ecn)
+            DragonflyTopology::set_ecn(ecn, df_sf_ecn_low, df_sf_ecn_high);
+    } else {
+        SlimFlySwitch::set_config((SlimFlySwitch::RoutingStrategy)df_sf_routing,
+                                  disable_trim, trimsize);
+        if (ecn)
+            SlimFlyTopology::set_ecn(ecn, df_sf_ecn_low, df_sf_ecn_high);
+    }
+
+    // Set end time for DF/SF (use milliseconds from -end flag, same as FT)
+    eventlist.setEndtime(timeFromMs((double)end_time));
+
+    // Topology construction
+
+    if (topo_base_path.empty()) {
+        cout << "ERROR: -topo or -basepath required for dragonfly/slimfly topologies" << endl;
+        exit(1);
+    }
+
+    if (topology_type == TOPOLOGY_DRAGONFLY) {
+        df_topo = new DragonflyTopology(qt, df_sf_queuesize, qlf, &eventlist);
+        df_topo->load_topology(topo_base_path);
+    } else {
+        sf_topo = new SlimFlyTopology(topo_base_path, qt, df_sf_queuesize, qlf, &eventlist);
+        sf_topo->load_topology(topo_base_path);
+    }
+
+    // SOURCE routing host table setup
+    if (df_sf_routing == 3) { // SOURCE
+        if (host_table_base_path.empty())
+            host_table_base_path = topo_base_path;
+        UecSink::setHostTablePath(host_table_base_path);
+        uint32_t p_val = (topology_type == TOPOLOGY_DRAGONFLY)
+                             ? df_topo->get_p() : sf_topo->get_p();
+        UecSink::setHostTableP(p_val);
+    }
+
+    uint32_t no_hosts = (topology_type == TOPOLOGY_DRAGONFLY)
+                            ? df_topo->get_no_hosts() : sf_topo->get_no_hosts();
+    no_of_nodes = no_hosts;
+
+    // Load connection matrix
+    ConnectionMatrix* df_sf_conns = new ConnectionMatrix(no_hosts);
+    if (tm_file) {
+        if (!df_sf_conns->load(tm_file)) {
+            cout << "Failed to load connection matrix " << tm_file << endl;
+            exit(-1);
+        }
+    } else {
+        cout << "Loading connection matrix from standard input" << endl;
+        df_sf_conns->load(cin);
+    }
+
+    if (df_sf_conns->N != no_hosts) {
+        cout << "Connection matrix has " << df_sf_conns->N
+             << " nodes but topology has " << no_hosts << endl;
+        exit(1);
+    }
+
+    UecSrc::_global_node_count = no_hosts;
+
+    // Get max RTT and linkspeed from topology
+    simtime_picosec network_max_unloaded_rtt;
+    if (topology_type == TOPOLOGY_DRAGONFLY) {
+        network_max_unloaded_rtt = df_topo->get_max_rtt(
+            (DragonflySwitch::RoutingStrategy)df_sf_routing,
+            Packet::data_packet_size(), UecBasePacket::get_ack_size());
+        linkspeed = df_topo->get_linkspeed();
+    } else {
+        network_max_unloaded_rtt = sf_topo->get_max_rtt(
+            (SlimFlySwitch::RoutingStrategy)df_sf_routing,
+            Packet::data_packet_size(), UecBasePacket::get_ack_size());
+        linkspeed = sf_topo->get_linkspeed();
+    }
+    cout << "network_max_unloaded_rtt " << timeAsUs(network_max_unloaded_rtt) << " us" << endl;
+    cout << "Linkspeed: " << linkspeed / 1000000000 << " Gbps" << endl;
+
+    // Initialize congestion control
+    if (sender_driven)
+        UecSrc::initNsccParams(network_max_unloaded_rtt, linkspeed,
+                               timeFromUs((uint32_t)0), -1, !disable_trim);
+
+    // Create pacers and NICs
+
+    for (size_t ix = 0; ix < no_hosts; ix++) {
+        pacers.emplace_back(make_unique<UecPullPacer>(
+            linkspeed, 0.99,
+            UecBasePacket::unquantize(UecSink::_credit_per_pull),
+            eventlist, ports));
+        if (UecSink::_oversubscribed_cc)
+            oversubscribed_ccs.push_back(
+                new OversubscribedCC(eventlist, pacers[ix].get()));
+        auto& nic = nics.emplace_back(
+            make_unique<UecNIC>(ix, eventlist, linkspeed, ports));
+        if (log_nic)
+            nic_logger->monitorNic(nic.get());
+    }
+
+    // Flow setup
+    map<flowid_t, pair<UecSrc*, UecSink*>> df_sf_flowmap;
+    vector<connection*>* df_sf_all_conns = df_sf_conns->getAllConnections();
+
+    // DF/SF cwnd is in raw bytes (not multiplied by packet size)
+    mem_b df_sf_cwnd_b = cwnd;
+
+    for (size_t c = 0; c < df_sf_all_conns->size(); c++) {
+        connection* crt = df_sf_all_conns->at(c);
+        int src = crt->src;
+        int dest = crt->dst;
+
+        unique_ptr<UecMultipath> mp = nullptr;
+        if (df_sf_routing == 3) { // SOURCE
+            uint32_t p_val = (topology_type == TOPOLOGY_DRAGONFLY)
+                                 ? df_topo->get_p() : sf_topo->get_p();
+            mp = make_unique<UecMpSource>(host_table_base_path, src, dest,
+                                          p_val, UecSrc::_debug);
+        } else if (load_balancing_algo == BITMAP) {
+            mp = make_unique<UecMpBitmap>(path_entropy_size, UecSrc::_debug);
+        } else if (load_balancing_algo == REPS) {
+            mp = make_unique<UecMpReps>(path_entropy_size, UecSrc::_debug,
+                                        !disable_trim);
+        } else if (load_balancing_algo == REPS_LEGACY) {
+            mp = make_unique<UecMpRepsLegacy>(path_entropy_size, UecSrc::_debug);
+        } else if (load_balancing_algo == OBLIVIOUS) {
+            mp = make_unique<UecMpOblivious>(path_entropy_size, UecSrc::_debug);
+        } else if (load_balancing_algo == MIXED) {
+            mp = make_unique<UecMpMixed>(path_entropy_size, UecSrc::_debug);
+        } else if (load_balancing_algo == ECMP) {
+            mp = make_unique<UecMpEcmp>(path_entropy_size, UecSrc::_debug);
+        }
+
+        UecSrc* uec_src = new UecSrc(traffic_logger, eventlist, move(mp),
+                                      *nics.at(src), ports);
+
+        if (receiver_driven)
+            uec_src->initRccc(df_sf_cwnd_b, network_max_unloaded_rtt);
+        else
+            uec_src->initNscc(df_sf_cwnd_b, network_max_unloaded_rtt);
+
+        uec_srcs.push_back(uec_src);
+
+        if (crt->size > 0)
+            uec_src->setFlowSize(crt->size);
+
+        uec_src->setSrc(src);
+        uec_src->setDst(dest);
+        uec_src->setName("Uec_" + ntoa(src) + "_" + ntoa(dest));
+
+        if (log_flow_events)
+            uec_src->logFlowEvents(*event_logger);
+
+        logfile.writeName(*uec_src);
+
+        UecSink* uec_snk;
+        if (receiver_driven)
+            uec_snk = new UecSink(NULL, pacers[dest].get(),
+                                  *nics.at(dest), ports);
+        else
+            uec_snk = new UecSink(NULL, linkspeed, 1.1,
+                                  UecBasePacket::unquantize(UecSink::_credit_per_pull),
+                                  eventlist, *nics.at(dest), ports);
+
+        uec_snk->setSrc(src);
+        uec_snk->setDst(dest);
+
+        if (UecSink::_oversubscribed_cc)
+            uec_snk->setOversubscribedCC(oversubscribed_ccs[dest]);
+
+        ((DataReceiver*)uec_snk)->setName("Uec_sink_" + ntoa(src) + "_" + ntoa(dest));
+        logfile.writeName(*(DataReceiver*)uec_snk);
+
+        if (crt->flowid) {
+            uec_src->setFlowId(crt->flowid);
+            uec_snk->setFlowId(crt->flowid);
+            assert(df_sf_flowmap.find(crt->flowid) == df_sf_flowmap.end());
+            df_sf_flowmap[crt->flowid] = {uec_src, uec_snk};
+        }
+
+        if (crt->trigger) {
+            Trigger* trig = df_sf_conns->getTrigger(crt->trigger, eventlist);
+            trig->add_target(*uec_src);
+        }
+
+        if (crt->send_done_trigger) {
+            Trigger* trig = df_sf_conns->getTrigger(crt->send_done_trigger, eventlist);
+            uec_src->setEndTrigger(*trig);
+        }
+
+        if (crt->recv_done_trigger) {
+            Trigger* trig = df_sf_conns->getTrigger(crt->recv_done_trigger, eventlist);
+            uec_snk->setEndTrigger(*trig);
+        }
+
+        // Route construction (2D arrays for DF/SF)
+        Route* srctotor = new Route();
+        Route* dsttotor = new Route();
+        uint32_t src_switch, dst_switch;
+
+        if (topology_type == TOPOLOGY_DRAGONFLY) {
+            src_switch = df_topo->get_host_switch(src);
+            srctotor->push_back(df_topo->queues_host_switch[src][src_switch]);
+            srctotor->push_back(df_topo->pipes_host_switch[src][src_switch]);
+            srctotor->push_back(df_topo->queues_host_switch[src][src_switch]->getRemoteEndpoint());
+
+            dst_switch = df_topo->get_host_switch(dest);
+            dsttotor->push_back(df_topo->queues_host_switch[dest][dst_switch]);
+            dsttotor->push_back(df_topo->pipes_host_switch[dest][dst_switch]);
+            dsttotor->push_back(df_topo->queues_host_switch[dest][dst_switch]->getRemoteEndpoint());
+        } else {
+            src_switch = sf_topo->get_host_switch(src);
+            srctotor->push_back(sf_topo->queues_host_switch[src][src_switch]);
+            srctotor->push_back(sf_topo->pipes_host_switch[src][src_switch]);
+            srctotor->push_back(sf_topo->queues_host_switch[src][src_switch]->getRemoteEndpoint());
+
+            dst_switch = sf_topo->get_host_switch(dest);
+            dsttotor->push_back(sf_topo->queues_host_switch[dest][dst_switch]);
+            dsttotor->push_back(sf_topo->pipes_host_switch[dest][dst_switch]);
+            dsttotor->push_back(sf_topo->queues_host_switch[dest][dst_switch]->getRemoteEndpoint());
+        }
+
+        uint32_t p = 0;
+        uec_src->connectPort(p, *srctotor, *dsttotor, *uec_snk, crt->start);
+
+        if (topology_type == TOPOLOGY_DRAGONFLY) {
+            df_topo->switches[src_switch]->addHostPort(src, uec_snk->flowId(),
+                                                       uec_src->getPort(p));
+            df_topo->switches[dst_switch]->addHostPort(dest, uec_src->flowId(),
+                                                       uec_snk->getPort(p));
+        } else {
+            sf_topo->switches[src_switch]->addHostPort(src, uec_snk->flowId(),
+                                                       uec_src->getPort(p));
+            sf_topo->switches[dst_switch]->addHostPort(dest, uec_src->flowId(),
+                                                       uec_snk->getPort(p));
+        }
+
+        if (log_sink)
+            sink_logger->monitorSink(uec_snk);
+    }
+
+    } // end Dragonfly/SlimFly path
 
     Logged::dump_idmap();
     // Record the setup
