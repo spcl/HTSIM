@@ -147,7 +147,7 @@ GIT_TAG        1.9.6
 
 FetchContent_MakeAvailable(jsoncpp)
 # find_package(JsonCpp CONFIG REQUIRED)
-target_link_libraries(htsim_flow_app_atlahs PRIVATE jsoncpp_lib)
+target_link_libraries(htsim PRIVATE jsoncpp_lib)
 
 # Add subdirectories
 add_subdirectory(datacenter)
