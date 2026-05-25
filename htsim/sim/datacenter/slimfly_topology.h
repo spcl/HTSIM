@@ -22,10 +22,9 @@
 
 #ifndef QT
 #define QT
-typedef enum {
-    RANDOM,
-    COMPOSITE,
-} queue_type;
+typedef enum {UNDEFINED, RANDOM, ECN, COMPOSITE, PRIORITY,
+              CTRL_PRIO, FAIR_PRIO, LOSSLESS, LOSSLESS_INPUT, LOSSLESS_INPUT_ECN,
+              COMPOSITE_ECN, COMPOSITE_ECN_LB, SWIFT_SCHEDULER, ECN_PRIO, AEOLUS, AEOLUS_ECN} queue_type;
 #endif
 
 class SlimFlyTopology : public Topology {

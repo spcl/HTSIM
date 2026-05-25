@@ -56,9 +56,9 @@ Check the [README](htsim/README.md) file in the `htsim/` folder.
 
 # Supported Topologies
 
-The simulator supports three network topologies, each with a dedicated binary:
+All topologies are accessible through the unified `htsim_uec` binary. Use the `-topology` flag to select the topology type.
 
-### Fat Tree (default) — `htsim_uec`
+### Fat Tree (default)
 
 The default topology. Specify a `.topo` file with `-topo`, or omit it to use a default 3-tier fat tree.
 
@@ -66,24 +66,24 @@ The default topology. Specify a `.topo` file with `-topo`, or omit it to use a d
 ./htsim_uec -topo htsim/sim/datacenter/topologies/fat_tree_1024_1os.topo -tm connection_matrices/incast_2-1.tm
 ```
 
-### Dragonfly — `htsim_uec_df`
+### Dragonfly
 
-Uses `-basepath` to point to a topology directory containing `dragonfly.topo`, `dragonfly.adjlist`, and a `host_table/` folder. Pre-generated assets are in `topologies/dragonfly/` (e.g., `p3a6h3`, `p4a8h4`).
+Uses `-topo` to point to a topology directory containing `dragonfly.topo`, `dragonfly.adjlist`, and a `host_table/` folder. Pre-generated assets are in `topologies/dragonfly/` (e.g., `p3a6h3`, `p4a8h4`).
 
 Routing strategies: `MINIMAL`, `VALIANT`, `UGAL_L`, `SOURCE`
 
 ```bash
-./htsim_uec_df -basepath htsim/sim/datacenter/topologies/dragonfly/p3a6h3 -tm traffic.tm -routing MINIMAL -q 88
+./htsim_uec -topology dragonfly -topo htsim/sim/datacenter/topologies/dragonfly/p3a6h3 -tm traffic.tm -routing MINIMAL -q 88
 ```
 
-### SlimFly — `htsim_uec_sf`
+### SlimFly
 
 Uses `-topo` to point to a topology directory containing `slimfly.topo`, `slimfly.adjlist`, and a `host_table/` folder. Pre-generated assets are in `topologies/slimfly/` (e.g., `p4q5`, `p7q9`).
 
 Routing strategies: `MINIMAL`, `VALIANT`, `UGAL_L`, `SOURCE`
 
 ```bash
-./htsim_uec_sf -topo htsim/sim/datacenter/topologies/slimfly/p4q5 -tm traffic.tm -routing MINIMAL -q 88
+./htsim_uec -topology slimfly -topo htsim/sim/datacenter/topologies/slimfly/p4q5 -tm traffic.tm -routing MINIMAL -q 88
 ```
 
 ### Traffic Matrix Format
