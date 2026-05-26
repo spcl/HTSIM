@@ -133,6 +133,24 @@ set(SOURCE_FILES
 add_library(htsim STATIC ${SOURCE_FILES})
 target_include_directories(htsim PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}) # Needed for header-only libraries (e.g., loggertypes.h).
 
+# find_package(Boost REQUIRED COMPONENTS stacktrace_basic)
+# target_link_libraries(htsim PRIVATE Boost::stacktrace_basic)
+# target_compile_definitions(htsim PRIVATE BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED)
+
+# JsonCpp support
+set(JSONCPP_WITH_CMAKE_PACKAGE ON)
+set(JSONCPP_CXX_STANDARD 23)
+
+FetchContent_Declare(
+jsoncpp
+GIT_REPOSITORY https://github.com/open-source-parsers/jsoncpp.git
+GIT_TAG        1.9.6
+)
+
+FetchContent_MakeAvailable(jsoncpp)
+# find_package(JsonCpp CONFIG REQUIRED)
+target_link_libraries(htsim PRIVATE jsoncpp_lib)
+
 # Add subdirectories
 add_subdirectory(datacenter)
 
