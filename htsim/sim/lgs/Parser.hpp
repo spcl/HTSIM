@@ -460,12 +460,14 @@ class SerializedGraph {
 
 	void add_root_nodes() {
 	
-		uint32_t num_root_nodes = (uint32_t) *( (uint32_t*) (mapping_start + sizeof(uint32_t)) );
+		uint32_t num_root_nodes;
+		memcpy(&num_root_nodes, mapping_start + sizeof(uint32_t), sizeof(num_root_nodes));
 		
 		for (uint32_t cnt=0; cnt<num_root_nodes; cnt++) {
 
 			 //printf("[timos] trying to get root node number %i\n", cnt);
-			uint32_t offset = (uint32_t) *( (uint32_t*) (mapping_start + sizeof(uint32_t)*2 + cnt*sizeof(uint32_t)) );
+			uint32_t offset;
+			memcpy(&offset, mapping_start + sizeof(uint32_t) * 2 + cnt * sizeof(uint32_t), sizeof(offset));
 			//printf("[timos] is's offset is %i\n", offset);
 			DeserializedNode N = get_node_by_offset(offset);
 			executableNodes.push_back(N);
@@ -477,7 +479,8 @@ class SerializedGraph {
 	
 		//printf("[timos] trying to get node with offset %i\n", offset);
 	
-		uint32_t num_nodes = (uint32_t) *((uint32_t*) mapping_start);
+		uint32_t num_nodes;
+		memcpy(&num_nodes, mapping_start, sizeof(num_nodes));
 
 		if (offset > num_nodes) {
 			fprintf(stderr, "[rank %i] got offset %i, have %i nodes\n", my_rank, offset, num_nodes);
@@ -489,18 +492,22 @@ class SerializedGraph {
 		DeserializedNode N;
 		// printf("yyy 2\n");
 
-		N.DependenciesCnt = (uint32_t) *( (uint32_t*) start_of_node);
-		N.Type = (char) *(start_of_node + sizeof(uint32_t)); // after depcnt
-		N.Peer = (uint32_t) *( (uint32_t*) (start_of_node + sizeof(uint32_t) + sizeof(char)) ); // after depcnt + type
-		N.Size = (uint64_t) *( (uint64_t*) (start_of_node + sizeof(uint32_t) + sizeof(char) + sizeof(uint32_t)));
-		N.Tag = (uint32_t) *( (uint32_t*) (start_of_node + sizeof(uint32_t) + sizeof(char) + sizeof(uint32_t) + sizeof(uint64_t)));
-		N.Proc = (uint8_t) *( (uint8_t*) (start_of_node + sizeof(uint32_t) + sizeof(char) + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint32_t)));
-		N.Nic = (uint8_t) *( (uint8_t*) (start_of_node + sizeof(uint32_t) + sizeof(char) + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint8_t)));
+		memcpy(&N.DependenciesCnt, start_of_node, sizeof(N.DependenciesCnt));
+		memcpy(&N.Type, start_of_node + sizeof(uint32_t), sizeof(N.Type)); // after depcnt
+		memcpy(&N.Peer, start_of_node + sizeof(uint32_t) + sizeof(char), sizeof(N.Peer)); // after depcnt + type
+		memcpy(&N.Size, start_of_node + sizeof(uint32_t) + sizeof(char) + sizeof(uint32_t), sizeof(N.Size));
+		memcpy(&N.Tag, start_of_node + sizeof(uint32_t) + sizeof(char) + sizeof(uint32_t) + sizeof(uint64_t), sizeof(N.Tag));
+		memcpy(&N.Proc, start_of_node + sizeof(uint32_t) + sizeof(char) + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint32_t), sizeof(N.Proc));
+		memcpy(&N.Nic, start_of_node + sizeof(uint32_t) + sizeof(char) + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint8_t), sizeof(N.Nic));
 		N.offset = (uint32_t) offset;
-		uint32_t num_deps =                      (uint32_t) *( (uint32_t*) (start_of_node + sizeof(char) + sizeof(uint64_t) + sizeof(uint32_t)*3 + sizeof(uint8_t)*2));
-		uint32_t deps_startoffset_in_apdx =      (uint32_t) *( (uint32_t*) (start_of_node + sizeof(char) + sizeof(uint64_t) + sizeof(uint32_t)*4 + sizeof(uint8_t)*2));
-		uint32_t num_startdeps =                 (uint32_t) *( (uint32_t*) (start_of_node + sizeof(char) + sizeof(uint64_t) + sizeof(uint32_t)*5 + sizeof(uint8_t)*2));
-		uint32_t startdeps_startoffset_in_apdx = (uint32_t) *( (uint32_t*) (start_of_node + sizeof(char) + sizeof(uint64_t) + sizeof(uint32_t)*6 + sizeof(uint8_t)*2));
+		uint32_t num_deps;
+		memcpy(&num_deps, start_of_node + sizeof(char) + sizeof(uint64_t) + sizeof(uint32_t) * 3 + sizeof(uint8_t) * 2, sizeof(num_deps));
+		uint32_t deps_startoffset_in_apdx;
+		memcpy(&deps_startoffset_in_apdx, start_of_node + sizeof(char) + sizeof(uint64_t) + sizeof(uint32_t) * 4 + sizeof(uint8_t) * 2, sizeof(deps_startoffset_in_apdx));
+		uint32_t num_startdeps;
+		memcpy(&num_startdeps, start_of_node + sizeof(char) + sizeof(uint64_t) + sizeof(uint32_t) * 5 + sizeof(uint8_t) * 2, sizeof(num_startdeps));
+		uint32_t startdeps_startoffset_in_apdx;
+		memcpy(&startdeps_startoffset_in_apdx, start_of_node + sizeof(char) + sizeof(uint64_t) + sizeof(uint32_t) * 6 + sizeof(uint8_t) * 2, sizeof(startdeps_startoffset_in_apdx));
 		// printf("yyy 3\n");
 		// printf("yyy 3 start of apdx = mapping start + %i\n", sizeof(uint32_t)*2 + sizeof(uint32_t)*num_root_nodes + SIZEOF_NODE_INFO*num_nodes);
 		// printf("yyy 3 numrootnodes = %i, SIZEOFNODEINFO = %i, num_nodes = %i\n", num_root_nodes, SIZEOF_NODE_INFO, num_nodes);
@@ -508,7 +515,8 @@ class SerializedGraph {
 		for (uint32_t cnt=0; cnt<num_deps; cnt++) {
 			// printf("yyy 3.5 (%i, %i)\n", num_deps, cnt);
 			// printf("yyy (start of appendix: %i, deps startoffset in apdx %i, cnt %i)\n", start_of_apdx, deps_startoffset_in_apdx, cnt);
-			uint32_t depnode = (uint32_t) *( (uint32_t*) (start_of_apdx + (deps_startoffset_in_apdx + cnt)*sizeof(uint32_t)));
+			uint32_t depnode;
+			memcpy(&depnode, start_of_apdx + (deps_startoffset_in_apdx + cnt) * sizeof(uint32_t), sizeof(depnode));
 			
 			//printf("num_root_nodes: %u\n", num_root_nodes);
 			//printf("SIZEOF_NODE_INFO: %i\n", SIZEOF_NODE_INFO);
@@ -598,7 +606,7 @@ class SerializedGraph {
 
 		 //printf("xxx 2\n");	
 		char* tmp = mapping_start + sizeof(uint32_t) + sizeof(uint8_t)*2 + sizeof(uint64_t)*2*rank;
-		ssched = *( (uint64_t*) tmp); // jumping over num_schedules + max_cpu/max_nic + jumptable 
+		memcpy(&ssched, tmp, sizeof(ssched)); // jumping over num_schedules + max_cpu/max_nic + jumptable 
 
 		 //printf("xxx 3\n");	
 		//printf("ssched = %i\n", ssched);
@@ -607,11 +615,11 @@ class SerializedGraph {
 		executableNodes.clear();
 
 		 //printf("xxx 4\n");	
-		num_nodes = *((uint32_t*) mapping_start);
+		memcpy(&num_nodes, mapping_start, sizeof(num_nodes));
 		//printf("rank %u: %u nodes\n", rank, num_nodes);
 		//printf("num-nodes: %i\n", num_nodes);
 		 //printf("xxx 5\n");	
-		num_root_nodes = *((uint32_t*) (mapping_start+sizeof(uint32_t)));
+		memcpy(&num_root_nodes, mapping_start+sizeof(uint32_t), sizeof(num_root_nodes));
 		//printf("num-root-nodes: %i\n", num_root_nodes);
 		 //printf("xxx 6\n");	
 		add_root_nodes();
@@ -642,9 +650,11 @@ class SerializedGraph {
 			uint32_t offset = N.DependOnMe[cnt];
 	
 			int SIZEOF_NODE_INFO = sizeof(char) + sizeof(uint64_t) + sizeof(uint32_t)*7 + sizeof(uint8_t)*2;
-			uint32_t* dep_cnt = (uint32_t*) (mapping_start + sizeof(uint32_t)*2 + sizeof(uint32_t)*num_root_nodes + SIZEOF_NODE_INFO*offset);
-			(*dep_cnt)--;
-			if ((*dep_cnt) == 0) {
+			uint32_t dep_cnt;
+			memcpy(&dep_cnt, mapping_start + sizeof(uint32_t) * 2 + sizeof(uint32_t) * num_root_nodes + SIZEOF_NODE_INFO * offset, sizeof(dep_cnt));
+			dep_cnt--;
+			memcpy(mapping_start + sizeof(uint32_t) * 2 + sizeof(uint32_t) * num_root_nodes + SIZEOF_NODE_INFO * offset, &dep_cnt, sizeof(dep_cnt));
+			if (dep_cnt == 0) {
 				executableNodes.push_back(get_node_by_offset(offset));
 			}
 		}
