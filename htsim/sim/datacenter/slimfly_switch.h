@@ -42,6 +42,8 @@ public:
     }
     static uint16_t get_trim_disable() { return _trim_disable; }
     static uint16_t get_trim_size() { return _trim_size; }
+    // -1 keeps the legacy behaviour (every switch seeded with 33).
+    static void set_rng_seed(int64_t seed) { _rng_seed = seed; }
 
 private:
     std::string _path_fib;
@@ -71,6 +73,7 @@ private:
     static bool _trim_disable;
     static uint16_t _trim_size;
     static RoutingStrategy _routing_strategy;
+    static int64_t _rng_seed;
 };
 
 #endif

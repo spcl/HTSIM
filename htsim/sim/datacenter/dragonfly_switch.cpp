@@ -7,6 +7,7 @@
 
 bool DragonflySwitch::_trim_disable = false;
 uint16_t DragonflySwitch::_trim_size = 0;
+int64_t DragonflySwitch::_rng_seed = -1;
 DragonflySwitch::RoutingStrategy DragonflySwitch::_routing_strategy = DragonflySwitch::MINIMAL;
 
 string ntoa(double n);
@@ -30,7 +31,12 @@ DragonflySwitch::DragonflySwitch(EventList& event_list,
 
     _pipe = new CallbackPipe(delay, event_list, this);
 
-    _generator = std::mt19937(33);
+    if (_rng_seed < 0) {
+        _generator = std::mt19937(33);
+    } else {
+        std::seed_seq seq{(uint32_t)_rng_seed, (uint32_t)_id};
+        _generator = std::mt19937(seq);
+    }
     _dist_a = std::uniform_int_distribution<>(0, _a - 1);
     _dist_h = std::uniform_int_distribution<>(0, _h - 1);
 
