@@ -32,6 +32,7 @@ int main(int argc, char** argv) {
     Clock c(timeFromSec(5 / 100.), eventlist);
 
     int seed = 13;
+    bool seed_set = false;
     srand(seed);
     srandom(seed);
 
@@ -163,6 +164,10 @@ int main(int argc, char** argv) {
             else
                 throw std::logic_error("LB not recognized");
             i++;
+        } else if (!strcmp(argv[i], "-seed")) {
+            seed = std::stoi(argv[i + 1]);
+            seed_set = true;
+            i++;
         } else if (!strcmp(argv[i], "-paths")) {
             path_entropy_size = std::stoi(argv[i + 1]);
             i++;
@@ -280,6 +285,12 @@ int main(int argc, char** argv) {
     }
 
     // Topology
+    if (seed_set) {
+        srand(seed);
+        srandom(seed);
+        DragonflySwitch::set_rng_seed(seed);
+        std::cout << "Random seed " << seed << std::endl;
+    }
     DragonflySwitch::set_config(routing_strategy, trim_disable, trim_size);
     DragonflyTopology* topo = new DragonflyTopology(qt, queuesize, qlf, &eventlist);
     topo->load_topology(topo_base_path);

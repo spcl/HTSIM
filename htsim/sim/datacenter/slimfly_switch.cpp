@@ -9,6 +9,7 @@ extern void tokenize(std::string const& str, const char delim, std::vector<std::
 
 bool SlimFlySwitch::_trim_disable = false;
 uint16_t SlimFlySwitch::_trim_size = 0;
+int64_t SlimFlySwitch::_rng_seed = -1;
 SlimFlySwitch::RoutingStrategy SlimFlySwitch::_routing_strategy = SlimFlySwitch::MINIMAL;
 
 string ntoa(double n);
@@ -37,7 +38,12 @@ SlimFlySwitch::SlimFlySwitch(std::string path_fib,
 
 void SlimFlySwitch::init_neighbours() {
     _neighbours = _topo->get_neighbours(_id);
-    _generator = mt19937(33);
+    if (_rng_seed < 0) {
+        _generator = std::mt19937(33);
+    } else {
+        std::seed_seq seq{(uint32_t)_rng_seed, (uint32_t)_id};
+        _generator = std::mt19937(seq);
+    }
     _dist_neighbour = uniform_int_distribution<>(0, _neighbours->size() - 1);
 }
 
