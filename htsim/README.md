@@ -83,13 +83,11 @@ To get more details, the `-debug` flag increases the output and shows more detai
 
 
 A second important, but optional parameter is the topology specification.
-The simulator supports three network topologies:
+The simulator supports three network topologies, all accessible through the unified `htsim_uec` binary:
 
 ### Fat Tree (default)
 
 Fat tree topologies are the default and most mature topology. If no topology parameters are provided, htsim creates a 3-tier fat tree with 12µs RTT. Custom fat tree topologies can be specified via topology files.
-
-Binary: `htsim_uec`
 
 ```bash
 ./htsim_uec -tm connection_matrices/perm_32n_32c_2MB.cm -topo topologies/leaf_spine_tiny.topo
@@ -99,12 +97,10 @@ Binary: `htsim_uec`
 
 Dragonfly topologies use a two-level direct-connect structure organized in groups. Pre-generated topology assets are provided in `topologies/dragonfly/` (e.g., `p3a6h3` for p=3 hosts/switch, a=6 switches/group, h=3 global links/switch).
 
-Binary: `htsim_uec_df`
-
 Supported routing strategies: `MINIMAL`, `VALIANT`, `UGAL_L`, `SOURCE`
 
 ```bash
-./htsim_uec_df -basepath topologies/dragonfly/p3a6h3 -tm traffic.tm -routing MINIMAL -q 88
+./htsim_uec -topology dragonfly -topo topologies/dragonfly/p3a6h3 -tm traffic.tm -routing MINIMAL -q 88
 ```
 
 For `SOURCE` routing, host-level routing tables are loaded automatically from the `host_table/` subdirectory within the topology path.
@@ -162,12 +158,10 @@ The Dragonfly generator script is adapted from the SPCL topology-generation tool
 
 SlimFly topologies use a two-partition structure based on optimized graph constructions. Pre-generated topology assets are provided in `topologies/slimfly/` (e.g., `p4q5` for p=4 hosts/switch, q=5 graph parameter).
 
-Binary: `htsim_uec_sf`
-
 Supported routing strategies: `MINIMAL`, `VALIANT`, `UGAL_L`, `SOURCE`
 
 ```bash
-./htsim_uec_sf -topo topologies/slimfly/p4q5 -tm traffic.tm -routing MINIMAL -q 88
+./htsim_uec -topology slimfly -topo topologies/slimfly/p4q5 -tm traffic.tm -routing MINIMAL -q 88
 ```
 
 To generate custom SlimFly topology assets (`slimfly.topo`, `slimfly.adjlist`, `fib/`, `host_table/`) for any `(p,q)`, use:
