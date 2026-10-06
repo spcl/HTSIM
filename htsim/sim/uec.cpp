@@ -10,6 +10,9 @@
 #include "uec_logger.h"
 #include "pciemodel.h"
 
+#include <json/json.h>
+#include <fstream>
+
 using namespace std;
 
 namespace {
@@ -68,6 +71,8 @@ bool UecSrc::_receiver_based_cc = false;
 bool UecSink::_oversubscribed_cc = false; // can only be enabled when receiver_based_cc is set to true
 
 UecSrc::Sender_CC UecSrc::_sender_cc_algo = UecSrc::NSCC;
+std::string UecSrc::pcm_cc_config_filename = "";
+std::unordered_map<std::string, UecSrc::PcmCCParams> UecSrc::ctx_to_pcm_cc_params{};
 
 /* 
     The following variable values are not default values, there are initializer values. The actual
@@ -125,7 +130,7 @@ void UecSrc::initNsccParams(simtime_picosec network_rtt,
     _network_bdp = timeAsSec(_network_rtt)*(_network_linkspeed/8);
     _network_trimming_enabled = trimming_enabled;
 
-    _min_cwnd = _mtu;
+    _min_cwnd = _mtu;  // configure? does it have quantitive relationship with _mtu
 
     if (target_Qdelay > 0) {
         _target_Qdelay = target_Qdelay;
@@ -158,7 +163,7 @@ void UecSrc::initNsccParams(simtime_picosec network_rtt,
     _delay_alpha = 0.0125;
 
     _adjust_period_threshold = _network_rtt;
-    _adjust_bytes_threshold = 8 * _mtu;
+    _adjust_bytes_threshold = 8 * _mtu;  // configure? does it have quantitive relationship with _mtu
 
     cout << "Initializing static NSCC parameters:"
         << " _reference_network_linkspeed=" << _reference_network_linkspeed
@@ -506,12 +511,13 @@ UecSrc::UecSrc(TrafficLogger* trafficLogger,
 			   unique_ptr<UecMultipath> mp, 
                UecNIC& nic, 
                uint32_t no_of_ports, 
-               bool rts)
+               bool rts, uint32_t tag)
         : EventSource(eventList, "uecSrc"), 
-          _mp(move(mp)),
+          _mp(std::move(mp)),
           _nic(nic), 
           _msg_tracker(),
           _last_event_time(),
+          _tag(tag),
           _flow(trafficLogger)
           {
     assert(_mp != nullptr);
@@ -609,6 +615,96 @@ UecSrc::UecSrc(TrafficLogger* trafficLogger,
 
     _nscc_overall_stats = {};
     _nscc_fulfill_stats = {};
+
+    pcm_cc_params = _tag == tagDisabledVal ? get_default_pcm_cc_params() : get_pcm_cc_params(_tag);
+}
+
+UecSrc::PcmCCParams UecSrc::get_default_pcm_cc_params() {
+    UecSrc::PcmCCParams p;
+    return p;
+}
+
+UecSrc::PcmCCParams UecSrc::get_pcm_cc_params(uint32_t _tag) {  // TODO: can iterate the key to reduce duplication
+    std::string tag_ctx_str = std::to_string(_tag).substr(0, 1);  // the lead 0 is ignored automatically  // TODO: Coordinate tag format, and use a mask here to extract context info
+    if (ctx_to_pcm_cc_params.find(tag_ctx_str) != ctx_to_pcm_cc_params.end()) return ctx_to_pcm_cc_params[tag_ctx_str];
+
+    UecSrc::PcmCCParams p = get_default_pcm_cc_params();
+    if (UecSrc::pcm_cc_config_filename.empty()) {
+        std::cerr << "Warning: pcm_cc_config_filename is empty. Using default parameters." << std::endl;
+        return p;
+    }
+
+    std::ifstream p_file(UecSrc::pcm_cc_config_filename);
+    if (!p_file.is_open()) {
+        std::cerr << "Error: Failed to open PCM config file: " << UecSrc::pcm_cc_config_filename << std::endl;
+        exit(0);
+    }
+
+    Json::Value p_file_value;
+    p_file >> p_file_value;
+
+    if (!p_file_value.isMember(tag_ctx_str)) {
+        std::cerr << "Error: Tag context information " << tag_ctx_str  << " of tag " << _tag 
+                  << " is not found in PCM config file."  << std::endl;
+        exit(0);
+    }
+
+    auto cfg = p_file_value[tag_ctx_str];
+    if (cfg.isMember("reference_network_linkspeed")) p.reference_network_linkspeed = cfg["reference_network_linkspeed"].asUInt64();
+    if (cfg.isMember("reference_network_rtt")) p.reference_network_rtt = cfg["reference_network_rtt"].asUInt64();
+    if (cfg.isMember("reference_network_bdp")) p.reference_network_bdp = cfg["reference_network_bdp"].asInt64();  //
+
+    if (cfg.isMember("network_linkspeed")) p.network_linkspeed = cfg["network_linkspeed"].asUInt64();
+    if (cfg.isMember("network_rtt")) p.network_rtt = cfg["network_rtt"].asUInt64();
+    if (cfg.isMember("network_bdp")) p.network_bdp = cfg["network_bdp"].asInt64();  //
+
+    if (cfg.isMember("network_trimming_enabled")) p.network_trimming_enabled = cfg["network_trimming_enabled"].asBool();
+    if (cfg.isMember("scaling_factor_a")) p.scaling_factor_a = cfg["scaling_factor_a"].asDouble();  //
+    if (cfg.isMember("scaling_factor_b")) p.scaling_factor_b = cfg["scaling_factor_b"].asDouble();  //
+    if (cfg.isMember("qa_scaling")) p.qa_scaling = cfg["qa_scaling"].asUInt();
+    if (cfg.isMember("gamma")) p.gamma = cfg["gamma"].asDouble();
+    if (cfg.isMember("alpha")) p.alpha = cfg["alpha"].asDouble();  //
+    if (cfg.isMember("fi")) p.fi = cfg["fi"].asDouble();  //
+    if (cfg.isMember("fi_scale")) p.fi_scale = cfg["fi_scale"].asDouble();  //
+    if (cfg.isMember("min_cwnd")) p.min_cwnd = cfg["min_cwnd"].asInt64();
+    if (cfg.isMember("delay_alpha")) p.delay_alpha = cfg["delay_alpha"].asDouble();
+    if (cfg.isMember("adjust_period_threshold")) p.adjust_period_threshold = cfg["adjust_period_threshold"].asUInt64();  //
+    if (cfg.isMember("target_Qdelay")) p.target_Qdelay = cfg["target_Qdelay"].asUInt64();  //  //
+    if (cfg.isMember("adjust_bytes_threshold")) p.adjust_bytes_threshold = cfg["adjust_bytes_threshold"].asUInt();
+    if (cfg.isMember("qa_threshold")) p.qa_threshold = cfg["qa_threshold"].asDouble();  //
+    if (cfg.isMember("eta")) p.eta = cfg["eta"].asDouble();  //
+    if (cfg.isMember("disable_quick_adapt")) p.disable_quick_adapt = cfg["disable_quick_adapt"].asBool();
+    if (cfg.isMember("qa_gate")) p.qa_gate = (cfg["qa_gate"].asInt());  //  //
+    if (cfg.isMember("update_base_rtt_on_nack_")) p.update_base_rtt_on_nack_ = cfg["update_base_rtt_on_nack_"].asBool();
+
+    if (cfg.isMember("enable_sleek")) p.enable_sleek = cfg["enable_sleek"].asBool();
+    if (cfg.isMember("probe_first_trial_time")) p.probe_first_trial_time_ = cfg["probe_first_trial_time"].asInt();
+    if (cfg.isMember("probe_retry_time")) p.probe_retry_time_ = cfg["probe_retry_time"].asInt();
+    if (cfg.isMember("loss_retx_factor")) p.loss_retx_factor_ = cfg["loss_retx_factor"].asFloat();
+    if (cfg.isMember("min_retx_config")) p.min_retx_config_ = cfg["min_retx_config"].asInt();
+
+    /* Compute as initNsccParams() does */
+    p.reference_network_bdp = timeAsSec(p.reference_network_rtt)*(p.reference_network_linkspeed/8);
+    p.network_bdp = timeAsSec(p.network_rtt)*(p.network_linkspeed/8);
+    if (p.target_Qdelay <= 0) {
+        if (p.network_trimming_enabled) {
+            p.target_Qdelay = p.network_rtt * 0.75;
+        } else {
+            p.target_Qdelay = p.network_rtt;
+        }
+    }
+    p.qa_gate = p.qa_gate < 0 ? 3 : p.qa_gate;
+    p.qa_threshold = 4 * p.target_Qdelay;
+    p.scaling_factor_a = (double)p.network_bdp/(double)p.reference_network_bdp;
+    p.scaling_factor_b = (double)p.target_Qdelay/(double)p.reference_network_rtt;
+    p.alpha = 4.0*_mss*p.scaling_factor_a*p.scaling_factor_b/p.target_Qdelay;
+    p.fi = 5*_mss*p.scaling_factor_a;
+    p.eta = 0.15*_mss*p.scaling_factor_a;
+    p.fi_scale = .25*p.scaling_factor_a;
+    p.adjust_period_threshold = p.network_rtt;
+
+    ctx_to_pcm_cc_params[tag_ctx_str] = p;
+    return p;
 }
 
 void UecSrc::delFromSendTimes(simtime_picosec time, UecDataPacket::seq_t seq_no) {
@@ -646,7 +742,7 @@ void UecSrc::connectPort(uint32_t port_num,
     _sink->connectPort(port_num, *this, routeback);
 }
 
-void UecSrc::receivePacket(Packet& pkt, uint32_t portnum) {
+void UecSrc::receivePacket(Packet& pkt, uint32_t portnum) {  //
     switch (pkt.type()) {
         case UECDATA: {
             _stats.bounces_received++;
@@ -1138,13 +1234,15 @@ void UecSrc::processAck(const UecAckPacket& pkt) {
         }
         else */
         (this->*updateCwndOnAck)(pkt.ecn_echo(), delay, newly_recvd_bytes);
+        // if (this->_tag == tagDisabledVal) (this->*updateCwndOnAck)(pkt.ecn_echo(), delay, newly_recvd_bytes);  // default caes: tag is the disabled value, meaning that context id not provided
+        // // else // PCM case: based on context info in tag, and call pcm CC function, which uses non-static parameters in 'this->pcm_cc_params'
     }
 
     if (_debug_src) {
         cout << "At " << timeAsUs(eventlist().now()) << " " << _flow.str() << " " << _nodename << " processAck: " << cum_ack << " flow " << _flow.str() << " cwnd " << _cwnd << " flightsize " << _in_flight << " delay " << timeAsUs(delay) << " newlyrecvd " << newly_recvd_bytes << " skip " << pkt.ecn_echo() << " raw rtt " << raw_rtt << endl;
     }
 
-    if (_sender_based_cc && _enable_sleek) {
+    if (_sender_based_cc && pcm_cc_params.enable_sleek) {
         //probe packets
         if (_probe_timer_when != 0){
             if (_probe_timer_handle->second != this){
@@ -1158,13 +1256,13 @@ void UecSrc::processAck(const UecAckPacket& pkt) {
         }
         if (cum_ack < _highest_sent || _backlog > 0){
             if (_backlog == 0){
-                _probe_timer_when = eventlist().now() + (_base_rtt+_target_Qdelay);            
+                _probe_timer_when = eventlist().now() + (_base_rtt+pcm_cc_params.target_Qdelay);            
             }else{
-                _probe_timer_when = eventlist().now() + probe_first_trial_time*_base_rtt;
+                _probe_timer_when = eventlist().now() + pcm_cc_params.probe_first_trial_time_*_base_rtt;
             }
             _probe_timer_handle = eventlist().sourceIsPendingGetHandle(*this, _probe_timer_when);
         }
-        if(pkt.is_probe_ack() && delay < _target_Qdelay){
+        if(pkt.is_probe_ack() && delay < pcm_cc_params.target_Qdelay){
             _loss_recovery_mode = true;
             _recovery_seqno = _highest_sent;
             _highest_rtx_sent = cum_ack;
@@ -1217,8 +1315,8 @@ bool UecSrc::can_send_NSCC(mem_b pkt_size) {
 }
 
 void UecSrc::set_cwnd_bounds() {
-    if (_cwnd < _min_cwnd)
-        _cwnd = _min_cwnd;
+    if (_cwnd < pcm_cc_params.min_cwnd)
+        _cwnd = pcm_cc_params.min_cwnd;
 
     if (_cwnd > _maxwnd)
         _cwnd = _maxwnd;
@@ -1227,7 +1325,7 @@ void UecSrc::set_cwnd_bounds() {
 bool UecSrc::quick_adapt(bool is_loss, bool skip, simtime_picosec delay) {
     bool qa_done_or_ignore = false;
 
-    if (_disable_quick_adapt) {
+    if (pcm_cc_params.disable_quick_adapt) {
         return false;
     }
 
@@ -1240,8 +1338,8 @@ bool UecSrc::quick_adapt(bool is_loss, bool skip, simtime_picosec delay) {
         qa_done_or_ignore = true;
     } else if (eventlist().now() > _qa_endtime){
         if (_qa_endtime != 0 
-                && (_trigger_qa || is_loss || (delay > _qa_threshold)) 
-                && _achieved_bytes < (_maxwnd >> _qa_gate)) {
+                && (_trigger_qa || is_loss || (delay > pcm_cc_params.qa_threshold)) 
+                && _achieved_bytes < (_maxwnd >> pcm_cc_params.qa_gate)) {
 
             if (_debug_src) {
                 cout << "At " << timeAsUs(eventlist().now()) << " " << _flow.str() << " running quickadapt, CWND is " << _cwnd << " setting it to " << _achieved_bytes <<  endl;
@@ -1254,7 +1352,7 @@ bool UecSrc::quick_adapt(bool is_loss, bool skip, simtime_picosec delay) {
             } 
             
             mem_b before = _cwnd;
-            _cwnd = max(_achieved_bytes, _min_cwnd); //* _qa_scaling;
+            _cwnd = max(_achieved_bytes, pcm_cc_params.min_cwnd); //* _qa_scaling;
             _nscc_overall_stats.dec_quick_bytes += before - _cwnd;
             _nscc_fulfill_stats.dec_quick_bytes += before - _cwnd;
 
@@ -1270,7 +1368,7 @@ bool UecSrc::quick_adapt(bool is_loss, bool skip, simtime_picosec delay) {
             qa_done_or_ignore = true;
         }
         _achieved_bytes = 0;
-        _qa_endtime = eventlist().now() + _base_rtt + _target_Qdelay;
+        _qa_endtime = eventlist().now() + _base_rtt + pcm_cc_params.target_Qdelay;
     }
 
     if (qa_done_or_ignore) {
@@ -1283,7 +1381,7 @@ bool UecSrc::quick_adapt(bool is_loss, bool skip, simtime_picosec delay) {
 
 void UecSrc::fair_increase(uint32_t newly_acked_bytes){
     mem_b before = _inc_bytes;
-    _inc_bytes += _fi * newly_acked_bytes; //increase by 16Million!
+    _inc_bytes += pcm_cc_params.fi * newly_acked_bytes; //increase by 16Million!
     _nscc_fulfill_stats.inc_fair_bytes += _inc_bytes - before;
 }
 
@@ -1293,10 +1391,10 @@ void UecSrc::proportional_increase(uint32_t newly_acked_bytes,simtime_picosec de
         return;
     
     //make sure targetQdelay > delay;
-    assert(_target_Qdelay > delay);
+    assert(pcm_cc_params.target_Qdelay > delay);
 
     mem_b before = _inc_bytes;
-    _inc_bytes += _alpha * newly_acked_bytes * (_target_Qdelay - delay);
+    _inc_bytes += pcm_cc_params.alpha * newly_acked_bytes * (pcm_cc_params.target_Qdelay - delay);
     _nscc_fulfill_stats.inc_prop_bytes += _inc_bytes - before;
 }
 
@@ -1305,7 +1403,7 @@ void UecSrc::fast_increase(uint32_t newly_acked_bytes,simtime_picosec delay){
         _fi_count += newly_acked_bytes;
         if (_fi_count > _cwnd || _increase){
             mem_b before = _cwnd;
-            _cwnd += newly_acked_bytes * _fi_scale;
+            _cwnd += newly_acked_bytes * pcm_cc_params.fi_scale;
             _nscc_overall_stats.inc_fast_bytes += _cwnd - before;
             _nscc_fulfill_stats.inc_fast_bytes += _cwnd - before;
 
@@ -1323,11 +1421,11 @@ void UecSrc::multiplicative_decrease() {
     _increase = false;
     _fi_count = 0;
     simtime_picosec avg_delay = get_avg_delay();
-    if (avg_delay > _target_Qdelay){
+    if (avg_delay > pcm_cc_params.target_Qdelay){
         if (eventlist().now() - _last_dec_time > _base_rtt){
             mem_b before = _cwnd;
-            _cwnd *= max(1-_gamma*(avg_delay-_target_Qdelay)/avg_delay, 0.5);/*_max_md_jump instead of 1*/
-            _cwnd = max(_cwnd, _min_cwnd);
+            _cwnd *= max(1-pcm_cc_params.gamma*(avg_delay-pcm_cc_params.target_Qdelay)/avg_delay, 0.5);/*_max_md_jump instead of 1*/
+            _cwnd = max(_cwnd, pcm_cc_params.min_cwnd);
             _nscc_overall_stats.dec_multi_bytes += before - _cwnd;
             _nscc_fulfill_stats.dec_multi_bytes += before - _cwnd;
 
@@ -1347,10 +1445,10 @@ void UecSrc::fulfill_adjustment(){
     _nscc_overall_stats.inc_fair_bytes += _nscc_fulfill_stats.inc_fair_bytes;
     _nscc_overall_stats.inc_prop_bytes += _nscc_fulfill_stats.inc_prop_bytes;
 
-    if ((eventlist().now() - _last_adjust_time) >= _adjust_period_threshold) {
-        _cwnd += _eta;
-        _nscc_overall_stats.inc_eta_bytes += _eta;
-        _nscc_fulfill_stats.inc_eta_bytes += _eta;
+    if ((eventlist().now() - _last_adjust_time) >= pcm_cc_params.adjust_period_threshold) {
+        _cwnd += pcm_cc_params.eta;
+        _nscc_overall_stats.inc_eta_bytes += pcm_cc_params.eta;
+        _nscc_fulfill_stats.inc_eta_bytes += pcm_cc_params.eta;
         _last_adjust_time = eventlist().now();
     }
 
@@ -1395,32 +1493,32 @@ void UecSrc::updateCwndOnAck_NSCC(bool skip, simtime_picosec delay, mem_b newly_
     if (quick_adapt(false, skip, delay))
         return;
 
-    if (!skip && delay >= _target_Qdelay) {
+    if (!skip && delay >= pcm_cc_params.target_Qdelay) {
         fair_increase(newly_acked_bytes);
         if (_flow.flow_id() == _debug_flowid || UecSrc::_debug) {
             cout << timeAsUs(eventlist().now()) <<" flowid " << _flow.flow_id()<< " " << _flow.str() << " fair_increase _nscc_cwnd " << _cwnd 
                 << " newly_acked_bytes " << newly_acked_bytes 
-                << " fi " << _fi << endl;
+                << " fi " << pcm_cc_params.fi << endl;
         }
-    } else if (!skip && delay < _target_Qdelay) {
+    } else if (!skip && delay < pcm_cc_params.target_Qdelay) {
         proportional_increase(newly_acked_bytes,delay);
         if (_flow.flow_id() == _debug_flowid || UecSrc::_debug) {
             cout << timeAsUs(eventlist().now()) <<" flowid " << _flow.flow_id()<< " " << _flow.str() << " proportional_increase _nscc_cwnd " << _cwnd << endl;
         }
-    } else if (skip && delay >= _target_Qdelay) {    
+    } else if (skip && delay >= pcm_cc_params.target_Qdelay) {    
         multiplicative_decrease();
         if (_flow.flow_id() == _debug_flowid || UecSrc::_debug) {
             cout << timeAsUs(eventlist().now()) <<" flowid " << _flow.flow_id()<< " " << _flow.str() << " multiplicative_decrease _nscc_cwnd " << _cwnd << endl;
         }
-    } else if (skip && delay < _target_Qdelay) {
+    } else if (skip && delay < pcm_cc_params.target_Qdelay) {
         // NOOP, just switch path
     }
 
     // Check here, fulfill_adjustment requires valid cwnd.
     set_cwnd_bounds();
 
-    // if ( _received_bytes > _adjust_bytes_threshold || eventlist().now() - _last_adjust_time > _adjust_period_threshold ) {
-    if ( _received_bytes > _adjust_bytes_threshold || eventlist().now() - _last_adjust_time > _adjust_period_threshold ) {
+    // if ( _received_bytes > pcm_cc_params.adjust_bytes_threshold || eventlist().now() - _last_adjust_time > pcm_cc_params.adjust_period_threshold ) {
+    if ( _received_bytes > pcm_cc_params.adjust_bytes_threshold || eventlist().now() - _last_adjust_time > pcm_cc_params.adjust_period_threshold ) {
         if (_flow.flow_id() == _debug_flowid || UecSrc::_debug) {
             cout << timeAsUs(eventlist().now()) <<" flowid " << _flow.flow_id()<<  " " << _flow.str() << " fulfill_adjustmentx _nscc_cwnd " << _cwnd
                 << " inc_bytes " << _inc_bytes
@@ -1448,7 +1546,7 @@ void UecSrc::updateCwndOnNack_NSCC(bool skip, mem_b nacked_bytes, bool last_hop)
     // We use _network_rtt as an estimate for the trimming threshold
     // TODO: we might need to check if the NACK was generated by trimming,
     //       and handle the case if it was not at some point.
-    update_delay(_base_rtt + _network_rtt, true, true);
+    update_delay(_base_rtt + pcm_cc_params.network_rtt, true, true);
 
     if (_flow.flow_id() == _debug_flowid)
         cout << timeAsUs(eventlist().now()) << " flowid " << _flow.flow_id()
@@ -1485,8 +1583,8 @@ void UecSrc::update_delay(simtime_picosec raw_rtt, bool update_avg, bool skip){
     simtime_picosec delay = raw_rtt - _base_rtt;
     if(update_avg){
 
-        if(skip == false && delay > _target_Qdelay){
-            _avg_delay = _delay_alpha * _base_rtt*0.25 + (1-_delay_alpha) * _avg_delay;
+        if(skip == false && delay > pcm_cc_params.target_Qdelay){
+            _avg_delay = pcm_cc_params.delay_alpha * _base_rtt*0.25 + (1 - pcm_cc_params.delay_alpha) * _avg_delay;
         }else{
             if (delay > 5*_base_rtt)
             {
@@ -1495,7 +1593,7 @@ void UecSrc::update_delay(simtime_picosec raw_rtt, bool update_avg, bool skip){
             }
             else
             {
-                _avg_delay = _delay_alpha * delay + (1 - _delay_alpha) * _avg_delay;
+                _avg_delay = pcm_cc_params.delay_alpha * delay + (1 - pcm_cc_params.delay_alpha) * _avg_delay;
             }
         }
     }
@@ -1514,8 +1612,8 @@ uint16_t UecSrc::get_avg_pktsize(){
 
 void UecSrc::runSleek(uint32_t ooo, UecBasePacket::seq_t cum_ack) {
     mem_b avg_size = get_avg_pktsize();
-    mem_b threshold = min((mem_b)(loss_retx_factor*_cwnd), _maxwnd);
-    threshold = max(threshold, min_retx_config*avg_size);
+    mem_b threshold = min((mem_b)(pcm_cc_params.loss_retx_factor_*_cwnd), _maxwnd);
+    threshold = max(threshold, pcm_cc_params.min_retx_config_*avg_size);
 
     if(_flow.flow_id() == _debug_flowid || _debug_src ){
         cout << timeAsUs(eventlist().now()) << " flowid " << _flow.flow_id() << " rtx_threshold " << threshold/avg_size
@@ -1647,7 +1745,7 @@ void UecSrc::processNack(const UecNackPacket& pkt) {
     simtime_picosec send_time = i->second.send_time;
     simtime_picosec raw_rtt = eventlist().now() - send_time;
 
-    if (update_base_rtt_on_nack) {
+    if (pcm_cc_params.update_base_rtt_on_nack_) {
         update_base_rtt(raw_rtt);
     }
     
@@ -1721,7 +1819,7 @@ void UecSrc::doNextEvent() {
         startConnection();
     }
 
-    if (_sender_based_cc && _enable_sleek) {
+    if (_sender_based_cc && pcm_cc_params.enable_sleek) {
         if (_probe_timer_when != 0 && _probe_timer_when == eventlist().now()){
             if ( _flow.flow_id() == _debug_flowid || _debug_src ) {
                 cout << timeAsUs(eventlist().now())<< " doNextEvent probe " <<  _rtx_timeout_pending << " flowid " << _flow.flow_id() << endl;
@@ -2255,12 +2353,12 @@ void UecSrc::sendProbe() {
     _nic.sendControlPacket(p, this, NULL);
 
     _probe_send_time = eventlist().now();
-    _probe_timer_when = eventlist().now() + probe_retry_time * _base_rtt;
+    _probe_timer_when = eventlist().now() + pcm_cc_params.probe_retry_time_ * _base_rtt;
     _probe_timer_handle = eventlist().sourceIsPendingGetHandle(*this, _probe_timer_when);
 }
 
 void UecSrc::sendRTS() {
-    if (_last_rts > 0 && eventlist().now() - _last_rts < _network_rtt) {
+    if (_last_rts > 0 && eventlist().now() - _last_rts < pcm_cc_params.network_rtt) {
         // Don't send more than one RTS per RTT, or we can create an
         // incast of RTS.  Once per RTT is enough to restart things if we lost
         // a whole window.
@@ -2441,7 +2539,7 @@ void UecSrc::rtxTimerExpired() {
 
     //Yanfang: this is a hack, we remove timestamp for these seqno, 
     //I would expect that that the fast loss recovery will retransmit this packet, when the send_times record the sending timestamp for this packet
-    if (_sender_based_cc && _enable_sleek) {
+    if (_sender_based_cc && pcm_cc_params.enable_sleek) {
         if (_loss_recovery_mode) {
             if (_rtx_times[seqno] < 1) {
                 recalculateRTO();

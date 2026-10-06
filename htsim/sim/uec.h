@@ -27,6 +27,7 @@
 #define DEFAULT_UEC_RTO_MIN 100
 
 static const unsigned uecMaxInFlightPkts = 1 << 14;
+static const uint32_t tagDisabledVal = 0;  // Default to 0 because txt2bin treats untagged send/recv tasks as tag 0
 class UecPullPacer;
 class UecSink;
 class UecSrc;
@@ -132,7 +133,8 @@ public:
            unique_ptr<UecMultipath> mp,
            UecNIC& nic, 
            uint32_t no_of_ports, 
-           bool rts = false);
+           bool rts = false, 
+           uint32_t tag = tagDisabledVal);  // If tag is set explicitly, rts must also be initialized explicitly
     void delFromSendTimes(simtime_picosec time, UecDataPacket::seq_t seq_no);
     /**
      * Initialize global NSCC parameters.
@@ -410,6 +412,48 @@ public:
     uint32_t             _srcaddr;
     simtime_picosec last_data_sent_time;
     simtime_picosec _flow_start_time;
+
+    struct PcmCCParams {  // set to default here to ensure everything is set
+        linkspeed_bps reference_network_linkspeed = _reference_network_linkspeed;
+        simtime_picosec reference_network_rtt = _reference_network_rtt; 
+        mem_b reference_network_bdp = _reference_network_bdp;
+        linkspeed_bps network_linkspeed = _network_linkspeed;
+        simtime_picosec network_rtt = _network_rtt;
+        mem_b network_bdp = _network_bdp;
+        bool network_trimming_enabled = _network_trimming_enabled;
+        double scaling_factor_a = _scaling_factor_a;
+        double scaling_factor_b = _scaling_factor_b;
+        uint32_t qa_scaling = _qa_scaling;
+        double gamma = _gamma;
+        double alpha = _alpha;
+        double fi = _fi;
+        double fi_scale = _fi_scale;
+        mem_b min_cwnd = _min_cwnd;
+
+        double delay_alpha = _delay_alpha;
+
+        simtime_picosec adjust_period_threshold = _adjust_period_threshold;
+        simtime_picosec target_Qdelay = _target_Qdelay;
+        uint32_t adjust_bytes_threshold = _adjust_bytes_threshold;
+        double qa_threshold = _qa_threshold; 
+
+        double eta = _eta;
+        bool disable_quick_adapt = _disable_quick_adapt;
+        uint8_t qa_gate = _qa_gate;
+        bool update_base_rtt_on_nack_ = update_base_rtt_on_nack;
+
+        bool enable_sleek = _enable_sleek;
+        int probe_first_trial_time_ = probe_first_trial_time;
+        int probe_retry_time_ = probe_retry_time;
+        float loss_retx_factor_ = loss_retx_factor;
+        int min_retx_config_ = min_retx_config;
+    };
+    PcmCCParams pcm_cc_params;
+    uint32_t _tag;  // contains context info for PCM
+    static std::string pcm_cc_config_filename;
+    static std::unordered_map<std::string, PcmCCParams> ctx_to_pcm_cc_params;
+    PcmCCParams get_default_pcm_cc_params();
+    PcmCCParams get_pcm_cc_params(uint32_t _tag); // read from pcm config files
 
 private:
     bool quick_adapt(bool is_loss, bool skip, simtime_picosec delay);

@@ -523,6 +523,10 @@ int main(int argc, char **argv) {
                 FatTreeSwitch::set_strategy(FatTreeSwitch::RR);
             }
             i++;
+        } else if (!strcmp(argv[i], "-pcm_cc_config_file")) {
+                UecSrc::pcm_cc_config_filename = argv[i+1];
+                cout << "PCM configuration file: "<< UecSrc::pcm_cc_config_filename << endl;
+                i++;
         } else {
             cout << "Unknown parameter " << argv[i] << endl;
             exit_error(argv[0]);
