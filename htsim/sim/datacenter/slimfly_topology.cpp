@@ -238,7 +238,7 @@ void SlimFlyTopology::init_network() {
             }
 
             // Set link latency - if not already set from .topo file
-            std::unordered_map<uint32_t, simtime_picosec> map = _link_latencies[min(i, j)];
+            std::unordered_map<uint32_t, simtime_picosec>& map = _link_latencies[min(i, j)];
             if (map.find(max(i, j)) == map.end())
                 map[max(i, j)] = link_latency;
 
